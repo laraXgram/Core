@@ -172,6 +172,8 @@ class Application extends Container implements ApplicationContract
             \LaraGram\Database\Seeders\GenerateSeeder::class,
             \LaraGram\Database\Migrations\Migrator\MigrateCommand::class,
             \LaraGram\Database\Seeders\SeederCommand::class,
+            \LaraGram\Foundation\Provider\GenerateProvider::class,
+            \LaraGram\Foundation\Resource\GenerateResource::class,
         ];
 
         return array_merge($commands, $_ENV['COMMANDS']);

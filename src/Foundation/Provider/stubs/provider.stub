@@ -1,0 +1,13 @@
+<?php
+
+namespace App\Providers;
+
+use LaraGram\Support\ServiceProvider;
+
+class %name% extends ServiceProvider
+{
+    public function register(): void
+    {
+        //
+    }
+}

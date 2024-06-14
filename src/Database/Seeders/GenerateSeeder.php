@@ -13,7 +13,7 @@ class GenerateSeeder extends Command
     public function handle(): void
     {
         $stub = file_get_contents($this->getStub('/stubs/seeder.stub'));
-        $name = ucfirst($this->getArgument(0));
+        $name = str_replace('Seeder', '', ucfirst($this->getArgument(0)));
 
         $file_structure = str_replace('%name%', $name, $stub);
 

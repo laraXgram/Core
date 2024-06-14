@@ -12,7 +12,7 @@ class GenerateFactory extends Command
     public function handle(): void
     {
         $stub = file_get_contents($this->getStub('/stubs/factory.stub'));
-        $name = ucfirst($this->getArgument(0));
+        $name = str_replace('Factory', '', ucfirst($this->getArgument(0)));
 
         $file_structure = str_replace('%name%', $name, $stub);
 

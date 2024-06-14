@@ -11,7 +11,8 @@ class GenerateCommand extends Command
     public function handle(): void
     {
         $stub = file_get_contents($this->getStub('/stubs/command.stub'));
-        $name = $this->getArgument(0);
+        $name = str_replace('Command', '', ucfirst($this->getArgument(0)));
+
 
         $file_structure = str_replace('%name%', $name . 'Command', $stub);
         $file_structure = str_replace('%signature%', strtolower($name), $file_structure);
