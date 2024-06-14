@@ -36,16 +36,19 @@ class Application extends Container implements ApplicationContract
         parent::__construct();
 
         $this->setBasePath($basePath)
-            ->loadEnv()
-            ->registerBaseBindings()
-            ->registerBaseServiceProviders()
-            ->registerCoreContainerAliases();
+            ->loadEnv();
 
-        if ($_ENV['DB_POWER'] == 'on'){
-            $this->registerEloquent();
+        if (debug_backtrace()[0]['file'] != $this->basePath . DIRECTORY_SEPARATOR . 'laragram') {
+            $this->registerBaseBindings()
+                ->registerBaseServiceProviders()
+                ->registerCoreContainerAliases();
+
+            if ($_ENV['DB_POWER'] == 'on') {
+                $this->registerEloquent();
+            }
+
+            $this->loadResources();
         }
-
-        $this->loadResources();
     }
 
     public function setBasePath($basePath): static
@@ -224,13 +227,13 @@ class Application extends Container implements ApplicationContract
     protected function coreContainerAliases(): array
     {
         return [
-            'app'        => [self::class, Container::class],
-            'listener'   => [\LaraGram\Listener\Listener::class],
-            'request'    => [\LaraGram\Request\Request::class],
-            'db.schema'  => [\LaraGram\Database\Migrations\Schema::class],
-            'auth'       => [\LaraGram\Auth\Auth::class],
+            'app' => [self::class, Container::class],
+            'listener' => [\LaraGram\Listener\Listener::class],
+            'request' => [\LaraGram\Request\Request::class],
+            'db.schema' => [\LaraGram\Database\Migrations\Schema::class],
+            'auth' => [\LaraGram\Auth\Auth::class],
             'auth.level' => [\LaraGram\Auth\Level::class],
-            'auth.role'  => [\LaraGram\Auth\Role::class],
+            'auth.role' => [\LaraGram\Auth\Role::class],
         ];
     }
 
@@ -249,15 +252,15 @@ class Application extends Container implements ApplicationContract
     {
         $capsule = new Capsule();
         $capsule->addConnection([
-            'driver'    => $_ENV['DB_DRIVER'],
-            'host'      => $_ENV['DB_HOST'],
-            'port'      => $_ENV['DB_PORT'],
-            'database'  => $_ENV['DB_DATABASE'],
-            'username'  => $_ENV['DB_USERNAME'],
-            'password'  => $_ENV['DB_PASSWORD'],
-            'charset'   => $_ENV['DB_CHARSET'],
+            'driver' => $_ENV['DB_DRIVER'],
+            'host' => $_ENV['DB_HOST'],
+            'port' => $_ENV['DB_PORT'],
+            'database' => $_ENV['DB_DATABASE'],
+            'username' => $_ENV['DB_USERNAME'],
+            'password' => $_ENV['DB_PASSWORD'],
+            'charset' => $_ENV['DB_CHARSET'],
             'collation' => $_ENV['DB_COLLATION'],
-            'prefix'    => $_ENV['DB_PREFIX'],
+            'prefix' => $_ENV['DB_PREFIX'],
         ]);
         $capsule->setAsGlobal();
         $capsule->bootEloquent();
