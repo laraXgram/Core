@@ -9,8 +9,7 @@
             "src/Listener/helpers.php"
         ],
         "psr-4": {
-            "Database\\": "Database/",
-            "App\\": "App/"
+            "LaraGram\\": "src/"
         }
     },
     "authors": [
@@ -19,9 +18,8 @@
             "email": "laraxgram@gmail.com"
         }
     ],
-    "minimum-stability": "dev",
+    "minimum-stability": "beta",
     "require": {
-        "laraxgram/laraquest" : "*",
         "bramus/ansi-php": "^3.1",
         "illuminate/database": "^11.10",
         "illuminate/events": "^11.10",
