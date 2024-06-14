@@ -1,0 +1,33 @@
+{
+    "name": "laraxgram/core",
+    "description": "The core of the LaraGram!",
+    "type": "library",
+    "license": "MIT",
+    "autoload": {
+        "files": [
+            "src/Foundation/helpers.php",
+            "src/Listener/helpers.php"
+        ],
+        "psr-4": {
+            "LaraGram\\": "src/",
+            "Database\\": "Database/",
+            "App\\": "App/"
+        }
+    },
+    "authors": [
+        {
+            "name": "laraXgram",
+            "email": "laraxgram@gmail.com"
+        }
+    ],
+    "minimum-stability": "dev",
+    "require": {
+        "laraxgram/laraquest": "^0.1.4",
+        "ext-redis": "*",
+        "bramus/ansi-php": "dev-master",
+        "illuminate/database": "^12.0@dev",
+        "illuminate/events": "^12.0@dev",
+        "fakerphp/faker": "2.0.x-dev",
+        "illuminate/support": "^12.0@dev"
+    }
+}
