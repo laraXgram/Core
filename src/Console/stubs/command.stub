@@ -1,0 +1,16 @@
+<?php
+
+namespace LaraGram\App\Commands;
+
+use LaraGram\Console\Command;
+
+class %name% extends Command
+{
+    protected $signature = 'app:%signature%';
+    protected $description = 'Command Description';
+
+    public function handle()
+    {
+        //
+    }
+}

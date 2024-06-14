@@ -1,0 +1,29 @@
+<?php
+
+namespace Database\Migrations;
+
+use LaraGram\Support\Facades\Schema;
+use Illuminate\Database\Schema\Blueprint;
+
+return new class
+{
+    /**
+     * Run the migrations.
+     */
+    public function up(): void
+    {
+        Schema::%type%('%name%', function (Blueprint $table) {
+            $table->id();
+            // Your Tables ...
+            $table->timestamps();
+        });
+    }
+
+    /**
+     * Reverse the migrations.
+     */
+    public function down(): void
+    {
+        Schema::dropIfExists('%name%');
+    }
+};
