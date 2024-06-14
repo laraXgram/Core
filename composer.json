@@ -9,7 +9,6 @@
             "src/Listener/helpers.php"
         ],
         "psr-4": {
-            "LaraGram\\": "src/",
             "Database\\": "Database/",
             "App\\": "App/"
         }
@@ -22,8 +21,6 @@
     ],
     "minimum-stability": "dev",
     "require": {
-        "laraxgram/laraquest": "^0.1.4",
-        "ext-redis": "*",
         "bramus/ansi-php": "dev-master",
         "illuminate/database": "^12.0@dev",
         "illuminate/events": "^12.0@dev",

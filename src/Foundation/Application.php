@@ -140,6 +140,7 @@ class Application extends Container implements ApplicationContract
 
     protected function bindPathsInContainer(): void
     {
+        $this->instance('path.laragram', dirname(__DIR__));
         $this->instance('path.base', $this->basePath());
         $this->instance('path.app', $this->appPath());
         $this->instance('path.config', $this->configPath());
