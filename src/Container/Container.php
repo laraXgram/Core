@@ -38,12 +38,6 @@ class Container implements ContainerContract, ArrayAccess
     protected array $resolvingCallbacks = [];
     protected array $afterResolvingCallbacks = [];
 
-    public function __construct()
-    {
-        static::setInstance($this);
-        Facade::setFacadeApplication($this);
-    }
-
     public function when($concrete): ContextualBindingBuilder|array
     {
         $aliases = [];

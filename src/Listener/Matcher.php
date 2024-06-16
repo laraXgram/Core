@@ -2,8 +2,11 @@
 
 namespace LaraGram\Listener;
 
+use LaraGram\Request\Request;
+
 class Matcher
 {
+    /** @var Request $request */
     private mixed $request;
 
     public function match(string $type, callable $action, string|array|null $pattern)
@@ -26,7 +29,7 @@ class Matcher
             $matches = array_filter($matches, function ($value, $key) {
                 return !is_numeric($key) && $value !== "" && $value !== null;
             }, ARRAY_FILTER_USE_BOTH);
-            return call_user_func_array($action, [$this->request, $matches]);
+            return call_user_func_array($action, [$this->request, ...$matches]);
         }
 
         return false;
@@ -36,8 +39,9 @@ class Matcher
     {
         if (is_array($pattern)) {
             foreach ($pattern as $value) {
-                return $this->execute_regex($value, $action);
+                $result = $this->execute_regex($value, $action);
             }
+            return $result;
         } else {
             return $this->execute_regex($pattern, $action);
         }

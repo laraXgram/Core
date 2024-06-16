@@ -7,6 +7,8 @@ use LaraGram\Console\Kernel;
 use LaraGram\Container\Container;
 use LaraGram\Contracts\Application as ApplicationContract;
 use Illuminate\Database\Capsule\Manager as Capsule;
+use LaraGram\Request\Request;
+use LaraGram\Support\Facades\Facade;
 
 class Application extends Container implements ApplicationContract
 {
@@ -33,7 +35,8 @@ class Application extends Container implements ApplicationContract
 
     public function __construct(string $basePath = null)
     {
-        parent::__construct();
+        static::setInstance($this);
+        Facade::setFacadeApplication($this);
 
         $this->setBasePath($basePath)
             ->loadEnv();
@@ -534,6 +537,7 @@ class Application extends Container implements ApplicationContract
         $files = array_filter(scandir($directory), function ($file) use ($directory) {
             return is_file($directory . DIRECTORY_SEPARATOR . $file);
         });
+
         foreach ($files as $file) {
             require_once $directory . DIRECTORY_SEPARATOR . $file;
         }
