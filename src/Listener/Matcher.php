@@ -21,14 +21,14 @@ class Matcher
             $input = $this->request->message->text ?? '';
         }
 
-        $regex = preg_replace('/{((?:(?!\d+,?\d?+)\w)+?)}/', '(?:\s+(?<$1>.*))', $pattern);
-        $regex = preg_replace('/{((?:(?!\d+,?\d?+)\w)+?)\?}/', '(?:\s+(?<$1>.*)?)', $regex);
-        $regex = str_replace(' ', '\s*', '/^' . $regex . '?$/imUu');
+        $regex = $this->generateRegex($pattern);
 
         if (preg_match($regex, $input, $matches, PREG_UNMATCHED_AS_NULL)) {
-            $matches = array_filter($matches, function ($value, $key) {
-                return !is_numeric($key) && $value !== "" && $value !== null;
-            }, ARRAY_FILTER_USE_BOTH);
+            unset($matches[0]);
+            $matches = array_filter($matches, function ($value) {
+                return $value != null;
+            });
+
             return call_user_func_array($action, [$this->request, ...$matches]);
         }
 
@@ -156,5 +156,24 @@ class Matcher
             return call_user_func($action, $this->request);
         }
         return false;
+    }
+
+    private function generateRegex(string $string): array|string|null
+    {
+        $pattern = "#\s*{(\w+)(\?)?\}#";
+        $replacement = "\s*(\w+)$2";
+        if (preg_match_all($pattern, $string, $matches, PREG_OFFSET_CAPTURE|PREG_UNMATCHED_AS_NULL)) {
+            $lastMatch = end($matches[0]);
+            $lastMatchPosition = $lastMatch[1];
+
+            $beforeLastMatch = substr($string, 0, $lastMatchPosition);
+            $afterLastMatch = substr($string, $lastMatchPosition + strlen($lastMatch[0]));
+
+            $lastMatchReplaced = preg_replace($pattern, "\s*(.*)$2", $lastMatch[0], 1);
+
+            $string = $beforeLastMatch . $lastMatchReplaced . $afterLastMatch;
+        }
+
+        return "/" .  preg_replace($pattern, $replacement, $string) . "/";
     }
 }
