@@ -6,7 +6,11 @@
     "autoload": {
         "files": [
             "src/Foundation/helpers.php",
-            "src/Listener/helpers.php"
+            "src/Listener/helpers.php",
+            "src/Helpers/auth.php",
+            "src/Helpers/format.php",
+            "src/Helpers/keyboard.php",
+            "src/Helpers/laraquest.php"
         ],
         "psr-4": {
             "LaraGram\\": "src/"
