@@ -12,6 +12,10 @@ class GenerateMigration extends Command
 
     public function handle(): void
     {
+        if (in_array('-h', $this->arguments)){
+            $this->output->message($this->description, true);
+        }
+
         $stub = file_get_contents($this->getStub('/stubs/migration.stub'));
         $filename = time() . '_' . $this->getArgument(0);
         $type = array_key_first($this->options);

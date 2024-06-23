@@ -5,7 +5,11 @@ namespace LaraGram\Support\Facades;
 use LaraGram\Laraquest\Mode;
 
 /**
- * @method static mode(Mode|int $mode):
+ * @method static mode(Mode|int $mode)
+ * @method static getUpdates($offset = null, $limit = null, $timeout = null, $allowed_updates = null)
+ * @method static setWebhook($url, $certificate = null, $ip_address = null, $max_connections = null, $allowed_updates = null, $drop_pending_updates = null, $secret_token = null)
+ * @method static deleteWebhook($drop_pending_updates = null)
+ * @method static getWebhookInfo()
  * @method static getMe()
  * @method static logOut()
  * @method static close()

@@ -181,6 +181,9 @@ class Application extends Container implements ApplicationContract
             \LaraGram\Database\Seeders\SeederCommand::class,
             \LaraGram\Foundation\Provider\GenerateProvider::class,
             \LaraGram\Foundation\Resource\GenerateResource::class,
+            \LaraGram\Foundation\Webhook\SetWebhookCommand::class,
+            \LaraGram\Foundation\Webhook\DeleteWebhookCommand::class,
+            \LaraGram\Foundation\Webhook\DropWebhookCommand::class,
         ];
 
         return array_merge($commands, $_ENV['COMMANDS']);

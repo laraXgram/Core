@@ -8,6 +8,7 @@ abstract class Command
     protected $description;
     protected $options = [];
     protected $arguments = [];
+
     protected $output;
 
     public function __construct()

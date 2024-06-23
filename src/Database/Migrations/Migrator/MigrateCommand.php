@@ -15,6 +15,10 @@ class MigrateCommand extends Command
 
     public function handle()
     {
+        if (in_array('-h', $this->arguments)){
+            $this->output->message($this->description, true);
+        }
+
         $this->migrate();
     }
 

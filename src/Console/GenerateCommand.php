@@ -10,6 +10,10 @@ class GenerateCommand extends Command
 
     public function handle(): void
     {
+        if (in_array('-h', $this->arguments)){
+            $this->output->message($this->description, true);
+        }
+
         $stub = file_get_contents($this->getStub('/stubs/command.stub'));
         $name = str_replace('Command', '', ucfirst($this->getArgument(0)));
 

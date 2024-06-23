@@ -11,6 +11,10 @@ class GenerateResource extends Command
 
     public function handle()
     {
+        if (in_array('-h', $this->arguments)){
+            $this->output->message($this->description, true);
+        }
+
         $stub = file_get_contents($this->getStub('/stubs/resource.stub'));
         $name = lcfirst($this->getArgument(0));
 
