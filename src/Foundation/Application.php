@@ -184,6 +184,9 @@ class Application extends Container implements ApplicationContract
             \LaraGram\Foundation\Webhook\SetWebhookCommand::class,
             \LaraGram\Foundation\Webhook\DeleteWebhookCommand::class,
             \LaraGram\Foundation\Webhook\DropWebhookCommand::class,
+            \LaraGram\Foundation\Objects\Facade\GenerateFacade::class,
+            \LaraGram\Foundation\Objects\Class\GenerateClass::class,
+            \LaraGram\Foundation\Objects\Enum\GenerateEnum::class,
         ];
 
         return array_merge($commands, $_ENV['COMMANDS']);

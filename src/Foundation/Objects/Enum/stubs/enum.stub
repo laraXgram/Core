@@ -1,0 +1,11 @@
+<?php
+
+namespace App\Classes;
+
+class %name%
+{
+    protected function __construct()
+    {
+        //
+    }
+}
