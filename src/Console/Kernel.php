@@ -27,8 +27,7 @@ class Kernel
             }
         }
 
-        echo "Command not found: $commandName\n";
-        exit(1);
+        (new Output())->warning("Command not found: $commandName", exit: true);
     }
 
     protected function executeCommand(Command $command, $args): void
@@ -38,8 +37,11 @@ class Kernel
 
         foreach ($args as $arg) {
             if (str_starts_with($arg, '--')) {
-                list($name, $value) = explode('=', substr($arg, 2), 2);
-                $options[$name] = $value;
+                $arg = explode('=', substr($arg, 2), 2);
+                $options[$arg[0]] = $arg[1] ?? $arg[0];
+            } elseif (str_starts_with($arg, '-')) {
+                $arg = explode('=', substr($arg, 1), 2);
+                $options[$arg[0]] = $arg[1] ?? $arg[0];
             } else {
                 $arguments[] = $arg;
             }

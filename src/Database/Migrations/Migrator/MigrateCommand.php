@@ -15,9 +15,7 @@ class MigrateCommand extends Command
 
     public function handle()
     {
-        if (in_array('-h', $this->arguments)){
-            $this->output->message($this->description, true);
-        }
+        if ($this->getOption('h') == 'h') $this->output->message($this->description, true);
 
         $this->migrate();
     }

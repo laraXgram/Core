@@ -22,6 +22,7 @@ class Application extends Container implements ApplicationContract
     protected array $terminatingCallbacks = [];
     protected bool $booted = false;
     private string $appPath = '';
+    private string $storagePath = '';
     private string $configPath = '';
     private string $databasePath = '';
     private string $assetsPath = '';
@@ -94,6 +95,11 @@ class Application extends Container implements ApplicationContract
         return $this->joinPaths($this->appPath ?: $this->basePath('app'), $path);
     }
 
+    public function storagePath($path = ''): string
+    {
+        return $this->joinPaths($this->storagePath ?: $this->basePath('storage'), $path);
+    }
+
     public function configPath($path = ''): string
     {
         return $this->joinPaths($this->configPath ?: $this->basePath('config'), $path);
@@ -149,6 +155,7 @@ class Application extends Container implements ApplicationContract
         $this->instance('path.laragram', dirname(__DIR__));
         $this->instance('path.base', $this->basePath());
         $this->instance('path.app', $this->appPath());
+        $this->instance('path.storage', $this->storagePath());
         $this->instance('path.config', $this->configPath());
         $this->instance('path.database', $this->databasePath());
         $this->instance('path.asset', $this->assetsPath());
@@ -187,6 +194,8 @@ class Application extends Container implements ApplicationContract
             \LaraGram\Foundation\Objects\Facade\GenerateFacade::class,
             \LaraGram\Foundation\Objects\Class\GenerateClass::class,
             \LaraGram\Foundation\Objects\Enum\GenerateEnum::class,
+            \LaraGram\Foundation\Server\ServeCommand::class,
+            \LaraGram\Foundation\Server\APIServeCommand::class,
         ];
 
         return array_merge($commands, $_ENV['COMMANDS']);

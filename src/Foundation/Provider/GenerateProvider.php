@@ -11,9 +11,7 @@ class GenerateProvider extends Command
 
     public function handle()
     {
-        if (in_array('-h', $this->arguments)){
-            $this->output->message($this->description, true);
-        }
+        if ($this->getOption('h') == 'h') $this->output->message($this->description, true);
 
         $stub = file_get_contents($this->getStub('/stubs/provider.stub'));
         $name = str_replace('ServiceProvider', '', ucfirst($this->getArgument(0)));

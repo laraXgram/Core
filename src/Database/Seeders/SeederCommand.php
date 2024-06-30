@@ -11,6 +11,8 @@ class SeederCommand extends Command
 
     public function handle(): void
     {
+        if ($this->getOption('h') == 'h') $this->output->message($this->description, true);
+
         $seeder = $this->getOption('seeder');
         if ($seeder == null){
             $this->output->failed('Set the seeder name [ --seeder=seederName ]');
