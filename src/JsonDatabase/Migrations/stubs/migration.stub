@@ -1,0 +1,19 @@
+<?php
+
+namespace Database\Json\Migrations;
+
+use LaraGram\JsonDatabase\Blueprint;
+use LaraGram\JsonDatabase\Schema;
+
+return new class
+{
+    /**
+     * Run the migrations.
+     */
+    public function up(): void
+    {
+        Schema::%type%('%name%', function (Blueprint $table) {
+            // Code ...
+        });
+    }
+};

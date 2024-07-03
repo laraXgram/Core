@@ -1,0 +1,10 @@
+<?php
+
+namespace App\Models\Json;
+
+use LaraGram\JsonDatabase\Model;
+
+class %name% extends Model
+{
+    
+}

@@ -191,11 +191,15 @@ class Application extends Container implements ApplicationContract
             \LaraGram\Foundation\Webhook\SetWebhookCommand::class,
             \LaraGram\Foundation\Webhook\DeleteWebhookCommand::class,
             \LaraGram\Foundation\Webhook\DropWebhookCommand::class,
+            \LaraGram\Foundation\Webhook\WebhookInfoCommand::class,
             \LaraGram\Foundation\Objects\Facade\GenerateFacade::class,
             \LaraGram\Foundation\Objects\Class\GenerateClass::class,
             \LaraGram\Foundation\Objects\Enum\GenerateEnum::class,
             \LaraGram\Foundation\Server\ServeCommand::class,
             \LaraGram\Foundation\Server\APIServeCommand::class,
+            \LaraGram\JsonDatabase\Migrations\GenerateMigration::class,
+            \LaraGram\JsonDatabase\Models\GenerateModel::class,
+            \LaraGram\JsonDatabase\MigrateCommand::class,
         ];
 
         return array_merge($commands, $_ENV['COMMANDS']);
