@@ -42,11 +42,11 @@ class Application extends Container implements ApplicationContract
         $this->setBasePath($basePath)
             ->loadEnv();
 
-        if (debug_backtrace()[0]['file'] != $this->basePath . DIRECTORY_SEPARATOR . 'laragram') {
-            $this->registerBaseBindings()
-                ->registerBaseServiceProviders()
-                ->registerCoreContainerAliases();
+        $this->registerBaseBindings()
+            ->registerBaseServiceProviders()
+            ->registerCoreContainerAliases();
 
+        if (debug_backtrace()[0]['file'] != $this->basePath . DIRECTORY_SEPARATOR . 'laragram') {
             if ($_ENV['DB_POWER'] == 'on') {
                 $this->registerEloquent();
             }
