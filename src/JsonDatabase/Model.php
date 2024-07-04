@@ -3,6 +3,7 @@
 namespace LaraGram\JsonDatabase;
 
 use Exception;
+use LaraGram\Request\Request;
 
 class Model
 {
@@ -123,11 +124,6 @@ class Model
             $current = $attributes['default'];
         }
 
-        if (isset($autoIncrement['key']) && isset($result[$autoIncrement['key']])) {
-            $result[$autoIncrement['key']] = $autoIncrement['next'];
-            $this->schema[$this->database]['auto_increment']['next']++;
-        }
-
         foreach ($structure as $key => $properties) {
             if ($properties['nullable'] === false && $key != $jsonArray['auto_increment']['key'] && !in_array($key, $this->getAllKeys($data))) {
                 die("$key is not nullable");
@@ -136,6 +132,11 @@ class Model
             if ($properties['unique'] === true && !$this->isUnique($key, $this->largeArrayGenerator($this->dataCache ?? []), $data)) {
                 die("$key is unique");
             }
+        }
+
+        if (isset($autoIncrement['key']) && isset($result[$autoIncrement['key']])) {
+            $result[$autoIncrement['key']] = $autoIncrement['next'];
+            $this->schema[$this->database]['auto_increment']['next']++;
         }
 
         return $this->mergeArraysBasedOnStructure($result, $data, $this->getAllKeys($data));
@@ -280,7 +281,9 @@ class Model
         $this->checkWriteAccess($this->getAllKeys($data));
 
         $this->schemaChanged = true;
+
         $this->newData[] = $this->generateStructure($data);
+
         $this->newDataCreated = true;
         if ($forceWrite) {
             $this->saveDataToDb();

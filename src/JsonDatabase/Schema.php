@@ -22,7 +22,7 @@ class Schema
 
     public static function hasTable(string $table): bool
     {
-        return key_exists($table, json_decode(file_get_contents(app('path.storage') . '/App/JDB/schema.json'), true));
+        return key_exists(ucfirst($table), json_decode(file_get_contents(app('path.storage') . '/App/JDB/schema.json'), true));
     }
 
     public static function table(string $table, Closure $callback): void
@@ -31,9 +31,9 @@ class Schema
         $schema = json_decode(file_get_contents(app('path.storage') . '/App/JDB/schema.json'), true);
         $blueprint = new Blueprint();
         $callback($blueprint);
-        $oldSchema = $schema[$table];
+        $oldSchema = $schema[ucfirst($table)];
         $newSchema = $blueprint->getSchema();
-        $schema[$table] = (new self())->mergeSchemas($oldSchema, $newSchema);
+        $schema[ucfirst($table)] = (new self())->mergeSchemas($oldSchema, $newSchema);
         file_put_contents(app('path.storage') . '/App/JDB/schema.json', json_encode($schema, 128 | 16));
     }
 
@@ -43,14 +43,14 @@ class Schema
         $schema = json_decode(file_get_contents(app('path.storage') . '/App/JDB/schema.json'), true);
         $blueprint = new Blueprint();
         $callback($blueprint);
-        $schema[$table] = $blueprint->getSchema();
+        $schema[ucfirst($table)] = $blueprint->getSchema();
         file_put_contents(app('path.storage') . '/App/JDB/schema.json', json_encode($schema, 128 | 16));
     }
 
     public static function drop(string $table): void
     {
         $schema = json_decode(file_get_contents(app('path.storage') . '/App/JDB/schema.json'), true);
-        unset($schema[$table]);
+        unset($schema[ucfirst($table)]);
         file_put_contents(app('path.storage') . '/App/JDB/schema.json', json_encode($schema, 128 | 16));
     }
 
