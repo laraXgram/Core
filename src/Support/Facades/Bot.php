@@ -60,6 +60,7 @@ namespace LaraGram\Support\Facades;
  * @method static onMyChatMember(callable $action)
  * @method static onChatMember(callable $action)
  * @method static onChatJoinRequest(callable $action)
+ * @method static onReferral(callable $action)
  * @method static onAny(callable $action)
  */
 class Bot extends Facade

@@ -96,4 +96,26 @@ class Role
         }
         return false;
     }
+
+    /**
+     * Get member role
+     * @param int|string $user_id <p>
+     * UserId. if null $userId = Message sender
+     * </p>
+     * @param int|string|null $chat_id <p>
+     * ChatId. if null $chat_id = Current Chat
+     * </p>
+     * @return string|null true if role removed, false
+     * otherwise.
+     */
+    public function getRole(int|string $user_id, int|string|null $chat_id = null): string|null
+    {
+        $chat_id ??= chat()->id;
+
+        $user = User::where('user_id', $user_id)->where('chat_id', $chat_id)->first();
+        if (isset($user->admin->role)){
+            return $user->admin->role;
+        }
+        return null;
+    }
 }

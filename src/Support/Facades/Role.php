@@ -7,6 +7,7 @@ namespace LaraGram\Support\Facades;
  * @method static addBotAdmin(int|string $user_id, int|string|null $chat_id = null)
  * @method static addBotOwner(int|string $user_id, int|string|null $chat_id = null)
  * @method static removeRole(int|string $user_id, int|string|null $chat_id = null)
+ * @method static getRole(int|string $user_id, int|string|null $chat_id = null)
  */
 class Role extends Facade
 {
