@@ -95,6 +95,13 @@ if (!function_exists('remove_role')) {
     }
 }
 
+if (!function_exists('get_role')) {
+    function get_role(int|string $user_id, int|string|null $chat_id = null): bool
+    {
+        return Role::getRole($user_id, $chat_id);
+    }
+}
+
 if (!function_exists('set_level')) {
     function set_level(string|int $level, int|string $user_id, int|string|null $chat_id = null): bool
     {

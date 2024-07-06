@@ -82,7 +82,7 @@ if (!function_exists('bold')) {
     }
 }
 
-if (!function_exists('mentionUserById')) {
+if (!function_exists('mention_user_by_ID')) {
     function mention_user_by_ID($user_id, $text, $parse_mode = 'markdown'): false|string
     {
         return match (strtolower($parse_mode)){

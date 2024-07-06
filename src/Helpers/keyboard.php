@@ -6,14 +6,14 @@ use LaraGram\Support\Facades\Keyboard;
 if (!function_exists('inlineKeyboardMarkup')) {
     function inlineKeyboardMarkup(...$row): \LaraGram\Keyboard\Keyboard
     {
-        return Keyboard::inlineKeyboardMarkup($row);
+        return Keyboard::inlineKeyboardMarkup(...$row);
     }
 }
 
 if (!function_exists('replyKeyboardMarkup')) {
     function replyKeyboardMarkup(...$row): \LaraGram\Keyboard\Keyboard
     {
-        return Keyboard::replyKeyboardMarkup($row);
+        return Keyboard::replyKeyboardMarkup(...$row);
     }
 }
 
@@ -27,6 +27,6 @@ if (!function_exists('col')) {
 if (!function_exists('row')) {
     function row(...$col): array
     {
-        return Make::row($col);
+        return Make::row(...$col);
     }
 }
