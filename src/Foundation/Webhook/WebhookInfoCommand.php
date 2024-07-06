@@ -19,6 +19,10 @@ class WebhookInfoCommand extends Command
 
         $info = $request->getWebhookInfo()['result'];
 
+        if ($info["url"] == ''){
+            $this->output->failed("Webhook not set", exit: true);
+        }
+
         $url = "URL: " . str_replace('https://', '', str_replace('http://', '', $info['url']));
         $len = strlen($url);
 

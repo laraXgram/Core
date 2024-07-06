@@ -20,7 +20,7 @@ class SetWebhookCommand extends Command
         $result = $request->setWebhook($_ENV['BOT_DOMAIN']);
 
         if (!$result['ok']){
-            $this->output->failed($result['description']);
+            $this->output->failed($result['message']);
         }else{
             $this->output->success($result['description']);
         }

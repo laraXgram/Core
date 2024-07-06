@@ -383,7 +383,7 @@ class Model
 
     public function truncate(): bool
     {
-        file_put_contents($this->filePath, "{\n\n}");
+        file_put_contents($this->filePath, "");
         return true;
     }
 

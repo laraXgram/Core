@@ -78,7 +78,7 @@ class Matcher
         return false;
     }
 
-    private function matchDice(callable $action, string|array $pattern)
+    private function match_dice(callable $action, string|array $pattern)
     {
         $emoji = $this->request->message->dice->emoji;
         $value = $this->request->message->dice->value;
