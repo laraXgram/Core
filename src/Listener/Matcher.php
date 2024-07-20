@@ -174,6 +174,6 @@ class Matcher
             $string = $beforeLastMatch . $lastMatchReplaced . $afterLastMatch;
         }
 
-        return "/^" .  preg_replace($pattern, $replacement, $string) . "/";
+        return "/^" .  preg_replace($pattern, $replacement, $string) . "$/";
     }
 }
