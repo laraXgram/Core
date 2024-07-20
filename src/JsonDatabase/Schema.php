@@ -22,40 +22,43 @@ class Schema
 
     public static function hasTable(string $table): bool
     {
-        return key_exists(ucfirst($table), json_decode(file_get_contents(app('path.storage') . '/App/JDB/schema.json'), true));
+        return key_exists(ucfirst($table), json_decode(file_get_contents($_ENV['JSON_DB_DATA_DIR'] . 'schema.json'), true));
     }
 
     public static function table(string $table, Closure $callback): void
     {
-        if (!is_file(app('path.storage') . '/App/JDB/schema.json')) file_put_contents(app('path.storage') . '/App/JDB/schema.json', '');
-        $schema = json_decode(file_get_contents(app('path.storage') . '/App/JDB/schema.json'), true);
+        $schema_path = $_ENV['JSON_DB_DATA_DIR'] . 'schema.json';
+        if (!is_file($schema_path)) file_put_contents($schema_path, '');
+        $schema = json_decode(file_get_contents($schema_path), true);
         $blueprint = new Blueprint();
         $callback($blueprint);
         $oldSchema = $schema[ucfirst($table)];
         $newSchema = $blueprint->getSchema();
         $schema[ucfirst($table)] = (new self())->mergeSchemas($oldSchema, $newSchema);
-        file_put_contents(app('path.storage') . '/App/JDB/schema.json', json_encode($schema, 128 | 16));
+        file_put_contents($schema_path, json_encode($schema, 128 | 16));
     }
 
     public static function create(string $table, Closure $callback): void
     {
-        if (!is_file(app('path.storage') . '/App/JDB/schema.json')) file_put_contents(app('path.storage') . '/App/JDB/schema.json', '');
-        $schema = json_decode(file_get_contents(app('path.storage') . '/App/JDB/schema.json'), true);
+        $schema_path = $_ENV['JSON_DB_DATA_DIR'] . 'schema.json';
+        if (!is_file($schema_path)) file_put_contents($schema_path, '');
+        $schema = json_decode(file_get_contents($schema_path), true);
         $blueprint = new Blueprint();
         $callback($blueprint);
         $schema[ucfirst($table)] = $blueprint->getSchema();
-        file_put_contents(app('path.storage') . '/App/JDB/schema.json', json_encode($schema, 128 | 16));
+        file_put_contents($schema_path, json_encode($schema, 128 | 16));
     }
 
     public static function drop(string $table): void
     {
-        $schema = json_decode(file_get_contents(app('path.storage') . '/App/JDB/schema.json'), true);
+        $schema_path = $_ENV['JSON_DB_DATA_DIR'] . 'schema.json';
+        $schema = json_decode(file_get_contents($schema_path), true);
         unset($schema[ucfirst($table)]);
-        file_put_contents(app('path.storage') . '/App/JDB/schema.json', json_encode($schema, 128 | 16));
+        file_put_contents($schema_path, json_encode($schema, 128 | 16));
     }
 
     public static function dropAllTables(): void
     {
-        file_put_contents(app('path.storage') . '/App/JDB/schema.json', "{\n\n}");
+        file_put_contents($_ENV['JSON_DB_DATA_DIR'] . 'schema.json', "{\n\n}");
     }
 }

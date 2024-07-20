@@ -14,18 +14,18 @@ class MigrateCommand extends Command
     {
         if ($this->getOption('h') == 'h') $this->output->message($this->description, true);
 
-        if (!file_exists(app('path.storage') . '/App/JDB')){
-            mkdir(app('path.storage') . '/App/JDB/', recursive: true);
+        if (!file_exists($_ENV['JSON_DB_DATA_DIR'])){
+            mkdir($_ENV['JSON_DB_DATA_DIR'], recursive: true);
         }
 
-        $migration_path = app('path.storage') . '/App/JDB/migration.json';
+        $migration_path = $_ENV['JSON_DB_DATA_DIR'] . '/migration.json';
 
         if (!is_file($migration_path)) file_put_contents($migration_path, '{"migrated":{},"batch":0}');
 
         $migrationFile = json_decode(file_get_contents($migration_path), true);
         $migrationFile['batch']++;
 
-        $migrationFolder = app('path.database') . '/Json/Migrations';
+        $migrationFolder = app('path.database') . 'Json/Migrations';
         $migrations = scandir($migrationFolder);
         $needed = [];
         $status = false;
