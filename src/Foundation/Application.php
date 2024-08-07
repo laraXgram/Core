@@ -7,7 +7,9 @@ use LaraGram\Console\Kernel;
 use LaraGram\Container\Container;
 use LaraGram\Contracts\Application as ApplicationContract;
 use Illuminate\Database\Capsule\Manager as Capsule;
-use LaraGram\Request\Request;
+use OpenSwoole\Http\Server;
+use OpenSwoole\Http\Request;
+use OpenSwoole\Http\Response;
 use LaraGram\Support\Facades\Facade;
 
 class Application extends Container implements ApplicationContract
@@ -50,9 +52,9 @@ class Application extends Container implements ApplicationContract
             if ($_ENV['DB_POWER'] == 'on') {
                 $this->registerEloquent();
             }
-
-            $this->loadResources();
         }
+
+        return $this;
     }
 
     public function setBasePath($basePath): static
@@ -550,7 +552,7 @@ class Application extends Container implements ApplicationContract
         $this->globalAfterResolvingCallbacks = [];
     }
 
-    private function loadResources(): void
+    public function loadResources($once = true): void
     {
         $directory = app('path.resource');
         $files = array_filter(scandir($directory), function ($file) use ($directory) {
@@ -558,7 +560,35 @@ class Application extends Container implements ApplicationContract
         });
 
         foreach ($files as $file) {
-            require_once $directory . DIRECTORY_SEPARATOR . $file;
+            if ($once) {
+                require_once $directory . DIRECTORY_SEPARATOR . $file;
+            } else {
+                require $directory . DIRECTORY_SEPARATOR . $file;
+            }
+        }
+    }
+
+    public function handleRequests()
+    {
+        $update_type = $_ENV['UPDATE_TYPE'];
+        if ($update_type == 'openswoole') {
+            $server = new Server($_ENV['OPENSWOOLE_IP'], $_ENV['OPENSWOOLE_PORT']);
+
+            $server->on("start", function () {
+                echo "server started";
+            });
+
+            $server->on("request", function (Request $swooleRequest, Response $swooleResponse) {
+                $swooleResponse->end();
+                global $swoole;
+                $swoole = json_decode($swooleRequest->getContent());
+
+                app()->loadResources(false);
+            });
+
+            $server->start();
+        } else {
+            $this->loadResources();
         }
     }
 }
