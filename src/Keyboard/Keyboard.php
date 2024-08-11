@@ -25,6 +25,20 @@ class Keyboard
         return $this;
     }
 
+    public function setOption(string $key, mixed $value): static
+    {
+        $this->keyboard[$key] = $value;
+        return $this;
+    }
+
+    public function setOptions(array $options): static
+    {
+        foreach ($options as $key => $value) {
+            $this->keyboard[$key] = $value;
+        }
+        return $this;
+    }
+
     public function addRow(array $row): static
     {
         $this->keyboard[$this->type][] = $row;
@@ -70,7 +84,7 @@ class Keyboard
 
     public function getKeyboard(bool $array = false): array|string|false
     {
-        if ($array){
+        if ($array) {
             return $this->keyboard;
         }
         return json_encode($this->keyboard);
