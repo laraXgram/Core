@@ -9,7 +9,9 @@
             "src/Helpers/auth.php",
             "src/Helpers/format.php",
             "src/Helpers/keyboard.php",
-            "src/Helpers/laraquest.php"
+            "src/Helpers/laraquest.php",
+            "src/Helpers/facades.php",
+            "src/Helpers/common.php"
         ],
         "psr-4": {
             "LaraGram\\": "src/"
@@ -21,12 +23,15 @@
             "email": "laraxgram@gmail.com"
         }
     ],
-    "minimum-stability": "beta",
+    "minimum-stability": "stable",
+    "prefer-stable": true,
     "require": {
         "bramus/ansi-php": "^3.1",
         "illuminate/database": "^11.10",
         "illuminate/events": "^11.10",
         "illuminate/support": "^11.10",
-        "fakerphp/faker": "^1.23"
+        "fakerphp/faker": "^1.23",
+        "laraxgram/laraquest": "^0.3.1",
+        "openswoole/core": "^22.1"
     }
 }
