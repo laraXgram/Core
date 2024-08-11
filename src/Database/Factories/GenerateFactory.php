@@ -3,6 +3,7 @@
 namespace LaraGram\Database\Factories;
 
 use LaraGram\Console\Command;
+use LaraGram\Support\Facades\Console;
 
 class GenerateFactory extends Command
 {
@@ -12,6 +13,10 @@ class GenerateFactory extends Command
     public function handle(): void
     {
         if ($this->getOption('h') == 'h') $this->output->message($this->description, true);
+
+        if ($this->getArgument(0) == null){
+            Console::output()->failed("Factory name not set!", true);
+        }
 
         $stub = file_get_contents($this->getStub('/stubs/factory.stub'));
         $name = str_replace('Factory', '', ucfirst($this->getArgument(0)));

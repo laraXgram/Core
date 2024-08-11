@@ -3,6 +3,7 @@
 namespace LaraGram\Foundation\Objects\Class;
 
 use LaraGram\Console\Command;
+use LaraGram\Support\Facades\Console;
 
 class GenerateClass extends Command
 {
@@ -12,6 +13,10 @@ class GenerateClass extends Command
     public function handle()
     {
         if ($this->getOption('h') == 'h') $this->output->message($this->description, true);
+
+        if ($this->getArgument(0) == null){
+            Console::output()->failed("Class name not set!", true);
+        }
 
         $stub = file_get_contents($this->getStub('/stubs/class.stub'));
         $name = ucfirst($this->getArgument(0));

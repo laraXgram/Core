@@ -3,6 +3,7 @@
 namespace LaraGram\Foundation\Objects\Facade;
 
 use LaraGram\Console\Command;
+use LaraGram\Support\Facades\Console;
 
 class GenerateFacade extends Command
 {
@@ -12,6 +13,10 @@ class GenerateFacade extends Command
     public function handle()
     {
         if ($this->getOption('h') == 'h') $this->output->message($this->description, true);
+
+        if ($this->getArgument(0) == null){
+            Console::output()->failed("Facade name not set!", true);
+        }
 
         $stub = file_get_contents($this->getStub('/stubs/facade.stub'));
         $name = str_replace('Facade', '', ucfirst($this->getArgument(0)));

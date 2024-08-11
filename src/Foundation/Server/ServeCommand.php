@@ -42,7 +42,7 @@ class ServeCommand extends Command
             if ($_ENV['UPDATE_TYPE'] !== 'openswoole') {
                 $this->output->failed("UPDATE_TYPE is not openswoole!", exit: true);
             }
-            exec("php Bootstrap/app.php");
+            require_once 'Bootstrap/app.php';
         } else{
             exec("php -S {$DEVELOPMENT_SERVER_IP}:{$DEVELOPMENT_SERVER_PORT}");
         }

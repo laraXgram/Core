@@ -3,6 +3,7 @@
 namespace LaraGram\Foundation\Objects\Enum;
 
 use LaraGram\Console\Command;
+use LaraGram\Support\Facades\Console;
 
 class GenerateEnum extends Command
 {
@@ -12,6 +13,10 @@ class GenerateEnum extends Command
     public function handle()
     {
         if ($this->getOption('h') == 'h') $this->output->message($this->description, true);
+
+        if ($this->getArgument(0) == null){
+            Console::output()->failed("Enum name not set!", true);
+        }
 
         $stub = file_get_contents($this->getStub('/stubs/enum.stub'));
         $name = ucfirst($this->getArgument(0));

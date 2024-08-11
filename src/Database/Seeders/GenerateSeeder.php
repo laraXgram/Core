@@ -4,6 +4,7 @@ namespace LaraGram\Database\Seeders;
 
 
 use LaraGram\Console\Command;
+use LaraGram\Support\Facades\Console;
 
 class GenerateSeeder extends Command
 {
@@ -13,6 +14,10 @@ class GenerateSeeder extends Command
     public function handle(): void
     {
         if ($this->getOption('h') == 'h') $this->output->message($this->description, true);
+
+        if ($this->getArgument(0) == null){
+            Console::output()->failed("Seeder name not set!", true);
+        }
 
         $stub = file_get_contents($this->getStub('/stubs/seeder.stub'));
         $name = str_replace('Seeder', '', ucfirst($this->getArgument(0)));

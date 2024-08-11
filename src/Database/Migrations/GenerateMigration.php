@@ -4,6 +4,7 @@ namespace LaraGram\Database\Migrations;
 
 
 use LaraGram\Console\Command;
+use LaraGram\Support\Facades\Console;
 
 class GenerateMigration extends Command
 {
@@ -13,6 +14,10 @@ class GenerateMigration extends Command
     public function handle(): void
     {
         if ($this->getOption('h') == 'h') $this->output->message($this->description, true);
+
+        if ($this->getArgument(0) == null){
+            Console::output()->failed("Migration name not set!", true);
+        }
 
         $stub = file_get_contents($this->getStub('/stubs/migration.stub'));
         $filename = time() . '_' . $this->getArgument(0);

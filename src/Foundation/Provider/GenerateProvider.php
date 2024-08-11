@@ -3,6 +3,7 @@
 namespace LaraGram\Foundation\Provider;
 
 use LaraGram\Console\Command;
+use LaraGram\Support\Facades\Console;
 
 class GenerateProvider extends Command
 {
@@ -12,6 +13,10 @@ class GenerateProvider extends Command
     public function handle()
     {
         if ($this->getOption('h') == 'h') $this->output->message($this->description, true);
+
+        if ($this->getArgument(0) == null){
+            Console::output()->failed("Provider name not set!", true);
+        }
 
         $stub = file_get_contents($this->getStub('/stubs/provider.stub'));
         $name = str_replace('ServiceProvider', '', ucfirst($this->getArgument(0)));

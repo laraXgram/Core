@@ -3,6 +3,7 @@
 namespace LaraGram\Foundation\Resource;
 
 use LaraGram\Console\Command;
+use LaraGram\Support\Facades\Console;
 
 class GenerateResource extends Command
 {
@@ -12,6 +13,10 @@ class GenerateResource extends Command
     public function handle()
     {
         if ($this->getOption('h') == 'h') $this->output->message($this->description, true);
+
+        if ($this->getArgument(0) == null){
+            Console::output()->failed("Resource name not set!", true);
+        }
 
         $stub = file_get_contents($this->getStub('/stubs/resource.stub'));
         $name = lcfirst($this->getArgument(0));

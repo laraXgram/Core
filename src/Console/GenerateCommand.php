@@ -3,6 +3,8 @@
 namespace LaraGram\Console;
 
 
+use LaraGram\Support\Facades\Console;
+
 class GenerateCommand extends Command
 {
     protected $signature = 'make:command';
@@ -11,6 +13,10 @@ class GenerateCommand extends Command
     public function handle(): void
     {
         if ($this->getOption('h') == 'h') $this->output->message($this->description, true);
+
+        if ($this->getArgument(0) == null){
+            Console::output()->failed("Command name not set!", true);
+        }
 
         $stub = file_get_contents($this->getStub('/stubs/command.stub'));
         $name = str_replace('Command', '', ucfirst($this->getArgument(0)));

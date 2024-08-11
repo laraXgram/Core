@@ -3,6 +3,7 @@
 namespace LaraGram\Database\Models;
 
 use LaraGram\Console\Command;
+use LaraGram\Support\Facades\Console;
 
 class GenerateModel extends Command
 {
@@ -12,6 +13,10 @@ class GenerateModel extends Command
     public function handle(): void
     {
         if ($this->getOption('h') == 'h') $this->output->message($this->description, true);
+
+        if ($this->getArgument(0) == null){
+            Console::output()->failed("Model name not set!", true);
+        }
 
         $stub = file_get_contents($this->getStub('/stubs/model.stub'));
         $name = ucfirst($this->getArgument(0));
