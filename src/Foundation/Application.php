@@ -4,9 +4,13 @@ namespace LaraGram\Foundation;
 
 use Composer\Autoload\ClassLoader;
 use LaraGram\Console\Kernel;
+use LaraGram\Console\Output;
 use LaraGram\Container\Container;
 use LaraGram\Contracts\Application as ApplicationContract;
 use Illuminate\Database\Capsule\Manager as Capsule;
+use LaraGram\Laraquest\Mode;
+use LaraGram\Support\Facades\Console;
+use OpenSwoole\Core\Psr7Test\Tests\RequestTest;
 use OpenSwoole\Http\Server;
 use OpenSwoole\Http\Request;
 use OpenSwoole\Http\Response;
@@ -178,7 +182,7 @@ class Application extends Container implements ApplicationContract
         return $this;
     }
 
-    protected function commands(): array
+    public function commands(): array
     {
         $commands = [
             \LaraGram\Console\GenerateCommand::class,
@@ -234,6 +238,7 @@ class Application extends Container implements ApplicationContract
             \LaraGram\Keyboard\KeyboardServiceProvider::class,
             \LaraGram\Database\DatabaseServiceProvider::class,
             \LaraGram\Auth\AuthServiceProvider::class,
+            \LaraGram\Console\ConsoleServiceProvider::class,
         ];
 
         return array_merge($providers, $_ENV['SERVICE_PROVIDERS']);
@@ -258,6 +263,7 @@ class Application extends Container implements ApplicationContract
             'auth' => [\LaraGram\Auth\Auth::class],
             'auth.level' => [\LaraGram\Auth\Level::class],
             'auth.role' => [\LaraGram\Auth\Role::class],
+            'console.output' => [\LaraGram\Console\Output::class],
         ];
     }
 
@@ -555,9 +561,13 @@ class Application extends Container implements ApplicationContract
     public function loadResources($once = true): void
     {
         $directory = app('path.resource');
-        $files = array_filter(scandir($directory), function ($file) use ($directory) {
-            return is_file($directory . DIRECTORY_SEPARATOR . $file);
-        });
+        $files = [];
+        $iterator = new \FilesystemIterator($directory, \FilesystemIterator::SKIP_DOTS);
+        foreach ($iterator as $fileinfo) {
+            if ($fileinfo->isFile()) {
+                $files[] = $fileinfo->getFilename();
+            }
+        }
 
         foreach ($files as $file) {
             if ($once) {
@@ -572,10 +582,13 @@ class Application extends Container implements ApplicationContract
     {
         $update_type = $_ENV['UPDATE_TYPE'];
         if ($update_type == 'openswoole') {
-            $server = new Server($_ENV['OPENSWOOLE_IP'], $_ENV['OPENSWOOLE_PORT']);
+            if (!extension_loaded('openswoole')){
+                Console::output()->failed('Extension Openswoole not loaded!');
+            }
 
+            $server = new Server($_ENV['OPENSWOOLE_IP'], $_ENV['OPENSWOOLE_PORT']);
             $server->on("start", function () {
-                echo "server started";
+                Console::output()->success("Server Started! [ {$_ENV['OPENSWOOLE_IP']}:{$_ENV['OPENSWOOLE_PORT']} ]");
             });
 
             $server->on("request", function (Request $swooleRequest, Response $swooleResponse) {

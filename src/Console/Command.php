@@ -14,6 +14,11 @@ abstract class Command
     public function __construct()
     {
         $this->output = app()->make(Output::class);
+
+        $commands = app('console.commands');
+        $commands[$this->signature] = get_called_class();
+        app()->instance('console.commands', $commands);
+
         $this->parseSignature();
     }
 

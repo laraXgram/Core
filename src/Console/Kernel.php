@@ -2,6 +2,8 @@
 
 namespace LaraGram\Console;
 
+use LaraGram\Support\Facades\Console;
+
 class Kernel
 {
     protected array $commands = [];
@@ -27,10 +29,10 @@ class Kernel
             }
         }
 
-        (new Output())->warning("Command not found: $commandName", exit: true);
+        Console::output()->warning("Command not found: $commandName", exit: true);
     }
 
-    protected function executeCommand(Command $command, $args): void
+    public function executeCommand(Command $command, $args): void
     {
         $arguments = [];
         $options = [];
