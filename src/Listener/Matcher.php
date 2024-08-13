@@ -146,8 +146,8 @@ class Matcher
 
     private function match_referral(callable $action, null $pattern)
     {
-        if (str_starts_with($this->request->message->text, '/start ')){
-            $text = str_replace('/start ',  '', $this->request->message->text);
+        if (str_starts_with($this->request->message->text, '/start ')) {
+            $text = str_replace('/start ', '', $this->request->message->text);
             return call_user_func_array($action, [$this->request, $text]);
         }
         return false;
@@ -161,11 +161,120 @@ class Matcher
         return false;
     }
 
+    private function match_hashtag(callable $action, null $pattern)
+    {
+        if (isset($this->request->message->entities)) {
+            $entities = $this->request->message->entities;
+            $text = $this->request->message->text;
+        } elseif (isset($this->request->message->caption_entities)) {
+            $entities = $this->request->message->caption_entities;
+            $text = $this->request->message->caption;
+        } else {
+            return false;
+        }
+
+        $hashtags = [];
+        foreach ($entities as $entity) {
+            if ($entity->type === 'hashtag') {
+                $offset = $entity->offset;
+                $length = $entity->length;
+                $hashtag = substr($text, $offset, $length);
+                $hashtags[] = $hashtag;
+            }
+        }
+
+        if ($hashtags != []) {
+            return call_user_func_array($action, [$this->request, $hashtags]);
+        } else {
+            return false;
+        }
+    }
+
+    private function match_mention(callable $action, null $pattern)
+    {
+        if (isset($this->request->message->entities)) {
+            $entities = $this->request->message->entities;
+            $text = $this->request->message->text;
+        } elseif (isset($this->request->message->caption_entities)) {
+            $entities = $this->request->message->caption_entities;
+            $text = $this->request->message->caption;
+        } else {
+            return false;
+        }
+
+        $mentions = [];
+        foreach ($entities as $entity) {
+            if ($entity->type === 'mention') {
+                $offset = $entity->offset;
+                $length = $entity->length;
+                $mention = substr($text, $offset, $length);
+                $mentions[] = $mention;
+            }
+        }
+
+        if ($mentions != []) {
+            return call_user_func_array($action, [$this->request, $mentions]);
+        } else {
+            return false;
+        }
+    }
+
+    private function match_cashtag(callable $action, null $pattern)
+    {
+        if (isset($this->request->message->entities)) {
+            $entities = $this->request->message->entities;
+            $text = $this->request->message->text;
+        } elseif (isset($this->request->message->caption_entities)) {
+            $entities = $this->request->message->caption_entities;
+            $text = $this->request->message->caption;
+        } else {
+            return false;
+        }
+
+        $cashtags = [];
+        foreach ($entities as $entity) {
+            if ($entity->type === 'cashtag') {
+                $offset = $entity->offset;
+                $length = $entity->length;
+                $cashtag = substr($text, $offset, $length);
+                $cashtags[] = $cashtag;
+            }
+        }
+
+        if ($cashtags != []) {
+            return call_user_func_array($action, [$this->request, $cashtags]);
+        } else {
+            return false;
+        }
+    }
+
+    private function match_add_member(callable $action, null $pattern)
+    {
+        if (isset($this->request->message->new_chat_members)){
+            if ($this->request->message->new_chat_members[0]->id != $this->request->message->from->id){
+                return call_user_func_array($action, [$this->request, $this->request->message->from->id, $this->request->message->new_chat_members[0]->id]);
+            }
+            return false;
+        }
+        return false;
+    }
+
+    private function match_join_member(callable $action, null $pattern)
+    {
+        if (isset($this->request->message->new_chat_members)){
+            if ($this->request->message->new_chat_members[0]->id == $this->request->message->from->id){
+                return call_user_func_array($action, [$this->request, $this->request->message->from->id]);
+            }
+            return false;
+        }
+        return false;
+    }
+
     private function generateRegex(string $string): array|string|null
     {
         $pattern = "#\s*{(\w+)(\?)?\}#";
         $replacement = "\s*(\w+)$2";
-        if (preg_match_all($pattern, $string, $matches, PREG_OFFSET_CAPTURE|PREG_UNMATCHED_AS_NULL)) {
+        if (preg_match_all($pattern, $string, $matches, PREG_OFFSET_CAPTURE | PREG_UNMATCHED_AS_NULL)) {
             $lastMatch = end($matches[0]);
             $lastMatchPosition = $lastMatch[1];
 
@@ -177,7 +286,7 @@ class Matcher
             $string = $beforeLastMatch . $lastMatchReplaced . $afterLastMatch;
         }
 
-        return "/^" .  preg_replace($pattern, $replacement, $string) . "$/";
+        return "/^" . preg_replace($pattern, $replacement, $string) . "$/";
     }
 
     private function getRealAction(callable|string|array $action)
@@ -186,16 +295,16 @@ class Matcher
             return $action;
         }
 
-        if (is_array($action)){
+        if (is_array($action)) {
             return [new $action[0], $action[1]];
         }
 
         if (is_string($action)) {
-            if (str_contains($action, '@')){
+            if (str_contains($action, '@')) {
                 $action = explode('@', $action);
                 return [new $action[0], $action[1]];
-            }else{
-                if ($this->controller != ''){
+            } else {
+                if ($this->controller != '') {
                     return [new $this->controller, $action];
                 }
                 throw new BadMethodCallException("action not valid!");

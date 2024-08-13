@@ -14,6 +14,11 @@ enum Type: string
     case CALLBACK_DATA = 'callback_query_data';
     case REFERRAL = 'referral';
     case ANY = 'any';
+    case HASHTAG = 'hashtag';
+    case CASHTAG = 'cashtag';
+    case MENTION = 'mention';
+    case ADD_MEMBER = 'add_member';
+    case JOIN_MEMBER = 'join_member';
 
     const TYPES = [
         'text' => ['text'],
@@ -48,6 +53,11 @@ enum Type: string
         'message_type' => ['message_type'],
         'callback_query_data' => ['callback_query_data'],
         'referral' => ['referral'],
+        'hashtag' => ['hashtag'],
+        'cashtag' => ['cashtag'],
+        'mention' => ['mention'],
+        'add_member' => ['add_member'],
+        'join_member' => ['join_member'],
         'any' => ['any'],
     ];
 

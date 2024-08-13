@@ -4,9 +4,9 @@ namespace LaraGram\Listener;
 
 use LaraGram\Support\Facades\Request;
 
-final class Group extends Listener
+class Group
 {
-    private bool $condition = true;
+    protected bool $condition = true;
 
     public function group(callable $callback)
     {
@@ -30,18 +30,6 @@ final class Group extends Listener
         return $this;
     }
 
-    public function middleware(array|string $middlewares)
-    {
-
-        return $this;
-    }
-
-    public function withoutMiddleware(array|string $middlewares)
-    {
-
-        return $this;
-    }
-
     public function can(array|string $roles): static
     {
         $user_status = get_status();
@@ -53,12 +41,6 @@ final class Group extends Listener
     {
         $user_status = get_status();
         $this->condition = !(is_array($roles) ? in_array($user_status, $roles) : $user_status == $roles);
-        return $this;
-    }
-
-    public function controller(string $controller): static
-    {
-        $this->controller = $controller;
         return $this;
     }
 }

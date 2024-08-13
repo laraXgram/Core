@@ -4,8 +4,10 @@ namespace LaraGram\Listener;
 
 use Closure;
 
-class Listener extends Matcher
+final class Listener extends Matcher
 {
+    public function __construct(private readonly Group $group) { }
+
     public function on(string|array $pattern, Closure|array|string $action)
     {
         return $this->match('text', $action, $pattern);
@@ -294,6 +296,74 @@ class Listener extends Matcher
     public function onReferral(callable $action)
     {
         return $this->match('referral', $action, null);
+    }
 
+    public function onHashtag(callable $action)
+    {
+        return $this->match('hashtag', $action, null);
+    }
+
+    public function onCashtag(callable $action)
+    {
+        return $this->match('cashtag', $action, null);
+    }
+
+    public function onMention(callable $action)
+    {
+        return $this->match('mention', $action, null);
+    }
+
+    public function onAddMember(callable $action)
+    {
+        return $this->match('add_member', $action, null);
+    }
+
+    public function onJoinMember(callable $action)
+    {
+        return $this->match('join_member', $action, null);
+    }
+
+    public function group(array $attributes, callable $callback)
+    {
+        foreach ($attributes as $key => $value) {
+            match ($key) {
+                'scope' => $this->group->scope($value),
+                'outOfScope' => $this->group->outOfScope($value),
+                'can' => $this->group->can($value),
+                'canNot' => $this->group->canNot($value),
+            };
+        }
+
+        $this->group->group($callback);
+    }
+
+    public function scope(array|string $scopes): Group
+    {
+        $this->group->scope($scopes);
+        return $this->group;
+    }
+
+    public function outOfScope(array|string $scopes): Group
+    {
+        $this->group->outOfScope($scopes);
+        return $this->group;
+    }
+
+    public function can(array|string $roles): Group
+    {
+        $this->group->can($roles);
+        return $this->group;
+    }
+
+    public function canNot(array|string $roles): Group
+    {
+        $this->group->canNot($roles);
+        return $this->group;
+    }
+
+    public function controller(string $controller): Group
+    {
+        $this->controller = $controller;
+        return $this->group;
     }
 }
