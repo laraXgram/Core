@@ -2,15 +2,18 @@
 
 namespace LaraGram\Listener;
 
+use http\Exception\BadMethodCallException;
 use LaraGram\Request\Request;
 
 class Matcher
 {
     /** @var Request $request */
     private mixed $request;
+    protected string $controller;
 
-    public function match(string $type, callable $action, string|array|null $pattern)
+    public function match(string $type, callable|array|string $action, string|array|null $pattern)
     {
+        $action = $this->getRealAction($action);
         $this->request = app('request');
         return $this->{"match_" . Type::findType($type)->value}($action, $pattern, $type);
     }
@@ -115,7 +118,7 @@ class Matcher
 
     private function match_callback_query_data(callable $action, string|array $pattern)
     {
-        if ($this->request->callback_query->data !== null) {
+        if (isset($this->request->callback_query->data)) {
             if (is_array($pattern)) {
                 foreach ($pattern as $patternItem) {
                     return $this->execute_regex($patternItem, $action, $this->request->callback_query->data);
@@ -175,5 +178,28 @@ class Matcher
         }
 
         return "/^" .  preg_replace($pattern, $replacement, $string) . "$/";
+    }
+
+    private function getRealAction(callable|string|array $action)
+    {
+        if (is_callable($action) || $action instanceof \Closure) {
+            return $action;
+        }
+
+        if (is_array($action)){
+            return [new $action[0], $action[1]];
+        }
+
+        if (is_string($action)) {
+            if (str_contains($action, '@')){
+                $action = explode('@', $action);
+                return [new $action[0], $action[1]];
+            }else{
+                if ($this->controller != ''){
+                    return [new $this->controller, $action];
+                }
+                throw new BadMethodCallException("action not valid!");
+            }
+        }
     }
 }

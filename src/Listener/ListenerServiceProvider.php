@@ -9,7 +9,7 @@ class ListenerServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->singleton('listener', function () {
-            return new Listener();
+            return new Group();
         });
     }
 }

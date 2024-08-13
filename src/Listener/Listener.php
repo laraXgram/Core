@@ -4,19 +4,19 @@ namespace LaraGram\Listener;
 
 use Closure;
 
-final class Listener extends Matcher
+class Listener extends Matcher
 {
-    public function on(string|array $pattern, Closure $action)
+    public function on(string|array $pattern, Closure|array|string $action)
     {
         return $this->match('text', $action, $pattern);
     }
 
-    public function onText(string|array $pattern, Closure $action)
+    public function onText(string|array $pattern, Closure|array|string $action)
     {
         return $this->match('text', $action, $pattern);
     }
 
-    public function onCommand(string|array $pattern, Closure $action)
+    public function onCommand(string|array $pattern, Closure|array|string $action)
     {
         return $this->match('command', $action, $pattern);
     }

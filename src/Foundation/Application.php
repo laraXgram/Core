@@ -206,6 +206,7 @@ class Application extends Container implements ApplicationContract
             \LaraGram\JsonDatabase\Migrations\GenerateMigration::class,
             \LaraGram\JsonDatabase\Models\GenerateModel::class,
             \LaraGram\JsonDatabase\MigrateCommand::class,
+            \LaraGram\Foundation\Objects\Controller\GenerateController::class,
         ];
 
         return array_merge($commands, $_ENV['COMMANDS']);
@@ -257,7 +258,7 @@ class Application extends Container implements ApplicationContract
     {
         return [
             'app' => [self::class, Container::class],
-            'listener' => [\LaraGram\Listener\Listener::class],
+            'listener' => [\LaraGram\Listener\Listener::class, \LaraGram\Listener\Group::class],
             'request' => [\LaraGram\Request\Request::class],
             'db.schema' => [\LaraGram\Database\Migrations\Schema::class],
             'auth' => [\LaraGram\Auth\Auth::class],
