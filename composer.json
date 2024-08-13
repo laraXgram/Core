@@ -31,7 +31,6 @@
         "illuminate/events": "^11.10",
         "illuminate/support": "^11.10",
         "fakerphp/faker": "^1.23",
-        "laraxgram/laraquest": "^0.3.1",
         "openswoole/core": "^22.1"
     }
 }

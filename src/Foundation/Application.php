@@ -32,13 +32,6 @@ class Application extends Container implements ApplicationContract
     private string $configPath = '';
     private string $databasePath = '';
     private string $assetsPath = '';
-    private string $resourcePath = '';
-    private string $modelPath = '';
-    private string $providerPath = '';
-    private string $commandPath = '';
-    private string $factoryPath = '';
-    private string $seederPath = '';
-    private string $migrationPath = '';
 
     public function __construct(string $basePath = null)
     {
