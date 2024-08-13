@@ -3,6 +3,7 @@
 namespace LaraGram\Database\Seeders;
 
 use LaraGram\Console\Command;
+use LaraGram\Support\Facades\Console;
 
 class SeederCommand extends Command
 {
@@ -11,16 +12,16 @@ class SeederCommand extends Command
 
     public function handle(): void
     {
-        if ($this->getOption('h') == 'h') $this->output->message($this->description, true);
+        if ($this->getOption('h') == 'h') Console::output()->message($this->description, true);
 
         $seeder = $this->getOption('seeder');
         if ($seeder == null){
-            $this->output->failed('Set the seeder name [ --seeder=seederName ]');
+            Console::output()->failed('Set the seeder name [ --seeder=seederName ]');
             return;
         }
 
-        if (!file_exists(app('path.seeder') . DIRECTORY_SEPARATOR . $seeder . '.php')){
-            $this->output->failed("seeder [ $seeder ] not exist!");
+        if (!file_exists(app('path.database') . DIRECTORY_SEPARATOR . 'Seeders' . DIRECTORY_SEPARATOR . $seeder . '.php')){
+            Console::output()->failed("seeder [ $seeder ] not exist!");
             return;
         }
 
@@ -28,6 +29,6 @@ class SeederCommand extends Command
         (new ("\Database\Seeders\\" . $seeder))->run();
         $time = round((microtime(true) - $time) * 1000);
 
-        $this->output->success("Seeding [ $seeder ] completed -> {$time}ms");
+        Console::output()->success("Seeding [ $seeder ] completed -> {$time}ms");
     }
 }

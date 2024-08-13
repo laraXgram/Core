@@ -12,7 +12,7 @@ class GenerateModel extends Command
 
     public function handle(): void
     {
-        if ($this->getOption('h') == 'h') $this->output->message($this->description, true);
+        if ($this->getOption('h') == 'h') Console::output()->message($this->description, true);
 
         if ($this->getArgument(0) == null){
             Console::output()->failed("Model name not set!", true);
@@ -23,17 +23,18 @@ class GenerateModel extends Command
 
         $file_structure = str_replace('%name%', $name, $stub);
 
-        if (!file_exists(app('path.model'))){
-            mkdir(app('path.model'), recursive: true);
+        $model_path = app('path.app') . DIRECTORY_SEPARATOR . "Models";
+        if (!file_exists($model_path)){
+            mkdir($model_path, recursive: true);
         }
 
-        if (file_exists(app('path.model') . DIRECTORY_SEPARATOR . $name . '.php')){
-            $this->output->warning("Model [ $name ] already exist!", exit: true);
+        if (file_exists($model_path . DIRECTORY_SEPARATOR . $name . '.php')){
+            Console::output()->warning("Model [ $name ] already exist!", exit: true);
         }
 
-        file_put_contents(app('path.model') . DIRECTORY_SEPARATOR . $name . '.php', $file_structure);
+        file_put_contents($model_path . DIRECTORY_SEPARATOR . $name . '.php', $file_structure);
 
-        $this->output->success("Model [ $name ] created successfully!");
+        Console::output()->success("Model [ $name ] created successfully!");
     }
 
     protected function getStub($stub)

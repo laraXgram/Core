@@ -84,7 +84,7 @@ class Application extends Container implements ApplicationContract
             if (empty($path)) {
                 unset($paths[$index]);
             } else {
-                $paths[$index] = DIRECTORY_SEPARATOR . ltrim(ucfirst($path), DIRECTORY_SEPARATOR);
+                $paths[$index] = DIRECTORY_SEPARATOR . ltrim($path, DIRECTORY_SEPARATOR);
             }
         }
 
@@ -121,41 +121,6 @@ class Application extends Container implements ApplicationContract
         return $this->joinPaths($this->assetsPath ?: $this->basePath('assets'), $path);
     }
 
-    public function resourcePath($path = ''): string
-    {
-        return $this->joinPaths($this->resourcePath ?: $this->appPath('resources'), $path);
-    }
-
-    public function providerPath($path = ''): string
-    {
-        return $this->joinPaths($this->providerPath ?: $this->appPath('providers'), $path);
-    }
-
-    public function modelPath($path = ''): string
-    {
-        return $this->joinPaths($this->modelPath ?: $this->appPath('models'), $path);
-    }
-
-    public function migrationPath($path = ''): string
-    {
-        return $this->joinPaths($this->migrationPath ?: $this->databasePath('migrations'), $path);
-    }
-
-    public function seederPath($path = ''): string
-    {
-        return $this->joinPaths($this->seederPath ?: $this->databasePath('seeders'), $path);
-    }
-
-    public function factoryPath($path = ''): string
-    {
-        return $this->joinPaths($this->factoryPath ?: $this->databasePath('factories'), $path);
-    }
-
-    public function commandPath($path = ''): string
-    {
-        return $this->joinPaths($this->commandPath ?: $this->appPath('commands'), $path);
-    }
-
     protected function bindPathsInContainer(): void
     {
         $this->instance('path.laragram', dirname(__DIR__));
@@ -165,13 +130,6 @@ class Application extends Container implements ApplicationContract
         $this->instance('path.config', $this->configPath());
         $this->instance('path.database', $this->databasePath());
         $this->instance('path.asset', $this->assetsPath());
-        $this->instance('path.resource', $this->resourcePath());
-        $this->instance('path.provider', $this->providerPath());
-        $this->instance('path.model', $this->modelPath());
-        $this->instance('path.migration', $this->migrationPath());
-        $this->instance('path.seeder', $this->seederPath());
-        $this->instance('path.factory', $this->factoryPath());
-        $this->instance('path.command', $this->commandPath());
     }
 
     public function registerKernel(): static
@@ -561,7 +519,7 @@ class Application extends Container implements ApplicationContract
 
     public function loadResources($once = true): void
     {
-        $directory = app('path.resource');
+        $directory = app('path.app') . DIRECTORY_SEPARATOR . 'Resources';
         $files = [];
         $iterator = new \FilesystemIterator($directory, \FilesystemIterator::SKIP_DOTS);
         foreach ($iterator as $fileinfo) {

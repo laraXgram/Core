@@ -12,7 +12,7 @@ class GenerateProvider extends Command
 
     public function handle()
     {
-        if ($this->getOption('h') == 'h') $this->output->message($this->description, true);
+        if ($this->getOption('h') == 'h') Console::output()->message($this->description, true);
 
         if ($this->getArgument(0) == null){
             Console::output()->failed("Provider name not set!", true);
@@ -23,17 +23,18 @@ class GenerateProvider extends Command
 
         $file_structure = str_replace('%name%', $name . 'ServiceProvider', $stub);
 
-        if (!file_exists(app('path.provider'))){
-            mkdir(app('path.provider'), recursive: true);
+        $provider_path = app('path.app') . DIRECTORY_SEPARATOR . 'Providers';
+        if (!file_exists($provider_path)){
+            mkdir($provider_path, recursive: true);
         }
 
-        if (file_exists(app('path.provider') . DIRECTORY_SEPARATOR . $name . 'ServiceProvider.php')){
-            $this->output->warning("Service Provider [ $name ] already exist!", exit: true);
+        if (file_exists($provider_path . DIRECTORY_SEPARATOR . $name . 'ServiceProvider.php')){
+            Console::output()->warning("Service Provider [ $name ] already exist!", exit: true);
         }
 
-        file_put_contents(app('path.provider') . DIRECTORY_SEPARATOR . $name . 'ServiceProvider.php', $file_structure);
+        file_put_contents($provider_path . DIRECTORY_SEPARATOR . $name . 'ServiceProvider.php', $file_structure);
 
-        $this->output->success("Service Provider [ $name ] created successfully!");
+        Console::output()->success("Service Provider [ $name ] created successfully!");
     }
 
     protected function getStub($stub)

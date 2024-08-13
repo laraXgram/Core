@@ -2,7 +2,6 @@
 
 namespace LaraGram\Console;
 
-
 use LaraGram\Support\Facades\Console;
 
 class GenerateCommand extends Command
@@ -12,7 +11,7 @@ class GenerateCommand extends Command
 
     public function handle(): void
     {
-        if ($this->getOption('h') == 'h') $this->output->message($this->description, true);
+        if ($this->getOption('h') == 'h') Console::output()->message($this->description, true);
 
         if ($this->getArgument(0) == null){
             Console::output()->failed("Command name not set!", true);
@@ -25,17 +24,18 @@ class GenerateCommand extends Command
         $file_structure = str_replace('%name%', $name . 'Command', $stub);
         $file_structure = str_replace('%signature%', strtolower($name), $file_structure);
 
-        if (!file_exists(app('path.command'))){
-            mkdir(app('path.command'));
+        $command_path = app('path.app') . DIRECTORY_SEPARATOR . 'Commands';
+        if (!file_exists($command_path)){
+            mkdir($command_path);
         }
 
-        if (file_exists(app('path.command') . DIRECTORY_SEPARATOR . $name . 'Command.php')){
-            $this->output->warning("Command [ $name ] already exist!", exit: true);
+        if (file_exists($command_path . DIRECTORY_SEPARATOR . $name . 'Command.php')){
+            Console::output()->warning("Command [ $name ] already exist!", exit: true);
         }
 
-        file_put_contents(app('path.command') . DIRECTORY_SEPARATOR . $name . 'Command.php', $file_structure);
+        file_put_contents($command_path . DIRECTORY_SEPARATOR . $name . 'Command.php', $file_structure);
 
-        $this->output->success("Command [ $name ] created successfully!");
+        Console::output()->success("Command [ $name ] created successfully!");
     }
 
     protected function getStub($stub)

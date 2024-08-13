@@ -12,7 +12,7 @@ class GenerateEnum extends Command
 
     public function handle()
     {
-        if ($this->getOption('h') == 'h') $this->output->message($this->description, true);
+        if ($this->getOption('h') == 'h') Console::output()->message($this->description, true);
 
         if ($this->getArgument(0) == null){
             Console::output()->failed("Enum name not set!", true);
@@ -29,12 +29,12 @@ class GenerateEnum extends Command
         }
 
         if (file_exists($path . DIRECTORY_SEPARATOR . $name . '.php')){
-            $this->output->warning("Enum [ $name ] already exist!", exit: true);
+            Console::output()->warning("Enum [ $name ] already exist!", exit: true);
         }
 
         file_put_contents($path . DIRECTORY_SEPARATOR . $name . '.php', $file_structure);
 
-        $this->output->success("Enum [ $name ] created successfully!");
+        Console::output()->success("Enum [ $name ] created successfully!");
     }
 
     protected function getStub($stub)

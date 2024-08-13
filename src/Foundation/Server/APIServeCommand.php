@@ -3,6 +3,7 @@
 namespace LaraGram\Foundation\Server;
 
 use LaraGram\Console\Command;
+use LaraGram\Support\Facades\Console;
 use LaraGram\Support\Facades\Request;
 
 class APIServeCommand extends Command
@@ -12,10 +13,10 @@ class APIServeCommand extends Command
 
     public function handle()
     {
-        if ($this->getOption('h') == 'h') $this->output->message($this->description, true);
+        if ($this->getOption('h') == 'h') Console::output()->message($this->description, true);
 
-        if ($_ENV['API_ID'] == null || $_ENV['API_HASH'] == null) $this->output->failed("API_ID or API_HASH not set!", exit: true);
-        if (($_ENV['BOT_API_SERVER_IP'] == null && $this->options['host'] == null) || ($_ENV['BOT_API_SERVER_PORT'] == null && $this->options['port'] == null)) $this->output->failed("BOT_API_SERVER_IP or BOT_API_SERVER_PORT not set!", exit: true);
+        if ($_ENV['API_ID'] == null || $_ENV['API_HASH'] == null) Console::output()->failed("API_ID or API_HASH not set!", exit: true);
+        if (($_ENV['BOT_API_SERVER_IP'] == null && $this->options['host'] == null) || ($_ENV['BOT_API_SERVER_PORT'] == null && $this->options['port'] == null)) Console::output()->failed("BOT_API_SERVER_IP or BOT_API_SERVER_PORT not set!", exit: true);
 
         $port = $this->options['port'] ?? $_ENV['BOT_API_SERVER_PORT'];
         $host = $this->options['host'] ?? $_ENV['BOT_API_SERVER_IP'];
@@ -23,7 +24,7 @@ class APIServeCommand extends Command
 
         if (!file_exists($dir)) mkdir($dir, recursive: true);
 
-        $this->output->success("Starting API Server on {$host}:{$port}");
+        Console::output()->success("Starting API Server on {$host}:{$port}");
 
         $command = "telegram-bot-api --local --http-ip-address={$host} --http-port={$port} --api-id={$_ENV['API_ID']} --api-hash={$_ENV['API_HASH']} --dir={$dir}";
 

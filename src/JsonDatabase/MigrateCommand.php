@@ -3,6 +3,7 @@
 namespace LaraGram\JsonDatabase;
 
 use LaraGram\Console\Command;
+use LaraGram\Support\Facades\Console;
 use function Symfony\Component\Translation\t;
 
 class MigrateCommand extends Command
@@ -12,7 +13,7 @@ class MigrateCommand extends Command
 
     public function handle(): void
     {
-        if ($this->getOption('h') == 'h') $this->output->message($this->description, true);
+        if ($this->getOption('h') == 'h') Console::output()->message($this->description, true);
 
         if (!file_exists($_ENV['JSON_DB_DATA_DIR'])){
             mkdir($_ENV['JSON_DB_DATA_DIR'], recursive: true);
@@ -36,12 +37,12 @@ class MigrateCommand extends Command
                 $class->up();
                 $migrationFile['migrated'][] = $migration;
                 $end = floor((microtime(true) - $start) * 1000);
-                $this->output->success("{$migration} Migrated! -> {$end}ms");
+                Console::output()->success("{$migration} Migrated! -> {$end}ms");
                 $status = true;
             }
         }
         if (!$status) {
-            $this->output->warning("Nothing to migrate!");
+            Console::output()->warning("Nothing to migrate!");
         } else {
             file_put_contents($migration_path, json_encode($migrationFile, 128 | 16));
         }

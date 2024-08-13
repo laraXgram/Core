@@ -3,6 +3,7 @@
 namespace LaraGram\Foundation\Webhook;
 
 use LaraGram\Console\Command;
+use LaraGram\Support\Facades\Console;
 use LaraGram\Support\Facades\Request;
 
 class WebhookInfoCommand extends Command
@@ -12,15 +13,12 @@ class WebhookInfoCommand extends Command
 
     public function handle()
     {
-        if ($this->getOption('h') == 'h') $this->output->message($this->description, true);
+        if ($this->getOption('h') == 'h') Console::output()->message($this->description, true);
 
-        /** @var Request $request */
-        $request = app('request');
-
-        $info = $request->getWebhookInfo()['result'];
+        $info = request()->getWebhookInfo()['result'];
 
         if ($info["url"] == ''){
-            $this->output->failed("Webhook not set", exit: true);
+            Console::output()->failed("Webhook not set", exit: true);
         }
 
         $url = "URL: " . str_replace('https://', '', str_replace('http://', '', $info['url']));
@@ -38,10 +36,10 @@ class WebhookInfoCommand extends Command
         $max_connection = "Max Connections: {$info['max_connections']}";
         $max_connection .= str_repeat(' ', $len - strlen($max_connection));
 
-        $this->output->message($url);
-        $this->output->message($pending_update);
-        $this->output->message($ip_address);
-        $this->output->message($certificate);
-        $this->output->message($max_connection);
+        Console::output()->message($url);
+        Console::output()->message($pending_update);
+        Console::output()->message($ip_address);
+        Console::output()->message($certificate);
+        Console::output()->message($max_connection);
     }
 }

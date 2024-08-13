@@ -13,7 +13,7 @@ class GenerateMigration extends Command
 
     public function handle(): void
     {
-        if ($this->getOption('h') == 'h') $this->output->message($this->description, true);
+        if ($this->getOption('h') == 'h') Console::output()->message($this->description, true);
 
         if ($this->getArgument(0) == null){
             Console::output()->failed("Migration name not set!", true);
@@ -27,13 +27,14 @@ class GenerateMigration extends Command
         $file_structure = str_replace('%name%', $name, $stub);
         $file_structure = str_replace('%type%', $type, $file_structure);
 
-        if (!file_exists(app('path.migration'))){
-            mkdir(app('path.migration'), recursive: true);
+        $migration_path = app('path.database') . DIRECTORY_SEPARATOR . 'Migrations';
+        if (!file_exists($migration_path)){
+            mkdir($migration_path, recursive: true);
         }
 
-        file_put_contents(app('path.migration') . DIRECTORY_SEPARATOR . $filename . '.php', $file_structure);
+        file_put_contents($migration_path . DIRECTORY_SEPARATOR . $filename . '.php', $file_structure);
 
-        $this->output->success("Migration [ $filename ] created successfully!");
+        Console::output()->success("Migration [ $filename ] created successfully!");
     }
 
     protected function getStub($stub)

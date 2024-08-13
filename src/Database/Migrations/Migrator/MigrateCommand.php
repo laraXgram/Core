@@ -4,6 +4,7 @@ namespace LaraGram\Database\Migrations\Migrator;
 
 use Illuminate\Database\Schema\Blueprint;
 use LaraGram\Console\Command;
+use LaraGram\Support\Facades\Console;
 use LaraGram\Support\Facades\Schema;
 
 class MigrateCommand extends Command
@@ -15,7 +16,7 @@ class MigrateCommand extends Command
 
     public function handle()
     {
-        if ($this->getOption('h') == 'h') $this->output->message($this->description, true);
+        if ($this->getOption('h') == 'h') Console::output()->message($this->description, true);
 
         $this->migrate();
     }
@@ -29,7 +30,7 @@ class MigrateCommand extends Command
             $lastMigrations[] = $lastMigrationInDb['migration'];
         }
 
-        $existMigrationsInFolder = scandir(app('path.migration'));
+        $existMigrationsInFolder = scandir(app('path.database') . DIRECTORY_SEPARATOR . 'Migrations');
         foreach ($existMigrationsInFolder as $existMigrationInFolder) {
             if ($existMigrationInFolder[0] !== '.') {
                 $existMigrations[] = $existMigrationInFolder;
@@ -77,17 +78,17 @@ class MigrateCommand extends Command
 
         $needMigrate = $this->needMigrate();
         if (is_null($needMigrate)) {
-            $this->output->message('Nothing to migrate!');
+            Console::output()->message('Nothing to migrate!');
             return;
         }
 
         foreach ($needMigrate as $migrate) {
             $start = microtime(true);
-            $class = require_once app('path.migration') . DIRECTORY_SEPARATOR .  "{$migrate}.php";
+            $class = require_once app('path.database') . DIRECTORY_SEPARATOR . 'Migrations' . DIRECTORY_SEPARATOR .  "{$migrate}.php";
             $class->up();
             $this->addToMigrations($migrate, $this->batch + 1);
             $end = floor((microtime(true) - $start) * 1000);
-            $this->output->success("Migrated: [ $migrate ] -> {$end}ms");
+            Console::output()->success("Migrated: [ $migrate ] -> {$end}ms");
         }
     }
 

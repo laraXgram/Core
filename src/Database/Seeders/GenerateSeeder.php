@@ -13,7 +13,7 @@ class GenerateSeeder extends Command
 
     public function handle(): void
     {
-        if ($this->getOption('h') == 'h') $this->output->message($this->description, true);
+        if ($this->getOption('h') == 'h') Console::output()->message($this->description, true);
 
         if ($this->getArgument(0) == null){
             Console::output()->failed("Seeder name not set!", true);
@@ -24,17 +24,18 @@ class GenerateSeeder extends Command
 
         $file_structure = str_replace('%name%', $name, $stub);
 
-        if (!file_exists(app('path.seeder'))){
-            mkdir(app('path.seeder'), recursive: true);
+        $seeder_path = app('path.database') . DIRECTORY_SEPARATOR . 'Seeders';
+        if (!file_exists($seeder_path)){
+            mkdir($seeder_path, recursive: true);
         }
 
-        if (file_exists(app('path.seeder') . DIRECTORY_SEPARATOR . $name . 'Seeder.php')){
-            $this->output->warning("Seed [ $name ] already exist!", exit: true);
+        if (file_exists($seeder_path . DIRECTORY_SEPARATOR . $name . 'Seeder.php')){
+            Console::output()->warning("Seed [ $name ] already exist!", exit: true);
         }
 
-        file_put_contents(app('path.seeder') . DIRECTORY_SEPARATOR . $name . 'Seeder.php', $file_structure);
+        file_put_contents($seeder_path . DIRECTORY_SEPARATOR . $name . 'Seeder.php', $file_structure);
 
-        $this->output->success("Seed [ $name ] created successfully!");
+        Console::output()->success("Seed [ $name ] created successfully!");
     }
 
     protected function getStub($stub)

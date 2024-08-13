@@ -1,7 +1,5 @@
 <?php
 
-namespace Database\Migrations;
-
 use LaraGram\Support\Facades\Schema;
 use Illuminate\Database\Schema\Blueprint;
 

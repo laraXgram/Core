@@ -12,7 +12,7 @@ class GenerateFactory extends Command
 
     public function handle(): void
     {
-        if ($this->getOption('h') == 'h') $this->output->message($this->description, true);
+        if ($this->getOption('h') == 'h') Console::output()->message($this->description, true);
 
         if ($this->getArgument(0) == null){
             Console::output()->failed("Factory name not set!", true);
@@ -23,17 +23,18 @@ class GenerateFactory extends Command
 
         $file_structure = str_replace('%name%', $name, $stub);
 
-        if (!file_exists(app('path.factory'))){
-            mkdir(app('path.factory'), recursive: true);
+        $factory_path = app('path.database') . DIRECTORY_SEPARATOR . "Factories";
+        if (!file_exists($factory_path)){
+            mkdir($factory_path, recursive: true);
         }
 
-        if (file_exists(app('path.factory') . DIRECTORY_SEPARATOR . $name . 'Factory.php')){
-            $this->output->warning("Factory [ $name ] already exist!", exit: true);
+        if (file_exists($factory_path . DIRECTORY_SEPARATOR . $name . 'Factory.php')){
+            Console::output()->warning("Factory [ $name ] already exist!", exit: true);
         }
 
-        file_put_contents(app('path.factory') . DIRECTORY_SEPARATOR . $name . 'Factory.php', $file_structure);
+        file_put_contents($factory_path . DIRECTORY_SEPARATOR . $name . 'Factory.php', $file_structure);
 
-        $this->output->success("Factory [ $name ] created successfully!");
+        Console::output()->success("Factory [ $name ] created successfully!");
     }
 
     protected function getStub($stub)

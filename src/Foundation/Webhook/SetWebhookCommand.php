@@ -3,6 +3,7 @@
 namespace LaraGram\Foundation\Webhook;
 
 use LaraGram\Console\Command;
+use LaraGram\Support\Facades\Console;
 use LaraGram\Support\Facades\Request;
 
 class SetWebhookCommand extends Command
@@ -12,17 +13,14 @@ class SetWebhookCommand extends Command
 
     public function handle()
     {
-        if ($this->getOption('h') == 'h') $this->output->message($this->description, true);
+        if ($this->getOption('h') == 'h') Console::output()->message($this->description, true);
 
-        /** @var Request $request */
-        $request = app('request');
-
-        $result = $request->setWebhook($_ENV['BOT_DOMAIN']);
+        $result = request()->setWebhook($_ENV['BOT_DOMAIN']);
 
         if (!$result['ok']){
-            $this->output->failed($result['message']);
+            Console::output()->failed($result['message']);
         }else{
-            $this->output->success($result['description']);
+            Console::output()->success($result['description']);
         }
     }
 }

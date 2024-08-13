@@ -3,6 +3,7 @@
 namespace LaraGram\Foundation\Webhook;
 
 use LaraGram\Console\Command;
+use LaraGram\Support\Facades\Console;
 use LaraGram\Support\Facades\Request;
 
 class DeleteWebhookCommand extends Command
@@ -12,17 +13,14 @@ class DeleteWebhookCommand extends Command
 
     public function handle()
     {
-        if ($this->getOption('h') == 'h') $this->output->message($this->description, true);
+        if ($this->getOption('h') == 'h') Console::output()->message($this->description, true);
 
-        /** @var Request $request */
-        $request = app('request');
-
-        $result = $request->deleteWebhook();
+        $result = request()->deleteWebhook();
 
         if (!$result['ok']){
-            $this->output->failed($result['description']);
+            Console::output()->failed($result['description']);
         }else{
-            $this->output->success($result['description']);
+            Console::output()->success($result['description']);
         }
     }
 }
