@@ -44,8 +44,8 @@ class Model
             $this->database = $this->inferDatabaseName();
         }
 
-        $data_path = $_ENV['JSON_DB_DATA_DIR'] . $this->database . '/Data/';
-        $this->filePath = $_ENV['JSON_DB_DATA_DIR'] . $this->database . '/Data/' . $this->database . '.json';
+        $data_path = $_ENV['JSON_DB_DATA_DIR'] . $this->database . '/data/';
+        $this->filePath = $_ENV['JSON_DB_DATA_DIR'] . $this->database . '/data/' . $this->database . '.json';
         if (!file_exists($data_path)) mkdir($data_path, recursive: true);
         if (!is_file($this->filePath)) file_put_contents($this->filePath, '[]');
 

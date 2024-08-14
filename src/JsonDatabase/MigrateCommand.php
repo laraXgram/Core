@@ -4,7 +4,6 @@ namespace LaraGram\JsonDatabase;
 
 use LaraGram\Console\Command;
 use LaraGram\Support\Facades\Console;
-use function Symfony\Component\Translation\t;
 
 class MigrateCommand extends Command
 {

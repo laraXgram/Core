@@ -1,7 +1,5 @@
 <?php
 
-namespace Database\Json\Migrations;
-
 use LaraGram\JsonDatabase\Blueprint;
 use LaraGram\JsonDatabase\Schema;
 
