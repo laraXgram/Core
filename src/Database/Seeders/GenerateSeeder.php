@@ -24,7 +24,7 @@ class GenerateSeeder extends Command
 
         $file_structure = str_replace('%name%', $name, $stub);
 
-        $seeder_path = app('path.database') . DIRECTORY_SEPARATOR . 'Seeders';
+        $seeder_path = app('path.database') . DIRECTORY_SEPARATOR . 'seeders';
         if (!file_exists($seeder_path)){
             mkdir($seeder_path, recursive: true);
         }

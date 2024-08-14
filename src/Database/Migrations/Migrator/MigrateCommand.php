@@ -30,7 +30,7 @@ class MigrateCommand extends Command
             $lastMigrations[] = $lastMigrationInDb['migration'];
         }
 
-        $existMigrationsInFolder = scandir(app('path.database') . DIRECTORY_SEPARATOR . 'Migrations');
+        $existMigrationsInFolder = scandir(app('path.database') . DIRECTORY_SEPARATOR . 'migrations');
         foreach ($existMigrationsInFolder as $existMigrationInFolder) {
             if ($existMigrationInFolder[0] !== '.') {
                 $existMigrations[] = $existMigrationInFolder;
@@ -84,7 +84,7 @@ class MigrateCommand extends Command
 
         foreach ($needMigrate as $migrate) {
             $start = microtime(true);
-            $class = require_once app('path.database') . DIRECTORY_SEPARATOR . 'Migrations' . DIRECTORY_SEPARATOR .  "{$migrate}.php";
+            $class = require_once app('path.database') . DIRECTORY_SEPARATOR . 'migrations' . DIRECTORY_SEPARATOR .  "{$migrate}.php";
             $class->up();
             $this->addToMigrations($migrate, $this->batch + 1);
             $end = floor((microtime(true) - $start) * 1000);

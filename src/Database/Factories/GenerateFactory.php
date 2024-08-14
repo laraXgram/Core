@@ -23,7 +23,7 @@ class GenerateFactory extends Command
 
         $file_structure = str_replace('%name%', $name, $stub);
 
-        $factory_path = app('path.database') . DIRECTORY_SEPARATOR . "Factories";
+        $factory_path = app('path.database') . DIRECTORY_SEPARATOR . "factories";
         if (!file_exists($factory_path)){
             mkdir($factory_path, recursive: true);
         }

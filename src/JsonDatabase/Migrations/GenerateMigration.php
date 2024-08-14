@@ -27,7 +27,7 @@ class GenerateMigration extends Command
         $file_structure = str_replace('%name%', $name, $stub);
         $file_structure = str_replace('%type%', $type, $file_structure);
 
-        $path = app('path.database') . '/Json/Migrations/';
+        $path = app('path.database') . '/json/migrations/';
 
         if (!file_exists($path)){
             mkdir($path, recursive: true);

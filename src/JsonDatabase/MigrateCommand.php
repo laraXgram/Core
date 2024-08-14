@@ -26,14 +26,14 @@ class MigrateCommand extends Command
         $migrationFile = json_decode(file_get_contents($migration_path), true);
         $migrationFile['batch']++;
 
-        $migrationFolder = app('path.database') . 'Json/Migrations';
+        $migrationFolder = app('path.database') . 'json/migrations';
         $migrations = scandir($migrationFolder);
         $needed = [];
         $status = false;
         foreach ($migrations as $migration) {
             if ($migration[0] != '.' && !in_array($migration, $migrationFile['migrated'])) {
                 $start = microtime(true);
-                $class = require_once app('path.database') . "/Json/Migrations/{$migration}";
+                $class = require_once app('path.database') . "/json/migrations/{$migration}";
                 $class->up();
                 $migrationFile['migrated'][] = $migration;
                 $end = floor((microtime(true) - $start) * 1000);

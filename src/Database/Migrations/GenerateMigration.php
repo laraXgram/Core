@@ -27,7 +27,7 @@ class GenerateMigration extends Command
         $file_structure = str_replace('%name%', $name, $stub);
         $file_structure = str_replace('%type%', $type, $file_structure);
 
-        $migration_path = app('path.database') . DIRECTORY_SEPARATOR . 'Migrations';
+        $migration_path = app('path.database') . DIRECTORY_SEPARATOR . 'migrations';
         if (!file_exists($migration_path)){
             mkdir($migration_path, recursive: true);
         }

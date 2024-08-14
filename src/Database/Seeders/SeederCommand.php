@@ -20,7 +20,7 @@ class SeederCommand extends Command
             return;
         }
 
-        if (!file_exists(app('path.database') . DIRECTORY_SEPARATOR . 'Seeders' . DIRECTORY_SEPARATOR . $seeder . '.php')){
+        if (!file_exists(app('path.database') . DIRECTORY_SEPARATOR . 'seeders' . DIRECTORY_SEPARATOR . $seeder . '.php')){
             Console::output()->failed("seeder [ $seeder ] not exist!");
             return;
         }

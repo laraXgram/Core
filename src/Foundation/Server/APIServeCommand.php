@@ -20,9 +20,13 @@ class APIServeCommand extends Command
 
         $port = $this->options['port'] ?? $_ENV['BOT_API_SERVER_PORT'];
         $host = $this->options['host'] ?? $_ENV['BOT_API_SERVER_IP'];
-        $dir = $_ENV['BOT_API_SERVER_DIR'] ?? app('path.storage') . '/API-Server';
+        $dir = $_ENV['BOT_API_SERVER_DIR'] ?? app('path.storage') . 'app/apiserver';
 
-        if (!file_exists($dir)) mkdir($dir, recursive: true);
+        if (!file_exists($dir))
+        {
+            mkdir($dir, recursive: true);
+            sleep(1);
+        }
 
         Console::output()->success("Starting API Server on {$host}:{$port}");
 
