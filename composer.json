@@ -30,7 +30,6 @@
         "illuminate/database": "^11.10",
         "illuminate/events": "^11.10",
         "illuminate/support": "^11.10",
-        "fakerphp/faker": "^1.23",
-        "openswoole/core": "^22.1"
+        "fakerphp/faker": "^1.23"
     }
 }
