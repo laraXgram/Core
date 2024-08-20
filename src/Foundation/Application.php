@@ -127,6 +127,8 @@ class Application extends Container implements ApplicationContract
 
     public function registerKernel(): static
     {
+        $this->singleton(CoreCommand::class);
+        $this->alias(CoreCommand::class, 'kernel.core_command');
         $this->singleton(Kernel::class);
         $this->alias(Kernel::class, 'kernel');
 
@@ -135,37 +137,18 @@ class Application extends Container implements ApplicationContract
 
     public function commands(): array
     {
-        $commands = [
-            \LaraGram\Console\GenerateCommand::class,
-            \LaraGram\Database\Factories\GenerateFactory::class,
-            \LaraGram\Database\Migrations\GenerateMigration::class,
-            \LaraGram\Database\Models\GenerateModel::class,
-            \LaraGram\Database\Seeders\GenerateSeeder::class,
-            \LaraGram\Database\Migrations\Migrator\MigrateCommand::class,
-            \LaraGram\Database\Seeders\SeederCommand::class,
-            \LaraGram\Foundation\Provider\GenerateProvider::class,
-            \LaraGram\Foundation\Resource\GenerateResource::class,
-            \LaraGram\Foundation\Webhook\SetWebhookCommand::class,
-            \LaraGram\Foundation\Webhook\DeleteWebhookCommand::class,
-            \LaraGram\Foundation\Webhook\DropWebhookCommand::class,
-            \LaraGram\Foundation\Webhook\WebhookInfoCommand::class,
-            \LaraGram\Foundation\Objects\Facade\GenerateFacade::class,
-            \LaraGram\Foundation\Objects\Class\GenerateClass::class,
-            \LaraGram\Foundation\Objects\Enum\GenerateEnum::class,
-            \LaraGram\Foundation\Server\ServeCommand::class,
-            \LaraGram\Foundation\Server\APIServeCommand::class,
-            \LaraGram\JsonDatabase\Migrations\GenerateMigration::class,
-            \LaraGram\JsonDatabase\Models\GenerateModel::class,
-            \LaraGram\JsonDatabase\MigrateCommand::class,
-            \LaraGram\Foundation\Objects\Controller\GenerateController::class,
-        ];
+        /**
+         * @var CoreCommand $core_command
+         */
+        $core_command = app('kernel.core_command');
 
-        return array_merge($commands, $_ENV['COMMANDS']);
+        return array_merge($core_command->getCoreCommands(), $_ENV['COMMANDS']);
     }
 
     public function registerCommands(): static
     {
-        foreach ($this->commands() as $command) {
+        $commands = $this->commands();
+        foreach ($commands as $command) {
             $this['kernel']->addCommand(new $command);
         }
 
