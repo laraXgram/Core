@@ -2,7 +2,6 @@
 
 namespace LaraGram\Listener;
 
-use http\Exception\BadMethodCallException;
 use LaraGram\Request\Request;
 
 class Matcher
@@ -11,7 +10,7 @@ class Matcher
     private mixed $request;
     protected string $controller;
 
-    public function match(string $type, callable|array|string $action, string|array|null $pattern)
+    public function match(string $type, \Closure|array|string $action, string|array|null $pattern)
     {
         $action = $this->getRealAction($action);
         $this->request = app('request');
@@ -289,7 +288,7 @@ class Matcher
         return "/^" . preg_replace($pattern, $replacement, $string) . "$/";
     }
 
-    private function getRealAction(callable|string|array $action)
+    private function getRealAction(\Closure|array|string $action)
     {
         if (is_callable($action) || $action instanceof \Closure) {
             return $action;
@@ -307,7 +306,7 @@ class Matcher
                 if ($this->controller != '') {
                     return [new $this->controller, $action];
                 }
-                throw new BadMethodCallException("action not valid!");
+                throw new \BadMethodCallException("Action not valid!");
             }
         }
     }

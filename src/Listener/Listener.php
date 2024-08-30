@@ -23,302 +23,302 @@ final class Listener extends Matcher
         return $this->match('command', $action, $pattern);
     }
 
-    public function onAnimation(callable $action, array|string|null $file_id = null)
+    public function onAnimation(Closure|array|string $action, array|string|null $file_id = null)
     {
         return $this->match('animation', $action, $file_id);
     }
 
-    public function onAudio(callable $action, array|string|null $file_id = null)
+    public function onAudio(Closure|array|string $action, array|string|null $file_id = null)
     {
         return $this->match('audio', $action, $file_id);
     }
 
-    public function onDocument(callable $action, array|string|null $file_id = null)
+    public function onDocument(Closure|array|string $action, array|string|null $file_id = null)
     {
         return $this->match('document', $action, $file_id);
     }
 
-    public function onPhoto(callable $action, array|string|null $file_id = null)
+    public function onPhoto(Closure|array|string $action, array|string|null $file_id = null)
     {
         return $this->match('photo', $action, $file_id);
     }
 
-    public function onSticker(callable $action, array|string|null $file_id = null)
+    public function onSticker(Closure|array|string $action, array|string|null $file_id = null)
     {
         return $this->match('sticker', $action, $file_id);
     }
 
-    public function onVideo(callable $action, array|string|null $file_id = null)
+    public function onVideo(Closure|array|string $action, array|string|null $file_id = null)
     {
         return $this->match('video', $action, $file_id);
     }
 
-    public function onVideoNote(callable $action, array|string|null $file_id = null)
+    public function onVideoNote(Closure|array|string $action, array|string|null $file_id = null)
     {
         return $this->match('video_note', $action, $file_id);
     }
 
-    public function onVoice(callable $action, array|string|null $file_id = null)
+    public function onVoice(Closure|array|string $action, array|string|null $file_id = null)
     {
         return $this->match('voice', $action, $file_id);
     }
 
-    public function onDice(callable $action, string|null $emoji = null, string|int|null $value = null)
+    public function onDice(Closure|array|string $action, string|null $emoji = null, string|int|null $value = null)
     {
         return $this->match('dice', $action, [$emoji, $value]);
     }
 
-    public function onGame(callable $action)
+    public function onGame(Closure|array|string $action)
     {
         return $this->match('game', $action, null);
     }
 
-    public function onPoll(callable $action)
+    public function onPoll(Closure|array|string $action)
     {
         return $this->match('poll', $action, null);
     }
 
-    public function onVenue(callable $action)
+    public function onVenue(Closure|array|string $action)
     {
         return $this->match('venue', $action, null);
     }
 
-    public function onLocation(callable $action)
+    public function onLocation(Closure|array|string $action)
     {
         return $this->match('location', $action, null);
     }
 
-    public function onNewChatMembers(callable $action)
+    public function onNewChatMembers(Closure|array|string $action)
     {
         return $this->match('new_chat_members', $action, null);
     }
 
-    public function onLeftChatMember(callable $action)
+    public function onLeftChatMember(Closure|array|string $action)
     {
         return $this->match('left_chat_member', $action, null);
     }
 
-    public function onNewChatTitle(callable $action)
+    public function onNewChatTitle(Closure|array|string $action)
     {
         return $this->match('new_chat_title', $action, null);
     }
 
-    public function onNewChatPhoto(callable $action)
+    public function onNewChatPhoto(Closure|array|string $action)
     {
         return $this->match('new_chat_photo', $action, null);
     }
 
-    public function onDeleteChatPhoto(callable $action)
+    public function onDeleteChatPhoto(Closure|array|string $action)
     {
         return $this->match('delete_chat_photo', $action, null);
     }
 
-    public function onGroupChatCreated(callable $action)
+    public function onGroupChatCreated(Closure|array|string $action)
     {
         return $this->match('group_chat_created', $action, null);
     }
 
-    public function onSuperGroupChatCreated(callable $action)
+    public function onSuperGroupChatCreated(Closure|array|string $action)
     {
         return $this->match('supergroup_chat_created', $action, null);
     }
 
-    public function onMessageAutoDeleteTimerChanged(callable $action)
+    public function onMessageAutoDeleteTimerChanged(Closure|array|string $action)
     {
         return $this->match('message_auto_delete_timer_changed', $action, null);
     }
 
-    public function onMigrateToChatId(callable $action)
+    public function onMigrateToChatId(Closure|array|string $action)
     {
         return $this->match('migrate_to_chat_id', $action, null);
     }
 
-    public function onMigrateFromChatId(callable $action)
+    public function onMigrateFromChatId(Closure|array|string $action)
     {
         return $this->match('migrate_from_chat_id', $action, null);
     }
 
-    public function onPinnedMessage(callable $action)
+    public function onPinnedMessage(Closure|array|string $action)
     {
         return $this->match('pinned_message', $action, null);
     }
 
-    public function onInvoice(callable $action)
+    public function onInvoice(Closure|array|string $action)
     {
         return $this->match('invoice', $action, null);
     }
 
-    public function onSuccessfulPayment(callable $action)
+    public function onSuccessfulPayment(Closure|array|string $action)
     {
         return $this->match('successful_payment', $action, null);
     }
 
-    public function onConnectedWebsite(callable $action)
+    public function onConnectedWebsite(Closure|array|string $action)
     {
         return $this->match('connected_website', $action, null);
     }
 
-    public function onPassportData(callable $action)
+    public function onPassportData(Closure|array|string $action)
     {
         return $this->match('passport_data', $action, null);
     }
 
-    public function onProximityAlertTriggered(callable $action)
+    public function onProximityAlertTriggered(Closure|array|string $action)
     {
         return $this->match('proximity_alert_triggered', $action, null);
     }
 
-    public function onForumTopicCreated(callable $action)
+    public function onForumTopicCreated(Closure|array|string $action)
     {
         return $this->match('forum_topic_created', $action, null);
     }
 
-    public function onForumTopicEdited(callable $action)
+    public function onForumTopicEdited(Closure|array|string $action)
     {
         return $this->match('forum_topic_edited', $action, null);
     }
 
-    public function onForumTopicClosed(callable $action)
+    public function onForumTopicClosed(Closure|array|string $action)
     {
         return $this->match('forum_topic_closed', $action, null);
     }
 
-    public function onForumTopicReopened(callable $action)
+    public function onForumTopicReopened(Closure|array|string $action)
     {
         return $this->match('forum_topic_reopened', $action, null);
     }
 
-    public function onVideoChatScheduled(callable $action)
+    public function onVideoChatScheduled(Closure|array|string $action)
     {
         return $this->match('video_chat_scheduled', $action, null);
     }
 
-    public function onVideoChatStarted(callable $action)
+    public function onVideoChatStarted(Closure|array|string $action)
     {
         return $this->match('video_chat_started', $action, null);
     }
 
-    public function onVideoChatEnded(callable $action)
+    public function onVideoChatEnded(Closure|array|string $action)
     {
         return $this->match('video_chat_ended', $action, null);
     }
 
-    public function onVideoChatParticipantsInvited(callable $action)
+    public function onVideoChatParticipantsInvited(Closure|array|string $action)
     {
         return $this->match('video_chat_participants_invited', $action, null);
     }
 
-    public function onWebAppData(callable $action)
+    public function onWebAppData(Closure|array|string $action)
     {
         return $this->match('web_app_data', $action, null);
     }
 
-    public function onMessage(callable $action)
+    public function onMessage(Closure|array|string $action)
     {
         return $this->match('message', $action, null);
     }
 
-    public function onEditedMessage(callable $action)
+    public function onEditedMessage(Closure|array|string $action)
     {
         return $this->match('edited_message', $action, null);
     }
 
-    public function onChannelPost(callable $action)
+    public function onChannelPost(Closure|array|string $action)
     {
         return $this->match('channel_post', $action, null);
     }
 
-    public function onEditedChannelPost(callable $action)
+    public function onEditedChannelPost(Closure|array|string $action)
     {
         return $this->match('edited_channel_post', $action, null);
     }
 
-    public function onInlineQuery(callable $action)
+    public function onInlineQuery(Closure|array|string $action)
     {
         return $this->match('inline_query', $action, null);
     }
 
-    public function onChosenInlineResult(callable $action)
+    public function onChosenInlineResult(Closure|array|string $action)
     {
         return $this->match('chosen_inline_result', $action, null);
     }
 
-    public function onCallbackQuery(callable $action)
+    public function onCallbackQuery(Closure|array|string $action)
     {
         return $this->match('callback_query', $action, null);
     }
 
-    public function onShippingQuery(callable $action)
+    public function onShippingQuery(Closure|array|string $action)
     {
         return $this->match('shipping_query', $action, null);
     }
 
-    public function onPreCheckoutQuery(callable $action)
+    public function onPreCheckoutQuery(Closure|array|string $action)
     {
         return $this->match('pre_checkout_query', $action, null);
     }
 
-    public function onPollAnswer(callable $action)
+    public function onPollAnswer(Closure|array|string $action)
     {
         return $this->match('poll_answer', $action, null);
     }
 
-    public function onMyChatMember(callable $action)
+    public function onMyChatMember(Closure|array|string $action)
     {
         return $this->match('my_chat_member', $action, null);
     }
 
-    public function onChatMember(callable $action)
+    public function onChatMember(Closure|array|string $action)
     {
         return $this->match('chat_member', $action, null);
     }
 
-    public function onChatJoinRequest(callable $action)
+    public function onChatJoinRequest(Closure|array|string $action)
     {
         return $this->match('chat_join_request', $action, null);
     }
 
-    public function onCallbackQueryData(array|string $pattern, callable $action)
+    public function onCallbackQueryData(array|string $pattern, Closure|array|string $action)
     {
         return $this->match('callback_query_data', $action, $pattern);
     }
 
-    public function onMessageType(array|string $type, callable $action)
+    public function onMessageType(array|string $type, Closure|array|string $action)
     {
         return $this->match('message_type', $action, $type);
     }
 
-    public function onAny(callable $action)
+    public function onAny(Closure|array|string $action)
     {
         return $this->match('any', $action, null);
     }
 
-    public function onReferral(callable $action)
+    public function onReferral(Closure|array|string $action)
     {
         return $this->match('referral', $action, null);
     }
 
-    public function onHashtag(callable $action)
+    public function onHashtag(Closure|array|string $action)
     {
         return $this->match('hashtag', $action, null);
     }
 
-    public function onCashtag(callable $action)
+    public function onCashtag(Closure|array|string $action)
     {
         return $this->match('cashtag', $action, null);
     }
 
-    public function onMention(callable $action)
+    public function onMention(Closure|array|string $action)
     {
         return $this->match('mention', $action, null);
     }
 
-    public function onAddMember(callable $action)
+    public function onAddMember(Closure|array|string $action)
     {
         return $this->match('add_member', $action, null);
     }
 
-    public function onJoinMember(callable $action)
+    public function onJoinMember(Closure|array|string $action)
     {
         return $this->match('join_member', $action, null);
     }
