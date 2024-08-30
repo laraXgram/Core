@@ -235,7 +235,7 @@ class Application extends Container implements ApplicationContract
 
     private function loadEnv(): static
     {
-        $configPath = $this->basePath . DIRECTORY_SEPARATOR . 'Config';
+        $configPath = $this->basePath . DIRECTORY_SEPARATOR . 'config';
         if (!is_dir($configPath)) {
             throw new \InvalidArgumentException("Config path $configPath is not a directory");
         }
