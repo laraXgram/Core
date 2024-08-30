@@ -2,8 +2,6 @@
 
 namespace LaraGram\Listener;
 
-use LaraGram\Support\Facades\Request;
-
 class Group
 {
     protected bool $condition = true;

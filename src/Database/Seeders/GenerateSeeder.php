@@ -2,7 +2,6 @@
 
 namespace LaraGram\Database\Seeders;
 
-
 use LaraGram\Console\Command;
 use LaraGram\Support\Facades\Console;
 

@@ -4,7 +4,6 @@ namespace LaraGram\Foundation\Server;
 
 use LaraGram\Console\Command;
 use LaraGram\Support\Facades\Console;
-use LaraGram\Support\Facades\Request;
 
 class ServeCommand extends Command
 {

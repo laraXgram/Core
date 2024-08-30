@@ -4,7 +4,6 @@ namespace LaraGram\Foundation\Webhook;
 
 use LaraGram\Console\Command;
 use LaraGram\Support\Facades\Console;
-use LaraGram\Support\Facades\Request;
 
 class DeleteWebhookCommand extends Command
 {

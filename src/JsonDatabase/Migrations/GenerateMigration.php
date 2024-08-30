@@ -2,7 +2,6 @@
 
 namespace LaraGram\JsonDatabase\Migrations;
 
-
 use LaraGram\Console\Command;
 use LaraGram\Support\Facades\Console;
 

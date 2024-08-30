@@ -4,11 +4,9 @@ namespace LaraGram\Foundation;
 
 use Composer\Autoload\ClassLoader;
 use LaraGram\Console\Kernel;
-use LaraGram\Console\Output;
 use LaraGram\Container\Container;
 use LaraGram\Contracts\Application as ApplicationContract;
 use Illuminate\Database\Capsule\Manager as Capsule;
-use LaraGram\Laraquest\Mode;
 use LaraGram\Support\Facades\Console;
 use OpenSwoole\Core\Psr7Test\Tests\RequestTest;
 use OpenSwoole\Http\Server;
@@ -233,7 +231,7 @@ class Application extends Container implements ApplicationContract
         return $this;
     }
 
-    private function loadEnv(): static
+    private function loadEnv(): void
     {
         $configPath = $this->basePath . DIRECTORY_SEPARATOR . 'config';
         if (!is_dir($configPath)) {
@@ -250,7 +248,6 @@ class Application extends Container implements ApplicationContract
             }
         }
 
-        return $this;
     }
 
     public function registered($callback): void

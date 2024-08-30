@@ -3,7 +3,6 @@
 namespace LaraGram\JsonDatabase;
 
 use Exception;
-use LaraGram\Request\Request;
 
 class Model
 {

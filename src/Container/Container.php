@@ -8,7 +8,6 @@ use Exception;
 use LaraGram\Contracts\Container\BindingResolutionException;
 use LaraGram\Contracts\Container\CircularDependencyException;
 use LaraGram\Contracts\Container\Container as ContainerContract;
-use LaraGram\Support\Facades\Facade;
 use ReflectionClass;
 use ReflectionFunction;
 use ReflectionNamedType;
