@@ -7,7 +7,7 @@ use LaraGram\Support\Facades\Console;
 
 class OpenSwoole extends Command
 {
-    protected $signature = 'remove:openswoole';
+    protected $signature = 'remove:swoole';
     protected $description = 'Remove Openswoole/Swoole Core';
 
     public function handle()

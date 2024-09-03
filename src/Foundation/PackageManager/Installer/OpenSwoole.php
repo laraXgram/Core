@@ -7,7 +7,7 @@ use LaraGram\Support\Facades\Console;
 
 class OpenSwoole extends Command
 {
-    protected $signature = 'install:openswoole';
+    protected $signature = 'install:swoole';
     protected $description = 'Install Openswoole/Swoole Core';
 
     public function handle()
