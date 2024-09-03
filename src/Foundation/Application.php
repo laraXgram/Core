@@ -3,10 +3,12 @@
 namespace LaraGram\Foundation;
 
 use Composer\Autoload\ClassLoader;
+use LaraGram\Config\Repository;
 use LaraGram\Console\Kernel;
 use LaraGram\Container\Container;
 use LaraGram\Contracts\Application as ApplicationContract;
 use Illuminate\Database\Capsule\Manager as Capsule;
+use LaraGram\Support\Facades\Config;
 use LaraGram\Support\Facades\Console;
 use OpenSwoole\Core\Psr7Test\Tests\RequestTest;
 use OpenSwoole\Http\Server;
@@ -37,16 +39,15 @@ class Application extends Container implements ApplicationContract
         Facade::setFacadeApplication($this);
 
         $this->setBasePath($basePath)
-            ->loadEnv();
-
-        $this->registerBaseBindings()
+            ->registerConfig()
+            ->registerBaseBindings()
             ->registerBaseServiceProviders()
             ->registerCoreContainerAliases();
 
-        if (debug_backtrace()[0]['file'] != $this->basePath . DIRECTORY_SEPARATOR . 'laragram') {
-            if ($_ENV['DB_POWER'] == 'on') {
-                $this->registerEloquent();
-            }
+        Config::set('app.APP_BASE_PATH', $this->basePath);
+
+        if (Config::get('DB_POWER') == 'on') {
+            $this->registerEloquent();
         }
 
         return $this;
@@ -140,7 +141,7 @@ class Application extends Container implements ApplicationContract
          */
         $core_command = app('kernel.core_command');
 
-        return array_merge($core_command->getCoreCommands(), $_ENV['COMMANDS']);
+        return array_merge($core_command->getCoreCommands(), Config::get('app.COMMANDS'));
     }
 
     public function registerCommands(): static
@@ -174,12 +175,16 @@ class Application extends Container implements ApplicationContract
             \LaraGram\Console\ConsoleServiceProvider::class,
         ];
 
-        return array_merge($providers, $_ENV['SERVICE_PROVIDERS']);
+        return $providers;
     }
 
     protected function registerBaseServiceProviders(): static
     {
         foreach ($this->baseServiceProviders() as $provider) {
+            $this->register(new $provider($this));
+        }
+
+        foreach (Config::get('app.SERVICE_PROVIDERS') as $provider) {
             $this->register(new $provider($this));
         }
 
@@ -215,39 +220,20 @@ class Application extends Container implements ApplicationContract
     {
         $capsule = new Capsule();
         $capsule->addConnection([
-            'driver' => $_ENV['DB_DRIVER'],
-            'host' => $_ENV['DB_HOST'],
-            'port' => $_ENV['DB_PORT'],
-            'database' => $_ENV['DB_DATABASE'],
-            'username' => $_ENV['DB_USERNAME'],
-            'password' => $_ENV['DB_PASSWORD'],
-            'charset' => $_ENV['DB_CHARSET'],
-            'collation' => $_ENV['DB_COLLATION'],
-            'prefix' => $_ENV['DB_PREFIX'],
+            'driver' => Config::get('database.DB_DRIVER'),
+            'host' => Config::get('database.DB_HOST'),
+            'port' => Config::get('database.DB_PORT'),
+            'database' => Config::get('database.DB_DATABASE'),
+            'username' => Config::get('database.DB_USERNAME'),
+            'password' => Config::get('database.DB_PASSWORD'),
+            'charset' => Config::get('database.DB_CHARSET'),
+            'collation' => Config::get('database.DB_COLLATION'),
+            'prefix' => Config::get('database.DB_PREFIX'),
         ]);
         $capsule->setAsGlobal();
         $capsule->bootEloquent();
 
         return $this;
-    }
-
-    private function loadEnv(): void
-    {
-        $configPath = $this->basePath . DIRECTORY_SEPARATOR . 'config';
-        if (!is_dir($configPath)) {
-            throw new \InvalidArgumentException("Config path $configPath is not a directory");
-        }
-
-        $configFiles = glob($configPath . '/*.php');
-        foreach ($configFiles as $file) {
-            $config = require $file;
-            if (is_array($config)) {
-                foreach ($config as $key => $value) {
-                    $_ENV[strtoupper($key)] = $value;
-                }
-            }
-        }
-
     }
 
     public function registered($callback): void
@@ -512,15 +498,17 @@ class Application extends Container implements ApplicationContract
 
     public function handleRequests()
     {
-        $update_type = $_ENV['UPDATE_TYPE'];
+        $update_type = Config::get('bot.UPDATE_TYPE');
         if ($update_type == 'openswoole') {
-            if (!extension_loaded('openswoole')){
+            if (!extension_loaded('openswoole')) {
                 Console::output()->failed('Extension Openswoole not loaded!');
             }
 
-            $server = new Server($_ENV['OPENSWOOLE_IP'], $_ENV['OPENSWOOLE_PORT']);
-            $server->on("start", function () {
-                Console::output()->success("Server Started! [ {$_ENV['OPENSWOOLE_IP']}:{$_ENV['OPENSWOOLE_PORT']} ]");
+            $ip = Config::get('server.OPENSWOOLE_IP');
+            $port = Config::get('server.OPENSWOOLE_PORT');
+            $server = new Server($ip, $port);
+            $server->on("start", function () use ($ip, $port) {
+                Console::output()->success("Server Started! [ {$ip}:{$port} ]");
             });
 
             $server->on("request", function (Request $swooleRequest, Response $swooleResponse) {
@@ -535,5 +523,20 @@ class Application extends Container implements ApplicationContract
         } else {
             $this->loadResources();
         }
+    }
+
+    private function registerConfig(): static
+    {
+        $this->singleton('config', function (){
+            $configurations = [];
+            foreach (glob(app('path.config') . '/*.php') as $file) {
+                $key = basename($file, '.php');
+                $configurations[$key] = require $file;
+            }
+
+            return new Repository($configurations);
+        });
+
+        return $this;
     }
 }

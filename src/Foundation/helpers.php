@@ -19,3 +19,15 @@ if (! function_exists('app')) {
         return Container::getInstance()->make($abstract, $parameters);
     }
 }
+
+if (! function_exists('config')) {
+    /**
+     * Get the Config repository
+     *
+     * @return LaraGram\Config\Repository
+     */
+    function config(): mixed
+    {
+        return app('config');
+    }
+}

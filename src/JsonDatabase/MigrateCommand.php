@@ -3,6 +3,7 @@
 namespace LaraGram\JsonDatabase;
 
 use LaraGram\Console\Command;
+use LaraGram\Support\Facades\Config;
 use LaraGram\Support\Facades\Console;
 
 class MigrateCommand extends Command
@@ -14,11 +15,12 @@ class MigrateCommand extends Command
     {
         if ($this->getOption('h') == 'h') Console::output()->message($this->description, true);
 
-        if (!file_exists($_ENV['JSON_DB_DATA_DIR'])){
-            mkdir($_ENV['JSON_DB_DATA_DIR'], recursive: true);
+        $JSON_DB_DATA_DIR = Config::get('database.JSON_DB_DATA_DIR');
+        if (!file_exists($JSON_DB_DATA_DIR)){
+            mkdir($JSON_DB_DATA_DIR, recursive: true);
         }
 
-        $migration_path = $_ENV['JSON_DB_DATA_DIR'] . '/migration.json';
+        $migration_path = $JSON_DB_DATA_DIR . '/migration.json';
 
         if (!is_file($migration_path)) file_put_contents($migration_path, '{"migrated":{},"batch":0}');
 

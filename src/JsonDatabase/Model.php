@@ -3,6 +3,7 @@
 namespace LaraGram\JsonDatabase;
 
 use Exception;
+use LaraGram\Support\Facades\Config;
 
 class Model
 {
@@ -42,14 +43,14 @@ class Model
         if ($this->database === '') {
             $this->database = $this->inferDatabaseName();
         }
-
-        $data_path = $_ENV['JSON_DB_DATA_DIR'] . $this->database . '/data/';
-        $this->filePath = $_ENV['JSON_DB_DATA_DIR'] . $this->database . '/data/' . $this->database . '.json';
+        $data_dir = Config::get('database.JSON_DB_DATA_DIR');
+        $data_path =$data_dir . $this->database . '/data/';
+        $this->filePath = $data_dir . $this->database . '/data/' . $this->database . '.json';
         if (!file_exists($data_path)) mkdir($data_path, recursive: true);
         if (!is_file($this->filePath)) file_put_contents($this->filePath, '[]');
 
 
-        $this->schemaPath = $_ENV['JSON_DB_DATA_DIR'] . 'schema.json';
+        $this->schemaPath = $data_dir . 'schema.json';
     }
 
     private function inferDatabaseName()

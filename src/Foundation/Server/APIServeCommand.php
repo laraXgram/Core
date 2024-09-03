@@ -3,6 +3,7 @@
 namespace LaraGram\Foundation\Server;
 
 use LaraGram\Console\Command;
+use LaraGram\Support\Facades\Config;
 use LaraGram\Support\Facades\Console;
 
 class APIServeCommand extends Command
@@ -14,12 +15,18 @@ class APIServeCommand extends Command
     {
         if ($this->getOption('h') == 'h') Console::output()->message($this->description, true);
 
-        if ($_ENV['API_ID'] == null || $_ENV['API_HASH'] == null) Console::output()->failed("API_ID or API_HASH not set!", exit: true);
-        if (($_ENV['BOT_API_SERVER_IP'] == null && $this->options['host'] == null) || ($_ENV['BOT_API_SERVER_PORT'] == null && $this->options['port'] == null)) Console::output()->failed("BOT_API_SERVER_IP or BOT_API_SERVER_PORT not set!", exit: true);
+        $API_ID = Config::get('bot.API_ID');
+        $API_HASH = Config::get('bot.API_HASH');
 
-        $port = $this->options['port'] ?? $_ENV['BOT_API_SERVER_PORT'];
-        $host = $this->options['host'] ?? $_ENV['BOT_API_SERVER_IP'];
-        $dir = $_ENV['BOT_API_SERVER_DIR'] ?? app('path.storage') . 'app/apiserver';
+        $BOT_API_SERVER_IP = Config::get('bot.BOT_API_SERVER_IP');
+        $BOT_API_SERVER_PORT = Config::get('bot.BOT_API_SERVER_PORT');
+
+        if ($API_ID == null || $API_HASH == null) Console::output()->failed("API_ID or API_HASH not set!", exit: true);
+        if (($BOT_API_SERVER_IP == null && $this->options['host'] == null) || ($BOT_API_SERVER_PORT == null && $this->options['port'] == null)) Console::output()->failed("BOT_API_SERVER_IP or BOT_API_SERVER_PORT not set!", exit: true);
+
+        $host = $this->options['host'] ?? $BOT_API_SERVER_IP;
+        $port = $this->options['port'] ?? $BOT_API_SERVER_PORT;
+        $dir = Config::get('bot.BOT_API_SERVER_DIR') ?? app('path.storage') . 'app/apiserver';
 
         if (!file_exists($dir))
         {
@@ -29,11 +36,18 @@ class APIServeCommand extends Command
 
         Console::output()->success("Starting API Server on {$host}:{$port}");
 
-        $command = "telegram-bot-api --local --http-ip-address={$host} --http-port={$port} --api-id={$_ENV['API_ID']} --api-hash={$_ENV['API_HASH']} --dir={$dir}";
 
-        if ($_ENV['BOT_API_SERVER_LOG_DIR'] != '') $command .= " --log={$_ENV['BOT_API_SERVER_LOG_DIR']}";
-        if ($_ENV['BOT_API_SERVER_STAT_IP'] != '') $command .= " --http-stat-ip-address={$_ENV['BOT_API_SERVER_STAT_IP']}";
-        if ($_ENV['BOT_API_SERVER_STAT_PORT'] != '') $command .= " --http-stat-port={$_ENV['BOT_API_SERVER_STAT_PORT']}";
+        $API_ID = Config::get('bot.API_ID');
+        $API_HASH = Config::get('bot.API_HASH');
+
+        $command = "telegram-bot-api --local --http-ip-address={$host} --http-port={$port} --api-id={$API_ID} --api-hash={$API_HASH} --dir={$dir}";
+
+        $BOT_API_SERVER_LOG_DIR = Config::get('bot.BOT_API_SERVER_LOG_DIR');
+        $BOT_API_SERVER_STAT_IP = Config::get('bot.BOT_API_SERVER_STAT_IP');
+        $BOT_API_SERVER_STAT_PORT = Config::get('bot.BOT_API_SERVER_STAT_PORT');
+        if ($BOT_API_SERVER_LOG_DIR != '') $command .= " --log={$BOT_API_SERVER_LOG_DIR}";
+        if ($BOT_API_SERVER_STAT_IP != '') $command .= " --http-stat-ip-address={$BOT_API_SERVER_STAT_IP}";
+        if ($BOT_API_SERVER_STAT_PORT != '') $command .= " --http-stat-port={$BOT_API_SERVER_STAT_PORT}";
 
         exec($command);
     }

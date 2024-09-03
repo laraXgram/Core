@@ -3,6 +3,7 @@
 namespace LaraGram\Foundation\Webhook;
 
 use LaraGram\Console\Command;
+use LaraGram\Support\Facades\Config;
 use LaraGram\Support\Facades\Console;
 
 class DropWebhookCommand extends Command
@@ -15,7 +16,7 @@ class DropWebhookCommand extends Command
         if ($this->getOption('h') == 'h') Console::output()->message($this->description, true);
 
 
-        $result = request()->setWebhook($_ENV['BOT_DOMAIN'], drop_pending_updates: true);
+        $result = request()->setWebhook(Config::get('bot.BOT_DOMAIN'), drop_pending_updates: true);
 
         if (!$result['ok']){
             Console::output()->failed($result['description']);
