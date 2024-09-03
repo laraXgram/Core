@@ -10,10 +10,9 @@ use LaraGram\Contracts\Application as ApplicationContract;
 use Illuminate\Database\Capsule\Manager as Capsule;
 use LaraGram\Support\Facades\Config;
 use LaraGram\Support\Facades\Console;
-use OpenSwoole\Core\Psr7Test\Tests\RequestTest;
-use OpenSwoole\Http\Server;
-use OpenSwoole\Http\Request;
-use OpenSwoole\Http\Response;
+use Swoole\Http\Server;
+use Swoole\Http\Request;
+use Swoole\Http\Response;
 use LaraGram\Support\Facades\Facade;
 
 class Application extends Container implements ApplicationContract
@@ -167,10 +166,11 @@ class Application extends Container implements ApplicationContract
     protected function baseServiceProviders(): array
     {
         $providers = [
+            \LaraGram\Cache\CacheServiceProvider::class,
             \LaraGram\Listener\ListenerServiceProvider::class,
             \LaraGram\Request\RequestServiceProvider::class,
-            \LaraGram\Keyboard\KeyboardServiceProvider::class,
             \LaraGram\Database\DatabaseServiceProvider::class,
+            \LaraGram\Keyboard\KeyboardServiceProvider::class,
             \LaraGram\Auth\AuthServiceProvider::class,
             \LaraGram\Console\ConsoleServiceProvider::class,
         ];
@@ -496,8 +496,8 @@ class Application extends Container implements ApplicationContract
     {
         $update_type = Config::get('bot.UPDATE_TYPE');
         if ($update_type == 'openswoole') {
-            if (!extension_loaded('openswoole')) {
-                Console::output()->failed('Extension Openswoole not loaded!');
+            if (!extension_loaded('openswoole') && !extension_loaded('swoole')) {
+                Console::output()->failed('Extension Openswoole/Swoole not loaded!');
             }
 
             $ip = Config::get('server.OPENSWOOLE_IP');
