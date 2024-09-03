@@ -175,16 +175,12 @@ class Application extends Container implements ApplicationContract
             \LaraGram\Console\ConsoleServiceProvider::class,
         ];
 
-        return $providers;
+        return array_merge($providers, Config::get('app.SERVICE_PROVIDERS'));
     }
 
     protected function registerBaseServiceProviders(): static
     {
         foreach ($this->baseServiceProviders() as $provider) {
-            $this->register(new $provider($this));
-        }
-
-        foreach (Config::get('app.SERVICE_PROVIDERS') as $provider) {
             $this->register(new $provider($this));
         }
 
