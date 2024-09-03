@@ -166,7 +166,6 @@ class Application extends Container implements ApplicationContract
     protected function baseServiceProviders(): array
     {
         $providers = [
-            \LaraGram\Cache\CacheServiceProvider::class,
             \LaraGram\Listener\ListenerServiceProvider::class,
             \LaraGram\Request\RequestServiceProvider::class,
             \LaraGram\Database\DatabaseServiceProvider::class,
