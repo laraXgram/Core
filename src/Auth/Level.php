@@ -4,9 +4,12 @@ namespace LaraGram\Auth;
 
 use App\Models\Admin;
 use App\Models\User;
+use LaraGram\Support\Trait\Macroable;
 
 class Level
 {
+    use Macroable;
+
     /**
      * set level
      * @param string|int $level <p>

@@ -75,6 +75,8 @@ use LaraGram\Listener\Group;
  * @method static Group can(array|string $roles)
  * @method static Group canNot(array|string $roles)
  * @method static Group controller(string $controller)
+ * @method static void macro(string $name, callable $macro)
+ * @method static bool hasMacro(string $name)
  */
 class Bot extends Facade
 {

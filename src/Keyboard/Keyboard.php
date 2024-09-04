@@ -2,8 +2,12 @@
 
 namespace LaraGram\Keyboard;
 
+use LaraGram\Support\Trait\Macroable;
+
 class Keyboard
 {
+    use Macroable;
+
     private string $type;
     private array $keyboard = [];
 

@@ -3,9 +3,12 @@
 namespace LaraGram\Auth;
 
 use App\Models\User;
+use LaraGram\Support\Trait\Macroable;
 
 class Auth
 {
+    use Macroable;
+
     private static mixed $status = null;
 
     /**

@@ -15,6 +15,8 @@ namespace LaraGram\Support\Facades;
  * @method static void prepend(string $key, mixed $value)
  * @method static void push(string $key, mixed $value)
  * @method static array all()
+ * @method static void macro(string $name, callable $macro)
+ * @method static bool hasMacro(string $name)
  *
  * @see \LaraGram\Config\Repository
  */

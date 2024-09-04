@@ -4,9 +4,12 @@ namespace LaraGram\Auth;
 
 use App\Models\Admin;
 use App\Models\User;
+use LaraGram\Support\Trait\Macroable;
 
 class Role
 {
+    use Macroable;
+
     public function setRole(string $role, int|string $user_id, int|string|null $chat_id = null): bool
     {
         $chat_id ??= chat()->id;

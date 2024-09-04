@@ -3,9 +3,12 @@
 namespace LaraGram\Listener;
 
 use Closure;
+use LaraGram\Support\Trait\Macroable;
 
 final class Listener extends Matcher
 {
+    use Macroable;
+
     public function __construct(private readonly Group $group) { }
 
     public function on(string|array $pattern, Closure|array|string $action)

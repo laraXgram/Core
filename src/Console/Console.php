@@ -2,8 +2,12 @@
 
 namespace LaraGram\Console;
 
+use LaraGram\Support\Trait\Macroable;
+
 class Console
 {
+    use Macroable;
+
     public function output(): Output
     {
         return app()->make('console.output');
