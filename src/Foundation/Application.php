@@ -8,6 +8,7 @@ use LaraGram\Console\Kernel;
 use LaraGram\Container\Container;
 use LaraGram\Contracts\Application as ApplicationContract;
 use Illuminate\Database\Capsule\Manager as Capsule;
+use LaraGram\Laraquest\Laraquest;
 use LaraGram\Support\Facades\Config;
 use LaraGram\Support\Facades\Console;
 use Swoole\Http\Server;
@@ -494,7 +495,7 @@ class Application extends Container implements ApplicationContract
     public function handleRequests()
     {
         $update_type = Config::get('bot.UPDATE_TYPE');
-        if ($update_type == 'openswoole' || $update_type == 'swoole') {
+        if ($update_type == 'openswoole') {
             if (!extension_loaded('openswoole') && !extension_loaded('swoole')) {
                 Console::output()->failed('Extension Openswoole/Swoole not loaded!');
             }
@@ -515,6 +516,10 @@ class Application extends Container implements ApplicationContract
             });
 
             $server->start();
+        }elseif($update_type == 'polling'){
+            Laraquest::polling(function (){
+                $this->loadResources(false);
+            });
         } else {
             $this->loadResources();
         }

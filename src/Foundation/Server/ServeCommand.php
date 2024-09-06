@@ -51,10 +51,17 @@ class ServeCommand extends Command
             $command .= " & php -S {$DEVELOPMENT_SERVER_IP}:{$DEVELOPMENT_SERVER_PORT}";
 
             exec($command);
-        }elseif ($this->getOption('openswoole') == 'openswoole' || $this->getOption('swoole') == 'swoole') {
-            if (Config::get('bot.UPDATE_TYPE') !== 'openswoole' || Config::get('bot.UPDATE_TYPE') !== 'swoole') {
-                Console::output()->failed("UPDATE_TYPE is not openswoole/swoole!", exit: true);
+        }elseif ($this->getOption('openswoole') == 'openswoole') {
+            if (Config::get('bot.UPDATE_TYPE') !== 'openswoole') {
+                Console::output()->failed("UPDATE_TYPE is not openswoole!", exit: true);
             }
+
+            require_once 'Bootstrap/app.php';
+        }elseif ($this->getOption('polling') == 'polling') {
+            if (Config::get('bot.UPDATE_TYPE') !== 'polling') {
+                Console::output()->failed("UPDATE_TYPE is not polling!", exit: true);
+            }
+
             require_once 'Bootstrap/app.php';
         } else{
             exec("php -S {$DEVELOPMENT_SERVER_IP}:{$DEVELOPMENT_SERVER_PORT}");
