@@ -517,6 +517,7 @@ class Application extends Container implements ApplicationContract
 
             $server->start();
         }elseif($update_type == 'polling'){
+            Console::output()->success("Polling Started!");
             Laraquest::polling(function (){
                 $this->loadResources(false);
             });
