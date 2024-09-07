@@ -3,6 +3,7 @@
 namespace LaraGram\Contracts\Container;
 
 use Closure;
+use LaraGram\Container\ContextualBindingBuilder;
 
 interface Container
 {

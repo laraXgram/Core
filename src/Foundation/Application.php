@@ -46,7 +46,7 @@ class Application extends Container implements ApplicationContract
 
         Config::set('app.APP_BASE_PATH', $this->basePath);
 
-        if (Config::get('DB_POWER') == 'on') {
+        if (Config::get('database.DB_POWER') == 'on') {
             $this->registerEloquent();
         }
 
@@ -167,11 +167,13 @@ class Application extends Container implements ApplicationContract
     protected function baseServiceProviders(): array
     {
         $providers = [
+            \LaraGram\Cache\CacheServiceProvider::class,
             \LaraGram\Listener\ListenerServiceProvider::class,
             \LaraGram\Request\RequestServiceProvider::class,
             \LaraGram\Database\DatabaseServiceProvider::class,
-            \LaraGram\Keyboard\KeyboardServiceProvider::class,
+            \LaraGram\Redis\RedisServiceProvider::class,
             \LaraGram\Auth\AuthServiceProvider::class,
+            \LaraGram\Keyboard\KeyboardServiceProvider::class,
             \LaraGram\Console\ConsoleServiceProvider::class,
         ];
 
