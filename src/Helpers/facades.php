@@ -55,3 +55,10 @@ if (!function_exists('schema')) {
         return app()->make('db.schema');
     }
 }
+
+if (!function_exists('cache')) {
+    function cache(): LaraGram\Cache\CacheManager
+    {
+        return app()->make('cache.manager');
+    }
+}

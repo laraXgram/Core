@@ -43,8 +43,8 @@ class CacheManager
             return $this->driver->get($key);
         } catch (\Exception $e) {
             file_put_contents('database.log', $e->getMessage());
+            return false;
         }
-
     }
 
     public function set($key, $value, $ttl = 3600)
@@ -53,6 +53,7 @@ class CacheManager
             return $this->driver->set($key, $value, $ttl);
         } catch (\Exception $e) {
             file_put_contents('database.log', $e->getMessage());
+            return false;
         }
     }
 
@@ -62,6 +63,7 @@ class CacheManager
             return $this->driver->forgot($key);
         } catch (\Exception $e) {
             file_put_contents('database.log', $e->getMessage());
+            return false;
         }
     }
 
@@ -71,6 +73,7 @@ class CacheManager
             return $this->driver->clear();
         } catch (\Exception $e) {
             file_put_contents('database.log', $e->getMessage());
+            return false;
         }
     }
 }
