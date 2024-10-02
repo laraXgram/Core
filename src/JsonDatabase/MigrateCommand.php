@@ -15,7 +15,7 @@ class MigrateCommand extends Command
     {
         if ($this->getOption('h') == 'h') Console::output()->message($this->description, true);
 
-        $JSON_DB_DATA_DIR = Config::get('database.JSON_DB_DATA_DIR');
+        $JSON_DB_DATA_DIR = config('database.json.storage');
         if (!file_exists($JSON_DB_DATA_DIR)){
             mkdir($JSON_DB_DATA_DIR, recursive: true);
         }

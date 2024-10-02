@@ -15,7 +15,7 @@ class SetWebhookCommand extends Command
     {
         if ($this->getOption('h') == 'h') Console::output()->message($this->description, true);
 
-        $result = request()->setWebhook(Config::get('bot.BOT_DOMAIN'));
+        $result = request()->setWebhook(config('bot.bot.domain'));
 
         if (!$result['ok']){
             Console::output()->failed($result['message']);

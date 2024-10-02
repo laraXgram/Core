@@ -44,11 +44,13 @@ class Application extends Container implements ApplicationContract
             ->registerBaseServiceProviders()
             ->registerCoreContainerAliases();
 
-        Config::set('app.APP_BASE_PATH', $this->basePath);
+        config('app.app_base_path', $this->basePath);
 
-        if (Config::get('database.DB_POWER') == 'on') {
+        if (config('database.database.power') == 'on') {
             $this->registerEloquent();
         }
+
+        file_put_contents('app.txt', $this);
 
         return $this;
     }
@@ -141,7 +143,7 @@ class Application extends Container implements ApplicationContract
          */
         $core_command = app('kernel.core_command');
 
-        return array_merge($core_command->getCoreCommands(), Config::get('app.COMMANDS'));
+        return array_merge($core_command->getCoreCommands(), config('app.commands'));
     }
 
     public function registerCommands(): static
@@ -177,7 +179,7 @@ class Application extends Container implements ApplicationContract
             \LaraGram\Console\ConsoleServiceProvider::class,
         ];
 
-        return array_merge($providers, Config::get('app.SERVICE_PROVIDERS'));
+        return array_merge($providers, config('app.service_provider'));
     }
 
     protected function registerBaseServiceProviders(): static
@@ -218,15 +220,15 @@ class Application extends Container implements ApplicationContract
     {
         $capsule = new Capsule();
         $capsule->addConnection([
-            'driver' => Config::get('database.DB_DRIVER'),
-            'host' => Config::get('database.DB_HOST'),
-            'port' => Config::get('database.DB_PORT'),
-            'database' => Config::get('database.DB_DATABASE'),
-            'username' => Config::get('database.DB_USERNAME'),
-            'password' => Config::get('database.DB_PASSWORD'),
-            'charset' => Config::get('database.DB_CHARSET'),
-            'collation' => Config::get('database.DB_COLLATION'),
-            'prefix' => Config::get('database.DB_PREFIX'),
+            'driver' => config('database.database.driver'),
+            'host' => config('database.database.host'),
+            'port' => config('database.database.port'),
+            'database' => config('database.database.database'),
+            'username' => config('database.database.username'),
+            'password' => config('database.database.password'),
+            'charset' => config('database.database.charset'),
+            'collation' => config('database.database.collation'),
+            'prefix' => config('database.database.prefix'),
         ]);
         $capsule->setAsGlobal();
         $capsule->bootEloquent();
@@ -496,14 +498,14 @@ class Application extends Container implements ApplicationContract
 
     public function handleRequests()
     {
-        $update_type = Config::get('bot.UPDATE_TYPE');
+        $update_type = config('laraquest.update_type');
         if ($update_type == 'openswoole') {
             if (!extension_loaded('openswoole') && !extension_loaded('swoole')) {
                 Console::output()->failed('Extension Openswoole/Swoole not loaded!');
             }
 
-            $ip = Config::get('server.OPENSWOOLE_IP');
-            $port = Config::get('server.OPENSWOOLE_PORT');
+            $ip = config('server.openswoole.ip');
+            $port = config('server.openswoole_port');
             $server = new Server($ip, $port);
             $server->on("start", function () use ($ip, $port) {
                 Console::output()->success("Server Started! [ {$ip}:{$port} ]");

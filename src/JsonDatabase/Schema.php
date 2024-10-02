@@ -22,12 +22,12 @@ class Schema
 
     public static function hasTable(string $table): bool
     {
-        return key_exists(ucfirst($table), json_decode(file_get_contents(Config::get('database.JSON_DB_DATA_DIR') . 'schema.json'), true));
+        return key_exists(ucfirst($table), json_decode(file_get_contents(config('database.json.storage') . 'schema.json'), true));
     }
 
     public static function table(string $table, Closure $callback): void
     {
-        $schema_path = Config::get('database.JSON_DB_DATA_DIR') . 'schema.json';
+        $schema_path = config('database.json.storage') . 'schema.json';
         if (!is_file($schema_path)) file_put_contents($schema_path, '');
         $schema = json_decode(file_get_contents($schema_path), true);
         $blueprint = new Blueprint();
@@ -40,7 +40,7 @@ class Schema
 
     public static function create(string $table, Closure $callback): void
     {
-        $schema_path = Config::get('database.JSON_DB_DATA_DIR') . 'schema.json';
+        $schema_path = config('database.json.storage') . 'schema.json';
         if (!is_file($schema_path)) file_put_contents($schema_path, '');
         $schema = json_decode(file_get_contents($schema_path), true);
         $blueprint = new Blueprint();
@@ -51,7 +51,7 @@ class Schema
 
     public static function drop(string $table): void
     {
-        $schema_path = Config::get('database.JSON_DB_DATA_DIR') . 'schema.json';
+        $schema_path = config('database.json.storage') . 'schema.json';
         $schema = json_decode(file_get_contents($schema_path), true);
         unset($schema[ucfirst($table)]);
         file_put_contents($schema_path, json_encode($schema, 128 | 16));
@@ -59,6 +59,6 @@ class Schema
 
     public static function dropAllTables(): void
     {
-        file_put_contents(Config::get('database.JSON_DB_DATA_DIR') . 'schema.json', "{\n\n}");
+        file_put_contents(config('database.json.storage') . 'schema.json', "{\n\n}");
     }
 }

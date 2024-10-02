@@ -15,8 +15,8 @@ class ServeCommand extends Command
     {
         if ($this->getOption('h') == 'h') Console::output()->message($this->description, true);
 
-        $DEVELOPMENT_SERVER_IP = Config::get('server.DEVELOPMENT_SERVER_IP');
-        $DEVELOPMENT_SERVER_PORT = Config::get('server.DEVELOPMENT_SERVER_PORT');
+        $DEVELOPMENT_SERVER_IP = config('server.development_server.ip');
+        $DEVELOPMENT_SERVER_PORT = config('server.development_server.port');
 
         if (($DEVELOPMENT_SERVER_IP == null && $this->options['host'] == null) || ($DEVELOPMENT_SERVER_PORT == null && $this->options['port'] == null)) Console::output()->failed("DEVELOPMENT_SERVER_IP or DEVELOPMENT_SERVER_PORT not set!", exit: true);
 
@@ -24,13 +24,13 @@ class ServeCommand extends Command
         $DEVELOPMENT_SERVER_IP = $this->options['host'] ?? $DEVELOPMENT_SERVER_IP;
 
         if ($this->getOption('openswoole') == 'openswoole') {
-            if (Config::get('bot.UPDATE_TYPE') !== 'openswoole') {
+            if (config('laraquest.update_type') !== 'openswoole') {
                 Console::output()->failed("UPDATE_TYPE is not openswoole!", exit: true);
             }
 
             require_once 'Bootstrap/app.php';
         }elseif ($this->getOption('polling') == 'polling') {
-            if (Config::get('bot.UPDATE_TYPE') !== 'polling') {
+            if (config('laraquest.update_type') !== 'polling') {
                 Console::output()->failed("UPDATE_TYPE is not polling!", exit: true);
             }
 

@@ -16,7 +16,7 @@ class DropWebhookCommand extends Command
         if ($this->getOption('h') == 'h') Console::output()->message($this->description, true);
 
 
-        $result = request()->setWebhook(Config::get('bot.BOT_DOMAIN'), drop_pending_updates: true);
+        $result = request()->setWebhook(config('bot.bot.domain'), drop_pending_updates: true);
 
         if (!$result['ok']){
             Console::output()->failed($result['description']);

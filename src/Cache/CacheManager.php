@@ -24,7 +24,7 @@ class CacheManager
     {
         if (is_string($driver)) {
             $this->driver = match ($driver) {
-                'file' => new FileCacheDriver(config()->get('cache.file.path')),
+                'file' => new FileCacheDriver(config('cache.file.path')),
                 'database' => new DatabaseCacheDriver(),
                 'redis' => new RedisCacheDriver(app('redis.connection')),
                 'apcu' => new APCuCacheDriver(),

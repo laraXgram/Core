@@ -18,7 +18,7 @@ class Connection
      */
     public function connect(): void
     {
-        $this->connection->connect(config()->get('database.REDIS_IP'), config()->get('database.REDIS_PORT'));
+        $this->connection->connect(config('database.redis.ip'), config('database.redis.port'));
     }
 
     public function getConnection(): Redis

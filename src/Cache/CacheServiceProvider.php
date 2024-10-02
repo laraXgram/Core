@@ -18,10 +18,10 @@ class CacheServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->singleton('cache.manager', function () {
-            $driver = config()->get('cache.default');
+            $driver = config('cache.default');
 
             $cacheDriver = match ($driver){
-                'file' => new FileCacheDriver(config()->get('cache.file.path')),
+                'file' => new FileCacheDriver(config('cache.file.path')),
                 'database' => new DatabaseCacheDriver(),
                 'redis' => new RedisCacheDriver(app('redis.connection')),
                 'apcu' => new APCuCacheDriver(),

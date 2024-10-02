@@ -15,18 +15,18 @@ class APIServeCommand extends Command
     {
         if ($this->getOption('h') == 'h') Console::output()->message($this->description, true);
 
-        $API_ID = Config::get('bot.API_ID');
-        $API_HASH = Config::get('bot.API_HASH');
+        $API_ID = config('bot.api_server.api_id');
+        $API_HASH = config('bot.api_server.api_hash');
 
-        $BOT_API_SERVER_IP = Config::get('bot.BOT_API_SERVER_IP');
-        $BOT_API_SERVER_PORT = Config::get('bot.BOT_API_SERVER_PORT');
+        $BOT_API_SERVER_IP = config('bot.api_server.ip');
+        $BOT_API_SERVER_PORT = config('bot.api_server.port');
 
         if ($API_ID == null || $API_HASH == null) Console::output()->failed("API_ID or API_HASH not set!", exit: true);
         if (($BOT_API_SERVER_IP == null && $this->options['host'] == null) || ($BOT_API_SERVER_PORT == null && $this->options['port'] == null)) Console::output()->failed("BOT_API_SERVER_IP or BOT_API_SERVER_PORT not set!", exit: true);
 
         $host = $this->options['host'] ?? $BOT_API_SERVER_IP;
         $port = $this->options['port'] ?? $BOT_API_SERVER_PORT;
-        $dir = Config::get('bot.BOT_API_SERVER_DIR') ?? app('path.storage') . 'app/apiserver';
+        $dir = config('bot.api_server.dir') ?? app('path.storage') . 'app/apiserver';
 
         if (!file_exists($dir))
         {
@@ -36,15 +36,11 @@ class APIServeCommand extends Command
 
         Console::output()->success("Starting API Server on {$host}:{$port}");
 
-
-        $API_ID = Config::get('bot.API_ID');
-        $API_HASH = Config::get('bot.API_HASH');
-
         $command = "telegram-bot-api --local --http-ip-address={$host} --http-port={$port} --api-id={$API_ID} --api-hash={$API_HASH} --dir={$dir}";
 
-        $BOT_API_SERVER_LOG_DIR = Config::get('bot.BOT_API_SERVER_LOG_DIR');
-        $BOT_API_SERVER_STAT_IP = Config::get('bot.BOT_API_SERVER_STAT_IP');
-        $BOT_API_SERVER_STAT_PORT = Config::get('bot.BOT_API_SERVER_STAT_PORT');
+        $BOT_API_SERVER_LOG_DIR = config('bot.api_server.log_dir');
+        $BOT_API_SERVER_STAT_IP = config('bot.api_server.stat.ip');
+        $BOT_API_SERVER_STAT_PORT = config('bot.api_server.stat.port');
         if ($BOT_API_SERVER_LOG_DIR != '') $command .= " --log={$BOT_API_SERVER_LOG_DIR}";
         if ($BOT_API_SERVER_STAT_IP != '') $command .= " --http-stat-ip-address={$BOT_API_SERVER_STAT_IP}";
         if ($BOT_API_SERVER_STAT_PORT != '') $command .= " --http-stat-port={$BOT_API_SERVER_STAT_PORT}";

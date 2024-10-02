@@ -3,11 +3,12 @@
 namespace LaraGram\Support;
 
 use Closure;
+use LaraGram\Container\Container;
 use LaraGram\Contracts\Application;
 
 abstract class ServiceProvider
 {
-    protected Application $app;
+    protected Application|Container $app;
 
     protected array $bootingCallbacks = [];
 
