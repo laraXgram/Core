@@ -38,4 +38,16 @@ class DatabaseCacheDriver implements CacheDriver
     {
         Cache::truncate();
     }
+
+    public function all()
+    {
+        return Cache::all();
+    }
+
+    public function pull($key)
+    {
+        $data = $this->get($key);
+        $this->forgot($key);
+        return $data;
+    }
 }

@@ -2,6 +2,7 @@
 
 namespace LaraGram\Cache\Driver;
 
+use LaraGram\Cache\Database\Cache;
 use LaraGram\Contracts\CacheDriver;
 
 class FileCacheDriver implements CacheDriver {
@@ -42,5 +43,12 @@ class FileCacheDriver implements CacheDriver {
         foreach ($files as $file) {
             unlink($file);
         }
+    }
+
+    public function pull($key)
+    {
+        $data = $this->get($key);
+        $this->forgot($key);
+        return $data;
     }
 }
