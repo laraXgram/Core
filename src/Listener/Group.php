@@ -35,6 +35,18 @@ class Group
         return $this;
     }
 
+    public function hasReply(): static
+    {
+        $this->condition = message()->reply_to_message !== null;
+        return $this;
+    }
+
+    public function hasNotReply(): static
+    {
+        $this->condition = message()->reply_to_message === null;
+        return $this;
+    }
+
     public function canNot(array|string $roles): static
     {
         $user_status = get_status() ?? '';

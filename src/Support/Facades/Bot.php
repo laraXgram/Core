@@ -74,6 +74,8 @@ use LaraGram\Listener\Group;
  * @method static Group outOfScope(array|string $scopes)
  * @method static Group can(array|string $roles)
  * @method static Group canNot(array|string $roles)
+ * @method static Group hasReply()
+ * @method static Group hasNotReply()
  * @method static Group controller(string $controller)
  * @method static void macro(string $name, callable $macro)
  * @method static bool hasMacro(string $name)

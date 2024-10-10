@@ -334,6 +334,8 @@ final class Listener extends Matcher
                 'outOfScope' => $this->group->outOfScope($value),
                 'can' => $this->group->can($value),
                 'canNot' => $this->group->canNot($value),
+                'hasReply' => $this->group->hasReply(),
+                'hasNotReply' => $this->group->hasNotReply()
             };
         }
 
@@ -361,6 +363,18 @@ final class Listener extends Matcher
     public function canNot(array|string $roles): Group
     {
         $this->group->canNot($roles);
+        return $this->group;
+    }
+
+    public function hasReply(): Group
+    {
+        $this->group->hasReply();
+        return $this->group;
+    }
+
+    public function hasNotReply(): Group
+    {
+        $this->group->hasNotReply();
         return $this->group;
     }
 
