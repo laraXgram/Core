@@ -2,6 +2,7 @@
 
 namespace LaraGram\Console;
 
+use LaraGram\Foundation\CoreCommand;
 use LaraGram\Support\Trait\Macroable;
 
 class Console
@@ -25,5 +26,10 @@ class Console
         }
 
         app()->make('kernel')->executeCommand(new $class, $args);
+    }
+
+    public function starting(callable $callback): void
+    {
+        $callback(new CoreCommand());
     }
 }
