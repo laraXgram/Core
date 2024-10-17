@@ -1,0 +1,24 @@
+<?php
+
+use LaraGram\Conversation\Conversation;
+use LaraGram\Conversation\Questioner;
+use LaraGram\Request\Request;
+
+return new class
+{
+    public int $maxAttempts = 5;
+    public int $cancelTimeout = 300;
+    public string $cancelCommand = 'cancel';
+
+    public function run(): void
+    {
+        Conversation::create(function (Questioner $questioner){
+            //
+        });
+    }
+
+    public function onCancel(Request $request)
+    {
+        //
+    }
+};

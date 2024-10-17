@@ -58,6 +58,7 @@ class CoreCommand
             \LaraGram\Foundation\PackageManager\Installer\OpenSwoole::class,
             \LaraGram\Foundation\PackageManager\Uninstaller\OpenSwoole::class,
             \LaraGram\Foundation\PackageManager\Uninstaller\Eloquent::class,
+            \LaraGram\Conversation\Console\GenerateConversation::class,
         ];
     }
 }
