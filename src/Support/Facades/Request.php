@@ -132,6 +132,8 @@ use LaraGram\Laraquest\Mode;
  * @method static getGameHighScores($user_id, $chat_id = null, $message_id = null, $inline_message_id = null)
  * @method static createChatSubscriptionInviteLink($chat_id, $subscription_period, $subscription_price, $name = null)
  * @method static editChatSubscriptionInviteLink($chat_id, $invite_link, $name = null)
+ * @method static getUpdateType()
+ * @method static getUpdateMessageSubType(object $message)
  * @method static void macro(string $name, callable $macro)
  * @method static bool hasMacro(string $name)
  */
