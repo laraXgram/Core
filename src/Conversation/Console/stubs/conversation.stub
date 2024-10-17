@@ -1,23 +1,28 @@
 <?php
 
-use LaraGram\Conversation\Conversation;
+use LaraGram\Support\Facades\Conversation;
 use LaraGram\Conversation\Questioner;
 use LaraGram\Request\Request;
 
-return new class
-{
+return new class {
     public int $maxAttempts = 5;
-    public int $cancelTimeout = 300;
+    public int $cancelTimeout = 500 // Seconds;
     public string $cancelCommand = 'cancel';
+    public bool $forgotAfterComplete = true;
 
-    public function run(): void
+    public function start(): void
     {
-        Conversation::create(function (Questioner $questioner){
+        Conversation::create(function (Questioner $questioner) {
             //
         });
     }
 
-    public function onCancel(Request $request)
+    public function onCancel(Request $request, string $reason): void
+    {
+        //
+    }
+
+    public function onComplete(Request $request, array $answers): void
     {
         //
     }
