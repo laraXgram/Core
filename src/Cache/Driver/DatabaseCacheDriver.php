@@ -43,11 +43,4 @@ class DatabaseCacheDriver implements CacheDriver
     {
         return Cache::all();
     }
-
-    public function pull($key)
-    {
-        $data = $this->get($key);
-        $this->forgot($key);
-        return $data;
-    }
 }

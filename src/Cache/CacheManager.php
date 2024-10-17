@@ -76,4 +76,21 @@ class CacheManager
             return false;
         }
     }
+
+    public function pull($key)
+    {
+        $data = $this->get($key);
+        $this->forgot($key);
+        return $data;
+    }
+
+    public function has($key)
+    {
+        return !is_null($this->get($key));
+    }
+
+    public function hasNot($key)
+    {
+        return !$this->has($key);
+    }
 }

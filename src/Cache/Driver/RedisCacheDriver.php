@@ -43,11 +43,4 @@ class RedisCacheDriver implements CacheDriver {
     {
         $this->redis->flushDB();
     }
-
-    public function pull($key)
-    {
-        $data = $this->get($key);
-        $this->forgot($key);
-        return $data;
-    }
 }

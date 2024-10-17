@@ -23,11 +23,4 @@ class APCuCacheDriver implements CacheDriver {
     {
         apcu_clear_cache();
     }
-
-    public function pull($key)
-    {
-        $data = $this->get($key);
-        $this->forgot($key);
-        return $data;
-    }
 }

@@ -8,7 +8,9 @@ use LaraGram\Contracts\CacheDriver;
 /**
  * @method static mixed get(string $key)
  * @method static void set(string $key, mixed $value, int $ttl = 3600)
- * @method static void pull(string $key)
+ * @method static bool has(string $key)
+ * @method static bool hasNot(string $key)
+ * @method static mixed pull(string $key)
  * @method static void forgot(string $key)
  * @method static void clear()
  * @method static CacheManager driver(string|CacheDriver $driver)

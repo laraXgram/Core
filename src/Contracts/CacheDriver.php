@@ -8,5 +8,4 @@ interface  CacheDriver
     public function set($key, $value);
     public function forgot($key);
     public function clear();
-    public function pull($key);
 }
