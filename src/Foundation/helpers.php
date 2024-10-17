@@ -1,6 +1,6 @@
 <?php
 
-use LaraGram\Container\Container;
+use LaraGram\Foundation\Application;
 
 if (!function_exists('app')) {
     /**
@@ -8,15 +8,15 @@ if (!function_exists('app')) {
      *
      * @param string|null $abstract
      * @param array $parameters
-     * @return Container
+     * @return Application
      */
     function app(string $abstract = null, array $parameters = []): mixed
     {
         if (is_null($abstract)) {
-            return Container::getInstance();
+            return Application::getInstance();
         }
 
-        return Container::getInstance()->make($abstract, $parameters);
+        return Application::getInstance()->make($abstract, $parameters);
     }
 }
 

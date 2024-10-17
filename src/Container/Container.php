@@ -16,7 +16,6 @@ use ReflectionParameter;
 class Container implements ContainerContract, ArrayAccess
 {
     protected static $instance;
-
     protected array $resolved = [];
     protected array $bindings = [];
     protected array $methodBindings = [];

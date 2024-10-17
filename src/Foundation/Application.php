@@ -8,8 +8,8 @@ use LaraGram\Console\Kernel;
 use LaraGram\Container\Container;
 use LaraGram\Contracts\Application as ApplicationContract;
 use Illuminate\Database\Capsule\Manager as Capsule;
+use LaraGram\Conversation\ConversationListener;
 use LaraGram\Laraquest\Laraquest;
-use LaraGram\Support\Facades\Config;
 use LaraGram\Support\Facades\Console;
 use Swoole\Http\Server;
 use Swoole\Http\Request;
@@ -19,19 +19,21 @@ use LaraGram\Support\Facades\Facade;
 class Application extends Container implements ApplicationContract
 {
     protected string|null $basePath;
+    protected array $registeredCallbacks = [];
+    protected bool $booted = false;
+    protected array $bootingCallbacks = [];
+    protected array $bootedCallbacks = [];
+    protected array $terminatingCallbacks = [];
     protected array $serviceProviders = [];
     protected array $loadedProviders = [];
     protected array $deferredServices = [];
-    protected array $bootedCallbacks = [];
-    protected array $bootingCallbacks = [];
-    protected array $registeredCallbacks = [];
-    protected array $terminatingCallbacks = [];
-    protected bool $booted = false;
-    private string $appPath = '';
-    private string $storagePath = '';
-    private string $configPath = '';
-    private string $databasePath = '';
-    private string $assetsPath = '';
+    protected string $bootstrapPath = '';
+    protected string $appPath = '';
+    protected string $configPath = '';
+    protected string $databasePath = '';
+    protected string $langPath = '';
+    protected string $assetsPath = '';
+    protected string $storagePath = '';
 
     public function __construct(string $basePath = null)
     {
@@ -49,8 +51,6 @@ class Application extends Container implements ApplicationContract
         if (config('database.database.power') == 'on') {
             $this->registerEloquent();
         }
-
-        file_put_contents('app.txt', $this);
 
         return $this;
     }
@@ -115,6 +115,16 @@ class Application extends Container implements ApplicationContract
         return $this->joinPaths($this->assetsPath ?: $this->basePath('assets'), $path);
     }
 
+    public function bootstrapPath($path = ''): string
+    {
+        return $this->joinPaths($this->bootstrapPath ?: $this->basePath('bootstrap'), $path);
+    }
+
+    public function langPath($path = ''): string
+    {
+        return $this->joinPaths($this->langPath ?: $this->basePath('lang'), $path);
+    }
+
     protected function bindPathsInContainer(): void
     {
         $this->instance('path.laragram', dirname(__DIR__));
@@ -124,6 +134,8 @@ class Application extends Container implements ApplicationContract
         $this->instance('path.config', $this->configPath());
         $this->instance('path.database', $this->databasePath());
         $this->instance('path.asset', $this->assetsPath());
+        $this->instance('path.bootstrap', $this->bootstrapPath());
+        $this->instance('path.lang', $this->langPath());
     }
 
     public function registerKernel(): static
@@ -177,6 +189,7 @@ class Application extends Container implements ApplicationContract
             \LaraGram\Auth\AuthServiceProvider::class,
             \LaraGram\Keyboard\KeyboardServiceProvider::class,
             \LaraGram\Console\ConsoleServiceProvider::class,
+            \LaraGram\Conversation\ConversationServiceProvider::class,
         ];
 
         return array_merge($providers, config('app.service_provider'));
@@ -187,6 +200,8 @@ class Application extends Container implements ApplicationContract
         foreach ($this->baseServiceProviders() as $provider) {
             $this->register(new $provider($this));
         }
+
+        $this->boot();
 
         return $this;
     }
@@ -331,7 +346,7 @@ class Application extends Container implements ApplicationContract
 
         $this->register($instance = new $provider($this));
 
-        if (!$this->isBooted()) {
+        if ($this->isBooted()) {
             $this->booting(function () use ($instance) {
                 $this->bootProvider($instance);
             });
@@ -394,10 +409,6 @@ class Application extends Container implements ApplicationContract
             $this->call([$provider, 'boot']);
         }
 
-        if (method_exists($provider, 'boot')) {
-            $provider->boot();
-        }
-
         $provider->callBootedCallbacks();
     }
 
@@ -421,6 +432,17 @@ class Application extends Container implements ApplicationContract
 
         while ($index < count($callbacks)) {
             $callbacks[$index]($this);
+
+            $index++;
+        }
+    }
+
+    public function terminate()
+    {
+        $index = 0;
+
+        while ($index < count($this->terminatingCallbacks)) {
+            $this->call($this->terminatingCallbacks[$index]);
 
             $index++;
         }
@@ -494,6 +516,8 @@ class Application extends Container implements ApplicationContract
                 require $directory . DIRECTORY_SEPARATOR . $file;
             }
         }
+
+        new ConversationListener;
     }
 
     public function handleRequests()
@@ -505,7 +529,7 @@ class Application extends Container implements ApplicationContract
             }
 
             $ip = config('server.openswoole.ip');
-            $port = config('server.openswoole_port');
+            $port = config('server.openswoole.port');
             $server = new Server($ip, $port);
             $server->on("start", function () use ($ip, $port) {
                 Console::output()->success("Server Started! [ {$ip}:{$port} ]");
@@ -520,9 +544,9 @@ class Application extends Container implements ApplicationContract
             });
 
             $server->start();
-        }elseif($update_type == 'polling'){
+        } elseif ($update_type == 'polling') {
             Console::output()->success("Polling Started!");
-            Laraquest::polling(function (){
+            Laraquest::polling(function () {
                 $this->loadResources(false);
             });
         } else {
@@ -532,7 +556,7 @@ class Application extends Container implements ApplicationContract
 
     private function registerConfig(): static
     {
-        $this->singleton('config', function (){
+        $this->singleton('config', function () {
             $configurations = [];
             foreach (glob(app('path.config') . '/*.php') as $file) {
                 $key = basename($file, '.php');
