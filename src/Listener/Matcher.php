@@ -160,7 +160,7 @@ class Matcher
         return false;
     }
 
-    private function match_hashtag(callable $action, null $pattern)
+    private function getEntities(): false|array
     {
         if (isset($this->request->message->entities)) {
             $entities = $this->request->message->entities;
@@ -171,6 +171,14 @@ class Matcher
         } else {
             return false;
         }
+        return [$entities, $text];
+    }
+
+    private function match_hashtag(callable $action, null $pattern)
+    {
+        $get_entities = $this->getEntities();
+        $entities = $get_entities[0];
+        $text = $get_entities[1];
 
         $hashtags = [];
         foreach ($entities as $entity) {
@@ -191,15 +199,9 @@ class Matcher
 
     private function match_mention(callable $action, null $pattern)
     {
-        if (isset($this->request->message->entities)) {
-            $entities = $this->request->message->entities;
-            $text = $this->request->message->text;
-        } elseif (isset($this->request->message->caption_entities)) {
-            $entities = $this->request->message->caption_entities;
-            $text = $this->request->message->caption;
-        } else {
-            return false;
-        }
+        $get_entities = $this->getEntities();
+        $entities = $get_entities[0];
+        $text = $get_entities[1];
 
         $mentions = [];
         foreach ($entities as $entity) {
@@ -220,15 +222,9 @@ class Matcher
 
     private function match_cashtag(callable $action, null $pattern)
     {
-        if (isset($this->request->message->entities)) {
-            $entities = $this->request->message->entities;
-            $text = $this->request->message->text;
-        } elseif (isset($this->request->message->caption_entities)) {
-            $entities = $this->request->message->caption_entities;
-            $text = $this->request->message->caption;
-        } else {
-            return false;
-        }
+        $get_entities = $this->getEntities();
+        $entities = $get_entities[0];
+        $text = $get_entities[1];
 
         $cashtags = [];
         foreach ($entities as $entity) {
@@ -280,7 +276,7 @@ class Matcher
             $beforeLastMatch = substr($string, 0, $lastMatchPosition);
             $afterLastMatch = substr($string, $lastMatchPosition + strlen($lastMatch[0]));
 
-            $lastMatchReplaced = preg_replace($pattern, "\s*(.*)$2", $lastMatch[0], 1);
+            $lastMatchReplaced = preg_replace($pattern, "(\s++(.*))$2", $lastMatch[0], 1);
 
             $string = $beforeLastMatch . $lastMatchReplaced . $afterLastMatch;
         }
