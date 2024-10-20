@@ -3,23 +3,24 @@
 namespace LaraGram\Foundation;
 
 use Composer\Autoload\ClassLoader;
-use LaraGram\Config\Repository;
-use LaraGram\Console\Kernel;
-use LaraGram\Container\Container;
-use LaraGram\Contracts\Application as ApplicationContract;
 use Illuminate\Database\Capsule\Manager as Capsule;
+use LaraGram\Container\Container;
+use LaraGram\Contracts\Foundation\Application as ApplicationContract;
 use LaraGram\Conversation\ConversationListener;
+use LaraGram\Filesystem\Filesystem;
 use LaraGram\Laraquest\Laraquest;
 use LaraGram\Support\Facades\Console;
-use Swoole\Http\Server;
 use Swoole\Http\Request;
 use Swoole\Http\Response;
-use LaraGram\Support\Facades\Facade;
+use Swoole\Http\Server;
 
 class Application extends Container implements ApplicationContract
 {
+    const VERSION = "2.5.0";
+
     protected string|null $basePath;
     protected array $registeredCallbacks = [];
+    protected bool $hasBeenBootstrapped = false;
     protected bool $booted = false;
     protected array $bootingCallbacks = [];
     protected array $bootedCallbacks = [];
@@ -34,55 +35,138 @@ class Application extends Container implements ApplicationContract
     protected string $langPath = '';
     protected string $assetsPath = '';
     protected string $storagePath = '';
+    protected array $absoluteCachePathPrefixes = ['/', '\\'];
+    protected array $bootstrappers = [
+        \LaraGram\Foundation\Bootstrap\LoadConfiguration::class,
+        \LaraGram\Foundation\Bootstrap\RegisterFacades::class,
+        \LaraGram\Foundation\Bootstrap\RegisterProviders::class,
+        \LaraGram\Foundation\Bootstrap\BootProviders::class,
+    ];
 
     public function __construct(string $basePath = null)
     {
-        static::setInstance($this);
-        Facade::setFacadeApplication($this);
+        if ($basePath) {
+            $this->setBasePath($basePath);
+        }
 
-        $this->setBasePath($basePath)
-            ->registerConfig()
+        $this
             ->registerBaseBindings()
             ->registerBaseServiceProviders()
             ->registerCoreContainerAliases();
 
-        config('app.app_base_path', $this->basePath);
+        return $this;
+    }
 
-        if (config('database.database.power') == 'on') {
-            $this->registerEloquent();
+    public static function configure(?string $basePath = null): Configuration\ApplicationBuilder
+    {
+        $basePath = match (true) {
+            is_string($basePath) => $basePath,
+            default => static::inferBasePath(),
+        };
+
+        return (new Configuration\ApplicationBuilder(new static($basePath)))
+            ->withProviders();
+    }
+
+    public static function inferBasePath()
+    {
+        return match (true) {
+            config('base_path') !== null => config('base_path'),
+            default => dirname(array_keys(ClassLoader::getRegisteredLoaders())[0]),
+        };
+    }
+
+    public function version(): string
+    {
+        return static::VERSION;
+    }
+
+    public function bootstrap(): void
+    {
+        if (!$this->hasBeenBootstrapped()) {
+            $this->bootstrapWith($this->bootstrappers());
+        }
+
+        $this->loadDeferredProviders();
+    }
+
+    protected function bootstrappers(): array
+    {
+        return $this->bootstrappers;
+    }
+
+    protected function registerBaseBindings(): static
+    {
+        static::setInstance($this);
+
+        $this->instance('app', $this);
+        $this->instance(Container::class, $this);
+
+        $this->singleton(PackageManifest::class, fn() => new PackageManifest(
+            new Filesystem, $this->basePath(), $this->getCachedPackagesPath()
+        ));
+
+        return $this;
+    }
+
+    public function baseServiceProviders(): array
+    {
+        return [
+            \LaraGram\Cache\CacheServiceProvider::class,
+            \LaraGram\Listener\ListenerServiceProvider::class,
+            \LaraGram\Request\RequestServiceProvider::class,
+            \LaraGram\Database\DatabaseServiceProvider::class,
+            \LaraGram\Redis\RedisServiceProvider::class,
+            \LaraGram\Auth\AuthServiceProvider::class,
+            \LaraGram\Keyboard\KeyboardServiceProvider::class,
+            \LaraGram\Console\ConsoleServiceProvider::class,
+            \LaraGram\Conversation\ConversationServiceProvider::class,
+        ];
+    }
+
+    protected function registerBaseServiceProviders(): static
+    {
+        foreach ($this->baseServiceProviders() as $provider) {
+            $this->register(new $provider($this));
         }
 
         return $this;
     }
 
+    public function bootstrapWith(array $bootstrappers)
+    {
+        $this->hasBeenBootstrapped = true;
+
+        foreach ($bootstrappers as $bootstrapper) {
+            $this->make($bootstrapper)->bootstrap($this);
+        }
+    }
+
+    public function hasBeenBootstrapped(): bool
+    {
+        return $this->hasBeenBootstrapped;
+    }
+
     public function setBasePath($basePath): static
     {
-        $basePath = match (true) {
-            $basePath !== null => $basePath,
-            isset($_ENV['APP_BASE_PATH']) => $_ENV['APP_BASE_PATH'],
-            default => dirname(array_keys(ClassLoader::getRegisteredLoaders())[0]),
-        };
-
         $this->basePath = rtrim($basePath, '\/');
-
-        $_ENV['APP_BASE_PATH'] = $this->basePath;
 
         $this->bindPathsInContainer();
 
         return $this;
     }
 
-    public function joinPaths($basePath, ...$paths): string
+    protected function bindPathsInContainer(): void
     {
-        foreach ($paths as $index => $path) {
-            if (empty($path)) {
-                unset($paths[$index]);
-            } else {
-                $paths[$index] = DIRECTORY_SEPARATOR . ltrim($path, DIRECTORY_SEPARATOR);
-            }
-        }
-
-        return $basePath . implode('', $paths);
+        $this->instance('path.laragram', dirname(__DIR__));
+        $this->instance('path.base', $this->basePath());
+        $this->instance('path.app', $this->appPath());
+        $this->instance('path.storage', $this->storagePath());
+        $this->instance('path.config', $this->configPath());
+        $this->instance('path.database', $this->databasePath());
+        $this->instance('path.asset', $this->assetsPath());
+        $this->instance('path.bootstrap', $this->bootstrapPath());
+        $this->instance('path.lang', $this->langPath());
     }
 
     public function basePath($path = ''): string
@@ -125,135 +209,53 @@ class Application extends Container implements ApplicationContract
         return $this->joinPaths($this->langPath ?: $this->basePath('lang'), $path);
     }
 
-    protected function bindPathsInContainer(): void
+    public function getBootstrapProvidersPath(): string
     {
-        $this->instance('path.laragram', dirname(__DIR__));
-        $this->instance('path.base', $this->basePath());
-        $this->instance('path.app', $this->appPath());
-        $this->instance('path.storage', $this->storagePath());
-        $this->instance('path.config', $this->configPath());
-        $this->instance('path.database', $this->databasePath());
-        $this->instance('path.asset', $this->assetsPath());
-        $this->instance('path.bootstrap', $this->bootstrapPath());
-        $this->instance('path.lang', $this->langPath());
+        return $this->bootstrapPath('providers.php');
     }
 
-    public function registerKernel(): static
+    public function joinPaths($basePath, ...$paths): string
     {
-        $this->singleton(CoreCommand::class);
-        $this->alias(CoreCommand::class, 'kernel.core_command');
-        $this->singleton(Kernel::class);
-        $this->alias(Kernel::class, 'kernel');
-
-        return $this;
-    }
-
-    public function commands(): array
-    {
-        /**
-         * @var CoreCommand $core_command
-         */
-        $core_command = app('kernel.core_command');
-
-        return array_merge($core_command->getCoreCommands(), config('app.commands'));
-    }
-
-    public function registerCommands(): static
-    {
-        $commands = $this->commands();
-        foreach ($commands as $command) {
-            $this['kernel']->addCommand(new $command);
-        }
-
-        $this['kernel']->run();
-
-        return $this;
-    }
-
-    protected function registerBaseBindings(): static
-    {
-        $this->instance('app', $this);
-        $this->instance(Container::class, $this);
-
-        return $this;
-    }
-
-    protected function baseServiceProviders(): array
-    {
-        $providers = [
-            \LaraGram\Cache\CacheServiceProvider::class,
-            \LaraGram\Listener\ListenerServiceProvider::class,
-            \LaraGram\Request\RequestServiceProvider::class,
-            \LaraGram\Database\DatabaseServiceProvider::class,
-            \LaraGram\Redis\RedisServiceProvider::class,
-            \LaraGram\Auth\AuthServiceProvider::class,
-            \LaraGram\Keyboard\KeyboardServiceProvider::class,
-            \LaraGram\Console\ConsoleServiceProvider::class,
-            \LaraGram\Conversation\ConversationServiceProvider::class,
-        ];
-
-        return array_merge($providers, config('app.service_provider'));
-    }
-
-    protected function registerBaseServiceProviders(): static
-    {
-        foreach ($this->baseServiceProviders() as $provider) {
-            $this->register(new $provider($this));
-        }
-
-        $this->boot();
-
-        return $this;
-    }
-
-    protected function coreContainerAliases(): array
-    {
-        return [
-            'app' => [self::class, Container::class],
-            'listener' => [\LaraGram\Listener\Listener::class, \LaraGram\Listener\Group::class],
-            'request' => [\LaraGram\Request\Request::class],
-            'db.schema' => [\LaraGram\Database\Migrations\Schema::class],
-            'auth' => [\LaraGram\Auth\Auth::class],
-            'auth.level' => [\LaraGram\Auth\Level::class],
-            'auth.role' => [\LaraGram\Auth\Role::class],
-            'console.output' => [\LaraGram\Console\Output::class],
-        ];
-    }
-
-    protected function registerCoreContainerAliases(): static
-    {
-        foreach ($this->coreContainerAliases() as $key => $aliases) {
-            foreach ($aliases as $alias) {
-                $this->alias($key, $alias);
+        foreach ($paths as $index => $path) {
+            if (empty($path)) {
+                unset($paths[$index]);
+            } else {
+                $paths[$index] = DIRECTORY_SEPARATOR . ltrim($path, DIRECTORY_SEPARATOR);
             }
         }
 
-        return $this;
-    }
-
-    protected function registerEloquent(): static
-    {
-        $capsule = new Capsule();
-        $capsule->addConnection([
-            'driver' => config('database.database.driver'),
-            'host' => config('database.database.host'),
-            'port' => config('database.database.port'),
-            'database' => config('database.database.database'),
-            'username' => config('database.database.username'),
-            'password' => config('database.database.password'),
-            'charset' => config('database.database.charset'),
-            'collation' => config('database.database.collation'),
-            'prefix' => config('database.database.prefix'),
-        ]);
-        $capsule->setAsGlobal();
-        $capsule->bootEloquent();
-
-        return $this;
+        return $basePath . implode('', $paths);
     }
 
     public function registered($callback): void
     {
         $this->registeredCallbacks[] = $callback;
+    }
+
+    public function registerConfiguredProviders(): void
+    {
+        $config = $this->make('config')->get('app.service_provider');
+
+        $providersLaraGram = [];
+        $otherProviders = [];
+
+        foreach ($config as $provider) {
+            if (str_starts_with($provider, 'LaraGram\\')) {
+                $providersLaraGram[] = $provider;
+            } else {
+                $otherProviders[] = $provider;
+            }
+        }
+
+        $packageManifestProviders = $this->make(PackageManifest::class)->providers();
+        array_splice($otherProviders, 0, 0, $packageManifestProviders);
+
+        $allProviders = array_merge($providersLaraGram, $otherProviders);
+
+        $providerRepository = new ProviderRepository($this, new Filesystem, $this->getCachedServicesPath());
+        $providerRepository->load($allProviders);
+
+        $this->fireAppCallbacks($this->registeredCallbacks);
     }
 
     public function register($provider, $force = false)
@@ -437,6 +439,40 @@ class Application extends Container implements ApplicationContract
         }
     }
 
+    public function getCachedServicesPath(): string
+    {
+        return $this->bootstrapPath('cache/services.php');
+    }
+
+    public function getCachedPackagesPath(): string
+    {
+        return $this->bootstrapPath('cache/packages.php');
+    }
+
+    public function configurationIsCached(): bool
+    {
+        return is_file($this->getCachedConfigPath());
+    }
+
+    public function getCachedConfigPath(): string
+    {
+        return $this->bootstrapPath('cache/config.php');
+    }
+
+    public function addAbsoluteCachePathPrefix($prefix)
+    {
+        $this->absoluteCachePathPrefixes[] = $prefix;
+
+        return $this;
+    }
+
+    public function terminating($callback)
+    {
+        $this->terminatingCallbacks[] = $callback;
+
+        return $this;
+    }
+
     public function terminate()
     {
         $index = 0;
@@ -476,6 +512,26 @@ class Application extends Container implements ApplicationContract
     public function isDeferredService($service): bool
     {
         return isset($this->deferredServices[$service]);
+    }
+
+    protected function registerCoreContainerAliases(): static
+    {
+        foreach ([
+                     'app' => [self::class, Container::class],
+                     'listener' => [\LaraGram\Listener\Listener::class, \LaraGram\Listener\Group::class],
+                     'request' => [\LaraGram\Request\Request::class],
+                     'db.schema' => [\LaraGram\Database\Migrations\Schema::class],
+                     'auth' => [\LaraGram\Auth\Auth::class],
+                     'auth.level' => [\LaraGram\Auth\Level::class],
+                     'auth.role' => [\LaraGram\Auth\Role::class],
+                     'console.output' => [\LaraGram\Console\Output::class],
+                 ] as $key => $aliases) {
+            foreach ($aliases as $alias) {
+                $this->alias($key, $alias);
+            }
+        }
+
+        return $this;
     }
 
     public function flush(): void
@@ -554,17 +610,37 @@ class Application extends Container implements ApplicationContract
         }
     }
 
-    private function registerConfig(): static
-    {
-        $this->singleton('config', function () {
-            $configurations = [];
-            foreach (glob(app('path.config') . '/*.php') as $file) {
-                $key = basename($file, '.php');
-                $configurations[$key] = require $file;
-            }
+//    private function registerConfig(): static
+//    {
+//        $this->singleton('config', function () {
+//            $configurations = [];
+//            foreach (glob(app('path.config') . '/*.php') as $file) {
+//                $key = basename($file, '.php');
+//                $configurations[$key] = require $file;
+//            }
+//
+//            return new Repository($configurations);
+//        });
+//
+//        return $this;
+//    }
 
-            return new Repository($configurations);
-        });
+    public function registerEloquent(): static
+    {
+        $capsule = new Capsule();
+        $capsule->addConnection([
+            'driver' => config('database.database.driver'),
+            'host' => config('database.database.host'),
+            'port' => config('database.database.port'),
+            'database' => config('database.database.database'),
+            'username' => config('database.database.username'),
+            'password' => config('database.database.password'),
+            'charset' => config('database.database.charset'),
+            'collation' => config('database.database.collation'),
+            'prefix' => config('database.database.prefix'),
+        ]);
+        $capsule->setAsGlobal();
+        $capsule->bootEloquent();
 
         return $this;
     }

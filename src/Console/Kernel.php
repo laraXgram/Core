@@ -2,15 +2,30 @@
 
 namespace LaraGram\Console;
 
+use LaraGram\Foundation\Application;
+use LaraGram\Foundation\CoreCommand;
 use LaraGram\Support\Facades\Console;
 
 class Kernel
 {
+    protected Application $app;
     protected array $commands = [];
+
+    public function __construct(Application $app)
+    {
+        $this->app = $app;
+    }
 
     public function addCommand(Command $command): void
     {
         $this->commands[] = $command;
+    }
+
+    public function addCommands(array $commands): void
+    {
+        foreach ($commands as $command) {
+            $this->commands[] = new $command($this->app);
+        }
     }
 
     public function run(): void
@@ -32,7 +47,7 @@ class Kernel
         Console::output()->warning("Command not found: $commandName", exit: true);
     }
 
-    public function executeCommand(Command $command, $args): void
+    public function executeCommand(Command $command, $args, $callSilent = false): void
     {
         $arguments = [];
         $options = [];
@@ -57,6 +72,7 @@ class Kernel
             $command->setOption($name, $value);
         }
 
+        $command->silent = $callSilent;
         $command->handle();
     }
 }

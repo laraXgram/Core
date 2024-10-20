@@ -7,8 +7,9 @@ use LaraGram\Support\Arr;
 use LaraGram\Support\Trait\Macroable;
 use InvalidArgumentException;
 use ReturnTypeWillChange;
+use LaraGram\Contracts\Config\Repository as RepositoryContract;
 
-class Repository implements ArrayAccess
+class Repository implements ArrayAccess, RepositoryContract
 {
     use Macroable;
 
@@ -36,7 +37,7 @@ class Repository implements ArrayAccess
      * @param string $key
      * @return bool
      */
-    public function has(string $key): bool
+    public function has($key): bool
     {
         return Arr::has($this->items, $key);
     }
@@ -48,7 +49,7 @@ class Repository implements ArrayAccess
      * @param mixed|null $default
      * @return mixed
      */
-    public function get(array|string $key, mixed $default = null): mixed
+    public function get($key, mixed $default = null): mixed
     {
         if (is_array($key)) {
             return $this->getMany($key);
@@ -185,7 +186,7 @@ class Repository implements ArrayAccess
      * @param mixed|null $value
      * @return void
      */
-    public function set(array|string $key, mixed $value = null): void
+    public function set($key, mixed $value = null): void
     {
         $keys = is_array($key) ? $key : [$key => $value];
 
@@ -201,7 +202,7 @@ class Repository implements ArrayAccess
      * @param  mixed  $value
      * @return void
      */
-    public function prepend(string $key, mixed $value): void
+    public function prepend($key, mixed $value): void
     {
         $array = $this->get($key, []);
 
@@ -217,7 +218,7 @@ class Repository implements ArrayAccess
      * @param  mixed  $value
      * @return void
      */
-    public function push(string $key, mixed $value): void
+    public function push($key, mixed $value): void
     {
         $array = $this->get($key, []);
 

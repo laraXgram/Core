@@ -2,17 +2,22 @@
 
 namespace LaraGram\Console;
 
+use LaraGram\Contracts\Foundation\Application;
+
 abstract class Command
 {
+    protected Application $app;
     protected $signature;
     protected $description;
     protected $options = [];
     protected $arguments = [];
 
     protected $output;
+    public $silent;
 
     public function __construct()
     {
+        $this->app = app();
         $this->output = app()->make(Output::class);
 
         $commands = app('console.commands');

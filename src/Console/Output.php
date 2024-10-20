@@ -1,4 +1,5 @@
 <?php
+
 namespace LaraGram\Console;
 
 use Bramus\Ansi\Ansi;
