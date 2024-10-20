@@ -20,4 +20,9 @@ class ConsoleServiceProvider extends ServiceProvider
            return [];
         });
     }
+
+    public function provides(): array
+    {
+        return ['console.output', 'console.commands'];
+    }
 }

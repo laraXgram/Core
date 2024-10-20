@@ -12,4 +12,9 @@ class ConversationServiceProvider extends ServiceProvider
             return new Conversation();
         });
     }
+
+    public function provides(): array
+    {
+        return ['conversation'];
+    }
 }

@@ -20,4 +20,9 @@ class AuthServiceProvider extends ServiceProvider
             return new Role();
         });
     }
+
+    public function provides(): array
+    {
+        return ['auth', 'auth.level', 'auth.role'];
+    }
 }

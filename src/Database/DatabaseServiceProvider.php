@@ -13,4 +13,9 @@ class DatabaseServiceProvider extends ServiceProvider
            return new Schema();
         });
     }
+
+    public function provides(): array
+    {
+        return ['db.schema'];
+    }
 }

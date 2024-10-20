@@ -4,21 +4,19 @@ namespace LaraGram\Support;
 
 use Closure;
 use LaraGram\Container\Container;
-use LaraGram\Contracts\Application;
+use LaraGram\Contracts\Foundation\Application;
+use LaraGram\Contracts\Support\DeferrableProvider;
 use LaraGram\Support\Facades\Console;
 
 abstract class ServiceProvider
 {
     protected Application|Container $app;
-
     protected array $bootingCallbacks = [];
-
     protected array $bootedCallbacks = [];
     public static $publishes = [];
-
     public static $publishGroups = [];
 
-    public function __construct($app)
+    public function __construct(Application $app)
     {
         $this->app = $app;
     }
@@ -160,4 +158,44 @@ abstract class ServiceProvider
         return [];
     }
 
+    public function isDeferred(): bool
+    {
+        return $this->provides() != null;
+    }
+
+    public static function addProviderToBootstrapFile(string $provider, ?string $path = null)
+    {
+        $path = $path ?? app()->getBootstrapProvidersPath();
+
+        if (!file_exists($path)) {
+            return false;
+        }
+
+        if (function_exists('opcache_invalidate')) {
+            opcache_invalidate($path, true);
+        }
+
+        $providers = require $path;
+
+        if (!in_array($provider, $providers)) {
+            $providers[] = $provider;
+        }
+
+        sort($providers);
+
+        $formattedProviders = '';
+        foreach ($providers as $p) {
+            $formattedProviders .= '    ' . $p . '::class,' . PHP_EOL;
+        }
+
+        $content = '<?php
+
+return [
+' . $formattedProviders . '
+];';
+
+        file_put_contents($path, $content . PHP_EOL);
+
+        return true;
+    }
 }

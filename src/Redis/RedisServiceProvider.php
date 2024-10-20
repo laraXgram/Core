@@ -12,4 +12,9 @@ class RedisServiceProvider extends ServiceProvider
             return new Connection();
         });
     }
+
+    public function provides(): array
+    {
+        return ['redis.connection'];
+    }
 }

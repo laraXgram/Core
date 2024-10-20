@@ -20,7 +20,7 @@ class CacheServiceProvider extends ServiceProvider
         $this->app->singleton('cache.manager', function () {
             $driver = config('cache.default');
 
-            $cacheDriver = match ($driver){
+            $cacheDriver = match ($driver) {
                 'file' => new FileCacheDriver(config('cache.file.path')),
                 'database' => new DatabaseCacheDriver(),
                 'redis' => new RedisCacheDriver(app('redis.connection')),
@@ -30,5 +30,10 @@ class CacheServiceProvider extends ServiceProvider
 
             return new CacheManager($cacheDriver);
         });
+    }
+
+    public function provides(): array
+    {
+        return ['cache.manager'];
     }
 }

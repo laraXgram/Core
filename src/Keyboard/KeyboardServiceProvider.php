@@ -12,4 +12,9 @@ class KeyboardServiceProvider extends ServiceProvider
             return new Keyboard();
         });
     }
+
+    public function provides(): array
+    {
+        return ['keyboard'];
+    }
 }
