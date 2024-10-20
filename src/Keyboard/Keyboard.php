@@ -29,6 +29,25 @@ class Keyboard
         return $this;
     }
 
+    public function replyKeyboardRemove($selective = false): static
+    {
+        $this->keyboard = [
+            'remove_keyboard' => true,
+            'selective' => $selective
+        ];
+        return $this;
+    }
+
+    public function forceReply($input_field_placeholder = '', $selective = false): static
+    {
+        $this->keyboard = [
+            'force_reply' => true,
+            'input_field_placeholder' => $input_field_placeholder,
+            'selective' => $selective
+        ];
+        return $this;
+    }
+
     public function setOption(string $key, mixed $value): static
     {
         $this->keyboard[$key] = $value;
@@ -86,7 +105,7 @@ class Keyboard
         return $this;
     }
 
-    public function getKeyboard(bool $array = false): array|string|false
+    public function get(bool $array = false): array|string|false
     {
         if ($array) {
             return $this->keyboard;
