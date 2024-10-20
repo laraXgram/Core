@@ -53,7 +53,7 @@ class Matcher
 
     private function match_command(callable $action, string|array $pattern)
     {
-        if ($this->request->message->entities[0]->type !== 'bot_command') {
+        if (($this->request->message->entities[0]->type ?? '') !== 'bot_command') {
             return false;
         }
 
