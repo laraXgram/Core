@@ -2,9 +2,9 @@
 
 namespace LaraGram\Conversation;
 
+use LaraGram\Laraquest\Mode;
 use LaraGram\Support\Facades\Cache;
 use LaraGram\Support\Facades\Request;
-use function Symfony\Component\Translation\t;
 
 class ConversationListener
 {
@@ -21,6 +21,10 @@ class ConversationListener
 
         $conversation_cache = json_decode(Cache::get($cacheKey), true);
         $conversationName = $conversation_cache['name'];
+
+        if ((chat()->id ?? user()->id) != $conversation_cache['chatID']){
+            return false;
+        }
 
         if ($this->isConversationComplete($conversation_cache)) {
             return false;
@@ -136,10 +140,10 @@ class ConversationListener
 
         if (in_array($media_type, $allowed_media_types)) {
             $method = "send" . ucfirst($media_type);
-            Request::$method(chat()->id ?? callback_query()->from->id, $question['media'][1] . $question['question'],
+            Request::mode(Mode::NO_RESPONSE_CURL)->$method(chat()->id ?? callback_query()->from->id, $question['media'][1] . $question['question'],
                 reply_markup: $question['keyboard'] ?? null);
         } else {
-            Request::sendMessage(chat()->id, $question['question'],
+            Request::mode(Mode::NO_RESPONSE_CURL)->sendMessage(chat()->id, $question['question'],
                 reply_markup: $question['keyboard'] ?? null);
         }
     }

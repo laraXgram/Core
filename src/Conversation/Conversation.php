@@ -20,7 +20,7 @@ class Conversation
     {
         $name = ucfirst($name);
         $user_id = user()->id ?? callback_query()->from->id;
-        if (Cache::hasNot("conversation.$user_id")){
+        if (Cache::hasNot("conversation.$user_id")) {
             $class = new (include app()->appPath("Conversations/$name.php"));
 
             $class->start();
@@ -37,7 +37,8 @@ class Conversation
                 'waitForAnswer' => false,
                 'start' => time(),
                 'complete' => false,
-                'forgot' => $class->forgotAfterComplete ?? true
+                'forgot' => $class->forgotAfterComplete ?? true,
+                'chatID' => chat()->id ?? user()->id,
             ];
 
             Cache::set("conversation.$user_id", json_encode($data));
@@ -46,11 +47,19 @@ class Conversation
 
     public function getAnswers(int|string $user_id): array|null
     {
-        return json_decode(Cache::get("conversation.$user_id"), true)['answers'];
+        $cache = json_decode(Cache::get("conversation.$user_id"), true);
+        if (isset($cache)) {
+            return $cache['answers'];
+        }
+        return null;
     }
 
     public function getAnswer(int|string $user_id, string|int $name): array|null
     {
-        return $this->getAnswers($user_id)[$name];
+        $answers = $this->getAnswers($user_id);
+        if (isset($answers)) {
+            return $answers[$name];
+        }
+        return null;
     }
 }
