@@ -26,6 +26,14 @@
     "minimum-stability": "stable",
     "prefer-stable": true,
     "require": {
-        "bramus/ansi-php": "^3"
+        "bramus/ansi-php": "^3",
+        "laravel/serializable-closure": "^1"
+    },
+    "extra": {
+        "laragram": {
+            "dont-discover": [
+                "nesbot"
+            ]
+        }
     }
 }
