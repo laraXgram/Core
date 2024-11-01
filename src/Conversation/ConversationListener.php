@@ -12,7 +12,7 @@ class ConversationListener
 
     public function __construct()
     {
-        $user_id = user()->id ?? callback_query()->from->id;
+        $user_id = user()->id ?? callback_query()->from->id ?? '';
         $cacheKey = "conversation.$user_id";
 
         if (!Cache::has($cacheKey)) {
