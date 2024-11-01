@@ -5,7 +5,7 @@ namespace LaraGram\Filesystem;
 use ErrorException;
 use FilesystemIterator;
 use LaraGram\Contracts\Filesystem\FileNotFoundException;
-use LaraGram\Support\Trait\Macroable;
+use LaraGram\Support\Traits\Macroable;
 
 class Filesystem
 {

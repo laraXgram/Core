@@ -113,6 +113,7 @@ class Application extends Container implements ApplicationContract
     {
         return [
             \LaraGram\Cache\CacheServiceProvider::class,
+            \LaraGram\Events\EventServiceProvider::class,
             \LaraGram\Listener\ListenerServiceProvider::class,
             \LaraGram\Request\RequestServiceProvider::class,
             \LaraGram\Database\DatabaseServiceProvider::class,
@@ -138,7 +139,11 @@ class Application extends Container implements ApplicationContract
         $this->hasBeenBootstrapped = true;
 
         foreach ($bootstrappers as $bootstrapper) {
+//            $this['events']->dispatch('bootstrapping: ' . $bootstrapper, [$this]);
+
             $this->make($bootstrapper)->bootstrap($this);
+
+//            $this['events']->dispatch('bootstrapped: ' . $bootstrapper, [$this]);
         }
     }
 
@@ -573,7 +578,9 @@ class Application extends Container implements ApplicationContract
             }
         }
 
-        new ConversationListener;
+        if (file_exists($this->storagePath('app/cache/conversation/' . md5("conversation." . (user()->id ?? callback_query()->from->id ?? '')) . '.cache'))) {
+            $this->make(ConversationListener::class);
+        }
     }
 
     public function handleRequests()
@@ -609,21 +616,6 @@ class Application extends Container implements ApplicationContract
             $this->loadResources();
         }
     }
-
-//    private function registerConfig(): static
-//    {
-//        $this->singleton('config', function () {
-//            $configurations = [];
-//            foreach (glob(app('path.config') . '/*.php') as $file) {
-//                $key = basename($file, '.php');
-//                $configurations[$key] = require $file;
-//            }
-//
-//            return new Repository($configurations);
-//        });
-//
-//        return $this;
-//    }
 
     public function registerEloquent(): static
     {

@@ -57,9 +57,9 @@ class ProviderRepository
             $manifest = $this->compileManifest($providers);
         }
 
-//        foreach ($manifest['when'] as $provider => $events) {
-//            $this->registerLoadEvents($provider, $events);
-//        }
+        foreach ($manifest['when'] as $provider => $events) {
+            $this->registerLoadEvents($provider, $events);
+        }
 
         foreach ($manifest['eager'] as $provider) {
             $this->app->register($provider);
@@ -96,21 +96,21 @@ class ProviderRepository
         return is_null($manifest) || $manifest['providers'] != $providers;
     }
 
-//    /**
-//     * Register the load events for the given provider.
-//     *
-//     * @param  string  $provider
-//     * @param  array  $events
-//     * @return void
-//     */
-//    protected function registerLoadEvents($provider, array $events)
-//    {
-//        if (count($events) < 1) {
-//            return;
-//        }
-//
-//        $this->app->make('events')->listen($events, fn () => $this->app->register($provider));
-//    }
+    /**
+     * Register the load events for the given provider.
+     *
+     * @param  string  $provider
+     * @param  array  $events
+     * @return void
+     */
+    protected function registerLoadEvents($provider, array $events)
+    {
+        if (count($events) < 1) {
+            return;
+        }
+
+        $this->app->make('events')->listen($events, fn () => $this->app->register($provider));
+    }
 
     /**
      * Compile the application service manifest file.

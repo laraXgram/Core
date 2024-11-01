@@ -1,6 +1,6 @@
 <?php
 
-namespace LaraGram\Support\Trait;
+namespace LaraGram\Support\Traits;
 
 use BadMethodCallException;
 use Closure;

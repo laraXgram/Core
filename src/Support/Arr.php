@@ -2,6 +2,9 @@
 
 namespace LaraGram\Support;
 
+use ArrayAccess;
+use Illuminate\Support\Enumerable;
+
 class Arr
 {
     public static function get(array $array, $key, $default = null)
@@ -61,5 +64,62 @@ class Arr
         }
 
         return true;
+    }
+
+    public static function wrap($value): array
+    {
+        if (is_null($value)) {
+            return [];
+        }
+
+        return is_array($value) ? $value : [$value];
+    }
+
+    public static function prepend($array, $value, $key = null)
+    {
+        if (func_num_args() == 2) {
+            array_unshift($array, $value);
+        } else {
+            $array = [$key => $value] + $array;
+        }
+
+        return $array;
+    }
+
+    public static function collapse($array)
+    {
+        $results = [];
+
+        foreach ($array as $values) {
+            if (! is_array($values)) {
+                continue;
+            }
+
+            $results[] = $values;
+        }
+
+        return array_merge([], ...$results);
+    }
+
+    public static function accessible($value)
+    {
+        return is_array($value) || $value instanceof ArrayAccess;
+    }
+
+    public static function exists($array, $key)
+    {
+        if ($array instanceof Enumerable) {
+            return $array->has($key);
+        }
+
+        if ($array instanceof ArrayAccess) {
+            return $array->offsetExists($key);
+        }
+
+        if (is_float($key)) {
+            $key = (string) $key;
+        }
+
+        return array_key_exists($key, $array);
     }
 }
