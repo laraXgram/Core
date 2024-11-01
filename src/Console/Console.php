@@ -3,7 +3,7 @@
 namespace LaraGram\Console;
 
 use LaraGram\Foundation\CoreCommand;
-use LaraGram\Support\Trait\Macroable;
+use LaraGram\Support\Traits\Macroable;
 
 class Console
 {

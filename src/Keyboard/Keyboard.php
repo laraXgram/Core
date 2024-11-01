@@ -2,7 +2,7 @@
 
 namespace LaraGram\Keyboard;
 
-use LaraGram\Support\Trait\Macroable;
+use LaraGram\Support\Traits\Macroable;
 
 class Keyboard
 {

@@ -3,7 +3,7 @@
 namespace LaraGram\Listener;
 
 use Closure;
-use LaraGram\Support\Trait\Macroable;
+use LaraGram\Support\Traits\Macroable;
 
 final class Listener extends Matcher
 {

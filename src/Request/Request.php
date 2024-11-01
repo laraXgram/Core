@@ -4,7 +4,7 @@ namespace LaraGram\Request;
 
 use LaraGram\Laraquest\Methode;
 use LaraGram\Laraquest\Updates;
-use LaraGram\Support\Trait\Macroable;
+use LaraGram\Support\Traits\Macroable;
 
 class Request
 {

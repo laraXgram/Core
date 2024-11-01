@@ -3,7 +3,7 @@
 namespace LaraGram\Auth;
 
 use App\Models\User;
-use LaraGram\Support\Trait\Macroable;
+use LaraGram\Support\Traits\Macroable;
 
 class Auth
 {

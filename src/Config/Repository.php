@@ -4,7 +4,7 @@ namespace LaraGram\Config;
 
 use ArrayAccess;
 use LaraGram\Support\Arr;
-use LaraGram\Support\Trait\Macroable;
+use LaraGram\Support\Traits\Macroable;
 use InvalidArgumentException;
 use ReturnTypeWillChange;
 use LaraGram\Contracts\Config\Repository as RepositoryContract;
