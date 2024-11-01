@@ -2,7 +2,7 @@
 
 namespace LaraGram\Cache\Driver;
 
-use LaraGram\Contracts\CacheDriver;
+use LaraGram\Contracts\Cache\CacheDriver;
 
 class APCuCacheDriver implements CacheDriver {
     public function get($key) {
