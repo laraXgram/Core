@@ -48,6 +48,14 @@ class Keyboard
         return $this;
     }
 
+    public function copyTextButton($text): static
+    {
+        $this->keyboard = [
+            'text' => $text,
+        ];
+        return $this;
+    }
+
     public function setOption(string $key, mixed $value): static
     {
         $this->keyboard[$key] = $value;
