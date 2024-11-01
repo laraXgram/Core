@@ -2,8 +2,7 @@
 
 namespace LaraGram\Cache\Driver;
 
-use LaraGram\Cache\Database\Cache;
-use LaraGram\Contracts\CacheDriver;
+use LaraGram\Contracts\Cache\CacheDriver;
 
 class FileCacheDriver implements CacheDriver
 {
