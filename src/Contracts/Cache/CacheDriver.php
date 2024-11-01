@@ -1,6 +1,6 @@
 <?php
 
-namespace LaraGram\Contracts;
+namespace LaraGram\Contracts\Cache;
 
 interface  CacheDriver
 {

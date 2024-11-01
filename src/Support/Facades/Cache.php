@@ -3,7 +3,7 @@
 namespace LaraGram\Support\Facades;
 
 use LaraGram\Cache\CacheManager;
-use LaraGram\Contracts\CacheDriver;
+use LaraGram\Contracts\Cache\CacheDriver;
 
 /**
  * @method static mixed get(string $key)

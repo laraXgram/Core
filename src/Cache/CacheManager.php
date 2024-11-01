@@ -6,8 +6,8 @@ use LaraGram\Cache\Driver\APCuCacheDriver;
 use LaraGram\Cache\Driver\DatabaseCacheDriver;
 use LaraGram\Cache\Driver\FileCacheDriver;
 use LaraGram\Cache\Driver\RedisCacheDriver;
-use LaraGram\Contracts\CacheDriver;
-use LaraGram\Support\Trait\Macroable;
+use LaraGram\Contracts\Cache\CacheDriver;
+use LaraGram\Support\Traits\Macroable;
 
 class CacheManager
 {
