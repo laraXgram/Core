@@ -32,7 +32,7 @@ if (!function_exists('forceReply')) {
 }
 
 if (!function_exists('copyTextButton')) {
-    function forceReply(string $text): \LaraGram\Keyboard\Keyboard
+    function copyTextButton(string $text): \LaraGram\Keyboard\Keyboard
     {
         return Keyboard::copyTextButton($text);
     }
