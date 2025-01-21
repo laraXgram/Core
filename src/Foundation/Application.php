@@ -65,6 +65,7 @@ class Application extends Container implements ApplicationContract
         };
 
         return (new Configuration\ApplicationBuilder(new static($basePath)))
+            ->withEvents()
             ->withProviders();
     }
 
@@ -81,6 +82,7 @@ class Application extends Container implements ApplicationContract
         return static::VERSION;
     }
 
+    // TODO: move to console kernel
     public function bootstrap(): void
     {
         if (!$this->hasBeenBootstrapped()) {
@@ -112,6 +114,7 @@ class Application extends Container implements ApplicationContract
     public function baseServiceProviders(): array
     {
         return [
+            \LaraGram\Filesystem\FilesystemServiceProvider::class,
             \LaraGram\Cache\CacheServiceProvider::class,
             \LaraGram\Events\EventServiceProvider::class,
             \LaraGram\Listener\ListenerServiceProvider::class,
@@ -139,11 +142,11 @@ class Application extends Container implements ApplicationContract
         $this->hasBeenBootstrapped = true;
 
         foreach ($bootstrappers as $bootstrapper) {
-//            $this['events']->dispatch('bootstrapping: ' . $bootstrapper, [$this]);
+            $this['events']->dispatch('bootstrapping: ' . $bootstrapper, [$this]);
 
             $this->make($bootstrapper)->bootstrap($this);
 
-//            $this['events']->dispatch('bootstrapped: ' . $bootstrapper, [$this]);
+            $this['events']->dispatch('bootstrapped: ' . $bootstrapper, [$this]);
         }
     }
 
@@ -462,6 +465,16 @@ class Application extends Container implements ApplicationContract
     public function getCachedConfigPath(): string
     {
         return $this->bootstrapPath('cache/config.php');
+    }
+
+    public function eventsAreCached()
+    {
+        return $this['files']->exists($this->getCachedEventsPath());
+    }
+
+    public function getCachedEventsPath()
+    {
+        return $this->bootstrapPath('cache/events.php');
     }
 
     public function addAbsoluteCachePathPrefix($prefix)

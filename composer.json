@@ -27,7 +27,8 @@
     "prefer-stable": true,
     "require": {
         "bramus/ansi-php": "^3",
-        "laravel/serializable-closure": "^1"
+        "laravel/serializable-closure": "^1",
+        "ext-fileinfo": "*"
     },
     "extra": {
         "laragram": {

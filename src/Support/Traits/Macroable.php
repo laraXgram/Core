@@ -4,6 +4,8 @@ namespace LaraGram\Support\Traits;
 
 use BadMethodCallException;
 use Closure;
+use ReflectionClass;
+use ReflectionMethod;
 
 trait Macroable
 {
@@ -17,6 +19,19 @@ trait Macroable
     public static function hasMacro($name): bool
     {
         return isset(static::$macros[$name]);
+    }
+
+    public static function mixin($mixin, $replace = true)
+    {
+        $methods = (new ReflectionClass($mixin))->getMethods(
+            ReflectionMethod::IS_PUBLIC | ReflectionMethod::IS_PROTECTED
+        );
+
+        foreach ($methods as $method) {
+            if ($replace || ! static::hasMacro($method->name)) {
+                static::macro($method->name, $method->invoke($mixin));
+            }
+        }
     }
 
     public function __call($method, $parameters)

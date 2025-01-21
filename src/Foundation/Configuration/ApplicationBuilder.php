@@ -6,6 +6,8 @@ use LaraGram\Console\Kernel;
 use LaraGram\Foundation\Application;
 use LaraGram\Foundation\Bootstrap\RegisterProviders;
 use LaraGram\Foundation\CoreCommand;
+use LaraGram\Foundation\Support\Providers\EventServiceProvider as AppEventServiceProvider;
+
 
 class ApplicationBuilder
 {
@@ -24,6 +26,19 @@ class ApplicationBuilder
     }
 
     /**
+     * Register the standard kernel classes for the application.
+     *
+     * @return $this
+     */
+    public function withKernels()
+    {
+        $this->app->singleton(Kernel::class);
+        $this->app->alias(Kernel::class, 'kernel');
+
+        return $this;
+    }
+
+    /**
      * Register additional service providers.
      *
      * @param array $providers
@@ -39,20 +54,35 @@ class ApplicationBuilder
                 : null
         );
 
+        // TODO: call from console kernel
         $this->app->bootstrap();
 
         return $this;
     }
 
     /**
-     * Register the standard kernel classes for the application.
+     * Register the core event service provider for the application.
      *
+     * @param  array|bool  $discover
      * @return $this
      */
-    public function withKernels()
+    public function withEvents(array|bool $discover = [])
     {
-        $this->app->singleton(Kernel::class);
-        $this->app->alias(Kernel::class, 'kernel');
+        if (is_array($discover) && count($discover) > 0) {
+            AppEventServiceProvider::setEventDiscoveryPaths($discover);
+        }
+
+        if ($discover === false) {
+            AppEventServiceProvider::disableEventDiscovery();
+        }
+
+        if (! isset($this->pendingProviders[AppEventServiceProvider::class])) {
+            $this->app->booting(function () {
+                $this->app->register(AppEventServiceProvider::class);
+            });
+        }
+
+        $this->pendingProviders[AppEventServiceProvider::class] = true;
 
         return $this;
     }
@@ -65,6 +95,7 @@ class ApplicationBuilder
      */
     public function withCommands(array $commands = [])
     {
+        // TODO: rebuild after adding console kernel
         $this->app->singleton(CoreCommand::class);
         $this->app->alias(CoreCommand::class, 'kernel.core_command');
 

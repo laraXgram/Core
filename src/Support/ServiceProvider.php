@@ -5,7 +5,6 @@ namespace LaraGram\Support;
 use Closure;
 use LaraGram\Container\Container;
 use LaraGram\Contracts\Foundation\Application;
-use LaraGram\Contracts\Support\DeferrableProvider;
 use LaraGram\Support\Facades\Console;
 
 abstract class ServiceProvider
