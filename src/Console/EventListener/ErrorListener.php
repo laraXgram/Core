@@ -3,9 +3,9 @@
 namespace LaraGram\Console\EventListener;
 
 use LaraGram\Console\ConsoleEvents;
-use LaraGram\Console\Event\ConsoleErrorEvent;
-use LaraGram\Console\Event\ConsoleEvent;
-use LaraGram\Console\Event\ConsoleTerminateEvent;
+use LaraGram\Console\Events\ConsoleErrorEvent;
+use LaraGram\Console\Events\ConsoleEvent;
+use LaraGram\Console\Events\ConsoleTerminateEvent;
 
 class ErrorListener
 {

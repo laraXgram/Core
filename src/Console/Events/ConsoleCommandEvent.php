@@ -1,6 +1,6 @@
 <?php
 
-namespace LaraGram\Console\Event;
+namespace LaraGram\Console\Events;
 final class ConsoleCommandEvent extends ConsoleEvent
 {
     /**

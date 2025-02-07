@@ -1,20 +1,25 @@
 <?php
 
-namespace LaraGram\Console\Event;
+namespace LaraGram\Console\Events;
 
 use LaraGram\Console\Command\Command;
 use LaraGram\Console\Input\InputInterface;
 use LaraGram\Console\Output\OutputInterface;
-
-final class ConsoleAlarmEvent extends ConsoleEvent
+final class ConsoleSignalEvent extends ConsoleEvent
 {
     public function __construct(
         Command $command,
         InputInterface $input,
         OutputInterface $output,
+        private int $handlingSignal,
         private int|false $exitCode = 0,
     ) {
         parent::__construct($command, $input, $output);
+    }
+
+    public function getHandlingSignal(): int
+    {
+        return $this->handlingSignal;
     }
 
     public function setExitCode(int $exitCode): void

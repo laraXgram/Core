@@ -1,6 +1,6 @@
 <?php
 
-namespace LaraGram\Console\Event;
+namespace LaraGram\Console\Events;
 
 use LaraGram\Console\Command\Command;
 use LaraGram\Console\Input\InputInterface;
