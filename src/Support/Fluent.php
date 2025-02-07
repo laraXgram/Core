@@ -5,7 +5,6 @@ namespace LaraGram\Support;
 use ArrayAccess;
 use Closure;
 use LaraGram\Contracts\Support\Arrayable;
-use LaraGram\Contracts\Support\Jsonable;
 use JsonSerializable;
 
 /**
@@ -15,7 +14,7 @@ use JsonSerializable;
  * @implements \LaraGram\Contracts\Support\Arrayable<TKey, TValue>
  * @implements \ArrayAccess<TKey, TValue>
  */
-class Fluent implements Arrayable, ArrayAccess, Jsonable, JsonSerializable
+class Fluent implements Arrayable, ArrayAccess, JsonSerializable
 {
     /**
      * All of the attributes set on the fluent instance.

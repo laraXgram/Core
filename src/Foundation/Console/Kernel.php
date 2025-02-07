@@ -7,8 +7,8 @@ use LaraGram\Console\Application as Commander;
 use LaraGram\Console\Command;
 use LaraGram\Contracts\Console\Kernel as KernelContract;
 use LaraGram\Contracts\Debug\ExceptionHandler;
-use LaraGram\Contracts\Events\Dispatcher;
-use LaraGram\Contracts\Foundation\Application;
+use LaraGram\Events\Dispatcher;
+use LaraGram\Foundation\Application;
 use LaraGram\Foundation\Events\Terminating;
 use LaraGram\Support\Arr;
 use LaraGram\Support\InteractsWithTime;
@@ -132,8 +132,6 @@ class Kernel implements KernelContract
 
             return $this->getCommander()->run($input, $output);
         } catch (Throwable $e) {
-            $this->reportException($e);
-
             $this->renderException($output, $e);
 
             return 1;
@@ -477,17 +475,6 @@ class Kernel implements KernelContract
     protected function bootstrappers()
     {
         return $this->bootstrappers;
-    }
-
-    /**
-     * Report the exception to the exception handler.
-     *
-     * @param  \Throwable  $e
-     * @return void
-     */
-    protected function reportException(Throwable $e)
-    {
-        $this->app[ExceptionHandler::class]->report($e);
     }
 
     /**

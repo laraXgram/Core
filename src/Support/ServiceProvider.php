@@ -197,4 +197,9 @@ return [
 
         return true;
     }
+
+    public static function defaultProviders()
+    {
+        return new DefaultProviders;
+    }
 }

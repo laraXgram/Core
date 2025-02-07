@@ -3,10 +3,24 @@
 namespace LaraGram\Support;
 
 use ArrayAccess;
-use Illuminate\Support\Enumerable;
 
 class Arr
 {
+    public static function first($array, ?callable $callback = null, $default = null)
+    {
+        if (is_null($callback)) {
+            return empty($array) ? $default : reset($array);
+        }
+
+        foreach ($array as $key => $value) {
+            if ($callback($value, $key)) {
+                return $value;
+            }
+        }
+
+        return $default;
+    }
+
     public static function get(array $array, $key, $default = null)
     {
         if (is_null($key)) {
@@ -108,10 +122,6 @@ class Arr
 
     public static function exists($array, $key)
     {
-        if ($array instanceof Enumerable) {
-            return $array->has($key);
-        }
-
         if ($array instanceof ArrayAccess) {
             return $array->offsetExists($key);
         }

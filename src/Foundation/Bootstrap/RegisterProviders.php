@@ -3,6 +3,7 @@
 namespace LaraGram\Foundation\Bootstrap;
 
 use LaraGram\Contracts\Foundation\Application;
+use LaraGram\Support\ServiceProvider;
 
 class RegisterProviders
 {
@@ -55,12 +56,11 @@ class RegisterProviders
         }
 
         $app->make('config')->set(
-            'app.service_provider',
+            'app.providers',
             array_merge(
-                $app->make('config')->get('app.service_provider'),
+                $app->make('config')->get('app.providers') ?? ServiceProvider::defaultProviders()->toArray(),
                 static::$merge,
-                array_values($packageProviders ?? []),
-                $app->baseServiceProviders(),
+                array_values($packageProviders ?? [])
             ),
         );
     }

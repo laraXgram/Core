@@ -151,6 +151,22 @@ class ApplicationBuilder
     }
 
     /**
+     * Register and configure the application's exception handler.
+     *
+     * @param  callable|null  $using
+     * @return $this
+     */
+    public function withExceptions()
+    {
+        $this->app->singleton(
+            \LaraGram\Contracts\Debug\ExceptionHandler::class,
+            \LaraGram\Foundation\Exceptions\Handler::class
+        );
+
+        return $this;
+    }
+
+    /**
      * Register a callback to be invoked when the application's service providers are registered.
      *
      * @param callable $callback
@@ -196,11 +212,11 @@ class ApplicationBuilder
      */
     public function create()
     {
-        if (config('database.database.power') == 'on') {
-            $this->app->registerEloquent();
-        }
-
-        $this->app->handleRequests();
+//        if (config('database.database.power') == 'on') {
+//            $this->app->registerEloquent();
+//        }
+//
+//        $this->app->handleRequests();
 
         return $this->app;
     }

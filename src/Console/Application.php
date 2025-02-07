@@ -12,8 +12,8 @@ use LaraGram\Console\Input\InputOption;
 use LaraGram\Console\Input\StringInput;
 use LaraGram\Console\Output\BufferedOutput;
 use LaraGram\Contracts\Console\Application as ApplicationContract;
-use LaraGram\Contracts\Container\Container;
-use LaraGram\Contracts\Events\Dispatcher;
+use LaraGram\Container\Container;
+use LaraGram\Events\Dispatcher;
 use LaraGram\Support\Process\PhpExecutableFinder;
 use LaraGram\Support\ProcessUtils;
 

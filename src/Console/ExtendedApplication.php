@@ -152,12 +152,6 @@ class ExtendedApplication
                 $this->renderThrowable($e, $output);
             }
         };
-        if ($phpHandler = set_exception_handler($renderException)) {
-            restore_exception_handler();
-            if ($errorHandler = $phpHandler[0]->setExceptionHandler($renderException)) {
-                $phpHandler[0]->setExceptionHandler($errorHandler);
-            }
-        }
 
         try {
             $this->configureIO($input, $output);
@@ -181,20 +175,6 @@ class ExtendedApplication
                 }
             } else {
                 $exitCode = 1;
-            }
-        } finally {
-            // if the exception handler changed, keep it
-            // otherwise, unregister $renderException
-            if (!$phpHandler) {
-                if (set_exception_handler($renderException) === $renderException) {
-                    restore_exception_handler();
-                }
-                restore_exception_handler();
-            } elseif (!$errorHandler) {
-                $finalHandler = $phpHandler[0]->setExceptionHandler(null);
-                if ($finalHandler !== $renderException) {
-                    $phpHandler[0]->setExceptionHandler($finalHandler);
-                }
             }
         }
 

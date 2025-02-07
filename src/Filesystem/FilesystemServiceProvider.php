@@ -2,7 +2,7 @@
 
 namespace LaraGram\Filesystem;
 
-use Illuminate\Support\ServiceProvider;
+use LaraGram\Support\ServiceProvider;
 
 class FilesystemServiceProvider extends ServiceProvider
 {

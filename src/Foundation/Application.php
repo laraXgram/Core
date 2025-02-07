@@ -4,12 +4,16 @@ namespace LaraGram\Foundation;
 
 use Composer\Autoload\ClassLoader;
 use Illuminate\Database\Capsule\Manager as Capsule;
+use LaraGram\Console\Input\InputInterface;
+use LaraGram\Console\Output\ConsoleOutput;
 use LaraGram\Container\Container;
 use LaraGram\Contracts\Foundation\Application as ApplicationContract;
+use LaraGram\Contracts\Console\Kernel as ConsoleKernelContract;
 use LaraGram\Conversation\ConversationListener;
+use LaraGram\Events\EventServiceProvider;
 use LaraGram\Filesystem\Filesystem;
+use LaraGram\Filesystem\FilesystemServiceProvider;
 use LaraGram\Laraquest\Laraquest;
-use LaraGram\Support\Facades\Console;
 use Swoole\Http\Request;
 use Swoole\Http\Response;
 use Swoole\Http\Server;
@@ -45,10 +49,9 @@ class Application extends Container implements ApplicationContract
             $this->setBasePath($basePath);
         }
 
-        $this
-            ->registerBaseBindings()
-            ->registerBaseServiceProviders()
-            ->registerCoreContainerAliases();
+        $this->registerBaseBindings();
+        $this->registerBaseServiceProviders();
+        $this->registerCoreContainerAliases();
 
         return $this;
     }
@@ -103,30 +106,11 @@ class Application extends Container implements ApplicationContract
         return $this;
     }
 
-    public function baseServiceProviders(): array
-    {
-        return [
-            \LaraGram\Filesystem\FilesystemServiceProvider::class,
-            \LaraGram\Cache\CacheServiceProvider::class,
-            \LaraGram\Events\EventServiceProvider::class,
-            \LaraGram\Listener\ListenerServiceProvider::class,
-            \LaraGram\Request\RequestServiceProvider::class,
-            \LaraGram\Database\DatabaseServiceProvider::class,
-            \LaraGram\Redis\RedisServiceProvider::class,
-            \LaraGram\Auth\AuthServiceProvider::class,
-            \LaraGram\Keyboard\KeyboardServiceProvider::class,
-            \LaraGram\Console\ConsoleServiceProvider::class,
-            \LaraGram\Conversation\ConversationServiceProvider::class,
-        ];
-    }
 
-    protected function registerBaseServiceProviders(): static
+    protected function registerBaseServiceProviders()
     {
-        foreach ($this->baseServiceProviders() as $provider) {
-            $this->register(new $provider($this));
-        }
-
-        return $this;
+        $this->register(new EventServiceProvider($this));
+        $this->register(new FilesystemServiceProvider($this));
     }
 
     public function bootstrapWith(array $bootstrappers)
@@ -145,6 +129,20 @@ class Application extends Container implements ApplicationContract
     public function hasBeenBootstrapped(): bool
     {
         return $this->hasBeenBootstrapped;
+    }
+
+    public function handleCommand(InputInterface $input)
+    {
+        $kernel = $this->make(ConsoleKernelContract::class);
+
+        $status = $kernel->handle(
+            $input,
+            new ConsoleOutput
+        );
+
+        $kernel->terminate($input, $status);
+
+        return $status;
     }
 
     public function setBasePath($basePath): static
@@ -593,15 +591,12 @@ class Application extends Container implements ApplicationContract
         $update_type = config('laraquest.update_type');
         if ($update_type == 'openswoole') {
             if (!extension_loaded('openswoole') && !extension_loaded('swoole')) {
-                Console::output()->failed('Extension Openswoole/Swoole not loaded!');
+//                Console::output()->failed('Extension Openswoole/Swoole not loaded!');
             }
 
             $ip = config('server.openswoole.ip');
             $port = config('server.openswoole.port');
             $server = new Server($ip, $port);
-            $server->on("start", function () use ($ip, $port) {
-                Console::output()->success("Server Started! [ {$ip}:{$port} ]");
-            });
 
             $server->on("request", function (Request $swooleRequest, Response $swooleResponse) {
                 $swooleResponse->end();
@@ -613,7 +608,7 @@ class Application extends Container implements ApplicationContract
 
             $server->start();
         } elseif ($update_type == 'polling') {
-            Console::output()->success("Polling Started!");
+//            Console::output()->success("Polling Started!");
             Laraquest::polling(function () {
                 $this->loadResources(false);
             });
