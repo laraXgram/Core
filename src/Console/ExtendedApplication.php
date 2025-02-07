@@ -13,11 +13,11 @@ use LaraGram\Console\CommandLoader\CommandLoaderInterface;
 use LaraGram\Console\Completion\CompletionInput;
 use LaraGram\Console\Completion\CompletionSuggestions;
 use LaraGram\Console\Completion\Suggestion;
-use LaraGram\Console\Event\ConsoleAlarmEvent;
-use LaraGram\Console\Event\ConsoleCommandEvent;
-use LaraGram\Console\Event\ConsoleErrorEvent;
-use LaraGram\Console\Event\ConsoleSignalEvent;
-use LaraGram\Console\Event\ConsoleTerminateEvent;
+use LaraGram\Console\Events\ConsoleAlarmEvent;
+use LaraGram\Console\Events\ConsoleCommandEvent;
+use LaraGram\Console\Events\ConsoleErrorEvent;
+use LaraGram\Console\Events\ConsoleSignalEvent;
+use LaraGram\Console\Events\ConsoleTerminateEvent;
 use LaraGram\Console\Exception\CommandNotFoundException;
 use LaraGram\Console\Exception\ExceptionInterface;
 use LaraGram\Console\Exception\LogicException;
@@ -42,11 +42,10 @@ use LaraGram\Console\Output\ConsoleOutput;
 use LaraGram\Console\Output\ConsoleOutputInterface;
 use LaraGram\Console\Output\OutputInterface;
 use LaraGram\Console\SignalRegistry\SignalRegistry;
-use LaraGram\Console\Style\SymfonyStyle;
-use LaraGram\ErrorHandler\ErrorHandler;
-use LaraGram\EventDispatcher\EventDispatcherInterface;
+use LaraGram\Console\Style\Style;
+use LaraGram\Contracts\Events\Dispatcher as EventDispatcherInterface;
 
-class Application
+class ExtendedApplication
 {
     private array $commands = [];
     private bool $wantHelps = false;
@@ -155,9 +154,7 @@ class Application
         };
         if ($phpHandler = set_exception_handler($renderException)) {
             restore_exception_handler();
-            if (!\is_array($phpHandler) || !$phpHandler[0] instanceof ErrorHandler) {
-                $errorHandler = true;
-            } elseif ($errorHandler = $phpHandler[0]->setExceptionHandler($renderException)) {
+            if ($errorHandler = $phpHandler[0]->setExceptionHandler($renderException)) {
                 $phpHandler[0]->setExceptionHandler($errorHandler);
             }
         }
@@ -261,7 +258,7 @@ class Application
             if (($e instanceof CommandNotFoundException && !$e instanceof NamespaceNotFoundException) && 1 === \count($alternatives = $e->getAlternatives()) && $input->isInteractive()) {
                 $alternative = $alternatives[0];
 
-                $style = new SymfonyStyle($input, $output);
+                $style = new Style($input, $output);
                 $output->writeln('');
                 $formattedBlock = (new FormatterHelper())->formatBlock(\sprintf('Command "%s" is not defined.', $name), 'error', true);
                 $output->writeln($formattedBlock);

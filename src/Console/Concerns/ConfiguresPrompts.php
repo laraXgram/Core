@@ -29,11 +29,11 @@ trait ConfiguresPrompts
     {
         Prompt::setOutput($this->output);
 
-        Prompt::interactive(($input->isInteractive() && defined('STDIN') && stream_isatty(STDIN)) || $this->laravel->runningUnitTests());
+        Prompt::interactive(($input->isInteractive() && defined('STDIN') && stream_isatty(STDIN)) || $this->laragram->runningUnitTests());
 
         Prompt::validateUsing(fn (Prompt $prompt) => $this->validatePrompt($prompt->value(), $prompt->validate));
 
-        Prompt::fallbackWhen(windows_os() || $this->laravel->runningUnitTests());
+        Prompt::fallbackWhen(windows_os() || $this->laragram->runningUnitTests());
 
         TextPrompt::fallbackUsing(fn (TextPrompt $prompt) => $this->promptUntilValid(
             fn () => $this->components->ask($prompt->label, $prompt->default ?: null) ?? '',
@@ -128,7 +128,7 @@ trait ConfiguresPrompts
             if ($required && ($result === '' || $result === [] || $result === false)) {
                 $this->components->error(is_string($required) ? $required : 'Required.');
 
-                if ($this->laravel->runningUnitTests()) {
+                if ($this->laragram->runningUnitTests()) {
                     throw new PromptValidationException;
                 } else {
                     continue;
@@ -140,7 +140,7 @@ trait ConfiguresPrompts
             if (is_string($error) && strlen($error) > 0) {
                 $this->components->error($error);
 
-                if ($this->laravel->runningUnitTests()) {
+                if ($this->laragram->runningUnitTests()) {
                     throw new PromptValidationException;
                 } else {
                     continue;
@@ -193,7 +193,7 @@ trait ConfiguresPrompts
      */
     protected function getPromptValidatorInstance($field, $value, $rules, array $messages = [], array $attributes = [])
     {
-        return $this->laravel['validator']->make(
+        return $this->laragram['validator']->make(
             [$field => $value],
             [$field => $rules],
             empty($messages) ? $this->validationMessages() : $messages,
@@ -263,7 +263,7 @@ trait ConfiguresPrompts
     {
         $default = $default !== [] ? implode(',', $default) : null;
 
-        if ($required === false && ! $this->laravel->runningUnitTests()) {
+        if ($required === false && ! $this->laragram->runningUnitTests()) {
             $options = array_is_list($options)
                 ? ['None', ...$options]
                 : ['' => 'None'] + $options;
