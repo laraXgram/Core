@@ -36,12 +36,8 @@ class Application extends Container implements ApplicationContract
     protected string $assetsPath = '';
     protected string $storagePath = '';
     protected array $absoluteCachePathPrefixes = ['/', '\\'];
-    protected array $bootstrappers = [
-        \LaraGram\Foundation\Bootstrap\LoadConfiguration::class,
-        \LaraGram\Foundation\Bootstrap\RegisterFacades::class,
-        \LaraGram\Foundation\Bootstrap\RegisterProviders::class,
-        \LaraGram\Foundation\Bootstrap\BootProviders::class,
-    ];
+    protected string $namespace;
+    protected bool|null $isRunningInConsole;
 
     public function __construct(string $basePath = null)
     {
@@ -65,7 +61,9 @@ class Application extends Container implements ApplicationContract
         };
 
         return (new Configuration\ApplicationBuilder(new static($basePath)))
+            ->withKernels()
             ->withEvents()
+            ->withCommands()
             ->withProviders();
     }
 
@@ -82,19 +80,13 @@ class Application extends Container implements ApplicationContract
         return static::VERSION;
     }
 
-    // TODO: move to console kernel
-    public function bootstrap(): void
+    public function runningInConsole()
     {
-        if (!$this->hasBeenBootstrapped()) {
-            $this->bootstrapWith($this->bootstrappers());
+        if ($this->isRunningInConsole === null) {
+            $this->isRunningInConsole = (\PHP_SAPI === 'cli' || \PHP_SAPI === 'phpdbg');
         }
 
-        $this->loadDeferredProviders();
-    }
-
-    protected function bootstrappers(): array
-    {
-        return $this->bootstrappers;
+        return $this->isRunningInConsole;
     }
 
     protected function registerBaseBindings(): static
@@ -648,5 +640,24 @@ class Application extends Container implements ApplicationContract
         $capsule->bootEloquent();
 
         return $this;
+    }
+
+    public function getNamespace()
+    {
+        if (! is_null($this->namespace)) {
+            return $this->namespace;
+        }
+
+        $composer = json_decode(file_get_contents($this->basePath('composer.json')), true);
+
+        foreach ((array) data_get($composer, 'autoload.psr-4') as $namespace => $path) {
+            foreach ((array) $path as $pathChoice) {
+                if (realpath($this->appPath()) === realpath($this->basePath($pathChoice))) {
+                    return $this->namespace = $namespace;
+                }
+            }
+        }
+
+        throw new \RuntimeException('Unable to detect application namespace.');
     }
 }

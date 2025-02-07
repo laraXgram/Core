@@ -32,8 +32,10 @@ class ApplicationBuilder
      */
     public function withKernels()
     {
-        $this->app->singleton(Kernel::class);
-        $this->app->alias(Kernel::class, 'kernel');
+        $this->app->singleton(
+            \LaraGram\Contracts\Console\Kernel::class,
+            \LaraGram\Foundation\Console\Kernel::class,
+        );
 
         return $this;
     }
@@ -53,9 +55,6 @@ class ApplicationBuilder
                 ? $this->app->getBootstrapProvidersPath()
                 : null
         );
-
-        // TODO: call from console kernel
-        $this->app->bootstrap();
 
         return $this;
     }
@@ -88,32 +87,30 @@ class ApplicationBuilder
     }
 
     /**
-     * Register additional LaraGram commands with the application.
+     * Register additional Artisan commands with the application.
      *
-     * @param array $commands
+     * @param  array  $commands
      * @return $this
      */
     public function withCommands(array $commands = [])
     {
-        // TODO: rebuild after adding console kernel
-        $this->app->singleton(CoreCommand::class);
-        $this->app->alias(CoreCommand::class, 'kernel.core_command');
-
         if (empty($commands)) {
-            $commands = array_merge($this->app['kernel.core_command']->getCoreCommands(), config('app.commands'));
+            $commands = [$this->app->appPath('Console/Commands')];
         }
 
-        $kernel = $this->app['kernel'];
-        $commandClasses = [];
+        $this->app->afterResolving(\LaraGram\Contracts\Console\Kernel::class, function ($kernel) use ($commands) {
+            $commands = array_filter($commands, fn($command) => class_exists($command));
+            $paths = array_filter($commands, fn($path) => !class_exists($path));
 
-        foreach ($commands as $command) {
-            if (class_exists($command)) {
-                $commandClasses[] = $command;
-            }
-        }
+            $routes = array_filter($paths, fn($path) => is_file($path));
+            $paths = array_filter($paths, fn($path) => !is_file($path));
 
-        $kernel->addCommands($commandClasses);
-        $kernel->run();
+            $this->app->booted(static function () use ($kernel, $commands, $paths, $routes) {
+                $kernel->addCommands(array_values($commands));
+                $kernel->addCommandPaths(array_values($paths));
+                $kernel->addCommandRoutePaths(array_values($routes));
+            });
+        });
 
         return $this;
     }
