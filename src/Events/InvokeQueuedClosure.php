@@ -2,7 +2,7 @@
 
 namespace LaraGram\Events;
 
-use Laravel\SerializableClosure\SerializableClosure;
+use LaraGram\Support\SerializableClosure\SerializableClosure;
 use Throwable;
 
 class InvokeQueuedClosure

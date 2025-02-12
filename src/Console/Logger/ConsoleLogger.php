@@ -2,9 +2,9 @@
 
 namespace LaraGram\Console\Logger;
 
-use Psr\Log\AbstractLogger;
-use Psr\Log\InvalidArgumentException;
-use Psr\Log\LogLevel;
+use LaraGram\Contracts\Log\AbstractLogger;
+use LaraGram\Contracts\Log\InvalidArgumentException;
+use LaraGram\Contracts\Log\LogLevel;
 use LaraGram\Console\Output\ConsoleOutputInterface;
 use LaraGram\Console\Output\OutputInterface;
 

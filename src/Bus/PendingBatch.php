@@ -8,8 +8,8 @@ use LaraGram\Contracts\Container\Container;
 use LaraGram\Contracts\Events\Dispatcher as EventDispatcher;
 use LaraGram\Support\Arr;
 use LaraGram\Support\Traits\Conditionable;
-use Laravel\SerializableClosure\Exceptions\PhpVersionNotSupportedException;
-use Laravel\SerializableClosure\SerializableClosure;
+use LaraGram\Support\SerializableClosure\Exceptions\PhpVersionNotSupportedException;
+use LaraGram\Support\SerializableClosure\SerializableClosure;
 use Throwable;
 
 class PendingBatch

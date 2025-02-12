@@ -5,8 +5,8 @@ namespace LaraGram\Events;
 use Closure;
 use DateInterval;
 use DateTimeInterface;
-use Illuminate\Events\InvokeQueuedClosure;
-use Laravel\SerializableClosure\SerializableClosure;
+use LaraGram\Events\InvokeQueuedClosure;
+use LaraGram\Support\SerializableClosure\SerializableClosure;
 
 class QueuedClosure
 {

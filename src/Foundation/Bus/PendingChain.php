@@ -6,7 +6,7 @@ use Closure;
 use LaraGram\Contracts\Bus\Dispatcher;
 use LaraGram\Queue\CallQueuedClosure;
 use LaraGram\Support\Traits\Conditionable;
-use Laravel\SerializableClosure\SerializableClosure;
+use LaraGram\Support\SerializableClosure\SerializableClosure;
 
 class PendingChain
 {

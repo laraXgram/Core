@@ -8,7 +8,7 @@ use LaraGram\Bus\Queueable;
 use LaraGram\Contracts\Container\Container;
 use LaraGram\Contracts\Queue\ShouldQueue;
 use LaraGram\Foundation\Bus\Dispatchable;
-use Laravel\SerializableClosure\SerializableClosure;
+use LaraGram\Support\SerializableClosure\SerializableClosure;
 use ReflectionFunction;
 
 class CallQueuedClosure implements ShouldQueue
@@ -18,7 +18,7 @@ class CallQueuedClosure implements ShouldQueue
     /**
      * The serializable Closure instance.
      *
-     * @var \Laravel\SerializableClosure\SerializableClosure
+     * @var \LaraGram\Support\SerializableClosure\SerializableClosure
      */
     public $closure;
 
@@ -39,7 +39,7 @@ class CallQueuedClosure implements ShouldQueue
     /**
      * Create a new job instance.
      *
-     * @param  \Laravel\SerializableClosure\SerializableClosure  $closure
+     * @param  \LaraGram\Support\SerializableClosure\SerializableClosure  $closure
      * @return void
      */
     public function __construct($closure)
