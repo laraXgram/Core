@@ -4,30 +4,56 @@ namespace LaraGram\Foundation\Console;
 
 use LaraGram\Console\Command;
 use LaraGram\Filesystem\Filesystem;
-use LaraGram\Foundation\Support\Providers\EventServiceProvider;
-use LaraGram\Support\Facades\Console;
-use LaraGram\Support\Facades\File;
+use LaraGram\Console\Attribute\AsCommand;
 
+#[AsCommand(name: 'event:clear')]
 class EventClearCommand extends Command
 {
-    protected $signature = 'event:clear';
-    protected $description = "Clear all cached events and listeners";
+    /**
+     * The console command name.
+     *
+     * @var string
+     */
+    protected $name = 'event:clear';
 
-    private Filesystem $filesystem;
+    /**
+     * The console command description.
+     *
+     * @var string
+     */
+    protected $description = 'Clear all cached events and listeners';
 
-    public function __construct()
+    /**
+     * The filesystem instance.
+     *
+     * @var \LaraGram\Filesystem\Filesystem
+     */
+    protected $files;
+
+    /**
+     * Create a new config clear command instance.
+     *
+     * @param  \LaraGram\Filesystem\Filesystem  $files
+     * @return void
+     */
+    public function __construct(Filesystem $files)
     {
         parent::__construct();
 
-        $this->filesystem = new Filesystem();
+        $this->files = $files;
     }
 
+    /**
+     * Execute the console command.
+     *
+     * @return void
+     *
+     * @throws \RuntimeException
+     */
     public function handle()
     {
-        if ($this->getOption('h') == 'h') Console::output()->message($this->description, true);
+        $this->files->delete($this->laragram->getCachedEventsPath());
 
-        $this->filesystem->delete($this->app->getCachedEventsPath());
-
-        $this->output->success('Cached events cleared successfully.');
+        $this->components->info('Cached events cleared successfully.');
     }
 }
