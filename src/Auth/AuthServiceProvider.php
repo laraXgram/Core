@@ -2,9 +2,10 @@
 
 namespace LaraGram\Auth;
 
+use LaraGram\Contracts\Support\DeferrableProvider;
 use LaraGram\Support\ServiceProvider;
 
-class AuthServiceProvider extends ServiceProvider
+class AuthServiceProvider extends ServiceProvider implements DeferrableProvider
 {
     public function register(): void
     {

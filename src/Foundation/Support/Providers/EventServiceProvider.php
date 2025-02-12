@@ -127,24 +127,27 @@ class EventServiceProvider extends ServiceProvider
      */
     public function discoverEvents()
     {
+        $directories = array_map(function ($directory) {
+            return glob($directory, GLOB_ONLYDIR);
+        }, $this->discoverEventsWithin());
+
+        $directories = array_merge(...$directories);
+
+        $directories = array_filter($directories, function ($directory) {
+            return is_dir($directory);
+        });
+
         $discovered = [];
 
-        $directories = $this->discoverEventsWithin();
-
         foreach ($directories as $directory) {
-            $subDirectories = glob($directory, GLOB_ONLYDIR);
-
-            if ($subDirectories !== false) {
-                foreach ($subDirectories as $subDirectory) {
-                    if (is_dir($subDirectory)) {
-                        $events = DiscoverEvents::within($subDirectory, $this->eventDiscoveryBasePath());
-                        $discovered = array_merge_recursive($discovered, $events);
-                    }
-                }
-            }
+            $discovered = array_merge_recursive(
+                $discovered,
+                DiscoverEvents::within($directory, $this->eventDiscoveryBasePath())
+            );
         }
 
         return $discovered;
+
     }
 
     /**

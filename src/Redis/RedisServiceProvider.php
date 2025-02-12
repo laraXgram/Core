@@ -2,9 +2,10 @@
 
 namespace LaraGram\Redis;
 
+use LaraGram\Contracts\Support\DeferrableProvider;
 use LaraGram\Support\ServiceProvider;
 
-class RedisServiceProvider extends ServiceProvider
+class RedisServiceProvider extends ServiceProvider implements DeferrableProvider
 {
     public function register(): void
     {

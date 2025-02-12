@@ -3,17 +3,21 @@
 namespace LaraGram\Support;
 
 use Closure;
-use LaraGram\Container\Container;
 use LaraGram\Contracts\Foundation\Application;
-use LaraGram\Support\Facades\Console;
+use LaraGram\Contracts\Foundation\CachesConfiguration;
+use LaraGram\Contracts\Support\DeferrableProvider;
+use LaraGram\Console\Application as Commander;
 
 abstract class ServiceProvider
 {
-    protected Application|Container $app;
+    protected Application $app;
     protected array $bootingCallbacks = [];
     protected array $bootedCallbacks = [];
     public static $publishes = [];
     public static $publishGroups = [];
+    public static array $optimizeCommands = [];
+    public static array $optimizeClearCommands = [];
+
 
     public function __construct(Application $app)
     {
@@ -57,6 +61,28 @@ abstract class ServiceProvider
         }
     }
 
+    protected function mergeConfigFrom($path, $key)
+    {
+        if (!($this->app instanceof CachesConfiguration && $this->app->configurationIsCached())) {
+            $config = $this->app->make('config');
+
+            $config->set($key, array_merge(
+                require $path, $config->get($key, [])
+            ));
+        }
+    }
+
+    protected function replaceConfigRecursivelyFrom($path, $key)
+    {
+        if (!($this->app instanceof CachesConfiguration && $this->app->configurationIsCached())) {
+            $config = $this->app->make('config');
+
+            $config->set($key, array_replace_recursive(
+                require $path, $config->get($key, [])
+            ));
+        }
+    }
+
     protected function callAfterResolving($name, $callback): void
     {
         $this->app->afterResolving($name, $callback);
@@ -72,21 +98,21 @@ abstract class ServiceProvider
 
         static::$publishes[$class] = array_merge(static::$publishes[$class], $paths);
 
-        foreach ((array) $groups as $group) {
+        foreach ((array)$groups as $group) {
             $this->addPublishGroup($group, $paths);
         }
     }
 
     protected function ensurePublishArrayInitialized($class): void
     {
-        if (! array_key_exists($class, static::$publishes)) {
+        if (!array_key_exists($class, static::$publishes)) {
             static::$publishes[$class] = [];
         }
     }
 
     protected function addPublishGroup($group, $paths): void
     {
-        if (! array_key_exists($group, static::$publishGroups)) {
+        if (!array_key_exists($group, static::$publishGroups)) {
             static::$publishGroups[$group] = [];
         }
 
@@ -97,11 +123,11 @@ abstract class ServiceProvider
 
     public static function pathsToPublish($provider = null, $group = null)
     {
-        if (! is_null($paths = static::pathsForProviderOrGroup($provider, $group))) {
+        if (!is_null($paths = static::pathsForProviderOrGroup($provider, $group))) {
             return $paths;
         }
 
-        return collect(static::$publishes)->reduce(function ($paths, $p) {
+        return array_reduce(static::$publishes, function ($paths, $p) {
             return array_merge($paths, $p);
         }, []);
     }
@@ -121,7 +147,7 @@ abstract class ServiceProvider
 
     protected static function pathsForProviderAndGroup($provider, $group): array
     {
-        if (! empty(static::$publishes[$provider]) && ! empty(static::$publishGroups[$group])) {
+        if (!empty(static::$publishes[$provider]) && !empty(static::$publishGroups[$group])) {
             return array_intersect_key(static::$publishes[$provider], static::$publishGroups[$group]);
         }
 
@@ -142,10 +168,28 @@ abstract class ServiceProvider
     {
         $commands = is_array($commands) ? $commands : func_get_args();
 
-        Console::starting(function ($console) use ($commands) {
-            $console->append($commands);
+        Commander::starting(function ($commander) use ($commands) {
+            $commander->resolveCommands($commands);
         });
     }
+
+    protected function optimizes(?string $optimize = null, ?string $clear = null, ?string $key = null)
+    {
+        $key ??= strtolower(trim(preg_replace('/(?<!^)[A-Z]/', '-$0', str_replace('ServiceProvider', '', basename(str_replace('\\', '/', get_class($this)))))));
+
+        if (empty($key)) {
+            $key = class_basename(get_class($this));
+        }
+
+        if ($optimize) {
+            static::$optimizeCommands[$key] = $optimize;
+        }
+
+        if ($clear) {
+            static::$optimizeClearCommands[$key] = $clear;
+        }
+    }
+
 
     public function provides(): array
     {
@@ -159,7 +203,12 @@ abstract class ServiceProvider
 
     public function isDeferred(): bool
     {
-        return $this->provides() != null;
+        return $this instanceof DeferrableProvider;
+    }
+
+    public static function defaultProviders()
+    {
+        return new DefaultProviders;
     }
 
     public static function addProviderToBootstrapFile(string $provider, ?string $path = null)
@@ -196,10 +245,5 @@ return [
         file_put_contents($path, $content . PHP_EOL);
 
         return true;
-    }
-
-    public static function defaultProviders()
-    {
-        return new DefaultProviders;
     }
 }

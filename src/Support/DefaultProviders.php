@@ -19,6 +19,7 @@ class DefaultProviders
     public function __construct(?array $providers = null)
     {
         $this->providers = $providers ?: [
+            \LaraGram\Foundation\Providers\ConsoleSupportServiceProvider::class,
             \LaraGram\Cache\CacheServiceProvider::class,
             \LaraGram\Listener\ListenerServiceProvider::class,
             \LaraGram\Request\RequestServiceProvider::class,

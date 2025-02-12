@@ -2,9 +2,10 @@
 
 namespace LaraGram\Keyboard;
 
+use LaraGram\Contracts\Support\DeferrableProvider;
 use LaraGram\Support\ServiceProvider;
 
-class KeyboardServiceProvider extends ServiceProvider
+class KeyboardServiceProvider extends ServiceProvider implements DeferrableProvider
 {
     public function register(): void
     {

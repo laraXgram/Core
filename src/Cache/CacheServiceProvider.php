@@ -2,13 +2,14 @@
 
 namespace LaraGram\Cache;
 
+use LaraGram\Contracts\Support\DeferrableProvider;
 use LaraGram\Support\ServiceProvider;
 use LaraGram\Cache\Driver\FileCacheDriver;
 use LaraGram\Cache\Driver\DatabaseCacheDriver;
 use LaraGram\Cache\Driver\RedisCacheDriver;
 use LaraGram\Cache\Driver\APCuCacheDriver;
 
-class CacheServiceProvider extends ServiceProvider
+class CacheServiceProvider extends ServiceProvider implements DeferrableProvider
 {
     /**
      * Register services.
