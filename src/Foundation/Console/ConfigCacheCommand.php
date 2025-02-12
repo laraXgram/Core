@@ -3,29 +3,63 @@
 namespace LaraGram\Foundation\Console;
 
 use LaraGram\Console\Command;
+use LaraGram\Contracts\Console\Kernel as ConsoleKernelContract;
 use LaraGram\Filesystem\Filesystem;
-use LaraGram\Support\Facades\Console;
 use LogicException;
+use LaraGram\Console\Attribute\AsCommand;
 use Throwable;
 
+#[AsCommand(name: 'config:cache')]
 class ConfigCacheCommand extends Command
 {
-    protected $signature = 'config:cache';
+    /**
+     * The console command name.
+     *
+     * @var string
+     */
+    protected $name = 'config:cache';
+
+    /**
+     * The console command description.
+     *
+     * @var string
+     */
     protected $description = 'Create a cache file for faster configuration loading';
 
-    protected Filesystem $files;
+    /**
+     * The filesystem instance.
+     *
+     * @var \LaraGram\Filesystem\Filesystem
+     */
+    protected $files;
 
+    /**
+     * Create a new config cache command instance.
+     *
+     * @param  \LaraGram\Filesystem\Filesystem  $files
+     * @return void
+     */
+    public function __construct(Filesystem $files)
+    {
+        parent::__construct();
+
+        $this->files = $files;
+    }
+
+    /**
+     * Execute the console command.
+     *
+     * @return void
+     *
+     * @throws \LogicException
+     */
     public function handle()
     {
-        if ($this->getOption('h') == 'h') Console::output()->message($this->description, true);
-
-        $this->files = new Filesystem();
-
-        $configPath = $this->app->getCachedConfigPath();
-
-        Console::callSilent('config:clear');
+        $this->callSilent('config:clear');
 
         $config = $this->getFreshConfiguration();
+
+        $configPath = $this->laragram->getCachedConfigPath();
 
         $this->files->put(
             $configPath, '<?php return '.var_export($config, true).';'.PHP_EOL
@@ -39,13 +73,20 @@ class ConfigCacheCommand extends Command
             throw new LogicException('Your configuration files are not serializable.', 0, $e);
         }
 
-        Console::output()->success('Configs cached!', true);
+        $this->components->info('Configuration cached successfully.');
     }
 
+    /**
+     * Boot a fresh copy of the application configuration.
+     *
+     * @return array
+     */
     protected function getFreshConfiguration()
     {
-        $this->app->bootstrap();
+        $app = require $this->laragram->bootstrapPath('app.php');
 
-        return $this->app['config']->all();
+        $app->make(ConsoleKernelContract::class)->bootstrap();
+
+        return $app['config']->all();
     }
 }

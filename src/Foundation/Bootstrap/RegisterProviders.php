@@ -58,9 +58,10 @@ class RegisterProviders
         $app->make('config')->set(
             'app.providers',
             array_merge(
-                $app->make('config')->get('app.providers') ?? ServiceProvider::defaultProviders()->toArray(),
+                ServiceProvider::defaultProviders()->toArray(),
                 static::$merge,
-                array_values($packageProviders ?? [])
+                array_values($packageProviders ?? []),
+                $app->make('config')->get('app.providers') ?? []
             ),
         );
     }

@@ -64,4 +64,27 @@ trait InteractsWithTime
     {
         return (new DateTime())->getTimestamp();
     }
+
+    /**
+     * Given a start time, format the total run time for human readability.
+     *
+     * @param  float  $startTime
+     * @param  float  $endTime
+     * @return string
+     */
+    protected function runTimeForHumans($startTime, $endTime = null)
+    {
+        $endTime ??= microtime(true);
+
+        $runTime = ($endTime - $startTime) * 1000;
+
+        if ($runTime > 1000) {
+            $seconds = floor($runTime / 1000);
+            $milliseconds = $runTime % 1000;
+
+            return sprintf('%ds %dms', $seconds, $milliseconds);
+        }
+
+        return number_format($runTime, 2) . 'ms';
+    }
 }

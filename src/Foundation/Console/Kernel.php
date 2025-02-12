@@ -56,13 +56,6 @@ class Kernel implements KernelContract
     protected $commandPaths = [];
 
     /**
-     * The paths where Commander "routes" should be automatically discovered.
-     *
-     * @var array
-     */
-    protected $commandRoutePaths = [];
-
-    /**
      * Indicates if the Closure commands have been loaded.
      *
      * @var bool
@@ -216,8 +209,8 @@ class Kernel implements KernelContract
     {
         $command = new ClosureCommand($signature, $callback);
 
-        Commander::starting(function ($Commander) use ($command) {
-            $Commander->add($command);
+        Commander::starting(function ($commander) use ($command) {
+            $commander->add($command);
         });
 
         return $command;
@@ -369,12 +362,6 @@ class Kernel implements KernelContract
         foreach ($this->commandPaths as $path) {
             $this->load($path);
         }
-
-        foreach ($this->commandRoutePaths as $path) {
-            if (file_exists($path)) {
-                require $path;
-            }
-        }
     }
 
     /**
@@ -450,19 +437,6 @@ class Kernel implements KernelContract
     public function addCommandPaths(array $paths)
     {
         $this->commandPaths = array_values(array_unique(array_merge($this->commandPaths, $paths)));
-
-        return $this;
-    }
-
-    /**
-     * Set the paths that should have their Commander "routes" automatically discovered.
-     *
-     * @param  array  $paths
-     * @return $this
-     */
-    public function addCommandRoutePaths(array $paths)
-    {
-        $this->commandRoutePaths = array_values(array_unique(array_merge($this->commandRoutePaths, $paths)));
 
         return $this;
     }

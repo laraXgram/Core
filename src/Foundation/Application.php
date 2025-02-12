@@ -2,6 +2,7 @@
 
 namespace LaraGram\Foundation;
 
+use Closure;
 use Composer\Autoload\ClassLoader;
 use Illuminate\Database\Capsule\Manager as Capsule;
 use LaraGram\Console\Input\InputInterface;
@@ -9,17 +10,21 @@ use LaraGram\Console\Output\ConsoleOutput;
 use LaraGram\Container\Container;
 use LaraGram\Contracts\Foundation\Application as ApplicationContract;
 use LaraGram\Contracts\Console\Kernel as ConsoleKernelContract;
+use LaraGram\Contracts\Foundation\CachesConfiguration;
 use LaraGram\Conversation\ConversationListener;
 use LaraGram\Events\EventServiceProvider;
 use LaraGram\Filesystem\Filesystem;
 use LaraGram\Filesystem\FilesystemServiceProvider;
 use LaraGram\Laraquest\Laraquest;
+use LaraGram\Support\Traits\Macroable;
 use Swoole\Http\Request;
 use Swoole\Http\Response;
 use Swoole\Http\Server;
 
-class Application extends Container implements ApplicationContract
+class Application extends Container implements ApplicationContract, CachesConfiguration
 {
+    use Macroable;
+
     const VERSION = "2.5.0";
 
     protected string|null $basePath;
@@ -39,9 +44,9 @@ class Application extends Container implements ApplicationContract
     protected string $langPath = '';
     protected string $assetsPath = '';
     protected string $storagePath = '';
-    protected array $absoluteCachePathPrefixes = ['/', '\\'];
+    protected ?bool $isRunningInConsole = null;
     protected string $namespace;
-    protected bool|null $isRunningInConsole;
+    protected array $absoluteCachePathPrefixes = ['/', '\\'];
 
     public function __construct(string $basePath = null)
     {
@@ -83,16 +88,7 @@ class Application extends Container implements ApplicationContract
         return static::VERSION;
     }
 
-    public function runningInConsole()
-    {
-        if ($this->isRunningInConsole === null) {
-            $this->isRunningInConsole = (\PHP_SAPI === 'cli' || \PHP_SAPI === 'phpdbg');
-        }
-
-        return $this->isRunningInConsole;
-    }
-
-    protected function registerBaseBindings(): static
+    protected function registerBaseBindings()
     {
         static::setInstance($this);
 
@@ -102,8 +98,6 @@ class Application extends Container implements ApplicationContract
         $this->singleton(PackageManifest::class, fn() => new PackageManifest(
             new Filesystem, $this->basePath(), $this->getCachedPackagesPath()
         ));
-
-        return $this;
     }
 
 
@@ -126,23 +120,19 @@ class Application extends Container implements ApplicationContract
         }
     }
 
+    public function beforeBootstrapping($bootstrapper, Closure $callback)
+    {
+        $this['events']->listen('bootstrapping: ' . $bootstrapper, $callback);
+    }
+
+    public function afterBootstrapping($bootstrapper, Closure $callback)
+    {
+        $this['events']->listen('bootstrapped: ' . $bootstrapper, $callback);
+    }
+
     public function hasBeenBootstrapped(): bool
     {
         return $this->hasBeenBootstrapped;
-    }
-
-    public function handleCommand(InputInterface $input)
-    {
-        $kernel = $this->make(ConsoleKernelContract::class);
-
-        $status = $kernel->handle(
-            $input,
-            new ConsoleOutput
-        );
-
-        $kernel->terminate($input, $status);
-
-        return $status;
     }
 
     public function setBasePath($basePath): static
@@ -225,6 +215,27 @@ class Application extends Container implements ApplicationContract
         return $basePath . implode('', $paths);
     }
 
+    public function runningInConsole()
+    {
+        if ($this->isRunningInConsole === null) {
+            $this->isRunningInConsole = (\PHP_SAPI === 'cli' || \PHP_SAPI === 'phpdbg');
+        }
+
+        return $this->isRunningInConsole;
+    }
+
+    public function runningConsoleCommand(...$commands)
+    {
+        if (!$this->runningInConsole()) {
+            return false;
+        }
+
+        return in_array(
+            $_SERVER['argv'][1] ?? null,
+            is_array($commands[0]) ? $commands[0] : $commands
+        );
+    }
+
     public function registered($callback): void
     {
         $this->registeredCallbacks[] = $callback;
@@ -232,7 +243,7 @@ class Application extends Container implements ApplicationContract
 
     public function registerConfiguredProviders(): void
     {
-        $config = $this->make('config')->get('app.service_provider');
+        $config = $this->make('config')->get('app.providers');
 
         $providersLaraGram = [];
         $otherProviders = [];
@@ -293,7 +304,9 @@ class Application extends Container implements ApplicationContract
 
     public function getProvider($provider)
     {
-        return array_values($this->getProviders($provider))[0] ?? null;
+        $name = is_string($provider) ? $provider : get_class($provider);
+
+        return $this->serviceProviders[$name] ?? null;
     }
 
     public function getProviders($provider): array
@@ -311,9 +324,11 @@ class Application extends Container implements ApplicationContract
 
     protected function markAsRegistered($provider): void
     {
-        $this->serviceProviders[] = $provider;
+        $class = get_class($provider);
 
-        $this->loadedProviders[get_class($provider)] = true;
+        $this->serviceProviders[$class] = $provider;
+
+        $this->loadedProviders[$class] = true;
     }
 
     public function loadDeferredProviders(): void
@@ -437,6 +452,20 @@ class Application extends Container implements ApplicationContract
         }
     }
 
+    public function handleCommand(InputInterface $input)
+    {
+        $kernel = $this->make(ConsoleKernelContract::class);
+
+        $status = $kernel->handle(
+            $input,
+            new ConsoleOutput
+        );
+
+        $kernel->terminate($input, $status);
+
+        return $status;
+    }
+
     public function getCachedServicesPath(): string
     {
         return $this->bootstrapPath('cache/services.php');
@@ -512,14 +541,26 @@ class Application extends Container implements ApplicationContract
         $this->deferredServices = $services;
     }
 
+    public function isDeferredService($service): bool
+    {
+        return isset($this->deferredServices[$service]);
+    }
+
     public function addDeferredServices(array $services): void
     {
         $this->deferredServices = array_merge($this->deferredServices, $services);
     }
 
-    public function isDeferredService($service): bool
+    public function removeDeferredServices(array $services)
     {
-        return isset($this->deferredServices[$service]);
+        foreach ($services as $service) {
+            unset($this->deferredServices[$service]);
+        }
+    }
+
+    public function provideFacades($namespace)
+    {
+        AliasLoader::setFacadeNamespace($namespace);
     }
 
     protected function registerCoreContainerAliases(): static
@@ -532,7 +573,12 @@ class Application extends Container implements ApplicationContract
                      'auth' => [\LaraGram\Auth\Auth::class],
                      'auth.level' => [\LaraGram\Auth\Level::class],
                      'auth.role' => [\LaraGram\Auth\Role::class],
-                     'console.output' => [\LaraGram\Console\Output::class],
+                     'cache.manager' => [\LaraGram\Cache\CacheManager::class],
+                     'conversation' => [\LaraGram\Conversation\Conversation::class],
+                     'events' => [\LaraGram\Events\Dispatcher::class],
+                     'files' => [\LaraGram\FileSystem\FileSystem::class],
+                     'keyboard' => [\LaraGram\Keyboard\Keyboard::class],
+                     'redis.connection' => [\LaraGram\Redis\Connection::class],
                  ] as $key => $aliases) {
             foreach ($aliases as $alias) {
                 $this->alias($key, $alias);
@@ -588,10 +634,12 @@ class Application extends Container implements ApplicationContract
 
     public function handleRequests()
     {
+        $this[ConsoleKernelContract::class]->bootstrap();
+
         $update_type = config('laraquest.update_type');
         if ($update_type == 'openswoole') {
             if (!extension_loaded('openswoole') && !extension_loaded('swoole')) {
-//                Console::output()->failed('Extension Openswoole/Swoole not loaded!');
+//                Commander::output()->failed('Extension Openswoole/Swoole not loaded!');
             }
 
             $ip = config('server.openswoole.ip');
@@ -608,7 +656,7 @@ class Application extends Container implements ApplicationContract
 
             $server->start();
         } elseif ($update_type == 'polling') {
-//            Console::output()->success("Polling Started!");
+//            Commander::output()->success("Polling Started!");
             Laraquest::polling(function () {
                 $this->loadResources(false);
             });
@@ -639,14 +687,14 @@ class Application extends Container implements ApplicationContract
 
     public function getNamespace()
     {
-        if (! is_null($this->namespace)) {
+        if (!is_null($this->namespace)) {
             return $this->namespace;
         }
 
         $composer = json_decode(file_get_contents($this->basePath('composer.json')), true);
 
-        foreach ((array) data_get($composer, 'autoload.psr-4') as $namespace => $path) {
-            foreach ((array) $path as $pathChoice) {
+        foreach ((array)data_get($composer, 'autoload.psr-4') as $namespace => $path) {
+            foreach ((array)$path as $pathChoice) {
                 if (realpath($this->appPath()) === realpath($this->basePath($pathChoice))) {
                     return $this->namespace = $namespace;
                 }

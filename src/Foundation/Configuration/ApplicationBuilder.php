@@ -99,16 +99,22 @@ class ApplicationBuilder
         }
 
         $this->app->afterResolving(\LaraGram\Contracts\Console\Kernel::class, function ($kernel) use ($commands) {
-            $commands = array_filter($commands, fn($command) => class_exists($command));
-            $paths = array_filter($commands, fn($path) => !class_exists($path));
+            $existingCommands = [];
+            $paths = [];
 
-            $routes = array_filter($paths, fn($path) => is_file($path));
-            $paths = array_filter($paths, fn($path) => !is_file($path));
+            foreach ($commands as $command) {
+                if (class_exists($command)) {
+                    $existingCommands[] = $command;
+                } else {
+                    $paths[] = $command;
+                }
+            }
 
-            $this->app->booted(static function () use ($kernel, $commands, $paths, $routes) {
-                $kernel->addCommands(array_values($commands));
-                $kernel->addCommandPaths(array_values($paths));
-                $kernel->addCommandRoutePaths(array_values($routes));
+            $validPaths = array_filter($paths, fn($path) => is_dir($path));
+
+            $this->app->booted(static function () use ($kernel, $existingCommands, $validPaths) {
+                $kernel->addCommands($existingCommands);
+                $kernel->addCommandPaths($validPaths);
             });
         });
 
@@ -212,10 +218,6 @@ class ApplicationBuilder
      */
     public function create()
     {
-//        if (config('database.database.power') == 'on') {
-//            $this->app->registerEloquent();
-//        }
-//
 //        $this->app->handleRequests();
 
         return $this->app;
