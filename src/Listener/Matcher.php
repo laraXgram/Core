@@ -10,7 +10,7 @@ class Matcher
     private mixed $request;
     protected string $controller;
 
-    public function match(string $type, \Closure|array|string $action, string|array|null $pattern)
+    protected function match(string $type, \Closure|array|string $action, string|array|null $pattern)
     {
         $action = $this->getRealAction($action);
         $this->request = app('request');
