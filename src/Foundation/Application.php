@@ -152,9 +152,14 @@ class Application extends Container implements ApplicationContract, CachesConfig
         $this->instance('path.storage', $this->storagePath());
         $this->instance('path.config', $this->configPath());
         $this->instance('path.database', $this->databasePath());
-        $this->instance('path.asset', $this->assetsPath());
+        $this->instance('path.assets', $this->assetsPath());
         $this->instance('path.bootstrap', $this->bootstrapPath());
-        $this->instance('path.lang', $this->langPath());
+
+        $this->useLangPath(value(function () {
+            return is_dir($directory = $this->assetsPath('lang'))
+                ? $directory
+                : $this->basePath('lang');
+        }));
     }
 
     public function basePath($path = ''): string
@@ -167,9 +172,27 @@ class Application extends Container implements ApplicationContract, CachesConfig
         return $this->joinPaths($this->appPath ?: $this->basePath('app'), $path);
     }
 
+    public function useAppPath($path)
+    {
+        $this->appPath = $path;
+
+        $this->instance('path', $path);
+
+        return $this;
+    }
+
     public function storagePath($path = ''): string
     {
         return $this->joinPaths($this->storagePath ?: $this->basePath('storage'), $path);
+    }
+
+    public function useStoragePath($path)
+    {
+        $this->storagePath = $path;
+
+        $this->instance('path.storage', $path);
+
+        return $this;
     }
 
     public function configPath($path = ''): string
@@ -177,9 +200,27 @@ class Application extends Container implements ApplicationContract, CachesConfig
         return $this->joinPaths($this->configPath ?: $this->basePath('config'), $path);
     }
 
+    public function useConfigPath($path)
+    {
+        $this->configPath = $path;
+
+        $this->instance('path.config', $path);
+
+        return $this;
+    }
+
     public function databasePath($path = ''): string
     {
         return $this->joinPaths($this->databasePath ?: $this->basePath('database'), $path);
+    }
+
+    public function useDatabasePath($path)
+    {
+        $this->databasePath = $path;
+
+        $this->instance('path.database', $path);
+
+        return $this;
     }
 
     public function assetsPath($path = ''): string
@@ -187,14 +228,41 @@ class Application extends Container implements ApplicationContract, CachesConfig
         return $this->joinPaths($this->assetsPath ?: $this->basePath('assets'), $path);
     }
 
+    public function useAssetesPath($path)
+    {
+        $this->publicPath = $path;
+
+        $this->instance('path.assets', $path);
+
+        return $this;
+    }
+
     public function bootstrapPath($path = ''): string
     {
         return $this->joinPaths($this->bootstrapPath ?: $this->basePath('bootstrap'), $path);
     }
 
+    public function useBootstrapPath($path)
+    {
+        $this->bootstrapPath = $path;
+
+        $this->instance('path.bootstrap', $path);
+
+        return $this;
+    }
+
     public function langPath($path = ''): string
     {
         return $this->joinPaths($this->langPath ?: $this->basePath('lang'), $path);
+    }
+
+    public function useLangPath($path)
+    {
+        $this->langPath = $path;
+
+        $this->instance('path.lang', $path);
+
+        return $this;
     }
 
     public function getBootstrapProvidersPath(): string

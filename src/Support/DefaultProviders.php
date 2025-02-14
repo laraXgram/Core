@@ -28,6 +28,7 @@ class DefaultProviders
             \LaraGram\Auth\AuthServiceProvider::class,
             \LaraGram\Keyboard\KeyboardServiceProvider::class,
             \LaraGram\Conversation\ConversationServiceProvider::class,
+            \LaraGram\Translation\TranslationServiceProvider::class,
         ];
     }
 
