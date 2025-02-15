@@ -323,3 +323,14 @@ if (!function_exists('removed_chat_boost')) {
         return $request->removed_chat_boost;
     }
 }
+
+if (!function_exists('id')) {
+    function id()
+    {
+        return match (true) {
+            isset(user()->id) => user()->id,
+            isset(chat()->id) => chat()->id,
+            default => null
+        };
+    }
+}
