@@ -79,6 +79,7 @@ use LaraGram\Listener\Group;
  * @method static Group controller(string $controller)
  * @method static void macro(string $name, callable $macro)
  * @method static bool hasMacro(string $name)
+ * @method static void mixin($mixin, $replace = true)
  */
 class Bot extends Facade
 {
