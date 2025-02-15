@@ -3,6 +3,7 @@
 namespace LaraGram\Console\Concerns;
 
 use LaraGram\Console\Signals;
+use LaraGram\Support\Collection;
 
 trait InteractsWithSignals
 {
@@ -29,11 +30,8 @@ trait InteractsWithSignals
                 $this->getApplication()->getSignalRegistry(),
             );
 
-            $signalsArray = is_array($signals) ? $signals : [$signals];
-
-            foreach ($signalsArray as $signal) {
-                $this->signals->register($signal, $callback);
-            }
+            Collection::wrap(value($signals))
+                ->each(fn ($signal) => $this->signals->register($signal, $callback));
         });
     }
 
