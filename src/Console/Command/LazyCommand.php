@@ -30,6 +30,8 @@ final class LazyCommand extends Command
             ->setDescription($description);
 
         $this->command = $commandFactory;
+
+        parent::__construct();
     }
 
     public function ignoreValidationErrors(): void
