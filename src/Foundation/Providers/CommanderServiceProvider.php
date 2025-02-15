@@ -2,14 +2,16 @@
 
 namespace LaraGram\Foundation\Providers;
 
+use LaraGram\Console\Signals;
 use LaraGram\Contracts\Support\DeferrableProvider;
 use LaraGram\Foundation\Console\ConfigCacheCommand;
 use LaraGram\Foundation\Console\ConfigClearCommand;
 use LaraGram\Foundation\Console\EventCacheCommand;
 use LaraGram\Foundation\Console\EventClearCommand;
-use LaraGram\Foundation\Console\GenerateAppCommand;
 use LaraGram\Foundation\Console\OptimizeClearCommand;
 use LaraGram\Foundation\Console\OptimizeCommand;
+use LaraGram\Foundation\Console\ServeCommand;
+use LaraGram\Foundation\Console\StartApiServerCommand;
 use LaraGram\Support\ServiceProvider;
 
 class CommanderServiceProvider extends ServiceProvider implements DeferrableProvider
@@ -20,13 +22,15 @@ class CommanderServiceProvider extends ServiceProvider implements DeferrableProv
      * @var array
      */
     protected $commandsWithDependencied = [
-        GenerateAppCommand::class    => ['files'],
+//        GenerateAppCommand::class    => ['files'],
         ConfigCacheCommand::class    => ['files'],
         ConfigClearCommand::class    => ['files'],
         EventCacheCommand::class     => ['files'],
         EventClearCommand::class     => ['files'],
         OptimizeCommand::class       => ['files'],
         OptimizeClearCommand::class  => ['files'],
+        StartApiServerCommand::class => [],
+        ServeCommand::class          => [],
     ];
 
     /**
@@ -60,6 +64,11 @@ class CommanderServiceProvider extends ServiceProvider implements DeferrableProv
             $this->commands,
             $this->devCommands
         ));
+
+        Signals::resolveAvailabilityUsing(function () {
+            return $this->app->runningInConsole()
+                && extension_loaded('pcntl');
+        });
     }
 
     /**

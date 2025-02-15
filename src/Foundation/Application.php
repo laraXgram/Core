@@ -155,11 +155,11 @@ class Application extends Container implements ApplicationContract, CachesConfig
         $this->instance('path.assets', $this->assetsPath());
         $this->instance('path.bootstrap', $this->bootstrapPath());
 
-        $this->useLangPath(value(function () {
-            return is_dir($directory = $this->assetsPath('lang'))
-                ? $directory
-                : $this->basePath('lang');
-        }));
+        $this->useLangPath(
+            is_dir($this->assetsPath('lang'))
+                ? $this->assetsPath('lang')
+                : $this->basePath('lang')
+        );
     }
 
     public function basePath($path = ''): string
@@ -706,10 +706,6 @@ class Application extends Container implements ApplicationContract, CachesConfig
 
         $update_type = config('laraquest.update_type');
         if ($update_type == 'openswoole') {
-            if (!extension_loaded('openswoole') && !extension_loaded('swoole')) {
-//                Commander::output()->failed('Extension Openswoole/Swoole not loaded!');
-            }
-
             $ip = config('server.openswoole.ip');
             $port = config('server.openswoole.port');
             $server = new Server($ip, $port);
@@ -724,11 +720,14 @@ class Application extends Container implements ApplicationContract, CachesConfig
 
             $server->start();
         } elseif ($update_type == 'polling') {
-//            Commander::output()->success("Polling Started!");
             Laraquest::polling(function () {
                 $this->loadResources(false);
             });
         } else {
+            global $data;
+            global $argv;
+            $data = json_decode($argv[1] ?? []);
+
             $this->loadResources();
         }
     }
