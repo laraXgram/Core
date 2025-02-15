@@ -78,9 +78,24 @@ trait InteractsWithTime
 
         $runTime = ($endTime - $startTime) * 1000;
 
+        $runTime = (int)round($runTime);
+
         if ($runTime > 1000) {
             $seconds = floor($runTime / 1000);
             $milliseconds = $runTime % 1000;
+
+            if ($seconds >= 60) {
+                $minutes = floor($seconds / 60);
+                $seconds = $seconds % 60;
+
+                if ($minutes >= 60) {
+                    $hours = floor($minutes / 60);
+                    $minutes = $minutes % 60;
+                    return sprintf('%dh %dm %ds %dms', $hours, $minutes, $seconds, $milliseconds);
+                }
+
+                return sprintf('%dm %ds %dms', $minutes, $seconds, $milliseconds);
+            }
 
             return sprintf('%ds %dms', $seconds, $milliseconds);
         }
