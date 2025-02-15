@@ -27,7 +27,7 @@ if (!function_exists('config')) {
      *
      * @param array|string $key
      * @param mixed|null $value
-     * @return mixed
+     * @return LaraGram\Config\Repository|mixed
      */
     function config(array|string $key = '', mixed $value = null): mixed
     {
