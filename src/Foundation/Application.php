@@ -4,7 +4,6 @@ namespace LaraGram\Foundation;
 
 use Closure;
 use Composer\Autoload\ClassLoader;
-use Illuminate\Database\Capsule\Manager as Capsule;
 use LaraGram\Console\Input\InputInterface;
 use LaraGram\Console\Output\ConsoleOutput;
 use LaraGram\Container\Container;
@@ -730,26 +729,6 @@ class Application extends Container implements ApplicationContract, CachesConfig
 
             $this->loadResources();
         }
-    }
-
-    public function registerEloquent(): static
-    {
-        $capsule = new Capsule();
-        $capsule->addConnection([
-            'driver' => config('database.database.driver'),
-            'host' => config('database.database.host'),
-            'port' => config('database.database.port'),
-            'database' => config('database.database.database'),
-            'username' => config('database.database.username'),
-            'password' => config('database.database.password'),
-            'charset' => config('database.database.charset'),
-            'collation' => config('database.database.collation'),
-            'prefix' => config('database.database.prefix'),
-        ]);
-        $capsule->setAsGlobal();
-        $capsule->bootEloquent();
-
-        return $this;
     }
 
     public function getNamespace()
