@@ -2,6 +2,7 @@
 
 use LaraGram\Support\Arr;
 use LaraGram\Support\Collection;
+use LaraGram\Support\HigherOrderTapProxy;
 
 if (! function_exists('collect')) {
     /**
@@ -339,5 +340,75 @@ if (! function_exists('with')) {
     function with($value, ?callable $callback = null)
     {
         return is_null($callback) ? $value : $callback($value);
+    }
+}
+
+if (! function_exists('tap')) {
+    /**
+     * Call the given Closure with the given value then return the value.
+     *
+     * @template TValue
+     *
+     * @param  TValue  $value
+     * @param  (callable(TValue): mixed)|null  $callback
+     * @return HigherOrderTapProxy
+     */
+    function tap($value, $callback = null)
+    {
+        if (is_null($callback)) {
+            return new HigherOrderTapProxy($value);
+        }
+
+        $callback($value);
+
+        return $value;
+    }
+}
+
+if (! function_exists('retry')) {
+    /**
+     * Retry an operation a given number of times.
+     *
+     * @template TValue
+     *
+     * @param  int|array<int, int>  $times
+     * @param  callable(int): TValue  $callback
+     * @param  int|\Closure(int, \Throwable): int  $sleepMilliseconds
+     * @param  (callable(\Throwable): bool)|null  $when
+     * @return TValue
+     *
+     * @throws \Throwable
+     */
+    function retry($times, callable $callback, $sleepMilliseconds = 0, $when = null)
+    {
+        $attempts = 0;
+
+        $backoff = [];
+
+        if (is_array($times)) {
+            $backoff = $times;
+
+            $times = count($times) + 1;
+        }
+
+        beginning:
+        $attempts++;
+        $times--;
+
+        try {
+            return $callback($attempts);
+        } catch (Throwable $e) {
+            if ($times < 1 || ($when && ! $when($e))) {
+                throw $e;
+            }
+
+            $sleepMilliseconds = $backoff[$attempts - 1] ?? $sleepMilliseconds;
+
+            if ($sleepMilliseconds) {
+                usleep(value($sleepMilliseconds, $attempts, $e) * 1000);
+            }
+
+            goto beginning;
+        }
     }
 }
