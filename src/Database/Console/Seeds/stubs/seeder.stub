@@ -1,0 +1,17 @@
+<?php
+
+namespace {{ namespace }};
+
+use LaraGram\Database\Console\Seeds\WithoutModelEvents;
+use LaraGram\Database\Seeder;
+
+class {{ class }} extends Seeder
+{
+    /**
+     * Run the database seeds.
+     */
+    public function run(): void
+    {
+        //
+    }
+}
