@@ -1,12 +1,23 @@
 <?php
 
-namespace App\Providers;
+namespace {{ namespace }};
 
 use LaraGram\Support\ServiceProvider;
 
-class %name% extends ServiceProvider
+class {{ class }} extends ServiceProvider
 {
+    /**
+     * Register services.
+     */
     public function register(): void
+    {
+        //
+    }
+
+    /**
+     * Bootstrap services.
+     */
+    public function boot(): void
     {
         //
     }

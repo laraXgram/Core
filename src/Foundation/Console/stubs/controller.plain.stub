@@ -1,0 +1,11 @@
+<?php
+
+namespace {{ namespace }};
+
+use {{ rootNamespace }}Controllers\Controller;
+use LaraGram\Request\Request;
+
+class {{ class }} extends Controller
+{
+    //
+}

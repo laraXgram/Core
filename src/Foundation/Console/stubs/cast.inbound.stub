@@ -1,0 +1,19 @@
+<?php
+
+namespace {{ namespace }};
+
+use LaraGram\Database\Eloquent\Model;
+use LaraGram\Contracts\Database\Eloquent\CastsInboundAttributes;
+
+class {{ class }} implements CastsInboundAttributes
+{
+    /**
+     * Prepare the given value for storage.
+     *
+     * @param  array<string, mixed>  $attributes
+     */
+    public function set(Model $model, string $key, mixed $value, array $attributes): mixed
+    {
+        return $value;
+    }
+}

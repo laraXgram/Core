@@ -11,4 +11,12 @@ class {{ class }}
     {
         //
     }
+
+    /**
+     * Invoke the class instance.
+     */
+    public function __invoke(): void
+    {
+
+    }
 }

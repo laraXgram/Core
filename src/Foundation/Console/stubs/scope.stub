@@ -1,0 +1,18 @@
+<?php
+
+namespace {{ namespace }};
+
+use LaraGram\Database\Eloquent\Builder;
+use LaraGram\Database\Eloquent\Model;
+use LaraGram\Database\Eloquent\Scope;
+
+class {{ class }} implements Scope
+{
+    /**
+     * Apply the scope to a given Eloquent query builder.
+     */
+    public function apply(Builder $builder, Model $model): void
+    {
+        //
+    }
+}

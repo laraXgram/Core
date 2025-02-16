@@ -17,7 +17,7 @@ abstract class ServiceProvider
     public static $publishGroups = [];
     public static array $optimizeCommands = [];
     public static array $optimizeClearCommands = [];
-
+    protected static $publishableMigrationPaths = [];
 
     public function __construct(Application $app)
     {
@@ -92,6 +92,15 @@ abstract class ServiceProvider
         }
     }
 
+    protected function publishesMigrations(array $paths, $groups = null)
+    {
+        $this->publishes($paths, $groups);
+
+        if ($this->app['config']->get('database.migrations.update_date_on_publish', false)) {
+            static::$publishableMigrationPaths = array_unique(array_merge(static::$publishableMigrationPaths, array_keys($paths)));
+        }
+    }
+
     protected function publishes(array $paths, $groups = null): void
     {
         $this->ensurePublishArrayInitialized($class = static::class);
@@ -157,6 +166,11 @@ abstract class ServiceProvider
     public static function publishableProviders(): array
     {
         return array_keys(static::$publishes);
+    }
+
+    public static function publishableMigrationPaths()
+    {
+        return static::$publishableMigrationPaths;
     }
 
     public static function publishableGroups(): array

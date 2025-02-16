@@ -322,7 +322,7 @@ abstract class GeneratorCommand extends Command implements PromptsForMissingInpu
             $name = substr($name, strlen($rootNamespace));
         }
 
-        return $this->laragram['path'].'/'.str_replace('\\', '/', $name).'.php';
+        return $this->laragram['path.app'].'/'.str_replace('\\', '/', $name).'.php';
     }
 
     /**
@@ -503,7 +503,7 @@ abstract class GeneratorCommand extends Command implements PromptsForMissingInpu
             'name' => [
                 'What should the '.strtolower($this->type).' be named?',
                 match ($this->type) {
-//                    'Cast' => 'E.g. Json',
+                    'Cast' => 'E.g. Json',
 //                    'Channel' => 'E.g. OrderChannel',
                     'Console command' => 'E.g. SendEmails',
 //                    'Component' => 'E.g. Alert',
@@ -517,13 +517,13 @@ abstract class GeneratorCommand extends Command implements PromptsForMissingInpu
 //                    'Middleware' => 'E.g. EnsureTokenIsValid',
                     'Model' => 'E.g. Flight',
 //                    'Notification' => 'E.g. InvoicePaid',
-//                    'Observer' => 'E.g. UserObserver',
+                    'Observer' => 'E.g. UserObserver',
 //                    'Policy' => 'E.g. PostPolicy',
                     'Provider' => 'E.g. ElasticServiceProvider',
 //                    'Request' => 'E.g. StorePodcastRequest',
                     'Resource' => 'E.g. UserResource',
 //                    'Rule' => 'E.g. Uppercase',
-//                    'Scope' => 'E.g. TrendingScope',
+                    'Scope' => 'E.g. TrendingScope',
                     'Seeder' => 'E.g. UserSeeder',
 //                    'Test' => 'E.g. UserTest',
                     default => '',

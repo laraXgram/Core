@@ -6,7 +6,7 @@ use LaraGram\Request\Request;
 
 return new class {
     public int $maxAttempts = 5;
-    public int $cancelTimeout = 500 // Seconds;
+    public int $cancelTimeout = 500; // Seconds;
     public string $cancelCommand = 'cancel';
     public bool $forgotAfterComplete = true;
 

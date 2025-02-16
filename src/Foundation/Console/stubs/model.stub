@@ -1,10 +1,11 @@
 <?php
 
-namespace App\Models;
+namespace {{ namespace }};
 
+{{ factoryImport }}
 use LaraGram\Database\Eloquent\Model;
 
-class %name% extends Model
+class {{ class }} extends Model
 {
-    
+    {{ factory }}
 }

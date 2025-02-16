@@ -34,7 +34,15 @@ class LoadConfiguration
     {
         $files = $this->getConfigurationFiles($app);
 
-        $base = $this->getBaseConfiguration();
+        $shouldMerge = !method_exists($app, 'shouldMergeFrameworkConfiguration') || $app->shouldMergeFrameworkConfiguration();
+
+        $base = $shouldMerge
+            ? $this->getBaseConfiguration()
+            : [];
+
+        foreach (array_diff(array_keys($base), array_keys($files)) as $name => $config) {
+            $repository->set($name, $config);
+        }
 
         foreach ($files as $name => $path) {
             $base = $this->loadConfigurationFile($repository, $name, $path, $base);
@@ -47,7 +55,7 @@ class LoadConfiguration
 
     protected function loadConfigurationFile(RepositoryContract $repository, $name, $path, array $base)
     {
-        $config = require $path;
+        $config = (fn () => require $path)();
 
         if (isset($base[$name])) {
             $config = array_merge($base[$name], $config);
@@ -68,7 +76,7 @@ class LoadConfiguration
     protected function mergeableOptions($name)
     {
         return [
-            //
+            'database' => ['connections'],
         ][$name] ?? [];
     }
 

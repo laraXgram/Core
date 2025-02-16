@@ -46,6 +46,7 @@ class Application extends Container implements ApplicationContract, CachesConfig
     protected ?bool $isRunningInConsole = null;
     protected string $namespace;
     protected array $absoluteCachePathPrefixes = ['/', '\\'];
+    protected bool $mergeFrameworkConfiguration = true;
 
     public function __construct(string $basePath = null)
     {
@@ -533,6 +534,11 @@ class Application extends Container implements ApplicationContract, CachesConfig
         return $status;
     }
 
+    public function shouldMergeFrameworkConfiguration()
+    {
+        return $this->mergeFrameworkConfiguration;
+    }
+
     public function getCachedServicesPath(): string
     {
         return $this->bootstrapPath('cache/services.php');
@@ -740,7 +746,7 @@ class Application extends Container implements ApplicationContract, CachesConfig
 
     public function getNamespace()
     {
-        if (!is_null($this->namespace)) {
+        if (!empty($this->namespace)) {
             return $this->namespace;
         }
 

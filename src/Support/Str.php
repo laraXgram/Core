@@ -1684,6 +1684,17 @@ class Str
     }
 
     /**
+     * Get the singular form of an English word.
+     *
+     * @param  string  $value
+     * @return string
+     */
+    public static function singular($value)
+    {
+        return Pluralizer::singular($value);
+    }
+
+    /**
      * Remove all strings from the casing caches.
      *
      * @return void
