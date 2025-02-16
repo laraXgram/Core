@@ -38,18 +38,41 @@ namespace LaraGram\Support\Facades;
  * @method static bool enableForeignKeyConstraints()
  * @method static bool disableForeignKeyConstraints()
  * @method static mixed withoutForeignKeyConstraints(\Closure $callback)
- * @method static \Illuminate\Database\Connection getConnection()
- * @method static \Illuminate\Database\Schema\Builder setConnection(\Illuminate\Database\Connection $connection)
+ * @method static \LaraGram\Database\Connection getConnection()
+ * @method static \LaraGram\Database\Schema\Builder setConnection(\LaraGram\Database\Connection $connection)
  * @method static void blueprintResolver(\Closure $resolver)
- * @method static void macro(string $name, object|callable $macro, object|callable $macro = null)
+ * @method static void macro(string $name, object|callable $macro)
  * @method static void mixin(object $mixin, bool $replace = true)
  * @method static bool hasMacro(string $name)
  * @method static void flushMacros()
  *
- * @see \Illuminate\Database\Schema\Builder
+ * @see \LaraGram\Database\Schema\Builder
  */
 class Schema extends Facade
 {
+    /**
+     * Indicates if the resolved facade should be cached.
+     *
+     * @var bool
+     */
+    protected static $cached = false;
+
+    /**
+     * Get a schema builder instance for a connection.
+     *
+     * @param  string|null  $name
+     * @return \LaraGram\Database\Schema\Builder
+     */
+    public static function connection($name)
+    {
+        return static::$app['db']->connection($name)->getSchemaBuilder();
+    }
+
+    /**
+     * Get the registered name of the component.
+     *
+     * @return string
+     */
     protected static function getFacadeAccessor()
     {
         return 'db.schema';
