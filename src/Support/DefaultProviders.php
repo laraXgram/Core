@@ -20,6 +20,8 @@ class DefaultProviders
     {
         $this->providers = $providers ?: [
             \LaraGram\Foundation\Providers\ConsoleSupportServiceProvider::class,
+            \LaraGram\Encryption\EncryptionServiceProvider::class,
+            \LaraGram\Hashing\HashServiceProvider::class,
             \LaraGram\Cache\CacheServiceProvider::class,
             \LaraGram\Listener\ListenerServiceProvider::class,
             \LaraGram\Request\RequestServiceProvider::class,
