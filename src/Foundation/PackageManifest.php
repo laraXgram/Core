@@ -129,12 +129,12 @@ class PackageManifest
 
         foreach ($packages as $package) {
             $packageName = $this->format($package['name']);
-            $laravelConfig = $package['extra']['laragram'] ?? [];
+            $laragramConfig = $package['extra']['laragram'] ?? [];
 
-            $result[$packageName] = $laravelConfig;
+            $result[$packageName] = $laragramConfig;
 
-            if (isset($laravelConfig['dont-discover'])) {
-                $ignore = array_merge($ignore, $laravelConfig['dont-discover']);
+            if (isset($laragramConfig['dont-discover'])) {
+                $ignore = array_merge($ignore, $laragramConfig['dont-discover']);
             }
         }
 

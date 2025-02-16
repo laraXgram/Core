@@ -8,7 +8,7 @@ class ClosureStream
     /**
      * The stream protocol.
      */
-    const STREAM_PROTO = 'laravel-serializable-closure';
+    const STREAM_PROTO = 'laragram-serializable-closure';
 
     /**
      * Checks if this stream is registered.

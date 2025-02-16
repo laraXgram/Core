@@ -1727,7 +1727,7 @@ abstract class Model implements Arrayable, ArrayAccess, CanBeEscapedWhenCastToSt
             $this->getCreatedAtColumn(),
             $this->getUpdatedAtColumn(),
             ...$this->uniqueIds(),
-            'laravel_through_key',
+            'laragram_through_key',
         ]));
 
         $attributes = Arr::except(

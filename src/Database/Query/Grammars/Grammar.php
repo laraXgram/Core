@@ -1029,8 +1029,8 @@ class Grammar extends BaseGrammar
 
         unset($components['orders']);
 
-        $table = $this->wrap('laravel_table');
-        $row = $this->wrap('laravel_row');
+        $table = $this->wrap('laragram_table');
+        $row = $this->wrap('laragram_row');
 
         $sql = $this->concatenate($components);
 
@@ -1054,7 +1054,7 @@ class Grammar extends BaseGrammar
     {
         $over = trim('partition by '.$this->wrap($partition).' '.$orders);
 
-        return ', row_number() over ('.$over.') as '.$this->wrap('laravel_row');
+        return ', row_number() over ('.$over.') as '.$this->wrap('laragram_row');
     }
 
     /**

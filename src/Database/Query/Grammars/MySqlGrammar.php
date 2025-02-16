@@ -161,8 +161,8 @@ class MySqlGrammar extends Grammar
         $column = last(explode('.', $query->groupLimit['column']));
         $column = $this->wrap($column);
 
-        $partition = ', @laravel_row := if(@laravel_group = '.$column.', @laravel_row + 1, 1) as `laravel_row`';
-        $partition .= ', @laravel_group := '.$column;
+        $partition = ', @laragram_row := if(@laragram_group = '.$column.', @laragram_row + 1, 1) as `laragram_row`';
+        $partition .= ', @laragram_group := '.$column;
 
         $orders = (array) $query->orders;
 
@@ -177,15 +177,15 @@ class MySqlGrammar extends Grammar
 
         $sql = $this->concatenate($components);
 
-        $from = '(select @laravel_row := 0, @laravel_group := 0) as `laravel_vars`, ('.$sql.') as `laravel_table`';
+        $from = '(select @laragram_row := 0, @laragram_group := 0) as `laragram_vars`, ('.$sql.') as `laragram_table`';
 
-        $sql = 'select `laravel_table`.*'.$partition.' from '.$from.' having `laravel_row` <= '.$limit;
+        $sql = 'select `laragram_table`.*'.$partition.' from '.$from.' having `laragram_row` <= '.$limit;
 
         if (isset($offset)) {
-            $sql .= ' and `laravel_row` > '.$offset;
+            $sql .= ' and `laragram_row` > '.$offset;
         }
 
-        return $sql.' order by `laravel_row`';
+        return $sql.' order by `laragram_row`';
     }
 
     /**
@@ -357,7 +357,7 @@ class MySqlGrammar extends Grammar
         $sql = $this->compileInsert($query, $values);
 
         if ($useUpsertAlias) {
-            $sql .= ' as laravel_upsert_alias';
+            $sql .= ' as laragram_upsert_alias';
         }
 
         $sql .= ' on duplicate key update ';
@@ -368,7 +368,7 @@ class MySqlGrammar extends Grammar
             }
 
             return $useUpsertAlias
-                ? $this->wrap($value).' = '.$this->wrap('laravel_upsert_alias').'.'.$this->wrap($value)
+                ? $this->wrap($value).' = '.$this->wrap('laragram_upsert_alias').'.'.$this->wrap($value)
                 : $this->wrap($value).' = values('.$this->wrap($value).')';
         })->implode(', ');
 

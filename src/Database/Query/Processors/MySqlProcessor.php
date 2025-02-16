@@ -9,7 +9,7 @@ class MySqlProcessor extends Processor
     /**
      * Process the results of a column listing query.
      *
-     * @deprecated Will be removed in a future Laravel version.
+     * @deprecated Will be removed in a future LaraGram version.
      *
      * @param  array  $results
      * @return array

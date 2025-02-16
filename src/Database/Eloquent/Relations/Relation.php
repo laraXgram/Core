@@ -277,7 +277,7 @@ abstract class Relation implements BuilderContract
      */
     public function getRelationCountHash($incrementJoinCount = true)
     {
-        return 'laravel_reserved_'.($incrementJoinCount ? static::$selfJoinCount++ : static::$selfJoinCount);
+        return 'laragram_reserved_'.($incrementJoinCount ? static::$selfJoinCount++ : static::$selfJoinCount);
     }
 
     /**

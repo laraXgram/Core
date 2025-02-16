@@ -174,7 +174,7 @@ class Blueprint
     /**
      * Get all of the commands matching the given names.
      *
-     * @deprecated Will be removed in a future Laravel version.
+     * @deprecated Will be removed in a future LaraGram version.
      *
      * @param  array  $names
      * @return \LaraGram\Support\Collection
@@ -1876,7 +1876,7 @@ class Blueprint
     /**
      * Get the columns on the blueprint that should be changed.
      *
-     * @deprecated Will be removed in a future Laravel version.
+     * @deprecated Will be removed in a future LaraGram version.
      *
      * @return \LaraGram\Database\Schema\ColumnDefinition[]
      */

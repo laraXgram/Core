@@ -18,7 +18,7 @@ use function LaraGram\Support\enum_value;
 class ModelInspector
 {
     /**
-     * The Laravel application instance.
+     * The LaraGram application instance.
      *
      * @var \LaraGram\Contracts\Foundation\Application
      */

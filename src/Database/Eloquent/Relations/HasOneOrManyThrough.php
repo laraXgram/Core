@@ -186,7 +186,7 @@ abstract class HasOneOrManyThrough extends Relation
         // relationship as this will allow us to quickly access all of the related
         // models without having to do nested looping which will be quite slow.
         foreach ($results as $result) {
-            $dictionary[$result->laravel_through_key][] = $result;
+            $dictionary[$result->laragram_through_key][] = $result;
         }
 
         return $dictionary;
@@ -456,7 +456,7 @@ abstract class HasOneOrManyThrough extends Relation
             $columns = [$this->related->qualifyColumn('*')];
         }
 
-        return array_merge($columns, [$this->getQualifiedFirstKeyName().' as laravel_through_key']);
+        return array_merge($columns, [$this->getQualifiedFirstKeyName().' as laragram_through_key']);
     }
 
     /**
@@ -706,7 +706,7 @@ abstract class HasOneOrManyThrough extends Relation
             $grammar = $this->query->getQuery()->getGrammar();
 
             if ($grammar instanceof MySqlGrammar && $grammar->useLegacyGroupLimit($this->query->getQuery())) {
-                $column = 'laravel_through_key';
+                $column = 'laragram_through_key';
             }
 
             $this->query->groupLimit($value, $column);

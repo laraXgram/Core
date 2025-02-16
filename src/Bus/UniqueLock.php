@@ -59,6 +59,6 @@ class UniqueLock
             ? $job->uniqueId()
             : ($job->uniqueId ?? '');
 
-        return 'laravel_unique_job:'.get_class($job).':'.$uniqueId;
+        return 'laragram_unique_job:'.get_class($job).':'.$uniqueId;
     }
 }

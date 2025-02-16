@@ -423,10 +423,10 @@ class SqlServerGrammar extends Grammar
             return '('.$this->parameterize($record).')';
         })->implode(', ');
 
-        $sql .= 'using (values '.$parameters.') '.$this->wrapTable('laravel_source').' ('.$columns.') ';
+        $sql .= 'using (values '.$parameters.') '.$this->wrapTable('laragram_source').' ('.$columns.') ';
 
         $on = (new Collection($uniqueBy))->map(function ($column) use ($query) {
-            return $this->wrap('laravel_source.'.$column).' = '.$this->wrap($query->from.'.'.$column);
+            return $this->wrap('laragram_source.'.$column).' = '.$this->wrap($query->from.'.'.$column);
         })->implode(' and ');
 
         $sql .= 'on '.$on.' ';
@@ -434,7 +434,7 @@ class SqlServerGrammar extends Grammar
         if ($update) {
             $update = (new Collection($update))->map(function ($value, $key) {
                 return is_numeric($key)
-                    ? $this->wrap($value).' = '.$this->wrap('laravel_source.'.$value)
+                    ? $this->wrap($value).' = '.$this->wrap('laragram_source.'.$value)
                     : $this->wrap($key).' = '.$this->parameter($value);
             })->implode(', ');
 
