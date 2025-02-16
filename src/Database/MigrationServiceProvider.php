@@ -160,9 +160,7 @@ class MigrationServiceProvider extends ServiceProvider implements DeferrableProv
             // creation of the migrations, and may be extended by these developers.
             $creator = $app['migration.creator'];
 
-            $composer = $app['composer'];
-
-            return new MigrateMakeCommand($creator, $composer);
+            return new MigrateMakeCommand($creator);
         });
     }
 
@@ -217,7 +215,7 @@ class MigrationServiceProvider extends ServiceProvider implements DeferrableProv
      *
      * @return array
      */
-    public function provides()
+    public function provides(): array
     {
         return array_merge([
             'migrator', 'migration.repository', 'migration.creator',

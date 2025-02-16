@@ -17,7 +17,7 @@ trait InteractsWithQueue
     /**
      * The underlying queue job instance.
      *
-     * @var \Illuminate\Contracts\Queue\Job|null
+     * @var \LaraGram\Contracts\Queue\Job|null
      */
     public $job;
 
@@ -108,7 +108,7 @@ trait InteractsWithQueue
     /**
      * Set the base queue job instance.
      *
-     * @param  \Illuminate\Contracts\Queue\Job  $job
+     * @param  \LaraGram\Contracts\Queue\Job  $job
      * @return $this
      */
     public function setJob(JobContract $job)

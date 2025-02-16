@@ -2,8 +2,6 @@
 
 namespace LaraGram\Support\Facades;
 
-use Illuminate\Support\Facades\Facade;
-
 /**
  * @method static bool exists(string $path)
  * @method static bool missing(string $path)

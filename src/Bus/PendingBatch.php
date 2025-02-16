@@ -307,7 +307,7 @@ class PendingBatch
     /**
      * Dispatch the batch.
      *
-     * @return \Illuminate\Bus\Batch
+     * @return \LaraGram\Bus\Batch
      *
      * @throws \Throwable
      */

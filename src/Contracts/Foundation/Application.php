@@ -159,7 +159,7 @@ interface Application extends Container
      * Register a terminating callback with the application.
      *
      * @param  callable|string  $callback
-     * @return \Illuminate\Contracts\Foundation\Application
+     * @return \LaraGram\Contracts\Foundation\Application
      */
     public function terminating($callback);
 

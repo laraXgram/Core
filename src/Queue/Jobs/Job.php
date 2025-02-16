@@ -372,7 +372,7 @@ abstract class Job
     /**
      * Get the service container instance.
      *
-     * @return \Illuminate\Container\Container
+     * @return \LaraGram\Container\Container
      */
     public function getContainer()
     {

@@ -2,7 +2,7 @@
 
 namespace LaraGram\Queue\Jobs;
 
-use Illuminate\Support\Str;
+use LaraGram\Support\Str;
 
 class FakeJob extends Job
 {

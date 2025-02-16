@@ -24,7 +24,7 @@ trait Batchable
     /**
      * Get the batch instance for the job, if applicable.
      *
-     * @return \Illuminate\Bus\Batch|null
+     * @return \LaraGram\Bus\Batch|null
      */
     public function batch()
     {

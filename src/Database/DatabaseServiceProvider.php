@@ -5,12 +5,13 @@ namespace LaraGram\Database;
 use Faker\Factory as FakerFactory;
 use Faker\Generator as FakerGenerator;
 use LaraGram\Contracts\Queue\EntityResolver;
+use LaraGram\Contracts\Support\DeferrableProvider;
 use LaraGram\Database\Connectors\ConnectionFactory;
 use LaraGram\Database\Eloquent\Model;
 use LaraGram\Database\Eloquent\QueueEntityResolver;
 use LaraGram\Support\ServiceProvider;
 
-class DatabaseServiceProvider extends ServiceProvider
+class DatabaseServiceProvider extends ServiceProvider implements DeferrableProvider
 {
     /**
      * The array of resolved Faker instances.
@@ -109,5 +110,12 @@ class DatabaseServiceProvider extends ServiceProvider
         $this->app->singleton(EntityResolver::class, function () {
             return new QueueEntityResolver;
         });
+    }
+
+    public function provides(): array
+    {
+        return [
+            'db.factory', 'db.connection', 'db.schema', 'db.transactions',
+        ];
     }
 }

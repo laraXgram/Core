@@ -634,18 +634,25 @@ class Application extends Container implements ApplicationContract, CachesConfig
     {
         foreach ([
                      'app' => [self::class, Container::class],
-                     'listener' => [\LaraGram\Listener\Listener::class, \LaraGram\Listener\Group::class],
-                     'request' => [\LaraGram\Request\Request::class],
-                     'db.schema' => [\LaraGram\Database\Migrations\Schema::class],
                      'auth' => [\LaraGram\Auth\Auth::class],
                      'auth.level' => [\LaraGram\Auth\Level::class],
                      'auth.role' => [\LaraGram\Auth\Role::class],
                      'cache.manager' => [\LaraGram\Cache\CacheManager::class],
-                     'conversation' => [\LaraGram\Conversation\Conversation::class],
-                     'events' => [\LaraGram\Events\Dispatcher::class],
+                     'config' => [\LaraGram\Config\Repository::class, \LaraGram\Contracts\Config\Repository::class],
+                     'db' => [\LaraGram\Database\DatabaseManager::class, \LaraGram\Database\ConnectionResolverInterface::class],
+                     'db.connection' => [\LaraGram\Database\Connection::class, \LaraGram\Database\ConnectionInterface::class],
+                     'db.schema' => [\LaraGram\Database\Schema\Builder::class],
+                     'encrypter' => [\LaraGram\Encryption\Encrypter::class, \LaraGram\Contracts\Encryption\Encrypter::class, \LaraGram\Contracts\Encryption\StringEncrypter::class],
+                     'events' => [\LaraGram\Events\Dispatcher::class, \LaraGram\Contracts\Events\Dispatcher::class],
                      'files' => [\LaraGram\FileSystem\FileSystem::class],
-                     'keyboard' => [\LaraGram\Keyboard\Keyboard::class],
+                     'hash' => [\LaraGram\Hashing\HashManager::class],
+                     'hash.driver' => [\LaraGram\Contracts\Hashing\Hasher::class],
+                     'translator' => [\LaraGram\Translation\Translator::class, \LaraGram\Contracts\Translation\Translator::class],
                      'redis.connection' => [\LaraGram\Redis\Connection::class],
+                     'request' => [\LaraGram\Request\Request::class],
+                     'listener' => [\LaraGram\Listener\Listener::class, \LaraGram\Listener\Group::class],
+                     'conversation' => [\LaraGram\Conversation\Conversation::class],
+                     'keyboard' => [\LaraGram\Keyboard\Keyboard::class],
                  ] as $key => $aliases) {
             foreach ($aliases as $alias) {
                 $this->alias($key, $alias);
@@ -699,7 +706,7 @@ class Application extends Container implements ApplicationContract, CachesConfig
         }
     }
 
-    public function handleRequests()
+    public function handleRequest()
     {
         $this[ConsoleKernelContract::class]->bootstrap();
 
@@ -725,7 +732,7 @@ class Application extends Container implements ApplicationContract, CachesConfig
         } else {
             global $data;
             global $argv;
-            $data = json_decode($argv[1] ?? []);
+            $data = json_decode($argv[1] ?? '{}');
 
             $this->loadResources();
         }

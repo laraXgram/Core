@@ -4,6 +4,17 @@ namespace LaraGram\Foundation\Providers;
 
 use LaraGram\Console\Signals;
 use LaraGram\Contracts\Support\DeferrableProvider;
+use LaraGram\Database\Console\DbCommand;
+use LaraGram\Database\Console\DumpCommand;
+use LaraGram\Database\Console\Factories\FactoryMakeCommand;
+use LaraGram\Database\Console\MonitorCommand;
+use LaraGram\Database\Console\PruneCommand;
+use LaraGram\Database\Console\Seeds\SeedCommand;
+use LaraGram\Database\Console\Seeds\SeederMakeCommand;
+use LaraGram\Database\Console\ShowCommand;
+use LaraGram\Database\Console\ShowModelCommand;
+use LaraGram\Database\Console\TableCommand;
+use LaraGram\Database\Console\WipeCommand;
 use LaraGram\Foundation\Console\ConfigCacheCommand;
 use LaraGram\Foundation\Console\ConfigClearCommand;
 use LaraGram\Foundation\Console\EventCacheCommand;
@@ -31,6 +42,9 @@ class CommanderServiceProvider extends ServiceProvider implements DeferrableProv
         OptimizeClearCommand::class  => ['files'],
         StartApiServerCommand::class => [],
         ServeCommand::class          => [],
+        FactoryMakeCommand::class    => ['files'],
+        SeedCommand::class           => ['db'],
+        SeederMakeCommand::class     => ['files'],
     ];
 
     /**
@@ -39,7 +53,13 @@ class CommanderServiceProvider extends ServiceProvider implements DeferrableProv
      * @var array
      */
     protected $commands = [
-
+        'PruneCommand' => PruneCommand::class,
+        'ShowCommand' => ShowCommand::class,
+        'ShowModelCommand' => ShowModelCommand::class,
+        'WipeCommand' => WipeCommand::class,
+        'MonitorCommand' => MonitorCommand::class,
+        'DumpCommand' => DumpCommand::class,
+        'DbCommand' => DbCommand::class,
     ];
 
     /**
@@ -48,7 +68,7 @@ class CommanderServiceProvider extends ServiceProvider implements DeferrableProv
      * @var array
      */
     protected $devCommands = [
-
+        'TableCommand' => TableCommand::class,
     ];
 
     /**

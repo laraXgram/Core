@@ -79,7 +79,7 @@ class MonitorCommand extends DatabaseInspectionCommand
      */
     protected function parseDatabases($databases)
     {
-        return (new Collection(explode(',', $databases)))->map(function ($database) {
+        return (new Collection(explode(',', $databases ?? '')))->map(function ($database) {
             if (! $database) {
                 $database = $this->laragram['config']['database.default'];
             }
