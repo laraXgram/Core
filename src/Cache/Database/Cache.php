@@ -2,7 +2,7 @@
 
 namespace LaraGram\Cache\Database;
 
-use Illuminate\Database\Eloquent\Model;
+use LaraGram\Database\Eloquent\Model;
 
 class Cache extends Model
 {
