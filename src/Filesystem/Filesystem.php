@@ -2,14 +2,22 @@
 
 namespace LaraGram\Filesystem;
 
+use DirectoryIterator;
 use ErrorException;
 use FilesystemIterator;
 use LaraGram\Contracts\Filesystem\FileNotFoundException;
+use LaraGram\Filesystem\Mime\MimeTypes;
+use LaraGram\Support\LazyCollection;
+use LaraGram\Support\Traits\Conditionable;
 use LaraGram\Support\Traits\Macroable;
+use RecursiveDirectoryIterator;
+use RecursiveIteratorIterator;
+use RuntimeException;
+use SplFileObject;
 
 class Filesystem
 {
-    use Macroable;
+    use Conditionable, Macroable;
 
     /**
      * Determine if a file or directory exists.
@@ -40,7 +48,7 @@ class Filesystem
      * @param  bool  $lock
      * @return string
      *
-     * @throws FileNotFoundException
+     * @throws \LaraGram\Contracts\Filesystem\FileNotFoundException
      */
     public function get($path, $lock = false)
     {
@@ -59,7 +67,7 @@ class Filesystem
      * @param  bool  $lock
      * @return array
      *
-     * @throws FileNotFoundException
+     * @throws \LaraGram\Contracts\Filesystem\FileNotFoundException
      */
     public function json($path, $flags = 0, $lock = false)
     {
@@ -102,7 +110,7 @@ class Filesystem
      * @param  array  $data
      * @return mixed
      *
-     * @throws FileNotFoundException
+     * @throws \LaraGram\Contracts\Filesystem\FileNotFoundException
      */
     public function getRequire($path, array $data = [])
     {
@@ -127,7 +135,7 @@ class Filesystem
      * @param  array  $data
      * @return mixed
      *
-     * @throws FileNotFoundException
+     * @throws \LaraGram\Contracts\Filesystem\FileNotFoundException
      */
     public function requireOnce($path, array $data = [])
     {
@@ -146,11 +154,38 @@ class Filesystem
     }
 
     /**
+     * Get the contents of a file one line at a time.
+     *
+     * @param  string  $path
+     * @return \LaraGram\Support\LazyCollection
+     *
+     * @throws \LaraGram\Contracts\Filesystem\FileNotFoundException
+     */
+    public function lines($path)
+    {
+        if (! $this->isFile($path)) {
+            throw new FileNotFoundException(
+                "File does not exist at path {$path}."
+            );
+        }
+
+        return LazyCollection::make(function () use ($path) {
+            $file = new SplFileObject($path);
+
+            $file->setFlags(SplFileObject::DROP_NEW_LINE);
+
+            while (! $file->eof()) {
+                yield $file->fgets();
+            }
+        });
+    }
+
+    /**
      * Get the hash of the file at the given path.
      *
      * @param  string  $path
      * @param  string  $algorithm
-     * @return string
+     * @return string|false
      */
     public function hash($path, $algorithm = 'md5')
     {
@@ -313,7 +348,7 @@ class Filesystem
      *
      * @param  string  $target
      * @param  string  $link
-     * @return bool|null
+     * @return bool|null|void
      */
     public function link($target, $link)
     {
@@ -324,6 +359,46 @@ class Filesystem
         $mode = $this->isDirectory($target) ? 'J' : 'H';
 
         exec("mklink /{$mode} ".escapeshellarg($link).' '.escapeshellarg($target));
+    }
+
+    /**
+     * Create a relative symlink to the target file or directory.
+     *
+     * @param  string  $target
+     * @param  string  $link
+     * @return string
+     *
+     * @throws \RuntimeException
+     */
+    public function relativeLink($target, $link)
+    {
+        if (!file_exists($target)) {
+            throw new RuntimeException("Target file does not exist.");
+        }
+
+        if (!file_exists($link)) {
+            throw new RuntimeException("Link file does not exist.");
+        }
+
+        $target = realpath($target);
+        $link = realpath($link);
+
+        if (!$target || !$link) {
+            throw new RuntimeException("Invalid file paths.");
+        }
+
+        $targetParts = explode(DIRECTORY_SEPARATOR, $target);
+        $linkParts = explode(DIRECTORY_SEPARATOR, $link);
+
+        $commonParts = array_intersect_assoc($targetParts, $linkParts);
+        $commonLength = count($commonParts);
+
+        $targetRelative = array_slice($targetParts, $commonLength);
+        $linkRelative = array_slice($linkParts, $commonLength);
+
+        $relativePath = str_repeat('..' . DIRECTORY_SEPARATOR, count($linkRelative)) . implode(DIRECTORY_SEPARATOR, $targetRelative);
+
+        return $this->isFile($target) ? rtrim($relativePath, '/') : $relativePath;
     }
 
     /**
@@ -368,6 +443,25 @@ class Filesystem
     public function extension($path)
     {
         return pathinfo($path, PATHINFO_EXTENSION);
+    }
+
+    /**
+     * Guess the file extension from the mime-type of a given file.
+     *
+     * @param  string  $path
+     * @return string|null
+     *
+     * @throws \RuntimeException
+     */
+    public function guessExtension($path)
+    {
+        if (! class_exists(MimeTypes::class)) {
+            throw new RuntimeException(
+                'To enable support for guessing extensions, please install the symfony/mime package.'
+            );
+        }
+
+        return (new MimeTypes)->getExtensions($this->mimeType($path))[0] ?? null;
     }
 
     /**
@@ -423,6 +517,37 @@ class Filesystem
     public function isDirectory($directory)
     {
         return is_dir($directory);
+    }
+
+    /**
+     * Determine if the given path is a directory that does not contain any other files or directories.
+     *
+     * @param  string  $directory
+     * @param  bool  $ignoreDotFiles
+     * @return bool
+     */
+    public function isEmptyDirectory($directory, $ignoreDotFiles = false)
+    {
+        if (!is_dir($directory)) {
+            throw new RuntimeException("The provided path is not a directory.");
+        }
+
+        $handle = opendir($directory);
+
+        while (($file = readdir($handle)) !== false) {
+            if ($ignoreDotFiles && $file[0] === '.') {
+                continue;
+            }
+
+            if ($file !== '.' && $file !== '..') {
+                closedir($handle);
+                return false;
+            }
+        }
+
+        closedir($handle);
+
+        return true;
     }
 
     /**
@@ -482,6 +607,78 @@ class Filesystem
     public function glob($pattern, $flags = 0)
     {
         return glob($pattern, $flags);
+    }
+
+    /**
+     * Get an array of all files in a directory.
+     *
+     * @param string $directory
+     * @param bool $hidden
+     * @return array
+     */
+    public function files($directory, $hidden = false)
+    {
+        $files = [];
+        $iterator = new DirectoryIterator($directory);
+
+        foreach ($iterator as $file) {
+            if ($file->isFile()) {
+                if ($hidden || !$file->isDot()) {
+                    $files[] = $file->getRealPath();
+                }
+            }
+        }
+
+        sort($files);
+        return $files;
+    }
+
+    /**
+     * Get all of the files from the given directory (recursive).
+     *
+     * @param  string  $directory
+     * @param  bool  $hidden
+     * @return array
+     */
+    public function allFiles($directory, $hidden = false)
+    {
+        $files = [];
+        $iterator = new RecursiveIteratorIterator(
+            new RecursiveDirectoryIterator($directory, RecursiveDirectoryIterator::SKIP_DOTS)
+        );
+
+        foreach ($iterator as $file) {
+            if ($file->isFile()) {
+                if ($hidden || !$file->isDot()) {
+                    $files[] = $file->getRealPath();
+                }
+            }
+        }
+
+        sort($files);
+        return $files;
+    }
+
+
+    /**
+     * Get all of the directories within a given directory.
+     *
+     * @param  string  $directory
+     * @return array
+     */
+    public function directories($directory)
+    {
+        $directories = [];
+
+        foreach (new DirectoryIterator($directory) as $dir) {
+            if ($dir->isDir() && !$dir->isDot()) {
+                $directories[] = $dir->getRealPath();
+            }
+        }
+
+        sort($directories);
+
+        return $directories;
     }
 
     /**
