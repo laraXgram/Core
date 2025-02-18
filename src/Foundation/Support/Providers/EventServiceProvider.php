@@ -4,6 +4,7 @@ namespace LaraGram\Foundation\Support\Providers;
 
 use LaraGram\Foundation\Events\DiscoverEvents;
 use LaraGram\Support\Arr;
+use LaraGram\Support\Collection;
 use LaraGram\Support\Facades\Event;
 use LaraGram\Support\ServiceProvider;
 
@@ -22,6 +23,13 @@ class EventServiceProvider extends ServiceProvider
      * @var array
      */
     protected $subscribe = [];
+
+    /**
+     * The model observers to register.
+     *
+     * @var array<string, string|object|array<int, string|object>>
+     */
+    protected $observers = [];
 
     /**
      * Indicates if events should be discovered.
@@ -55,6 +63,10 @@ class EventServiceProvider extends ServiceProvider
 
             foreach ($this->subscribe as $subscriber) {
                 Event::subscribe($subscriber);
+            }
+
+            foreach ($this->observers as $model => $observers) {
+                $model::observe($observers);
             }
         });
     }
@@ -127,27 +139,19 @@ class EventServiceProvider extends ServiceProvider
      */
     public function discoverEvents()
     {
-        $directories = array_map(function ($directory) {
-            return glob($directory, GLOB_ONLYDIR);
-        }, $this->discoverEventsWithin());
-
-        $directories = array_merge(...$directories);
-
-        $directories = array_filter($directories, function ($directory) {
-            return is_dir($directory);
-        });
-
-        $discovered = [];
-
-        foreach ($directories as $directory) {
-            $discovered = array_merge_recursive(
-                $discovered,
-                DiscoverEvents::within($directory, $this->eventDiscoveryBasePath())
-            );
-        }
-
-        return $discovered;
-
+        return (new Collection($this->discoverEventsWithin()))
+            ->flatMap(function ($directory) {
+                return glob($directory, GLOB_ONLYDIR);
+            })
+            ->reject(function ($directory) {
+                return ! is_dir($directory);
+            })
+            ->reduce(function ($discovered, $directory) {
+                return array_merge_recursive(
+                    $discovered,
+                    DiscoverEvents::within($directory, $this->eventDiscoveryBasePath())
+                );
+            }, []);
     }
 
     /**

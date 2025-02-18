@@ -19,18 +19,22 @@ class DefaultProviders
     public function __construct(?array $providers = null)
     {
         $this->providers = $providers ?: [
-            \LaraGram\Foundation\Providers\ConsoleSupportServiceProvider::class,
-            \LaraGram\Encryption\EncryptionServiceProvider::class,
-            \LaraGram\Hashing\HashServiceProvider::class,
+            \LaraGram\Auth\AuthServiceProvider::class,
+            \LaraGram\Bus\BusServiceProvider::class,
             \LaraGram\Cache\CacheServiceProvider::class,
+            \LaraGram\Foundation\Providers\ConsoleSupportServiceProvider::class,
+            \LaraGram\Database\DatabaseServiceProvider::class,
+            \LaraGram\Encryption\EncryptionServiceProvider::class,
+            \LaraGram\Foundation\Providers\FoundationServiceProvider::class,
+            \LaraGram\Hashing\HashServiceProvider::class,
+            \LaraGram\Pipeline\PipelineServiceProvider::class,
+            \LaraGram\Queue\QueueServiceProvider::class,
+            \LaraGram\Redis\RedisServiceProvider::class,
+            \LaraGram\Translation\TranslationServiceProvider::class,
             \LaraGram\Listener\ListenerServiceProvider::class,
             \LaraGram\Request\RequestServiceProvider::class,
-            \LaraGram\Database\DatabaseServiceProvider::class,
-            \LaraGram\Redis\RedisServiceProvider::class,
-            \LaraGram\Auth\AuthServiceProvider::class,
-            \LaraGram\Keyboard\KeyboardServiceProvider::class,
             \LaraGram\Conversation\ConversationServiceProvider::class,
-            \LaraGram\Translation\TranslationServiceProvider::class,
+            \LaraGram\Keyboard\KeyboardServiceProvider::class,
         ];
     }
 
