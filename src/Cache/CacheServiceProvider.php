@@ -4,37 +4,44 @@ namespace LaraGram\Cache;
 
 use LaraGram\Contracts\Support\DeferrableProvider;
 use LaraGram\Support\ServiceProvider;
-use LaraGram\Cache\Driver\FileCacheDriver;
-use LaraGram\Cache\Driver\DatabaseCacheDriver;
-use LaraGram\Cache\Driver\RedisCacheDriver;
-use LaraGram\Cache\Driver\APCuCacheDriver;
 
 class CacheServiceProvider extends ServiceProvider implements DeferrableProvider
 {
     /**
-     * Register services.
+     * Register the service provider.
      *
      * @return void
      */
-    public function register(): void
+    public function register()
     {
-        $this->app->singleton('cache.manager', function () {
-            $driver = config('cache.default');
+        $this->app->singleton('cache', function ($app) {
+            return new CacheManager($app);
+        });
 
-            $cacheDriver = match ($driver) {
-                'file' => new FileCacheDriver(config('cache.file.path')),
-                'database' => new DatabaseCacheDriver(),
-                'redis' => new RedisCacheDriver(app('redis.connection')),
-                'apcu' => new APCuCacheDriver(),
-                default => throw new \InvalidArgumentException("Invalid cache driver: {$driver}")
-            };
+        $this->app->singleton('cache.store', function ($app) {
+            return $app['cache']->driver();
+        });
 
-            return new CacheManager($cacheDriver);
+        $this->app->singleton('memcached.connector', function () {
+            return new MemcachedConnector;
+        });
+
+        $this->app->singleton(RateLimiter::class, function ($app) {
+            return new RateLimiter($app->make('cache')->driver(
+                $app['config']->get('cache.limiter')
+            ));
         });
     }
 
+    /**
+     * Get the services provided by the provider.
+     *
+     * @return array
+     */
     public function provides(): array
     {
-        return ['cache.manager'];
+        return [
+            'cache', 'cache.store', 'memcached.connector', RateLimiter::class,
+        ];
     }
 }
