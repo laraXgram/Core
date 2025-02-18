@@ -4,6 +4,8 @@ namespace LaraGram\Support;
 
 use Closure;
 use LaraGram\Support\String\ASCII;
+use LaraGram\Support\String\Uid\Ulid;
+use LaraGram\Support\String\Uid\Uuid;
 use LaraGram\Support\Traits\Macroable;
 use JsonException;
 use Throwable;
@@ -34,6 +36,19 @@ class Str
      */
     protected static $studlyCache = [];
 
+    /**
+     * The callback that should be used to generate UUIDs.
+     *
+     * @var callable|null
+     */
+    protected static $uuidFactory;
+
+    /**
+     * The callback that should be used to generate ULIDs.
+     *
+     * @var callable|null
+     */
+    protected static $ulidFactory;
     /**
      * The callback that should be used to generate random strings.
      *
@@ -1692,6 +1707,220 @@ class Str
     public static function singular($value)
     {
         return Pluralizer::singular($value);
+    }
+
+    /**
+     * Generate a UUID (version 4).
+     *
+     * @return String\Uid\UuidV4
+     */
+    public static function uuid()
+    {
+        return static::$uuidFactory
+            ? call_user_func(static::$uuidFactory)
+            : Uuid::v4();
+    }
+
+    /**
+     * Generate a UUID (version 7).
+     *
+     * @param  \DateTimeInterface|null  $time
+     * @return String\Uid\UuidV7
+     */
+    public static function uuid7()
+    {
+        return static::$uuidFactory
+            ? call_user_func(static::$uuidFactory)
+            : Uuid::v7();
+    }
+
+    /**
+     * Generate a time-ordered UUID.
+     *
+     * @return String\Uid\UuidV4
+     */
+    public static function orderedUuid()
+    {
+        if (static::$uuidFactory) {
+            return call_user_func(static::$uuidFactory);
+        }
+
+        return Uuid::v4();
+    }
+
+    /**
+     * Set the callable that will be used to generate UUIDs.
+     *
+     * @param  callable|null  $factory
+     * @return void
+     */
+    public static function createUuidsUsing(?callable $factory = null)
+    {
+        static::$uuidFactory = $factory;
+    }
+
+    /**
+     * Set the sequence that will be used to generate UUIDs.
+     *
+     * @param  array  $sequence
+     * @param  callable|null  $whenMissing
+     * @return void
+     */
+    public static function createUuidsUsingSequence(array $sequence, $whenMissing = null)
+    {
+        $next = 0;
+
+        $whenMissing ??= function () use (&$next) {
+            $factoryCache = static::$uuidFactory;
+
+            static::$uuidFactory = null;
+
+            $uuid = static::uuid();
+
+            static::$uuidFactory = $factoryCache;
+
+            $next++;
+
+            return $uuid;
+        };
+
+        static::createUuidsUsing(function () use (&$next, $sequence, $whenMissing) {
+            if (array_key_exists($next, $sequence)) {
+                return $sequence[$next++];
+            }
+
+            return $whenMissing();
+        });
+    }
+
+    /**
+     * Always return the same UUID when generating new UUIDs.
+     *
+     * @param  \Closure|null  $callback
+     * @return String\Uid\UuidV4
+     */
+    public static function freezeUuids(?Closure $callback = null)
+    {
+        $uuid = Str::uuid();
+
+        Str::createUuidsUsing(fn () => $uuid);
+
+        if ($callback !== null) {
+            try {
+                $callback($uuid);
+            } finally {
+                Str::createUuidsNormally();
+            }
+        }
+
+        return $uuid;
+    }
+
+    /**
+     * Indicate that UUIDs should be created normally and not using a custom factory.
+     *
+     * @return void
+     */
+    public static function createUuidsNormally()
+    {
+        static::$uuidFactory = null;
+    }
+
+    /**
+     * Generate a ULID.
+     *
+     * @param  \DateTimeInterface|null  $time
+     * @return Ulid
+     */
+    public static function ulid($time = null)
+    {
+        if (static::$ulidFactory) {
+            return call_user_func(static::$ulidFactory);
+        }
+
+        if ($time === null) {
+            return new Ulid();
+        }
+
+        return new Ulid(Ulid::generate($time));
+    }
+
+    /**
+     * Indicate that ULIDs should be created normally and not using a custom factory.
+     *
+     * @return void
+     */
+    public static function createUlidsNormally()
+    {
+        static::$ulidFactory = null;
+    }
+
+    /**
+     * Set the callable that will be used to generate ULIDs.
+     *
+     * @param  callable|null  $factory
+     * @return void
+     */
+    public static function createUlidsUsing(?callable $factory = null)
+    {
+        static::$ulidFactory = $factory;
+    }
+
+    /**
+     * Set the sequence that will be used to generate ULIDs.
+     *
+     * @param  array  $sequence
+     * @param  callable|null  $whenMissing
+     * @return void
+     */
+    public static function createUlidsUsingSequence(array $sequence, $whenMissing = null)
+    {
+        $next = 0;
+
+        $whenMissing ??= function () use (&$next) {
+            $factoryCache = static::$ulidFactory;
+
+            static::$ulidFactory = null;
+
+            $ulid = static::ulid();
+
+            static::$ulidFactory = $factoryCache;
+
+            $next++;
+
+            return $ulid;
+        };
+
+        static::createUlidsUsing(function () use (&$next, $sequence, $whenMissing) {
+            if (array_key_exists($next, $sequence)) {
+                return $sequence[$next++];
+            }
+
+            return $whenMissing();
+        });
+    }
+
+    /**
+     * Always return the same ULID when generating new ULIDs.
+     *
+     * @param  Closure|null  $callback
+     * @return Ulid
+     */
+    public static function freezeUlids(?Closure $callback = null)
+    {
+        $ulid = Str::ulid();
+
+        Str::createUlidsUsing(fn () => $ulid);
+
+        if ($callback !== null) {
+            try {
+                $callback($ulid);
+            } finally {
+                Str::createUlidsNormally();
+            }
+        }
+
+        return $ulid;
     }
 
     /**
