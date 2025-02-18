@@ -3,6 +3,8 @@
 use LaraGram\Support\Arr;
 use LaraGram\Support\Collection;
 use LaraGram\Support\HigherOrderTapProxy;
+use LaraGram\Support\Once;
+use LaraGram\Support\Onceable;
 
 if (! function_exists('collect')) {
     /**
@@ -351,7 +353,7 @@ if (! function_exists('tap')) {
      *
      * @param  TValue  $value
      * @param  (callable(TValue): mixed)|null  $callback
-     * @return HigherOrderTapProxy
+     * @return ($callback is null ? \LaraGram\Support\HigherOrderTapProxy : TValue)
      */
     function tap($value, $callback = null)
     {
@@ -410,5 +412,25 @@ if (! function_exists('retry')) {
 
             goto beginning;
         }
+    }
+}
+
+if (! function_exists('once')) {
+    /**
+     * Ensures a callable is only called once, and returns the result on subsequent calls.
+     *
+     * @template  TReturnType
+     *
+     * @param  callable(): TReturnType  $callback
+     * @return TReturnType
+     */
+    function once(callable $callback)
+    {
+        $onceable = Onceable::tryFromTrace(
+            debug_backtrace(DEBUG_BACKTRACE_PROVIDE_OBJECT, 2),
+            $callback,
+        );
+
+        return $onceable ? Once::instance()->value($onceable) : call_user_func($callback);
     }
 }

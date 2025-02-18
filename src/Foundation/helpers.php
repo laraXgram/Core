@@ -177,3 +177,25 @@ if (! function_exists('event')) {
         return app('events')->dispatch(...$args);
     }
 }
+
+if (! function_exists('rescue')) {
+    /**
+     * Catch a potential exception and return a default value.
+     *
+     * @template TValue
+     * @template TFallback
+     *
+     * @param  callable(): TValue  $callback
+     * @param  (callable(\Throwable): TFallback)|TFallback  $rescue
+     * @param  bool|callable(\Throwable): bool  $report
+     * @return TValue|TFallback
+     */
+    function rescue(callable $callback, $rescue = null)
+    {
+        try {
+            return $callback();
+        } catch (Throwable $e) {
+            return value($rescue, $e);
+        }
+    }
+}
