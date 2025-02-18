@@ -2,8 +2,16 @@
 
 namespace LaraGram\Foundation\Providers;
 
+use LaraGram\Cache\Console\CacheTableCommand;
+use LaraGram\Cache\Console\PruneStaleTagsCommand;
+use LaraGram\Console\Scheduling\ScheduleClearCacheCommand;
+use LaraGram\Console\Scheduling\ScheduleFinishCommand;
+use LaraGram\Console\Scheduling\ScheduleInterruptCommand;
+use LaraGram\Console\Scheduling\ScheduleListCommand;
+use LaraGram\Console\Scheduling\ScheduleRunCommand;
+use LaraGram\Console\Scheduling\ScheduleTestCommand;
+use LaraGram\Console\Scheduling\ScheduleWorkCommand;
 use LaraGram\Console\Signals;
-use LaraGram\Container\Container;
 use LaraGram\Contracts\Support\DeferrableProvider;
 use LaraGram\Database\Console\DbCommand;
 use LaraGram\Database\Console\DumpCommand;
@@ -14,7 +22,7 @@ use LaraGram\Database\Console\Seeds\SeedCommand;
 use LaraGram\Database\Console\Seeds\SeederMakeCommand;
 use LaraGram\Database\Console\ShowCommand;
 use LaraGram\Database\Console\ShowModelCommand;
-use LaraGram\Database\Console\TableCommand;
+use LaraGram\Database\Console\TableCommand as DatabaseTableCommand;
 use LaraGram\Database\Console\WipeCommand;
 use LaraGram\Foundation\Console\CastMakeCommand;
 use LaraGram\Foundation\Console\ClassMakeCommand;
@@ -28,7 +36,12 @@ use LaraGram\Foundation\Console\ConversationMakeCommand;
 use LaraGram\Foundation\Console\EnumMakeCommand;
 use LaraGram\Foundation\Console\EventCacheCommand;
 use LaraGram\Foundation\Console\EventClearCommand;
+use LaraGram\Foundation\Console\EventGenerateCommand;
+use LaraGram\Foundation\Console\EventListCommand;
+use LaraGram\Foundation\Console\EventMakeCommand;
 use LaraGram\Foundation\Console\InterfaceMakeCommand;
+use LaraGram\Foundation\Console\JobMakeCommand;
+use LaraGram\Foundation\Console\JobMiddlewareMakeCommand;
 use LaraGram\Foundation\Console\ModelMakeCommand;
 use LaraGram\Foundation\Console\ObserverMakeCommand;
 use LaraGram\Foundation\Console\OptimizeClearCommand;
@@ -38,10 +51,33 @@ use LaraGram\Foundation\Console\ProviderMakeCommand;
 use LaraGram\Foundation\Console\ScopeMakeCommand;
 use LaraGram\Foundation\Console\ServeCommand;
 use LaraGram\Foundation\Console\StartApiServerCommand;
+use LaraGram\Foundation\Console\StorageLinkCommand;
+use LaraGram\Foundation\Console\StorageUnlinkCommand;
 use LaraGram\Foundation\Console\StubPublishCommand;
 use LaraGram\Foundation\Console\SwooleInstallCommand;
 use LaraGram\Foundation\Console\TraitMakeCommand;
 use LaraGram\Foundation\Console\VendorPublishCommand;
+use LaraGram\Foundation\Console\WebhookDeleteCommand;
+use LaraGram\Foundation\Console\WebhookDropCommand;
+use LaraGram\Foundation\Console\WebhookInfoCommand;
+use LaraGram\Foundation\Console\WebhookSetCommand;
+use LaraGram\Cache\Console\ClearCommand as CacheClearCommand;
+use LaraGram\Cache\Console\ForgetCommand as CacheForgetCommand;
+use LaraGram\Queue\Console\ClearCommand as QueueClearCommand;
+use LaraGram\Queue\Console\FlushFailedCommand as FlushFailedQueueCommand;
+use LaraGram\Queue\Console\ForgetFailedCommand as ForgetFailedQueueCommand;
+use LaraGram\Queue\Console\ListenCommand as QueueListenCommand;
+use LaraGram\Queue\Console\ListFailedCommand as ListFailedQueueCommand;
+use LaraGram\Queue\Console\MonitorCommand as QueueMonitorCommand;
+use LaraGram\Queue\Console\PruneFailedJobsCommand as QueuePruneFailedJobsCommand;
+use LaraGram\Queue\Console\RestartCommand as QueueRestartCommand;
+use LaraGram\Queue\Console\RetryBatchCommand as QueueRetryBatchCommand;
+use LaraGram\Queue\Console\RetryCommand as QueueRetryCommand;
+use LaraGram\Queue\Console\WorkCommand as QueueWorkCommand;
+use LaraGram\Queue\Console\BatchesTableCommand;
+use LaraGram\Queue\Console\FailedTableCommand;
+use LaraGram\Queue\Console\PruneBatchesCommand;
+use LaraGram\Queue\Console\TableCommand;
 use LaraGram\Support\ServiceProvider;
 
 class CommanderServiceProvider extends ServiceProvider implements DeferrableProvider
@@ -52,32 +88,44 @@ class CommanderServiceProvider extends ServiceProvider implements DeferrableProv
      * @var array
      */
     protected $commandsWithDependencied = [
-//        GenerateAppCommand::class      => ['files'],
-        ConfigCacheCommand::class      => ['files'],
-        ConfigClearCommand::class      => ['files'],
-        EventCacheCommand::class       => ['files'],
-        EventClearCommand::class       => ['files'],
-        OptimizeCommand::class         => ['files'],
-        OptimizeClearCommand::class    => ['files'],
-        StartApiServerCommand::class   => [],
-        ServeCommand::class            => [],
-        FactoryMakeCommand::class      => ['files'],
-        SeedCommand::class             => ['db'],
-        SeederMakeCommand::class       => ['files'],
-        CastMakeCommand::class         => ['files'],
-        ClassMakeCommand::class        => ['files'],
-        ConsoleMakeCommand::class      => ['files'],
-        ControllerMakeCommand::class   => ['files'],
-        EnumMakeCommand::class         => ['files'],
-        InterfaceMakeCommand::class    => ['files'],
-        ModelMakeCommand::class        => ['files'],
-        ObserverMakeCommand::class     => ['files'],
-        ProviderMakeCommand::class     => ['files'],
-        ScopeMakeCommand::class        => ['files'],
-        TraitMakeCommand::class        => ['files'],
-        ConversationMakeCommand::class => ['files'],
-        VendorPublishCommand::class    => ['files'],
-        ConfigPublishCommand::class    => [],
+//        GenerateAppCommand::class          => ['files'],
+        ConfigCacheCommand::class          => ['files'],
+        ConfigClearCommand::class          => ['files'],
+        EventCacheCommand::class           => ['files'],
+        EventClearCommand::class           => ['files'],
+        OptimizeCommand::class             => ['files'],
+        OptimizeClearCommand::class        => ['files'],
+        StartApiServerCommand::class       => [],
+        ServeCommand::class                => [],
+        FactoryMakeCommand::class          => ['files'],
+        SeedCommand::class                 => ['db'],
+        SeederMakeCommand::class           => ['files'],
+        CastMakeCommand::class             => ['files'],
+        ClassMakeCommand::class            => ['files'],
+        ConsoleMakeCommand::class          => ['files'],
+        ControllerMakeCommand::class       => ['files'],
+        EnumMakeCommand::class             => ['files'],
+        InterfaceMakeCommand::class        => ['files'],
+        ModelMakeCommand::class            => ['files'],
+        ObserverMakeCommand::class         => ['files'],
+        ProviderMakeCommand::class         => ['files'],
+        ScopeMakeCommand::class            => ['files'],
+        TraitMakeCommand::class            => ['files'],
+        ConversationMakeCommand::class     => ['files'],
+        VendorPublishCommand::class        => ['files'],
+        ConfigPublishCommand::class        => [],
+        CacheTableCommand::class           => ['files'],
+        CacheClearCommand::class           => ['cache', 'files'],
+        CacheForgetCommand::class          => ['cache'],
+        ForgetFailedQueueCommand::class    => [],
+        QueueListenCommand::class          => ['queue.listener'],
+        QueueMonitorCommand::class         => ['queue', 'events'],
+        PruneBatchesCommand::class         => [],
+        QueuePruneFailedJobsCommand::class => [],
+        QueueRestartCommand::class         => ['cache.store'],
+        QueueWorkCommand::class            => ['queue.worker', 'cache.store'],
+        JobMakeCommand::class              => ['files'],
+        JobMiddlewareMakeCommand::class    => ['files'],
     ];
 
     /**
@@ -86,6 +134,7 @@ class CommanderServiceProvider extends ServiceProvider implements DeferrableProv
      * @var array
      */
     protected $commands = [
+        'DatabaseTableCommand' => DatabaseTableCommand::class,
         'PruneCommand' => PruneCommand::class,
         'ShowCommand' => ShowCommand::class,
         'ShowModelCommand' => ShowModelCommand::class,
@@ -95,6 +144,25 @@ class CommanderServiceProvider extends ServiceProvider implements DeferrableProv
         'DbCommand' => DbCommand::class,
         'PackageDiscoverCommand' => PackageDiscoverCommand::class,
         'ConfigShowCommand' => ConfigShowCommand::class,
+        'WebhookInfoCommand' => WebhookInfoCommand::class,
+        'WebhookSetCommand' => WebhookSetCommand::class,
+        'WebhookDeleteCommand' => WebhookDeleteCommand::class,
+        'WebhookDropCommand' => WebhookDropCommand::class,
+        'PruneStaleTagsCommand' => PruneStaleTagsCommand::class,
+        'QueueClearCommand' => QueueClearCommand::class,
+        'FlushFailedQueueCommand' => FlushFailedQueueCommand::class,
+        'ListFailedQueueCommand' => ListFailedQueueCommand::class,
+        'QueueRetryBatchCommand' => QueueRetryBatchCommand::class,
+        'QueueRetryCommand' => QueueRetryCommand::class,
+        'ScheduleClearCacheCommand' => ScheduleClearCacheCommand::class,
+        'ScheduleFinishCommand' => ScheduleFinishCommand::class,
+        'ScheduleInterruptCommand' => ScheduleInterruptCommand::class,
+        'ScheduleListCommand' => ScheduleListCommand::class,
+        'ScheduleRunCommand' => ScheduleRunCommand::class,
+        'ScheduleTestCommand' => ScheduleTestCommand::class,
+        'ScheduleWorkCommand' => ScheduleWorkCommand::class,
+        'StorageLinkCommand' => StorageLinkCommand::class,
+        'StorageUnlinkCommand' => StorageUnlinkCommand::class,
     ];
 
     /**
@@ -103,9 +171,11 @@ class CommanderServiceProvider extends ServiceProvider implements DeferrableProv
      * @var array
      */
     protected $devCommands = [
-        'TableCommand' => TableCommand::class,
         'StubPublishCommand' => StubPublishCommand::class,
         'SwooleInstallCommand' => SwooleInstallCommand::class,
+        'BatchesTableCommand' => BatchesTableCommand::class,
+        'FailedTableCommand' => FailedTableCommand::class,
+        'TableCommand' => TableCommand::class,
     ];
 
     /**
