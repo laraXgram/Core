@@ -3,6 +3,7 @@
 namespace LaraGram\Bus;
 
 use Closure;
+use DateTimeImmutable;
 use LaraGram\Contracts\Queue\Factory as QueueFactory;
 use LaraGram\Contracts\Support\Arrayable;
 use LaraGram\Queue\CallQueuedClosure;
@@ -83,9 +84,9 @@ class Batch implements Arrayable, JsonSerializable
      * @param  int  $failedJobs
      * @param  array  $failedJobIds
      * @param  array  $options
-     * @param  string  $createdAt
-     * @param  string|null  $cancelledAt
-     * @param  string|null  $finishedAt
+     * @param  DateTimeImmutable  $createdAt
+     * @param  DateTimeImmutable|null  $cancelledAt
+     * @param  DateTimeImmutable|null  $finishedAt
      * @return void
      */
     public function __construct(QueueFactory $queue,
@@ -97,9 +98,9 @@ class Batch implements Arrayable, JsonSerializable
                                 int $failedJobs,
                                 array $failedJobIds,
                                 array $options,
-                                string $createdAt,
-                                ?string $cancelledAt = null,
-                                ?string $finishedAt = null)
+                                DateTimeImmutable $createdAt,
+                                ?DateTimeImmutable $cancelledAt = null,
+                                ?DateTimeImmutable $finishedAt = null)
     {
         $this->queue = $queue;
         $this->repository = $repository;
