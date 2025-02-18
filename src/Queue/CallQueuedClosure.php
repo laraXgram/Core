@@ -13,7 +13,7 @@ use ReflectionFunction;
 
 class CallQueuedClosure implements ShouldQueue
 {
-    use Batchable, Dispatchable, InteractsWithQueue, Queueable;
+    use Batchable, Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
     /**
      * The serializable Closure instance.
@@ -58,6 +58,12 @@ class CallQueuedClosure implements ShouldQueue
         return new self(new SerializableClosure($job));
     }
 
+    /**
+     * Execute the job.
+     *
+     * @param  \LaraGram\Contracts\Container\Container  $container
+     * @return void
+     */
     public function handle(Container $container)
     {
         $container->call($this->closure->getClosure(), ['job' => $this]);
@@ -72,8 +78,8 @@ class CallQueuedClosure implements ShouldQueue
     public function onFailure($callback)
     {
         $this->failureCallbacks[] = $callback instanceof Closure
-            ? new SerializableClosure($callback)
-            : $callback;
+                        ? new SerializableClosure($callback)
+                        : $callback;
 
         return $this;
     }

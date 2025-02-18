@@ -2,7 +2,7 @@
 
 namespace LaraGram\Queue\Events;
 
-class JobFailed
+class JobExceptionOccurred
 {
     /**
      * The connection name.
@@ -19,7 +19,7 @@ class JobFailed
     public $job;
 
     /**
-     * The exception that caused the job to fail.
+     * The exception instance.
      *
      * @var \Throwable
      */

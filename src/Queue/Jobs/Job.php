@@ -4,7 +4,6 @@ namespace LaraGram\Queue\Jobs;
 
 use LaraGram\Bus\Batchable;
 use LaraGram\Bus\BatchRepository;
-use LaraGram\Container\Container;
 use LaraGram\Contracts\Events\Dispatcher;
 use LaraGram\Queue\Events\JobFailed;
 use LaraGram\Queue\ManuallyFailedException;
@@ -26,7 +25,7 @@ abstract class Job
     /**
      * The IoC container instance.
      *
-     * @var Container
+     * @var \LaraGram\Container\Container
      */
     protected $container;
 
