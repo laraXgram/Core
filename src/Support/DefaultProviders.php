@@ -23,6 +23,7 @@ class DefaultProviders
             \LaraGram\Bus\BusServiceProvider::class,
             \LaraGram\Cache\CacheServiceProvider::class,
             \LaraGram\Foundation\Providers\ConsoleSupportServiceProvider::class,
+            \LaraGram\Concurrency\ConcurrencyServiceProvider::class,
             \LaraGram\Database\DatabaseServiceProvider::class,
             \LaraGram\Encryption\EncryptionServiceProvider::class,
             \LaraGram\Foundation\Providers\FoundationServiceProvider::class,
