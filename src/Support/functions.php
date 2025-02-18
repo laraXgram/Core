@@ -3,6 +3,8 @@
 namespace LaraGram\Support;
 
 use LaraGram\Support\Defer\DeferredCallbackCollection;
+use LaraGram\Support\Defer\DeferredCallback;
+use LaraGram\Support\Process\PhpExecutableFinder;
 
 if (! function_exists('LaraGram\Support\enum_value')) {
     /**
@@ -47,5 +49,29 @@ if (! function_exists('LaraGram\Support\defer')) {
             new DeferredCallback($callback, $name, $always),
             fn ($deferred) => app(DeferredCallbackCollection::class)[] = $deferred
         );
+    }
+}
+
+if (! function_exists('LaraGram\Support\php_binary')) {
+    /**
+     * Determine the PHP Binary.
+     *
+     * @return string
+     */
+    function php_binary()
+    {
+        return (new PhpExecutableFinder)->find(false) ?: 'php';
+    }
+}
+
+if (! function_exists('LaraGram\Support\commander_binary')) {
+    /**
+     * Determine the proper Artisan executable.
+     *
+     * @return string
+     */
+    function commander_binary()
+    {
+        return 'commander';
     }
 }
