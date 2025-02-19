@@ -60,17 +60,15 @@ class DefaultProviders
      */
     public function replace(array $replacements)
     {
-        $current = $this->providers;
+        $current = new Collection($this->providers);
 
         foreach ($replacements as $from => $to) {
-            $key = array_search($from, $current, true);
+            $key = $current->search($from);
 
-            if (is_int($key)) {
-                $current[$key] = $to;
-            }
+            $current = is_int($key) ? $current->replace([$key => $to]) : $current;
         }
 
-        return new static(array_values($current));
+        return new static($current->values()->toArray());
     }
 
     /**
@@ -81,7 +79,10 @@ class DefaultProviders
      */
     public function except(array $providers)
     {
-        return new static(array_values(array_filter($this->providers, fn($p) => !in_array($p, $providers))));
+        return new static((new Collection($this->providers))
+            ->reject(fn ($p) => in_array($p, $providers))
+            ->values()
+            ->toArray());
     }
 
     /**

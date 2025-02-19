@@ -250,16 +250,16 @@ if (! function_exists('lang_path')) {
     }
 }
 
-if (! function_exists('assets_path')) {
+if (! function_exists('public_path')) {
     /**
      * Get the path to the public folder.
      *
      * @param  string  $path
      * @return string
      */
-    function assets_path($path = '')
+    function public_path($path = '')
     {
-        return app()->assetsPath($path);
+        return app()->publicPath($path);
     }
 }
 

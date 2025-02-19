@@ -4,6 +4,7 @@ namespace LaraGram\Foundation;
 
 use Exception;
 use LaraGram\Filesystem\Filesystem;
+use LaraGram\Contracts\Foundation\Application as ApplicationContract;
 
 class ProviderRepository
 {
@@ -36,7 +37,7 @@ class ProviderRepository
      * @param  string  $manifestPath
      * @return void
      */
-    public function __construct(Application $app, Filesystem $files, $manifestPath)
+    public function __construct(ApplicationContract $app, Filesystem $files, $manifestPath)
     {
         $this->app = $app;
         $this->files = $files;

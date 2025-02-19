@@ -14,7 +14,10 @@ use LaraGram\Conversation\ConversationListener;
 use LaraGram\Events\EventServiceProvider;
 use LaraGram\Filesystem\Filesystem;
 use LaraGram\Filesystem\FilesystemServiceProvider;
+use LaraGram\Foundation\Events\LocaleUpdated;
 use LaraGram\Laraquest\Laraquest;
+use LaraGram\Support\Arr;
+use LaraGram\Support\Collection;
 use LaraGram\Support\Traits\Macroable;
 use Swoole\Http\Request;
 use Swoole\Http\Response;
@@ -41,12 +44,12 @@ class Application extends Container implements ApplicationContract, CachesConfig
     protected string $configPath = '';
     protected string $databasePath = '';
     protected string $langPath = '';
-    protected string $assetsPath = '';
+    protected string $publicPath = '';
     protected string $storagePath = '';
     protected ?bool $isRunningInConsole = null;
     protected string $namespace;
-    protected array $absoluteCachePathPrefixes = ['/', '\\'];
     protected bool $mergeFrameworkConfiguration = true;
+    protected array $absoluteCachePathPrefixes = ['/', '\\'];
 
     public function __construct(string $basePath = null)
     {
@@ -57,8 +60,6 @@ class Application extends Container implements ApplicationContract, CachesConfig
         $this->registerBaseBindings();
         $this->registerBaseServiceProviders();
         $this->registerCoreContainerAliases();
-
-        return $this;
     }
 
     public static function configure(?string $basePath = null): Configuration\ApplicationBuilder
@@ -78,8 +79,12 @@ class Application extends Container implements ApplicationContract, CachesConfig
     public static function inferBasePath()
     {
         return match (true) {
+            isset($_ENV['APP_BASE_PATH']) => $_ENV['APP_BASE_PATH'],
             config('base_path') !== null => config('base_path'),
-            default => dirname(array_keys(ClassLoader::getRegisteredLoaders())[0]),
+            default => dirname(array_values(array_filter(
+                array_keys(ClassLoader::getRegisteredLoaders()),
+                fn ($path) => ! str_contains($path, '/vendor/'),
+            ))[0]),
         };
     }
 
@@ -93,6 +98,7 @@ class Application extends Container implements ApplicationContract, CachesConfig
         static::setInstance($this);
 
         $this->instance('app', $this);
+
         $this->instance(Container::class, $this);
 
         $this->singleton(PackageManifest::class, fn() => new PackageManifest(
@@ -152,19 +158,20 @@ class Application extends Container implements ApplicationContract, CachesConfig
         $this->instance('path.storage', $this->storagePath());
         $this->instance('path.config', $this->configPath());
         $this->instance('path.database', $this->databasePath());
-        $this->instance('path.assets', $this->assetsPath());
+        $this->instance('path.public', $this->publicPath());
         $this->instance('path.bootstrap', $this->bootstrapPath());
 
-        $this->useLangPath(
-            is_dir($this->assetsPath('lang'))
-                ? $this->assetsPath('lang')
-                : $this->basePath('lang')
-        );
-    }
+        $this->useBootstrapPath(value(function () {
+            return is_dir($directory = $this->basePath('.laragram'))
+                ? $directory
+                : $this->basePath('bootstrap');
+        }));
 
-    public function basePath($path = ''): string
-    {
-        return $this->joinPaths($this->basePath, $path);
+        $this->useLangPath(value(function () {
+            return is_dir($directory = $this->publicPath('lang'))
+                ? $directory
+                : $this->basePath('lang');
+        }));
     }
 
     public function appPath($path = ''): string
@@ -181,21 +188,31 @@ class Application extends Container implements ApplicationContract, CachesConfig
         return $this;
     }
 
-    public function storagePath($path = ''): string
+    public function basePath($path = ''): string
     {
-        return $this->joinPaths($this->storagePath ?: $this->basePath('storage'), $path);
+        return $this->joinPaths($this->basePath, $path);
     }
 
-    public function useStoragePath($path)
+    public function bootstrapPath($path = '')
     {
-        $this->storagePath = $path;
+        return $this->joinPaths($this->bootstrapPath, $path);
+    }
 
-        $this->instance('path.storage', $path);
+    public function getBootstrapProvidersPath()
+    {
+        return $this->bootstrapPath('providers.php');
+    }
+
+    public function useBootstrapPath($path)
+    {
+        $this->bootstrapPath = $path;
+
+        $this->instance('path.bootstrap', $path);
 
         return $this;
     }
 
-    public function configPath($path = ''): string
+    public function configPath($path = '')
     {
         return $this->joinPaths($this->configPath ?: $this->basePath('config'), $path);
     }
@@ -209,7 +226,7 @@ class Application extends Container implements ApplicationContract, CachesConfig
         return $this;
     }
 
-    public function databasePath($path = ''): string
+    public function databasePath($path = '')
     {
         return $this->joinPaths($this->databasePath ?: $this->basePath('database'), $path);
     }
@@ -223,37 +240,9 @@ class Application extends Container implements ApplicationContract, CachesConfig
         return $this;
     }
 
-    public function assetsPath($path = ''): string
+    public function langPath($path = '')
     {
-        return $this->joinPaths($this->assetsPath ?: $this->basePath('assets'), $path);
-    }
-
-    public function useAssetesPath($path)
-    {
-        $this->publicPath = $path;
-
-        $this->instance('path.assets', $path);
-
-        return $this;
-    }
-
-    public function bootstrapPath($path = ''): string
-    {
-        return $this->joinPaths($this->bootstrapPath ?: $this->basePath('bootstrap'), $path);
-    }
-
-    public function useBootstrapPath($path)
-    {
-        $this->bootstrapPath = $path;
-
-        $this->instance('path.bootstrap', $path);
-
-        return $this;
-    }
-
-    public function langPath($path = ''): string
-    {
-        return $this->joinPaths($this->langPath ?: $this->basePath('lang'), $path);
+        return $this->joinPaths($this->langPath, $path);
     }
 
     public function useLangPath($path)
@@ -265,9 +254,32 @@ class Application extends Container implements ApplicationContract, CachesConfig
         return $this;
     }
 
-    public function getBootstrapProvidersPath(): string
+    public function publicPath($path = '')
     {
-        return $this->bootstrapPath('providers.php');
+        return $this->joinPaths($this->publicPath ?: $this->basePath('public'), $path);
+    }
+
+    public function usePublicPath($path)
+    {
+        $this->publicPath = $path;
+
+        $this->instance('path.public', $path);
+
+        return $this;
+    }
+
+    public function storagePath($path = ''): string
+    {
+        return $this->joinPaths($this->storagePath ?: $this->basePath('storage'), $path);
+    }
+
+    public function useStoragePath($path)
+    {
+        $this->storagePath = $path;
+
+        $this->instance('path.storage', $path);
+
+        return $this;
     }
 
     public function joinPaths($basePath, ...$paths): string
@@ -294,7 +306,7 @@ class Application extends Container implements ApplicationContract, CachesConfig
 
     public function runningConsoleCommand(...$commands)
     {
-        if (!$this->runningInConsole()) {
+        if (! $this->runningInConsole()) {
             return false;
         }
 
@@ -309,28 +321,15 @@ class Application extends Container implements ApplicationContract, CachesConfig
         $this->registeredCallbacks[] = $callback;
     }
 
-    public function registerConfiguredProviders(): void
+    public function registerConfiguredProviders()
     {
-        $config = $this->make('config')->get('app.providers');
+        $providers = (new Collection($this->make('config')->get('app.providers')))
+            ->partition(fn ($provider) => str_starts_with($provider, 'LaraGram\\'));
 
-        $providersLaraGram = [];
-        $otherProviders = [];
+        $providers->splice(1, 0, [$this->make(PackageManifest::class)->providers()]);
 
-        foreach ($config as $provider) {
-            if (str_starts_with($provider, 'LaraGram\\')) {
-                $providersLaraGram[] = $provider;
-            } else {
-                $otherProviders[] = $provider;
-            }
-        }
-
-        $packageManifestProviders = $this->make(PackageManifest::class)->providers();
-        array_splice($otherProviders, 0, 0, $packageManifestProviders);
-
-        $allProviders = array_merge($providersLaraGram, $otherProviders);
-
-        $providerRepository = new ProviderRepository($this, new Filesystem, $this->getCachedServicesPath());
-        $providerRepository->load($allProviders);
+        (new ProviderRepository($this, new Filesystem, $this->getCachedServicesPath()))
+            ->load($providers->collapse()->toArray());
 
         $this->fireAppCallbacks($this->registeredCallbacks);
     }
@@ -377,12 +376,11 @@ class Application extends Container implements ApplicationContract, CachesConfig
         return $this->serviceProviders[$name] ?? null;
     }
 
-    public function getProviders($provider): array
+    public function getProviders($provider)
     {
         $name = is_string($provider) ? $provider : get_class($provider);
-        return array_filter($this->serviceProviders, function ($value) use ($name) {
-            return $value instanceof $name;
-        });
+
+        return Arr::where($this->serviceProviders, fn ($value) => $value instanceof $name);
     }
 
     public function resolveProvider($provider)
@@ -539,6 +537,13 @@ class Application extends Container implements ApplicationContract, CachesConfig
         return $this->mergeFrameworkConfiguration;
     }
 
+    public function dontMergeFrameworkConfiguration()
+    {
+        $this->mergeFrameworkConfiguration = false;
+
+        return $this;
+    }
+
     public function getCachedServicesPath(): string
     {
         return $this->bootstrapPath('cache/services.php');
@@ -636,6 +641,30 @@ class Application extends Container implements ApplicationContract, CachesConfig
         AliasLoader::setFacadeNamespace($namespace);
     }
 
+    public function getLocale()
+    {
+        return $this['config']->get('app.locale');
+    }
+
+    public function currentLocale()
+    {
+        return $this->getLocale();
+    }
+
+    public function setLocale($locale)
+    {
+        $this['config']->set('app.locale', $locale);
+
+        $this['translator']->setLocale($locale);
+
+        $this['events']->dispatch(new LocaleUpdated($locale));
+    }
+
+    public function isLocale($locale)
+    {
+        return $this->getLocale() == $locale;
+    }
+
     protected function registerCoreContainerAliases(): static
     {
         foreach ([
@@ -721,7 +750,17 @@ class Application extends Container implements ApplicationContract, CachesConfig
 
     public function handleRequest()
     {
-        $this[ConsoleKernelContract::class]->bootstrap();
+        if (! $this->hasBeenBootstrapped()) {
+            $this->bootstrapWith([
+                \LaraGram\Foundation\Bootstrap\LoadConfiguration::class,
+                \LaraGram\Foundation\Bootstrap\HandleExceptions::class,
+                \LaraGram\Foundation\Bootstrap\RegisterFacades::class,
+                \LaraGram\Foundation\Bootstrap\RegisterProviders::class,
+                \LaraGram\Foundation\Bootstrap\BootProviders::class,
+            ]);
+        }
+
+        $this->loadDeferredProviders();
 
         $update_type = config('laraquest.update_type');
         if ($update_type == 'openswoole') {

@@ -4,6 +4,7 @@ namespace LaraGram\Foundation;
 
 use Exception;
 use LaraGram\Filesystem\Filesystem;
+use LaraGram\Support\Collection;
 
 class PackageManifest
 {
@@ -81,16 +82,9 @@ class PackageManifest
      */
     public function config($key)
     {
-        $manifest = $this->getManifest();
-        $result = [];
-
-        foreach ($manifest as $configuration) {
-            if (isset($configuration[$key])) {
-                $result = array_merge($result, (array) $configuration[$key]);
-            }
-        }
-
-        return array_filter($result);
+        return (new Collection($this->getManifest()))->flatMap(function ($configuration) use ($key) {
+            return (array) ($configuration[$key] ?? []);
+        })->filter()->all();
     }
 
     protected function getManifest()
@@ -122,30 +116,15 @@ class PackageManifest
             $packages = $installed['packages'] ?? $installed;
         }
 
-        $ignore = $this->packagesToIgnore();
-        $ignoreAll = in_array('*', $ignore);
+        $ignoreAll = in_array('*', $ignore = $this->packagesToIgnore());
 
-        $result = [];
-
-        foreach ($packages as $package) {
-            $packageName = $this->format($package['name']);
-            $laragramConfig = $package['extra']['laragram'] ?? [];
-
-            $result[$packageName] = $laragramConfig;
-
-            if (isset($laragramConfig['dont-discover'])) {
-                $ignore = array_merge($ignore, $laragramConfig['dont-discover']);
-            }
-        }
-
-        $filtered = [];
-        foreach ($result as $package => $configuration) {
-            if (!$ignoreAll && !in_array($package, $ignore) && !empty($configuration)) {
-                $filtered[$package] = $configuration;
-            }
-        }
-
-        $this->write($filtered);
+        $this->write((new Collection($packages))->mapWithKeys(function ($package) {
+            return [$this->format($package['name']) => $package['extra']['laragram'] ?? []];
+        })->each(function ($configuration) use (&$ignore) {
+            $ignore = array_merge($ignore, $configuration['dont-discover'] ?? []);
+        })->reject(function ($configuration, $package) use ($ignore, $ignoreAll) {
+            return $ignoreAll || in_array($package, $ignore);
+        })->filter()->all());
     }
 
     /**

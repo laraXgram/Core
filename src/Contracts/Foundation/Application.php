@@ -14,7 +14,7 @@ interface Application extends Container
     public function version();
 
     /**
-     * Get the base path of the laragram installation.
+     * Get the base path of the Laravel installation.
      *
      * @param  string  $path
      * @return string
@@ -54,12 +54,12 @@ interface Application extends Container
     public function langPath($path = '');
 
     /**
-     * Get the path to the assets directory.
+     * Get the path to the public directory.
      *
      * @param  string  $path
      * @return string
      */
-    public function assetsPath($path = '');
+    public function publicPath($path = '');
 
     /**
      * Get the path to the storage directory.
@@ -68,6 +68,20 @@ interface Application extends Container
      * @return string
      */
     public function storagePath($path = '');
+
+    /**
+     * Determine if the application is running in the console.
+     *
+     * @return bool
+     */
+    public function runningInConsole();
+
+    /**
+     * Register all of the configured providers.
+     *
+     * @return void
+     */
+    public function registerConfiguredProviders();
 
     /**
      * Register a service provider with the application.
@@ -118,12 +132,29 @@ interface Application extends Container
      */
     public function booted($callback);
 
-//    /**
-//     * Get the current application locale.
-//     *
-//     * @return string
-//     */
-//    public function getLocale();
+    /**
+     * Run the given array of bootstrap classes.
+     *
+     * @param  array  $bootstrappers
+     * @return void
+     */
+    public function bootstrapWith(array $bootstrappers);
+
+    /**
+     * Get the current application locale.
+     *
+     * @return string
+     */
+    public function getLocale();
+
+    /**
+     * Get the application namespace.
+     *
+     * @return string
+     *
+     * @throws \RuntimeException
+     */
+    public function getNamespace();
 
     /**
      * Get the registered service provider instances if any exist.
@@ -133,12 +164,12 @@ interface Application extends Container
      */
     public function getProviders($provider);
 
-//    /**
-//     * Determine if the application has been bootstrapped before.
-//     *
-//     * @return bool
-//     */
-//    public function hasBeenBootstrapped();
+    /**
+     * Determine if the application has been bootstrapped before.
+     *
+     * @return bool
+     */
+    public function hasBeenBootstrapped();
 
     /**
      * Load and boot all of the remaining deferred providers.
@@ -147,13 +178,13 @@ interface Application extends Container
      */
     public function loadDeferredProviders();
 
-//    /**
-//     * Set the current application locale.
-//     *
-//     * @param  string  $locale
-//     * @return void
-//     */
-//    public function setLocale($locale);
+    /**
+     * Set the current application locale.
+     *
+     * @param  string  $locale
+     * @return void
+     */
+    public function setLocale($locale);
 
     /**
      * Register a terminating callback with the application.

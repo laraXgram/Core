@@ -28,13 +28,6 @@ if (!function_exists('bot')) {
     }
 }
 
-if (!function_exists('console')) {
-    function console(): LaraGram\Console\Console
-    {
-        return app()->make('console');
-    }
-}
-
 if (!function_exists('keyboard')) {
     function keyboard(): LaraGram\Keyboard\Keyboard
     {

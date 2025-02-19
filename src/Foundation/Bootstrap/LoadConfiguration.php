@@ -34,7 +34,9 @@ class LoadConfiguration
     {
         $files = $this->getConfigurationFiles($app);
 
-        $shouldMerge = !method_exists($app, 'shouldMergeFrameworkConfiguration') || $app->shouldMergeFrameworkConfiguration();
+        $shouldMerge = method_exists($app, 'shouldMergeFrameworkConfiguration')
+            ? $app->shouldMergeFrameworkConfiguration()
+            : true;
 
         $base = $shouldMerge
             ? $this->getBaseConfiguration()
@@ -76,7 +78,10 @@ class LoadConfiguration
     protected function mergeableOptions($name)
     {
         return [
+            'cache' => ['stores'],
             'database' => ['connections'],
+            'filesystems' => ['disks'],
+            'queue' => ['connections'],
         ][$name] ?? [];
     }
 

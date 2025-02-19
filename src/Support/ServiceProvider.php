@@ -3,23 +3,25 @@
 namespace LaraGram\Support;
 
 use Closure;
-use LaraGram\Contracts\Foundation\Application;
 use LaraGram\Contracts\Foundation\CachesConfiguration;
 use LaraGram\Contracts\Support\DeferrableProvider;
 use LaraGram\Console\Application as Commander;
 
 abstract class ServiceProvider
 {
-    protected Application $app;
+    /**
+     * @var \LaraGram\Contracts\Foundation\Application $app
+     */
+    protected $app;
     protected array $bootingCallbacks = [];
     protected array $bootedCallbacks = [];
-    public static $publishes = [];
-    public static $publishGroups = [];
+    public static array $publishes = [];
+    public static array $publishGroups = [];
+    protected static array $publishableMigrationPaths = [];
     public static array $optimizeCommands = [];
     public static array $optimizeClearCommands = [];
-    protected static $publishableMigrationPaths = [];
 
-    public function __construct(Application $app)
+    public function __construct($app)
     {
         $this->app = $app;
     }
@@ -63,7 +65,7 @@ abstract class ServiceProvider
 
     protected function mergeConfigFrom($path, $key)
     {
-        if (!($this->app instanceof CachesConfiguration && $this->app->configurationIsCached())) {
+        if (! ($this->app instanceof CachesConfiguration && $this->app->configurationIsCached())) {
             $config = $this->app->make('config');
 
             $config->set($key, array_merge(
@@ -81,6 +83,29 @@ abstract class ServiceProvider
                 require $path, $config->get($key, [])
             ));
         }
+    }
+
+    protected function loadTranslationsFrom($path, $namespace)
+    {
+        $this->callAfterResolving('translator', function ($translator) use ($path, $namespace) {
+            $translator->addNamespace($namespace, $path);
+        });
+    }
+
+    protected function loadJsonTranslationsFrom($path)
+    {
+        $this->callAfterResolving('translator', function ($translator) use ($path) {
+            $translator->addJsonPath($path);
+        });
+    }
+
+    protected function loadMigrationsFrom($paths)
+    {
+        $this->callAfterResolving('migrator', function ($migrator) use ($paths) {
+            foreach ((array) $paths as $path) {
+                $migrator->path($path);
+            }
+        });
     }
 
     protected function callAfterResolving($name, $callback): void
@@ -132,11 +157,11 @@ abstract class ServiceProvider
 
     public static function pathsToPublish($provider = null, $group = null)
     {
-        if (!is_null($paths = static::pathsForProviderOrGroup($provider, $group))) {
+        if (! is_null($paths = static::pathsForProviderOrGroup($provider, $group))) {
             return $paths;
         }
 
-        return array_reduce(static::$publishes, function ($paths, $p) {
+        return (new Collection(static::$publishes))->reduce(function ($paths, $p) {
             return array_merge($paths, $p);
         }, []);
     }
@@ -189,7 +214,12 @@ abstract class ServiceProvider
 
     protected function optimizes(?string $optimize = null, ?string $clear = null, ?string $key = null)
     {
-        $key ??= strtolower(trim(preg_replace('/(?<!^)[A-Z]/', '-$0', str_replace('ServiceProvider', '', basename(str_replace('\\', '/', get_class($this)))))));
+        $key ??= (string) Str::of(get_class($this))
+            ->classBasename()
+            ->before('ServiceProvider')
+            ->kebab()
+            ->lower()
+            ->trim();
 
         if (empty($key)) {
             $key = class_basename(get_class($this));
@@ -203,7 +233,6 @@ abstract class ServiceProvider
             static::$optimizeClearCommands[$key] = $clear;
         }
     }
-
 
     public function provides(): array
     {
@@ -227,9 +256,9 @@ abstract class ServiceProvider
 
     public static function addProviderToBootstrapFile(string $provider, ?string $path = null)
     {
-        $path = $path ?? app()->getBootstrapProvidersPath();
+        $path ??= app()->getBootstrapProvidersPath();
 
-        if (!file_exists($path)) {
+        if (! file_exists($path)) {
             return false;
         }
 
@@ -237,26 +266,21 @@ abstract class ServiceProvider
             opcache_invalidate($path, true);
         }
 
-        $providers = require $path;
-
-        if (!in_array($provider, $providers)) {
-            $providers[] = $provider;
-        }
-
-        sort($providers);
-
-        $formattedProviders = '';
-        foreach ($providers as $p) {
-            $formattedProviders .= '    ' . $p . '::class,' . PHP_EOL;
-        }
+        $providers = (new Collection(require $path))
+            ->merge([$provider])
+            ->unique()
+            ->sort()
+            ->values()
+            ->map(fn ($p) => '    '.$p.'::class,')
+            ->implode(PHP_EOL);
 
         $content = '<?php
 
 return [
-' . $formattedProviders . '
+'.$providers.'
 ];';
 
-        file_put_contents($path, $content . PHP_EOL);
+        file_put_contents($path, $content.PHP_EOL);
 
         return true;
     }

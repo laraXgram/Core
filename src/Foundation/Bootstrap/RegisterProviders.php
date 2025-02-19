@@ -49,7 +49,7 @@ class RegisterProviders
             $packageProviders = require static::$bootstrapProviderPath;
 
             foreach ($packageProviders as $index => $provider) {
-                if (!class_exists($provider)) {
+                if (! class_exists($provider)) {
                     unset($packageProviders[$index]);
                 }
             }
@@ -58,10 +58,9 @@ class RegisterProviders
         $app->make('config')->set(
             'app.providers',
             array_merge(
-                ServiceProvider::defaultProviders()->toArray(),
+                $app->make('config')->get('app.providers') ?? ServiceProvider::defaultProviders()->toArray(),
                 static::$merge,
                 array_values($packageProviders ?? []),
-                $app->make('config')->get('app.providers') ?? []
             ),
         );
     }
