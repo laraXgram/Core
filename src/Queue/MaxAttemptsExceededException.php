@@ -17,7 +17,7 @@ class MaxAttemptsExceededException extends RuntimeException
      * Create a new instance for the job.
      *
      * @param  \LaraGram\Contracts\Queue\Job  $job
-     * @return \LaraGram\Support\HigherOrderTapProxy
+     * @return \LaraGram\Queue\MaxAttemptsExceededException
      */
     public static function forJob($job)
     {

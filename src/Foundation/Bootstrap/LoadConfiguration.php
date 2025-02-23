@@ -25,6 +25,8 @@ class LoadConfiguration
             $this->loadConfigurationFiles($app, $config);
         }
 
+        $app->detectEnvironment(fn () => $config->get('app.env', 'production'));
+
         date_default_timezone_set($config->get('app.timezone', 'UTC'));
 
         mb_internal_encoding('UTF-8');

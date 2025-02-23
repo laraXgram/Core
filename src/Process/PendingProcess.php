@@ -9,7 +9,7 @@ use LaraGram\Support\Str;
 use LaraGram\Support\Traits\Conditionable;
 use LogicException;
 use RuntimeException;
-use LaraGram\Console\Process\Exception\ProcessTimedOutException as SymfonyTimeoutException;
+use LaraGram\Console\Process\Exception\ProcessTimedOutException as LaraGramTimeoutException;
 use LaraGram\Console\Process\Process;
 
 class PendingProcess
@@ -247,7 +247,7 @@ class PendingProcess
         $this->command = $command ?: $this->command;
 
         try {
-            $process = $this->toSymfonyProcess($command);
+            $process = $this->toLaraGramProcess($command);
 
             if ($fake = $this->fakeFor($command = $process->getCommandline())) {
                 return tap($this->resolveSynchronousFake($command, $fake), function ($result) {
@@ -258,7 +258,7 @@ class PendingProcess
             }
 
             return new ProcessResult(tap($process)->run($output));
-        } catch (SymfonyTimeoutException $e) {
+        } catch (LaraGramTimeoutException $e) {
             throw new ProcessTimedOutException($e, new ProcessResult($process));
         }
     }
@@ -276,7 +276,7 @@ class PendingProcess
     {
         $this->command = $command ?: $this->command;
 
-        $process = $this->toSymfonyProcess($command);
+        $process = $this->toLaraGramProcess($command);
 
         if ($fake = $this->fakeFor($command = $process->getCommandline())) {
             return tap($this->resolveAsynchronousFake($command, $output, $fake), function (FakeInvokedProcess $process) {
@@ -290,12 +290,12 @@ class PendingProcess
     }
 
     /**
-     * Get a Symfony Process instance from the current pending command.
+     * Get a LaraGram Process instance from the current pending command.
      *
      * @param  array<array-key, string>|string|null  $command
      * @return \LaraGram\Console\Process\Process
      */
-    protected function toSymfonyProcess(array|string|null $command)
+    protected function toLaraGramProcess(array|string|null $command)
     {
         $command = $command ?? $this->command;
 
@@ -328,6 +328,17 @@ class PendingProcess
 
         return $process;
     }
+
+    /**
+     * Determine whether TTY is supported on the current operating system.
+     *
+     * @return bool
+     */
+    public function supportsTty()
+    {
+        return Process::isTtySupported();
+    }
+
 
     /**
      * Specify the fake process result handlers for the pending process.

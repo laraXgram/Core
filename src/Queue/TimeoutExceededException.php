@@ -8,7 +8,7 @@ class TimeoutExceededException extends MaxAttemptsExceededException
      * Create a new instance for the job.
      *
      * @param  \LaraGram\Contracts\Queue\Job  $job
-     * @return \LaraGram\Support\HigherOrderTapProxy
+     * @return \LaraGram\Queue\TimeoutExceededException
      */
     public static function forJob($job)
     {

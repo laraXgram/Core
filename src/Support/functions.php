@@ -66,12 +66,12 @@ if (! function_exists('LaraGram\Support\php_binary')) {
 
 if (! function_exists('LaraGram\Support\commander_binary')) {
     /**
-     * Determine the proper Artisan executable.
+     * Determine the proper Commander executable.
      *
      * @return string
      */
     function commander_binary()
     {
-        return 'commander';
+        return 'laragram';
     }
 }

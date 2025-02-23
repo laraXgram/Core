@@ -36,7 +36,7 @@ class WithoutOverlapping
      *
      * @var string
      */
-    public $prefix = 'laravel-queue-overlap:';
+    public $prefix = 'laragram-queue-overlap:';
 
     /**
      * Share the key across different jobs.

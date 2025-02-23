@@ -230,12 +230,6 @@ trait Queueable
     protected function serializeJob($job)
     {
         if ($job instanceof Closure) {
-            if (! class_exists(CallQueuedClosure::class)) {
-                throw new RuntimeException(
-                    'To enable support for closure jobs, please install the illuminate/queue package.'
-                );
-            }
-
             $job = CallQueuedClosure::create($job);
         }
 

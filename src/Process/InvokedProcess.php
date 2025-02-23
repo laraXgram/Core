@@ -4,7 +4,7 @@ namespace LaraGram\Process;
 
 use LaraGram\Contracts\Process\InvokedProcess as InvokedProcessContract;
 use LaraGram\Process\Exceptions\ProcessTimedOutException;
-use LaraGram\Console\Process\Exception\ProcessTimedOutException as SymfonyTimeoutException;
+use LaraGram\Console\Process\Exception\ProcessTimedOutException as LaraGramTimeoutException;
 use LaraGram\Console\Process\Process;
 
 class InvokedProcess implements InvokedProcessContract
@@ -126,7 +126,7 @@ class InvokedProcess implements InvokedProcessContract
             $this->process->wait($output);
 
             return new ProcessResult($this->process);
-        } catch (SymfonyTimeoutException $e) {
+        } catch (LaraGramTimeoutException $e) {
             throw new ProcessTimedOutException($e, new ProcessResult($this->process));
         }
     }
@@ -145,7 +145,7 @@ class InvokedProcess implements InvokedProcessContract
             $this->process->waitUntil($output);
 
             return new ProcessResult($this->process);
-        } catch (SymfonyTimeoutException $e) {
+        } catch (LaraGramTimeoutException $e) {
             throw new ProcessTimedOutException($e, new ProcessResult($this->process));
         }
     }

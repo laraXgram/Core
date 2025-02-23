@@ -4,8 +4,8 @@ namespace LaraGram\Console\Helper;
 
 use LaraGram\Console\Output\ConsoleOutputInterface;
 use LaraGram\Console\Output\OutputInterface;
-use Symfony\Component\Process\Exception\ProcessFailedException;
-use Symfony\Component\Process\Process;
+use LaraGram\Console\Process\Exception\ProcessFailedException;
+use LaraGram\Console\Process\Process;
 
 class ProcessHelper extends Helper
 {
@@ -18,10 +18,6 @@ class ProcessHelper extends Helper
      */
     public function run(OutputInterface $output, array|Process $cmd, ?string $error = null, ?callable $callback = null, int $verbosity = OutputInterface::VERBOSITY_VERY_VERBOSE): Process
     {
-        if (!class_exists(Process::class)) {
-            throw new \LogicException('The ProcessHelper cannot be run as the Process component is not installed. Try running "compose require symfony/process".');
-        }
-
         if ($output instanceof ConsoleOutputInterface) {
             $output = $output->getErrorOutput();
         }

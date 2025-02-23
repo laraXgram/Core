@@ -2,11 +2,12 @@
 
 namespace LaraGram\Concurrency;
 
+use LaraGram\Contracts\Concurrency\Driver;
 use LaraGram\Process\Factory as ProcessFactory;
 use LaraGram\Support\MultipleInstanceManager;
 
 /**
- * @mixin \LaraGram\Contracts\Concurrency\Driver
+ * @mixin Driver
  */
 class ConcurrencyManager extends MultipleInstanceManager
 {

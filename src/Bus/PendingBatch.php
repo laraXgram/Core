@@ -7,10 +7,13 @@ use LaraGram\Bus\Events\BatchDispatched;
 use LaraGram\Contracts\Container\Container;
 use LaraGram\Contracts\Events\Dispatcher as EventDispatcher;
 use LaraGram\Support\Arr;
+use LaraGram\Support\Collection;
 use LaraGram\Support\Traits\Conditionable;
-use LaraGram\Support\SerializableClosure\Exceptions\PhpVersionNotSupportedException;
 use LaraGram\Support\SerializableClosure\SerializableClosure;
+use RuntimeException;
 use Throwable;
+
+use function LaraGram\Support\enum_value;
 
 class PendingBatch
 {
@@ -33,7 +36,7 @@ class PendingBatch
     /**
      * The jobs that belong to the batch.
      *
-     * @var array
+     * @var \LaraGram\Support\Collection
      */
     public $jobs;
 
@@ -45,16 +48,26 @@ class PendingBatch
     public $options = [];
 
     /**
+     * Jobs that have been verified to contain the Batchable trait.
+     *
+     * @var array<class-string, bool>
+     */
+    protected static $batchableClasses = [];
+
+    /**
      * Create a new pending batch instance.
      *
      * @param  \LaraGram\Contracts\Container\Container  $container
-     * @param  array  $jobs
+     * @param  \LaraGram\Support\Collection  $jobs
      * @return void
      */
-    public function __construct(Container $container, array $jobs)
+    public function __construct(Container $container, Collection $jobs)
     {
         $this->container = $container;
-        $this->jobs = $jobs;
+
+        $this->jobs = $jobs->each(function (object|array $job) {
+            $this->ensureJobIsBatchable($job);
+        });
     }
 
     /**
@@ -65,25 +78,45 @@ class PendingBatch
      */
     public function add($jobs)
     {
-        $jobs = is_iterable($jobs) ? $jobs : [$jobs];
-
-        if (!isset($this->jobs)) {
-            $this->jobs = [];
-        }
+        $jobs = is_iterable($jobs) ? $jobs : Arr::wrap($jobs);
 
         foreach ($jobs as $job) {
-            $this->jobs[] = $job;
+            $this->ensureJobIsBatchable($job);
+
+            $this->jobs->push($job);
         }
 
         return $this;
     }
 
     /**
+     * Ensure the given job is batchable.
+     *
+     * @param  object|array  $job
+     * @return void
+     */
+    protected function ensureJobIsBatchable(object|array $job): void
+    {
+        foreach (Arr::wrap($job) as $job) {
+            if ($job instanceof PendingBatch || $job instanceof Closure) {
+                return;
+            }
+
+            if (! (static::$batchableClasses[$job::class] ?? false) && ! in_array(Batchable::class, class_uses_recursive($job))) {
+                static::$batchableClasses[$job::class] = false;
+
+                throw new RuntimeException(sprintf('Attempted to batch job [%s], but it does not use the Batchable trait.', $job::class));
+            }
+
+            static::$batchableClasses[$job::class] = true;
+        }
+    }
+
+    /**
      * Add a callback to be executed when the batch is stored.
      *
-     * @param callable $callback
+     * @param  callable  $callback
      * @return $this
-     * @throws PhpVersionNotSupportedException
      */
     public function before($callback)
     {
@@ -107,9 +140,8 @@ class PendingBatch
     /**
      * Add a callback to be executed after a job in the batch have executed successfully.
      *
-     * @param callable $callback
+     * @param  callable  $callback
      * @return $this
-     * @throws PhpVersionNotSupportedException
      */
     public function progress($callback)
     {
@@ -133,9 +165,8 @@ class PendingBatch
     /**
      * Add a callback to be executed after all jobs in the batch have executed successfully.
      *
-     * @param callable $callback
+     * @param  callable  $callback
      * @return $this
-     * @throws PhpVersionNotSupportedException
      */
     public function then($callback)
     {
@@ -159,9 +190,8 @@ class PendingBatch
     /**
      * Add a callback to be executed after the first failing job in the batch.
      *
-     * @param callable $callback
+     * @param  callable  $callback
      * @return $this
-     * @throws PhpVersionNotSupportedException
      */
     public function catch($callback)
     {
@@ -185,9 +215,8 @@ class PendingBatch
     /**
      * Add a callback to be executed after the batch has finished executing.
      *
-     * @param callable $callback
+     * @param  callable  $callback
      * @return $this
-     * @throws PhpVersionNotSupportedException
      */
     public function finally($callback)
     {
@@ -270,12 +299,12 @@ class PendingBatch
     /**
      * Specify the queue that the batched jobs should run on.
      *
-     * @param  string  $queue
+     * @param  \UnitEnum|string|null  $queue
      * @return $this
      */
-    public function onQueue(string $queue)
+    public function onQueue($queue)
     {
-        $this->options['queue'] = $queue;
+        $this->options['queue'] = enum_value($queue);
 
         return $this;
     }
@@ -334,6 +363,11 @@ class PendingBatch
         return $batch;
     }
 
+    /**
+     * Dispatch the batch after the response is sent to the browser.
+     *
+     * @return \LaraGram\Bus\Batch
+     */
     public function dispatchAfterResponse()
     {
         $repository = $this->container->make(BatchRepository::class);
@@ -349,14 +383,20 @@ class PendingBatch
         return $batch;
     }
 
+    /**
+     * Dispatch an existing batch.
+     *
+     * @param  \LaraGram\Bus\Batch  $batch
+     * @return void
+     *
+     * @throws \Throwable
+     */
     protected function dispatchExistingBatch($batch)
     {
         try {
             $batch = $batch->add($this->jobs);
         } catch (Throwable $e) {
-            if (isset($batch)) {
-                $batch->delete();
-            }
+            $batch->delete();
 
             throw $e;
         }
@@ -366,28 +406,47 @@ class PendingBatch
         );
     }
 
+    /**
+     * Dispatch the batch if the given truth test passes.
+     *
+     * @param  bool|\Closure  $boolean
+     * @return \LaraGram\Bus\Batch|null
+     */
     public function dispatchIf($boolean)
     {
-        return $boolean instanceof Closure ? $boolean() : ($boolean ? $this->dispatch() : null);
+        return value($boolean) ? $this->dispatch() : null;
     }
 
+    /**
+     * Dispatch the batch unless the given truth test passes.
+     *
+     * @param  bool|\Closure  $boolean
+     * @return \LaraGram\Bus\Batch|null
+     */
     public function dispatchUnless($boolean)
     {
-        return $boolean instanceof Closure ? $boolean() : (!$boolean ? $this->dispatch() : null);
+        return ! value($boolean) ? $this->dispatch() : null;
     }
 
-
+    /**
+     * Store the batch using the given repository.
+     *
+     * @param  \LaraGram\Bus\BatchRepository  $repository
+     * @return \LaraGram\Bus\Batch
+     */
     protected function store($repository)
     {
         $batch = $repository->store($this);
 
-        foreach ($this->beforeCallbacks() as $handler) {
+        (new Collection($this->beforeCallbacks()))->each(function ($handler) use ($batch) {
             try {
-                $handler($batch);
+                return $handler($batch);
             } catch (Throwable $e) {
-                // TODO: Log
+                if (function_exists('report')) {
+                    report($e);
+                }
             }
-        }
+        });
 
         return $batch;
     }

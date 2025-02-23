@@ -120,7 +120,7 @@ use LaraGram\Database\Console\WipeCommand;
 class DB extends Facade
 {
     /**
-     * Indicate if destructive Artisan commands should be prohibited.
+     * Indicate if destructive Commander commands should be prohibited.
      *
      * Prohibits: db:wipe, migrate:fresh, migrate:refresh, and migrate:reset
      *

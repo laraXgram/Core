@@ -16,8 +16,11 @@ use LaraGram\Filesystem\Filesystem;
 use LaraGram\Filesystem\FilesystemServiceProvider;
 use LaraGram\Foundation\Events\LocaleUpdated;
 use LaraGram\Laraquest\Laraquest;
+use LaraGram\Log\Context\ContextServiceProvider;
+use LaraGram\Log\LogServiceProvider;
 use LaraGram\Support\Arr;
 use LaraGram\Support\Collection;
+use LaraGram\Support\Str;
 use LaraGram\Support\Traits\Macroable;
 use Swoole\Http\Request;
 use Swoole\Http\Response;
@@ -110,6 +113,8 @@ class Application extends Container implements ApplicationContract, CachesConfig
     protected function registerBaseServiceProviders()
     {
         $this->register(new EventServiceProvider($this));
+        $this->register(new LogServiceProvider($this));
+        $this->register(new ContextServiceProvider($this));
         $this->register(new FilesystemServiceProvider($this));
     }
 
@@ -293,6 +298,42 @@ class Application extends Container implements ApplicationContract, CachesConfig
         }
 
         return $basePath . implode('', $paths);
+    }
+
+    /**
+     * Get or check the current application environment.
+     *
+     * @param  string|array  ...$environments
+     * @return string|bool
+     */
+    public function environment(...$environments)
+    {
+        if (count($environments) > 0) {
+            $patterns = is_array($environments[0]) ? $environments[0] : $environments;
+
+            return Str::is($patterns, $this['env']);
+        }
+
+        return $this['env'];
+    }
+
+    public function isLocal()
+    {
+        return $this['env'] === 'local';
+    }
+
+    public function isProduction()
+    {
+        return $this['env'] === 'production';
+    }
+
+    public function detectEnvironment(Closure $callback)
+    {
+        $args = $this->runningInConsole() && isset($_SERVER['argv'])
+            ? $_SERVER['argv']
+            : null;
+
+        return $this['env'] = (new EnvironmentDetector)->detect($callback, $args);
     }
 
     public function runningInConsole()
@@ -685,6 +726,7 @@ class Application extends Container implements ApplicationContract, CachesConfig
                      'filesystem.disk' => [\LaraGram\Contracts\Filesystem\Filesystem::class],
                      'hash' => [\LaraGram\Hashing\HashManager::class],
                      'hash.driver' => [\LaraGram\Contracts\Hashing\Hasher::class],
+                     'log' => [\LaraGram\Log\LogManager::class, \LaraGram\Log\LoggerInterface::class],
                      'translator' => [\LaraGram\Translation\Translator::class, \LaraGram\Contracts\Translation\Translator::class],
                      'queue' => [\LaraGram\Queue\QueueManager::class, \LaraGram\Contracts\Queue\Factory::class, \LaraGram\Contracts\Queue\Monitor::class],
                      'queue.connection' => [\LaraGram\Contracts\Queue\Queue::class],

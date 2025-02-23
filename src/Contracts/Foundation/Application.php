@@ -14,7 +14,7 @@ interface Application extends Container
     public function version();
 
     /**
-     * Get the base path of the Laravel installation.
+     * Get the base path of the LaraGram installation.
      *
      * @param  string  $path
      * @return string
@@ -68,6 +68,15 @@ interface Application extends Container
      * @return string
      */
     public function storagePath($path = '');
+
+
+    /**
+     * Get or check the current application environment.
+     *
+     * @param  string|array  ...$environments
+     * @return string|bool
+     */
+    public function environment(...$environments);
 
     /**
      * Determine if the application is running in the console.

@@ -2,7 +2,7 @@
 
 namespace LaraGram\Console\Process;
 
-use Symfony\Component\Process\Exception\InvalidArgumentException;
+use LaraGram\Console\Process\Exception\InvalidArgumentException;
 
 class ProcessUtils
 {

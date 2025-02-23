@@ -188,7 +188,7 @@ class OutputStyle extends Style implements NewLineAware
     }
 
     /**
-     * Get the underlying Symfony output implementation.
+     * Get the underlying LaraGram output implementation.
      *
      * @return \LaraGram\Console\Output\OutputInterface
      */

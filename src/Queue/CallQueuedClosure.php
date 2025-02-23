@@ -5,7 +5,7 @@ namespace LaraGram\Queue;
 use Closure;
 use LaraGram\Bus\Batchable;
 use LaraGram\Bus\Queueable;
-use LaraGram\Contracts\Container\Container;
+use LaraGram\Container\Container;
 use LaraGram\Contracts\Queue\ShouldQueue;
 use LaraGram\Foundation\Bus\Dispatchable;
 use LaraGram\Support\SerializableClosure\SerializableClosure;
@@ -18,7 +18,7 @@ class CallQueuedClosure implements ShouldQueue
     /**
      * The serializable Closure instance.
      *
-     * @var \LaraGram\Support\SerializableClosure\SerializableClosure
+     * @var SerializableClosure
      */
     public $closure;
 
@@ -39,7 +39,7 @@ class CallQueuedClosure implements ShouldQueue
     /**
      * Create a new job instance.
      *
-     * @param  \LaraGram\Support\SerializableClosure\SerializableClosure  $closure
+     * @param  SerializableClosure  $closure
      * @return void
      */
     public function __construct($closure)
@@ -78,8 +78,8 @@ class CallQueuedClosure implements ShouldQueue
     public function onFailure($callback)
     {
         $this->failureCallbacks[] = $callback instanceof Closure
-                        ? new SerializableClosure($callback)
-                        : $callback;
+            ? new SerializableClosure($callback)
+            : $callback;
 
         return $this;
     }

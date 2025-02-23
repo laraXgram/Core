@@ -2,7 +2,7 @@
 
 namespace LaraGram\Bus;
 
-use LaraGram\Contracts\Cache\CacheDriver as Cache;
+use LaraGram\Contracts\Cache\Repository as Cache;
 
 class UniqueLock
 {

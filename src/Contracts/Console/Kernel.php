@@ -5,7 +5,7 @@ namespace LaraGram\Contracts\Console;
 interface Kernel
 {
     /**
-     * Bootstrap the application for artisan commands.
+     * Bootstrap the application for Commander commands.
      *
      * @return void
      */
@@ -21,7 +21,7 @@ interface Kernel
     public function handle($input, $output = null);
 
     /**
-     * Run an Artisan console command by name.
+     * Run an Commander console command by name.
      *
      * @param  string  $command
      * @param  array  $parameters

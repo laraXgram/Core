@@ -4,6 +4,7 @@ namespace LaraGram\Foundation\Providers;
 
 use LaraGram\Cache\Console\CacheTableCommand;
 use LaraGram\Cache\Console\PruneStaleTagsCommand;
+use LaraGram\Concurrency\Console\InvokeSerializedClosureCommand;
 use LaraGram\Console\Scheduling\ScheduleClearCacheCommand;
 use LaraGram\Console\Scheduling\ScheduleFinishCommand;
 use LaraGram\Console\Scheduling\ScheduleInterruptCommand;
@@ -87,6 +88,44 @@ class CommanderServiceProvider extends ServiceProvider implements DeferrableProv
      *
      * @var array
      */
+    protected $commands = [
+        'DatabaseTableCommand' => DatabaseTableCommand::class,
+        'PruneCommand' => PruneCommand::class,
+        'ShowCommand' => ShowCommand::class,
+        'ShowModelCommand' => ShowModelCommand::class,
+        'WipeCommand' => WipeCommand::class,
+        'MonitorCommand' => MonitorCommand::class,
+        'DumpCommand' => DumpCommand::class,
+        'DbCommand' => DbCommand::class,
+        'PackageDiscoverCommand' => PackageDiscoverCommand::class,
+        'ConfigShowCommand' => ConfigShowCommand::class,
+        'WebhookInfoCommand' => WebhookInfoCommand::class,
+        'WebhookDeleteCommand' => WebhookDeleteCommand::class,
+        'WebhookSetCommand' => WebhookSetCommand::class,
+        'WebhookDropCommand' => WebhookDropCommand::class,
+        'PruneStaleTagsCommand' => PruneStaleTagsCommand::class,
+        'QueueClearCommand' => QueueClearCommand::class,
+        'FlushFailedQueueCommand' => FlushFailedQueueCommand::class,
+        'ListFailedQueueCommand' => ListFailedQueueCommand::class,
+        'QueueRetryBatchCommand' => QueueRetryBatchCommand::class,
+        'QueueRetryCommand' => QueueRetryCommand::class,
+        'ScheduleClearCacheCommand' => ScheduleClearCacheCommand::class,
+        'ScheduleFinishCommand' => ScheduleFinishCommand::class,
+        'ScheduleInterruptCommand' => ScheduleInterruptCommand::class,
+        'ScheduleListCommand' => ScheduleListCommand::class,
+        'ScheduleRunCommand' => ScheduleRunCommand::class,
+        'ScheduleTestCommand' => ScheduleTestCommand::class,
+        'ScheduleWorkCommand' => ScheduleWorkCommand::class,
+        'StorageLinkCommand' => StorageLinkCommand::class,
+        'StorageUnlinkCommand' => StorageUnlinkCommand::class,
+        'InvokeSerializedClosureCommand' => InvokeSerializedClosureCommand::class,
+    ];
+
+    /**
+     * The commands to be registered.
+     *
+     * @var array
+     */
     protected $commandsWithDependencied = [
 //        GenerateAppCommand::class          => ['files'],
         ConfigCacheCommand::class          => ['files'],
@@ -126,43 +165,6 @@ class CommanderServiceProvider extends ServiceProvider implements DeferrableProv
         QueueWorkCommand::class            => ['queue.worker', 'cache.store'],
         JobMakeCommand::class              => ['files'],
         JobMiddlewareMakeCommand::class    => ['files'],
-    ];
-
-    /**
-     * The commands to be registered.
-     *
-     * @var array
-     */
-    protected $commands = [
-        'DatabaseTableCommand' => DatabaseTableCommand::class,
-        'PruneCommand' => PruneCommand::class,
-        'ShowCommand' => ShowCommand::class,
-        'ShowModelCommand' => ShowModelCommand::class,
-        'WipeCommand' => WipeCommand::class,
-        'MonitorCommand' => MonitorCommand::class,
-        'DumpCommand' => DumpCommand::class,
-        'DbCommand' => DbCommand::class,
-        'PackageDiscoverCommand' => PackageDiscoverCommand::class,
-        'ConfigShowCommand' => ConfigShowCommand::class,
-        'WebhookInfoCommand' => WebhookInfoCommand::class,
-        'WebhookSetCommand' => WebhookSetCommand::class,
-        'WebhookDeleteCommand' => WebhookDeleteCommand::class,
-        'WebhookDropCommand' => WebhookDropCommand::class,
-        'PruneStaleTagsCommand' => PruneStaleTagsCommand::class,
-        'QueueClearCommand' => QueueClearCommand::class,
-        'FlushFailedQueueCommand' => FlushFailedQueueCommand::class,
-        'ListFailedQueueCommand' => ListFailedQueueCommand::class,
-        'QueueRetryBatchCommand' => QueueRetryBatchCommand::class,
-        'QueueRetryCommand' => QueueRetryCommand::class,
-        'ScheduleClearCacheCommand' => ScheduleClearCacheCommand::class,
-        'ScheduleFinishCommand' => ScheduleFinishCommand::class,
-        'ScheduleInterruptCommand' => ScheduleInterruptCommand::class,
-        'ScheduleListCommand' => ScheduleListCommand::class,
-        'ScheduleRunCommand' => ScheduleRunCommand::class,
-        'ScheduleTestCommand' => ScheduleTestCommand::class,
-        'ScheduleWorkCommand' => ScheduleWorkCommand::class,
-        'StorageLinkCommand' => StorageLinkCommand::class,
-        'StorageUnlinkCommand' => StorageUnlinkCommand::class,
     ];
 
     /**

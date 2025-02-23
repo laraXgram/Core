@@ -8,13 +8,24 @@ use LaraGram\Contracts\Queue\Factory as QueueFactory;
 use LaraGram\Contracts\Support\Arrayable;
 use LaraGram\Queue\CallQueuedClosure;
 use LaraGram\Support\Arr;
+use LaraGram\Support\Collection;
 use JsonSerializable;
 use Throwable;
 
 class Batch implements Arrayable, JsonSerializable
 {
+    /**
+     * The queue factory implementation.
+     *
+     * @var \LaraGram\Contracts\Queue\Factory
+     */
     protected $queue;
 
+    /**
+     * The repository implementation.
+     *
+     * @var \LaraGram\Bus\BatchRepository
+     */
     protected $repository;
 
     /**
@@ -66,10 +77,25 @@ class Batch implements Arrayable, JsonSerializable
      */
     public $options;
 
+    /**
+     * The date indicating when the batch was created.
+     *
+     * @var \DateTimeImmutable
+     */
     public $createdAt;
 
+    /**
+     * The date indicating when the batch was cancelled.
+     *
+     * @var \DateTimeImmutable|null
+     */
     public $cancelledAt;
 
+    /**
+     * The date indicating when the batch was finished.
+     *
+     * @var \DateTimeImmutable|null
+     */
     public $finishedAt;
 
     /**
@@ -84,24 +110,25 @@ class Batch implements Arrayable, JsonSerializable
      * @param  int  $failedJobs
      * @param  array  $failedJobIds
      * @param  array  $options
-     * @param  DateTimeImmutable  $createdAt
-     * @param  DateTimeImmutable|null  $cancelledAt
-     * @param  DateTimeImmutable|null  $finishedAt
+     * @param  \DateTimeImmutable  $createdAt
+     * @param  \DateTimeImmutable|null  $cancelledAt
+     * @param  \DateTimeImmutable|null  $finishedAt
      * @return void
      */
-    public function __construct(QueueFactory $queue,
-                                BatchRepository $repository,
-                                string $id,
-                                string $name,
-                                int $totalJobs,
-                                int $pendingJobs,
-                                int $failedJobs,
-                                array $failedJobIds,
-                                array $options,
-                                DateTimeImmutable $createdAt,
-                                ?DateTimeImmutable $cancelledAt = null,
-                                ?DateTimeImmutable $finishedAt = null)
-    {
+    public function __construct(
+        QueueFactory $queue,
+        BatchRepository $repository,
+        string $id,
+        string $name,
+        int $totalJobs,
+        int $pendingJobs,
+        int $failedJobs,
+        array $failedJobIds,
+        array $options,
+        DateTimeImmutable $createdAt,
+        ?DateTimeImmutable $cancelledAt = null,
+        ?DateTimeImmutable $finishedAt = null,
+    ) {
         $this->queue = $queue;
         $this->repository = $repository;
         $this->id = $id;
@@ -126,42 +153,43 @@ class Batch implements Arrayable, JsonSerializable
         return $this->repository->find($this->id);
     }
 
+    /**
+     * Add additional jobs to the batch.
+     *
+     * @param  \LaraGram\Support\Enumerable|object|array  $jobs
+     * @return self
+     */
     public function add($jobs)
     {
         $count = 0;
 
-        if (!is_array($jobs)) {
-            $jobs = [$jobs];
-        }
-
-        $jobsArray = [];
-
-        foreach ($jobs as $job) {
+        $jobs = Collection::wrap($jobs)->map(function ($job) use (&$count) {
             $job = $job instanceof Closure ? CallQueuedClosure::create($job) : $job;
 
             if (is_array($job)) {
                 $count += count($job);
 
-                $chain = $this->prepareBatchedChain($job);
-                $firstJob = $chain[0];
-                $firstJob->allOnQueue($this->options['queue'] ?? null);
-                $firstJob->allOnConnection($this->options['connection'] ?? null);
-                $remainingJobs = array_slice($chain, 1);
-                $firstJob->chain($remainingJobs);
-
-                $jobsArray[] = $firstJob;
+                return with($this->prepareBatchedChain($job), function ($chain) {
+                    return $chain->first()
+                        ->allOnQueue($this->options['queue'] ?? null)
+                        ->allOnConnection($this->options['connection'] ?? null)
+                        ->chain($chain->slice(1)->values()->all());
+                });
             } else {
                 $job->withBatchId($this->id);
-                $count++;
-                $jobsArray[] = $job;
-            }
-        }
 
-        $this->repository->transaction(function () use ($jobsArray, $count) {
+                $count++;
+            }
+
+            return $job;
+        });
+
+        $this->repository->transaction(function () use ($jobs, $count) {
             $this->repository->incrementTotalJobs($this->id, $count);
+
             $this->queue->connection($this->options['connection'] ?? null)->bulk(
-                $jobsArray,
-                '',
+                $jobs->all(),
+                $data = '',
                 $this->options['queue'] ?? null
             );
         });
@@ -169,17 +197,19 @@ class Batch implements Arrayable, JsonSerializable
         return $this->fresh();
     }
 
+    /**
+     * Prepare a chain that exists within the jobs being added.
+     *
+     * @param  array  $chain
+     * @return \LaraGram\Support\Collection
+     */
     protected function prepareBatchedChain(array $chain)
     {
-        $preparedChain = [];
-
-        foreach ($chain as $job) {
+        return (new Collection($chain))->map(function ($job) {
             $job = $job instanceof Closure ? CallQueuedClosure::create($job) : $job;
 
-            $preparedChain[] = $job->withBatchId($this->id);
-        }
-
-        return $preparedChain;
+            return $job->withBatchId($this->id);
+        });
     }
 
     /**
@@ -215,9 +245,9 @@ class Batch implements Arrayable, JsonSerializable
         if ($this->hasProgressCallbacks()) {
             $batch = $this->fresh();
 
-            foreach ($this->options['progress'] as $handler) {
+            (new Collection($this->options['progress']))->each(function ($handler) use ($batch) {
                 $this->invokeHandlerCallback($handler, $batch);
-            }
+            });
         }
 
         if ($counts->pendingJobs === 0) {
@@ -227,21 +257,26 @@ class Batch implements Arrayable, JsonSerializable
         if ($counts->pendingJobs === 0 && $this->hasThenCallbacks()) {
             $batch = $this->fresh();
 
-            foreach ($this->options['then'] as $handler) {
+            (new Collection($this->options['then']))->each(function ($handler) use ($batch) {
                 $this->invokeHandlerCallback($handler, $batch);
-            }
+            });
         }
 
         if ($counts->allJobsHaveRanExactlyOnce() && $this->hasFinallyCallbacks()) {
             $batch = $this->fresh();
 
-            foreach ($this->options['finally'] as $handler) {
+            (new Collection($this->options['finally']))->each(function ($handler) use ($batch) {
                 $this->invokeHandlerCallback($handler, $batch);
-            }
+            });
         }
     }
 
-
+    /**
+     * Decrement the pending jobs for the batch.
+     *
+     * @param  string  $jobId
+     * @return \LaraGram\Bus\UpdatedBatchJobCounts
+     */
     public function decrementPendingJobs(string $jobId)
     {
         return $this->repository->decrementPendingJobs($this->id, $jobId);
@@ -308,35 +343,41 @@ class Batch implements Arrayable, JsonSerializable
     {
         $counts = $this->incrementFailedJobs($jobId);
 
-        if ($counts->failedJobs === 1 && !$this->allowsFailures()) {
+        if ($counts->failedJobs === 1 && ! $this->allowsFailures()) {
             $this->cancel();
         }
 
         if ($this->hasProgressCallbacks() && $this->allowsFailures()) {
             $batch = $this->fresh();
 
-            foreach ($this->options['progress'] as $handler) {
+            (new Collection($this->options['progress']))->each(function ($handler) use ($batch, $e) {
                 $this->invokeHandlerCallback($handler, $batch, $e);
-            }
+            });
         }
 
         if ($counts->failedJobs === 1 && $this->hasCatchCallbacks()) {
             $batch = $this->fresh();
 
-            foreach ($this->options['catch'] as $handler) {
+            (new Collection($this->options['catch']))->each(function ($handler) use ($batch, $e) {
                 $this->invokeHandlerCallback($handler, $batch, $e);
-            }
+            });
         }
 
         if ($counts->allJobsHaveRanExactlyOnce() && $this->hasFinallyCallbacks()) {
             $batch = $this->fresh();
 
-            foreach ($this->options['finally'] as $handler) {
+            (new Collection($this->options['finally']))->each(function ($handler) use ($batch, $e) {
                 $this->invokeHandlerCallback($handler, $batch, $e);
-            }
+            });
         }
     }
 
+    /**
+     * Increment the failed jobs for the batch.
+     *
+     * @param  string  $jobId
+     * @return \LaraGram\Bus\UpdatedBatchJobCounts
+     */
     public function incrementFailedJobs(string $jobId)
     {
         return $this->repository->incrementFailedJobs($this->id, $jobId);
@@ -402,11 +443,22 @@ class Batch implements Arrayable, JsonSerializable
         $this->repository->delete($this->id);
     }
 
+    /**
+     * Invoke a batch callback handler.
+     *
+     * @param  callable  $handler
+     * @param  \LaraGram\Bus\Batch  $batch
+     * @param  \Throwable|null  $e
+     * @return void
+     */
     protected function invokeHandlerCallback($handler, Batch $batch, ?Throwable $e = null)
     {
         try {
             return $handler($batch, $e);
         } catch (Throwable $e) {
+            if (function_exists('report')) {
+                report($e);
+            }
         }
     }
 

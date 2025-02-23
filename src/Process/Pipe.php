@@ -4,7 +4,6 @@ namespace LaraGram\Process;
 
 use LaraGram\Support\Collection;
 use InvalidArgumentException;
-use LaraGram\Support\HigherOrderTapProxy;
 
 /**
  * @mixin \LaraGram\Process\Factory
@@ -50,7 +49,7 @@ class Pipe
      * Add a process to the pipe with a key.
      *
      * @param  string  $key
-     * @return \LaraGram\Process\PendingProcess|HigherOrderTapProxy
+     * @return \LaraGram\Process\PendingProcess
      */
     public function as(string $key)
     {
@@ -93,7 +92,7 @@ class Pipe
      *
      * @param  string  $method
      * @param  array  $parameters
-     * @return \LaraGram\Process\PendingProcess|HigherOrderTapProxy
+     * @return \LaraGram\Process\PendingProcess
      */
     public function __call($method, $parameters)
     {

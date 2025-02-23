@@ -1,19 +1,5 @@
 #compdef {{ COMMAND_NAME }}
 
-# This file is part of the Symfony package.
-#
-# (c) Fabien Potencier <fabien@symfony.com>
-#
-# For the full copyright and license information, please view
-# https://symfony.com/doc/current/contributing/code/license.html
-
-#
-# zsh completions for {{ COMMAND_NAME }}
-#
-# References:
-#   - https://github.com/spf13/cobra/blob/master/zsh_completions.go
-#   - https://github.com/symfony/symfony/blob/5.4/src/Symfony/Component/Console/Resources/completion.bash
-#
 _sf_{{ COMMAND_NAME }}() {
     local lastParam flagPrefix requestComp out comp
     local -a completions

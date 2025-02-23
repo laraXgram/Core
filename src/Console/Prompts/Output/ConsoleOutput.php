@@ -2,9 +2,9 @@
 
 namespace LaraGram\Console\Prompts\Output;
 
-use LaraGram\Console\Output\ConsoleOutput as SymfonyConsoleOutput;
+use LaraGram\Console\Output\ConsoleOutput as LaraGramConsoleOutput;
 
-class ConsoleOutput extends SymfonyConsoleOutput
+class ConsoleOutput extends LaraGramConsoleOutput
 {
     /**
      * How many new lines were written by the last output.

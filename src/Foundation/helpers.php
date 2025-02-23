@@ -2,6 +2,7 @@
 
 use LaraGram\Container\Container;
 use LaraGram\Contracts\Bus\Dispatcher;
+use LaraGram\Contracts\Debug\ExceptionHandler;
 use LaraGram\Foundation\Bus\PendingClosureDispatch;
 use LaraGram\Foundation\Bus\PendingDispatch;
 use LaraGram\Queue\CallQueuedClosure;
@@ -263,6 +264,23 @@ if (! function_exists('public_path')) {
     }
 }
 
+if (! function_exists('logger')) {
+    /**
+     * Log a debug message to the logs.
+     *
+     * @param  string|null  $message
+     * @param  array  $context
+     * @return ($message is null ? \LaraGram\Log\LogManager : null)
+     */
+    function logger($message = null, array $context = [])
+    {
+        if (is_null($message)) {
+            return app('log');
+        }
+
+        return app('log')->debug($message, $context);
+    }
+}
 
 if (! function_exists('request')) {
     /**
@@ -291,6 +309,10 @@ if (! function_exists('rescue')) {
         try {
             return $callback();
         } catch (Throwable $e) {
+            if (value($report, $e)) {
+                report($e);
+            }
+
             return value($rescue, $e);
         }
     }
@@ -389,5 +411,54 @@ if (! function_exists('__')) {
         }
 
         return trans($key, $replace, $locale);
+    }
+}
+
+if (! function_exists('report')) {
+    /**
+     * Report an exception.
+     *
+     * @param  \Throwable|string  $exception
+     * @return void
+     */
+    function report($exception)
+    {
+        if (is_string($exception)) {
+            $exception = new Exception($exception);
+        }
+
+        app(ExceptionHandler::class)->report($exception);
+    }
+}
+
+if (! function_exists('report_if')) {
+    /**
+     * Report an exception if the given condition is true.
+     *
+     * @param  bool  $boolean
+     * @param  \Throwable|string  $exception
+     * @return void
+     */
+    function report_if($boolean, $exception)
+    {
+        if ($boolean) {
+            report($exception);
+        }
+    }
+}
+
+if (! function_exists('report_unless')) {
+    /**
+     * Report an exception unless the given condition is true.
+     *
+     * @param  bool  $boolean
+     * @param  \Throwable|string  $exception
+     * @return void
+     */
+    function report_unless($boolean, $exception)
+    {
+        if (! $boolean) {
+            report($exception);
+        }
     }
 }

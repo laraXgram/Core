@@ -173,7 +173,7 @@ class FakeProcessDescription
      * @param  string  $command
      * @return \LaraGram\Console\Process\Process
      */
-    public function toSymfonyProcess(string $command)
+    public function toLaraGramProcess(string $command)
     {
         return Process::fromShellCommandline($command);
     }

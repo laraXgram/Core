@@ -7,6 +7,24 @@ use Throwable;
 interface ExceptionHandler
 {
     /**
+     * Report or log an exception.
+     *
+     * @param  \Throwable  $e
+     * @return void
+     *
+     * @throws \Throwable
+     */
+    public function report(Throwable $e);
+
+    /**
+     * Determine if the exception should be reported.
+     *
+     * @param  \Throwable  $e
+     * @return bool
+     */
+    public function shouldReport(Throwable $e);
+
+    /**
      * Render an exception to the console.
      *
      * @param  \LaraGram\Console\Output\OutputInterface  $output

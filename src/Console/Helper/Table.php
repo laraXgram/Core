@@ -889,7 +889,7 @@ class Table
             'default' => new TableStyle(),
             'borderless' => $borderless,
             'compact' => $compact,
-            'symfony-style-guide' => $styleGuide,
+            'laragram-style-guide' => $styleGuide,
             'box' => $box,
             'box-double' => $boxDouble,
         ];

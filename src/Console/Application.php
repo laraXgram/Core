@@ -4,7 +4,7 @@ namespace LaraGram\Console;
 
 use Closure;
 use LaraGram\Console\Command\Command as LaraGramCommand;
-use LaraGram\Console\Events\ArtisanStarting;
+use LaraGram\Console\Events\CommanderStarting;
 use LaraGram\Console\Exception\CommandNotFoundException;
 use LaraGram\Console\Input\ArrayInput;
 use LaraGram\Console\Input\InputDefinition;
@@ -55,7 +55,7 @@ class Application extends ExtendedApplication implements ApplicationContract
     protected $commandMap = [];
 
     /**
-     * Create a new Artisan console application.
+     * Create a new Commander console application.
      *
      * @param  \LaraGram\Contracts\Container\Container  $laragram
      * @param  \LaraGram\Contracts\Events\Dispatcher  $events
@@ -71,7 +71,7 @@ class Application extends ExtendedApplication implements ApplicationContract
         $this->setAutoExit(false);
         $this->setCatchExceptions(false);
 
-        $this->events->dispatch(new ArtisanStarting($this));
+        $this->events->dispatch(new CommanderStarting($this));
 
         $this->bootstrap();
     }
@@ -93,7 +93,7 @@ class Application extends ExtendedApplication implements ApplicationContract
      */
     public static function commanderBinary()
     {
-        return ProcessUtils::escapeArgument('commander');
+        return ProcessUtils::escapeArgument('laragram');
     }
 
     /**
@@ -141,7 +141,7 @@ class Application extends ExtendedApplication implements ApplicationContract
     }
 
     /**
-     * Run an Artisan console command by name.
+     * Run an Commander console command by name.
      *
      * @param  string  $command
      * @param  array  $parameters
@@ -164,7 +164,7 @@ class Application extends ExtendedApplication implements ApplicationContract
     }
 
     /**
-     * Parse the incoming Artisan command and its input.
+     * Parse the incoming Commander command and its input.
      *
      * @param  string  $command
      * @param  array  $parameters

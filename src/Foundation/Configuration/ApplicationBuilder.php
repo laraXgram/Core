@@ -2,12 +2,12 @@
 
 namespace LaraGram\Foundation\Configuration;
 
-use LaraGram\Console\Kernel;
+use LaraGram\Console\Application as Commander;
+use LaraGram\Console\Scheduling\Schedule;
 use LaraGram\Foundation\Application;
 use LaraGram\Foundation\Bootstrap\RegisterProviders;
-use LaraGram\Foundation\CoreCommand;
 use LaraGram\Foundation\Support\Providers\EventServiceProvider as AppEventServiceProvider;
-
+use LaraGram\Support\Collection;
 
 class ApplicationBuilder
 {
@@ -87,7 +87,7 @@ class ApplicationBuilder
     }
 
     /**
-     * Register additional Artisan commands with the application.
+     * Register additional Commander commands with the application.
      *
      * @param  array  $commands
      * @return $this
@@ -99,33 +99,57 @@ class ApplicationBuilder
         }
 
         $this->app->afterResolving(\LaraGram\Contracts\Console\Kernel::class, function ($kernel) use ($commands) {
-            $existingCommands = [];
-            $paths = [];
+            [$commands, $paths] = (new Collection($commands))->partition(fn ($command) => class_exists($command));
 
-            foreach ($commands as $command) {
-                if (class_exists($command)) {
-                    $existingCommands[] = $command;
-                } else {
-                    $paths[] = $command;
-                }
-            }
-
-            $validPaths = array_filter($paths, fn($path) => is_dir($path));
-
-            $this->app->booted(static function () use ($kernel, $existingCommands, $validPaths) {
-                $kernel->addCommands($existingCommands);
-                $kernel->addCommandPaths($validPaths);
+            $this->app->booted(static function () use ($kernel, $commands, $paths) {
+                $kernel->addCommands($commands->all());
+                $kernel->addCommandPaths($paths->all());
             });
         });
 
         return $this;
     }
 
+    /**
+     * Register the scheduled tasks for the application.
+     *
+     * @param  callable(\LaraGram\Console\Scheduling\Schedule $schedule): void  $callback
+     * @return $this
+     */
+    public function withSchedule(callable $callback)
+    {
+        Commander::starting(fn () => $callback($this->app->make(Schedule::class)));
+
+        return $this;
+    }
+
+    /**
+     * Register and configure the application's exception handler.
+     *
+     * @param  callable|null  $using
+     * @return $this
+     */
+    public function withExceptions(?callable $using = null)
+    {
+        $this->app->singleton(
+            \LaraGram\Contracts\Debug\ExceptionHandler::class,
+            \LaraGram\Foundation\Exceptions\Handler::class
+        );
+
+        $using ??= fn () => true;
+
+        $this->app->afterResolving(
+            \LaraGram\Foundation\Exceptions\Handler::class,
+            fn ($handler) => $using(new Exceptions($handler)),
+        );
+
+        return $this;
+    }
 
     /**
      * Register an array of container bindings to be bound when the application is booting.
      *
-     * @param array $bindings
+     * @param  array  $bindings
      * @return $this
      */
     public function withBindings(array $bindings)
@@ -154,22 +178,6 @@ class ApplicationBuilder
                 }
             }
         });
-    }
-
-    /**
-     * Register and configure the application's exception handler.
-     *
-     * @param  callable|null  $using
-     * @return $this
-     */
-    public function withExceptions()
-    {
-        $this->app->singleton(
-            \LaraGram\Contracts\Debug\ExceptionHandler::class,
-            \LaraGram\Foundation\Exceptions\Handler::class
-        );
-
-        return $this;
     }
 
     /**
@@ -218,8 +226,6 @@ class ApplicationBuilder
      */
     public function create()
     {
-//        $this->app->handleRequests();
-
         return $this->app;
     }
 }

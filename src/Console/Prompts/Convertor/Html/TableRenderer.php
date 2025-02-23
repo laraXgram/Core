@@ -23,12 +23,12 @@ use LaraGram\Console\Prompts\Convertor\ValueObjects\Styles;
 final class TableRenderer
 {
     /**
-     * Symfony table object uses for table generation.
+     * LaraGram table object uses for table generation.
      */
     private Table $table;
 
     /**
-     * This object is used for accumulating output data from Symfony table object and return it as a string.
+     * This object is used for accumulating output data from LaraGram table object and return it as a string.
      */
     private BufferedOutput $output;
 
@@ -59,7 +59,7 @@ final class TableRenderer
     }
 
     /**
-     * Looks for thead, tfoot, tbody, tr elements in a given DOM and appends rows from them to the Symfony table object.
+     * Looks for thead, tfoot, tbody, tr elements in a given DOM and appends rows from them to the LaraGram table object.
      */
     private function parseTable(Node $node): void
     {
@@ -79,7 +79,7 @@ final class TableRenderer
     }
 
     /**
-     * Looks for table header title and tr elements in a given thead DOM node and adds them to the Symfony table object.
+     * Looks for table header title and tr elements in a given thead DOM node and adds them to the LaraGram table object.
      */
     private function parseHeader(Node $node): void
     {
@@ -105,7 +105,7 @@ final class TableRenderer
     }
 
     /**
-     * Looks for table footer and tr elements in a given tfoot DOM node and adds them to the Symfony table object.
+     * Looks for table footer and tr elements in a given tfoot DOM node and adds them to the LaraGram table object.
      */
     private function parseFoot(Node $node): void
     {
@@ -130,7 +130,7 @@ final class TableRenderer
     }
 
     /**
-     * Looks for tr elements in a given DOM node and adds them to the Symfony table object.
+     * Looks for tr elements in a given DOM node and adds them to the LaraGram table object.
      */
     private function parseBody(Node $node): void
     {

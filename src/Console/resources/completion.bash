@@ -1,9 +1,3 @@
-# This file is part of the Symfony package.
-#
-# (c) Fabien Potencier <fabien@symfony.com>
-#
-# For the full copyright and license information, please view
-# https://symfony.com/doc/current/contributing/code/license.html
 
 _sf_{{ COMMAND_NAME }}() {
 

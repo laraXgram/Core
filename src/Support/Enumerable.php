@@ -174,22 +174,6 @@ interface Enumerable extends Arrayable, Countable, IteratorAggregate, Jsonable, 
     public function crossJoin(...$lists);
 
     /**
-     * Dump the collection and end the script.
-     *
-     * @param  mixed  ...$args
-     * @return never
-     */
-    public function dd(...$args);
-
-    /**
-     * Dump the collection.
-     *
-     * @param  mixed  ...$args
-     * @return $this
-     */
-    public function dump(...$args);
-
-    /**
      * Get the items that are not present in the given items.
      *
      * @param  \LaraGram\Contracts\Support\Arrayable<array-key, TValue>|iterable<array-key, TValue>  $items

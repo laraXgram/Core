@@ -312,7 +312,7 @@ if (! function_exists('tap')) {
      *
      * @param  TValue  $value
      * @param  (callable(TValue): mixed)|null  $callback
-     * @return HigherOrderTapProxy
+     * @return ($callback is null ? \LaraGram\Support\HigherOrderTapProxy : TValue)
      */
     function tap($value, $callback = null)
     {

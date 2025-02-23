@@ -14,7 +14,7 @@ class Terminal
     protected ?string $initialTtyMode;
 
     /**
-     * The Symfony Terminal instance.
+     * The LaraGram Terminal instance.
      */
     protected LaraGramTerminal $terminal;
 

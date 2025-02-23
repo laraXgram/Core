@@ -66,7 +66,7 @@ class XmlDescriptor extends Descriptor
     public function getApplicationDocument(Application $application, ?string $namespace = null, bool $short = false): \DOMDocument
     {
         $dom = new \DOMDocument('1.0', 'UTF-8');
-        $dom->appendChild($rootXml = $dom->createElement('symfony'));
+        $dom->appendChild($rootXml = $dom->createElement('laragram'));
 
         if ('UNKNOWN' !== $application->getName()) {
             $rootXml->setAttribute('name', $application->getName());

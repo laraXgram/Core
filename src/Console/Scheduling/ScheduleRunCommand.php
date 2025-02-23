@@ -200,6 +200,8 @@ class ScheduleRunCommand extends Command
                 $this->eventsRan = true;
             } catch (Throwable $e) {
                 $this->dispatcher->dispatch(new ScheduledTaskFailed($event, $e));
+
+                $this->handler->report($e);
             }
 
             return $event->exitCode == 0;

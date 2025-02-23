@@ -141,7 +141,7 @@ abstract class Connection
      * @param  mixed  $event
      * @return void
      *
-     * @deprecated since Laravel 11.x
+     * @deprecated since LaraGram 11.x
      */
     protected function event($event)
     {

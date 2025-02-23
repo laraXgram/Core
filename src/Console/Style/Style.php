@@ -343,7 +343,7 @@ class Style extends OutputStyle
     public function createTable(): Table
     {
         $output = $this->output instanceof ConsoleOutputInterface ? $this->output->section() : $this->output;
-        $style = clone Table::getStyleDefinition('symfony-style-guide');
+        $style = clone Table::getStyleDefinition('laragram-style-guide');
         $style->setCellHeaderFormat('<info>%s</info>');
 
         return (new Table($output))->setStyle($style);

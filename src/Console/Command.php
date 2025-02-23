@@ -57,7 +57,7 @@ class Command extends LaraGramCommand
     protected $help;
 
     /**
-     * Indicates whether the command should be shown in the Artisan command list.
+     * Indicates whether the command should be shown in the Commander command list.
      *
      * @var bool
      */
@@ -137,9 +137,6 @@ class Command extends LaraGramCommand
 
         parent::__construct($this->name = $name);
 
-        // After parsing the signature we will spin through the arguments and options
-        // and set them on this command. These will already be changed into proper
-        // instances of these "InputArgument" and "InputOption" Symfony classes.
         $this->getDefinition()->addArguments($arguments);
         $this->getDefinition()->addOptions($options);
     }

@@ -26,7 +26,7 @@ class ScheduleFinishCommand extends Command
     protected $description = 'Handle the completion of a scheduled command';
 
     /**
-     * Indicates whether the command should be shown in the Artisan command list.
+     * Indicates whether the command should be shown in the Commander command list.
      *
      * @var bool
      */

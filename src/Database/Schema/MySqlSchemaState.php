@@ -19,9 +19,9 @@ class MySqlSchemaState extends SchemaState
     public function dump(Connection $connection, $path)
     {
         $this->executeDumpProcess($this->makeProcess(
-            $this->baseDumpCommand().' --routines --result-file="${:LARAVEL_LOAD_PATH}" --no-data'
+            $this->baseDumpCommand().' --routines --result-file="${:LARAGRAM_LOAD_PATH}" --no-data'
         ), $this->output, array_merge($this->baseVariables($this->connection->getConfig()), [
-            'LARAVEL_LOAD_PATH' => $path,
+            'LARAGRAM_LOAD_PATH' => $path,
         ]));
 
         $this->removeAutoIncrementingState($path);
@@ -71,12 +71,12 @@ class MySqlSchemaState extends SchemaState
      */
     public function load($path)
     {
-        $command = 'mysql '.$this->connectionString().' --database="${:LARAVEL_LOAD_DATABASE}" < "${:LARAVEL_LOAD_PATH}"';
+        $command = 'mysql '.$this->connectionString().' --database="${:LARAGRAM_LOAD_DATABASE}" < "${:LARAGRAM_LOAD_PATH}"';
 
         $process = $this->makeProcess($command)->setTimeout(null);
 
         $process->mustRun(null, array_merge($this->baseVariables($this->connection->getConfig()), [
-            'LARAVEL_LOAD_PATH' => $path,
+            'LARAGRAM_LOAD_PATH' => $path,
         ]));
     }
 
@@ -93,7 +93,7 @@ class MySqlSchemaState extends SchemaState
             $command .= ' --set-gtid-purged=OFF';
         }
 
-        return $command.' "${:LARAVEL_LOAD_DATABASE}"';
+        return $command.' "${:LARAGRAM_LOAD_DATABASE}"';
     }
 
     /**
@@ -103,16 +103,16 @@ class MySqlSchemaState extends SchemaState
      */
     protected function connectionString()
     {
-        $value = ' --user="${:LARAVEL_LOAD_USER}" --password="${:LARAVEL_LOAD_PASSWORD}"';
+        $value = ' --user="${:LARAGRAM_LOAD_USER}" --password="${:LARAGRAM_LOAD_PASSWORD}"';
 
         $config = $this->connection->getConfig();
 
         $value .= $config['unix_socket'] ?? false
-                        ? ' --socket="${:LARAVEL_LOAD_SOCKET}"'
-                        : ' --host="${:LARAVEL_LOAD_HOST}" --port="${:LARAVEL_LOAD_PORT}"';
+                        ? ' --socket="${:LARAGRAM_LOAD_SOCKET}"'
+                        : ' --host="${:LARAGRAM_LOAD_HOST}" --port="${:LARAGRAM_LOAD_PORT}"';
 
         if (isset($config['options'][\PDO::MYSQL_ATTR_SSL_CA])) {
-            $value .= ' --ssl-ca="${:LARAVEL_LOAD_SSL_CA}"';
+            $value .= ' --ssl-ca="${:LARAGRAM_LOAD_SSL_CA}"';
         }
 
         return $value;
@@ -129,13 +129,13 @@ class MySqlSchemaState extends SchemaState
         $config['host'] ??= '';
 
         return [
-            'LARAVEL_LOAD_SOCKET' => $config['unix_socket'] ?? '',
-            'LARAVEL_LOAD_HOST' => is_array($config['host']) ? $config['host'][0] : $config['host'],
-            'LARAVEL_LOAD_PORT' => $config['port'] ?? '',
-            'LARAVEL_LOAD_USER' => $config['username'],
-            'LARAVEL_LOAD_PASSWORD' => $config['password'] ?? '',
-            'LARAVEL_LOAD_DATABASE' => $config['database'],
-            'LARAVEL_LOAD_SSL_CA' => $config['options'][\PDO::MYSQL_ATTR_SSL_CA] ?? '',
+            'LARAGRAM_LOAD_SOCKET' => $config['unix_socket'] ?? '',
+            'LARAGRAM_LOAD_HOST' => is_array($config['host']) ? $config['host'][0] : $config['host'],
+            'LARAGRAM_LOAD_PORT' => $config['port'] ?? '',
+            'LARAGRAM_LOAD_USER' => $config['username'],
+            'LARAGRAM_LOAD_PASSWORD' => $config['password'] ?? '',
+            'LARAGRAM_LOAD_DATABASE' => $config['database'],
+            'LARAGRAM_LOAD_SSL_CA' => $config['options'][\PDO::MYSQL_ATTR_SSL_CA] ?? '',
         ];
     }
 

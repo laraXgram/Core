@@ -68,7 +68,7 @@ class Native implements Serializable
     /**
      * The "key" that marks an array as recursive.
      */
-    const ARRAY_RECURSIVE_KEY = 'LARAVEL_SERIALIZABLE_RECURSIVE_KEY';
+    const ARRAY_RECURSIVE_KEY = 'LARAGRAM_SERIALIZABLE_RECURSIVE_KEY';
 
     /**
      * Creates a new serializable closure instance.

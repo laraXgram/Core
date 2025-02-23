@@ -62,7 +62,7 @@ class ThrottlesExceptions
      *
      * @var string
      */
-    protected $prefix = 'laravel_throttles_exceptions:';
+    protected $prefix = 'laragram_throttles_exceptions:';
 
     /**
      * The rate limiter instance.

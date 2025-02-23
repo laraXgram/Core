@@ -26,7 +26,7 @@ class PostgresSchemaState extends SchemaState
 
         $commands->map(function ($command, $path) {
             $this->makeProcess($command)->mustRun($this->output, array_merge($this->baseVariables($this->connection->getConfig()), [
-                'LARAVEL_LOAD_PATH' => $path,
+                'LARAGRAM_LOAD_PATH' => $path,
             ]));
         });
     }
@@ -39,16 +39,16 @@ class PostgresSchemaState extends SchemaState
      */
     public function load($path)
     {
-        $command = 'pg_restore --no-owner --no-acl --clean --if-exists --host="${:LARAVEL_LOAD_HOST}" --port="${:LARAVEL_LOAD_PORT}" --username="${:LARAVEL_LOAD_USER}" --dbname="${:LARAVEL_LOAD_DATABASE}" "${:LARAVEL_LOAD_PATH}"';
+        $command = 'pg_restore --no-owner --no-acl --clean --if-exists --host="${:LARAGRAM_LOAD_HOST}" --port="${:LARAGRAM_LOAD_PORT}" --username="${:LARAGRAM_LOAD_USER}" --dbname="${:LARAGRAM_LOAD_DATABASE}" "${:LARAGRAM_LOAD_PATH}"';
 
         if (str_ends_with($path, '.sql')) {
-            $command = 'psql --file="${:LARAVEL_LOAD_PATH}" --host="${:LARAVEL_LOAD_HOST}" --port="${:LARAVEL_LOAD_PORT}" --username="${:LARAVEL_LOAD_USER}" --dbname="${:LARAVEL_LOAD_DATABASE}"';
+            $command = 'psql --file="${:LARAGRAM_LOAD_PATH}" --host="${:LARAGRAM_LOAD_HOST}" --port="${:LARAGRAM_LOAD_PORT}" --username="${:LARAGRAM_LOAD_USER}" --dbname="${:LARAGRAM_LOAD_DATABASE}"';
         }
 
         $process = $this->makeProcess($command);
 
         $process->mustRun(null, array_merge($this->baseVariables($this->connection->getConfig()), [
-            'LARAVEL_LOAD_PATH' => $path,
+            'LARAGRAM_LOAD_PATH' => $path,
         ]));
     }
 
@@ -71,7 +71,7 @@ class PostgresSchemaState extends SchemaState
      */
     protected function baseDumpCommand()
     {
-        return 'pg_dump --no-owner --no-acl --host="${:LARAVEL_LOAD_HOST}" --port="${:LARAVEL_LOAD_PORT}" --username="${:LARAVEL_LOAD_USER}" --dbname="${:LARAVEL_LOAD_DATABASE}"';
+        return 'pg_dump --no-owner --no-acl --host="${:LARAGRAM_LOAD_HOST}" --port="${:LARAGRAM_LOAD_PORT}" --username="${:LARAGRAM_LOAD_USER}" --dbname="${:LARAGRAM_LOAD_DATABASE}"';
     }
 
     /**
@@ -85,11 +85,11 @@ class PostgresSchemaState extends SchemaState
         $config['host'] ??= '';
 
         return [
-            'LARAVEL_LOAD_HOST' => is_array($config['host']) ? $config['host'][0] : $config['host'],
-            'LARAVEL_LOAD_PORT' => $config['port'] ?? '',
-            'LARAVEL_LOAD_USER' => $config['username'],
+            'LARAGRAM_LOAD_HOST' => is_array($config['host']) ? $config['host'][0] : $config['host'],
+            'LARAGRAM_LOAD_PORT' => $config['port'] ?? '',
+            'LARAGRAM_LOAD_USER' => $config['username'],
             'PGPASSWORD' => $config['password'],
-            'LARAVEL_LOAD_DATABASE' => $config['database'],
+            'LARAGRAM_LOAD_DATABASE' => $config['database'],
         ];
     }
 }

@@ -508,6 +508,7 @@ class Event
             try {
                 $this->getHttpClient($container)->request('GET', $url);
             } catch (\Exception $e) {
+                $container->make(ExceptionHandler::class)->report($e);
 
             }
         };

@@ -146,7 +146,7 @@ class Schedule
     }
 
     /**
-     * Add a new Artisan command event to the schedule.
+     * Add a new Commander command event to the schedule.
      *
      * @param  string  $command
      * @param  array  $parameters

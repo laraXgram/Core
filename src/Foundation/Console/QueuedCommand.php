@@ -12,7 +12,7 @@ class QueuedCommand implements ShouldQueue
     use Dispatchable, Queueable;
 
     /**
-     * The data to pass to the Artisan command.
+     * The data to pass to the Commander command.
      *
      * @var array
      */

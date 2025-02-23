@@ -144,20 +144,20 @@ class ArgvInput extends Input
         // unexpected argument
         } else {
             $all = $this->definition->getArguments();
-            $symfonyCommandName = null;
+            $laraGramCommandName = null;
             if (($inputArgument = $all[$key = array_key_first($all)] ?? null) && 'command' === $inputArgument->getName()) {
-                $symfonyCommandName = $this->arguments['command'] ?? null;
+                $laraGramCommandName = $this->arguments['command'] ?? null;
                 unset($all[$key]);
             }
 
             if (\count($all)) {
-                if ($symfonyCommandName) {
-                    $message = \sprintf('Too many arguments to "%s" command, expected arguments "%s".', $symfonyCommandName, implode('" "', array_keys($all)));
+                if ($laraGramCommandName) {
+                    $message = \sprintf('Too many arguments to "%s" command, expected arguments "%s".', $laraGramCommandName, implode('" "', array_keys($all)));
                 } else {
                     $message = \sprintf('Too many arguments, expected arguments "%s".', implode('" "', array_keys($all)));
                 }
-            } elseif ($symfonyCommandName) {
-                $message = \sprintf('No arguments expected for "%s" command, got "%s".', $symfonyCommandName, $token);
+            } elseif ($laraGramCommandName) {
+                $message = \sprintf('No arguments expected for "%s" command, got "%s".', $laraGramCommandName, $token);
             } else {
                 $message = \sprintf('No arguments expected, got "%s".', $token);
             }

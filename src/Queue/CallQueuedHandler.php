@@ -6,13 +6,15 @@ use Exception;
 use LaraGram\Bus\Batchable;
 use LaraGram\Bus\UniqueLock;
 use LaraGram\Contracts\Bus\Dispatcher;
+use LaraGram\Contracts\Cache\Factory as CacheFactory;
 use LaraGram\Contracts\Cache\Repository as Cache;
-use LaraGram\Contracts\Container\Container;
+use LaraGram\Container\Container;
 use LaraGram\Contracts\Encryption\Encrypter;
 use LaraGram\Contracts\Queue\Job;
 use LaraGram\Contracts\Queue\ShouldBeUnique;
 use LaraGram\Contracts\Queue\ShouldBeUniqueUntilProcessing;
 use LaraGram\Database\Eloquent\ModelNotFoundException;
+use LaraGram\Log\Context\Repository as ContextRepository;
 use LaraGram\Pipeline\Pipeline;
 use LaraGram\Queue\Attributes\DeleteWhenMissingModels;
 use ReflectionClass;
@@ -61,11 +63,8 @@ class CallQueuedHandler
                 $job, $this->getCommand($data)
             );
         } catch (ModelNotFoundException $e) {
-            return $this->handleModelNotFound($job, $e);
-        }
-
-        if ($command instanceof ShouldBeUniqueUntilProcessing) {
-            $this->ensureUniqueJobLockIsReleased($command);
+            $this->handleModelNotFound($job, $e);
+            return;
         }
 
         $this->dispatchThroughMiddleware($job, $command);
@@ -119,12 +118,16 @@ class CallQueuedHandler
         }
 
         return (new Pipeline($this->container))->send($command)
-                ->through(array_merge(method_exists($command, 'middleware') ? $command->middleware() : [], $command->middleware ?? []))
-                ->then(function ($command) use ($job) {
-                    return $this->dispatcher->dispatchNow(
-                        $command, $this->resolveHandler($job, $command)
-                    );
-                });
+            ->through(array_merge(method_exists($command, 'middleware') ? $command->middleware() : [], $command->middleware ?? []))
+            ->then(function ($command) use ($job) {
+                if ($command instanceof ShouldBeUniqueUntilProcessing) {
+                    $this->ensureUniqueJobLockIsReleased($command);
+                }
+
+                return $this->dispatcher->dispatchNow(
+                    $command, $this->resolveHandler($job, $command)
+                );
+            });
     }
 
     /**
@@ -227,11 +230,42 @@ class CallQueuedHandler
             $shouldDelete = false;
         }
 
+        $this->ensureUniqueJobLockIsReleasedViaContext();
+
         if ($shouldDelete) {
             return $job->delete();
         }
 
         return $job->fail($e);
+    }
+
+    /**
+     * Ensure the lock for a unique job is released via context.
+     *
+     * This is required when we can't unserialize the job due to missing models.
+     *
+     * @return void
+     */
+    protected function ensureUniqueJobLockIsReleasedViaContext()
+    {
+        if (! $this->container->bound(ContextRepository::class) ||
+            ! $this->container->bound(CacheFactory::class)) {
+            return;
+        }
+
+        $context = $this->container->make(ContextRepository::class);
+
+        [$store, $key] = [
+            $context->getHidden('laravel_unique_job_cache_store'),
+            $context->getHidden('laravel_unique_job_key'),
+        ];
+
+        if ($store && $key) {
+            $this->container->make(CacheFactory::class)
+                ->store($store)
+                ->lock($key)
+                ->forceRelease();
+        }
     }
 
     /**

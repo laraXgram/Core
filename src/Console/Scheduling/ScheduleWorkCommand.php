@@ -34,10 +34,7 @@ class ScheduleWorkCommand extends Command
      */
     public function handle()
     {
-        $this->components->info(
-            'Running scheduled tasks.',
-            $this->getLaravel()->environment('local') ? OutputInterface::VERBOSITY_NORMAL : OutputInterface::VERBOSITY_VERBOSE
-        );
+        $this->components->info('Running scheduled tasks.');
 
         $lastExecutionStartedAt = new DateTime();
         $lastExecutionStartedAt->modify('-10 minutes');

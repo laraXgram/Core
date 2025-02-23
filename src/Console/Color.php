@@ -4,9 +4,6 @@ namespace LaraGram\Console;
 
 use LaraGram\Console\Exception\InvalidArgumentException;
 
-/**
- * @author Fabien Potencier <fabien@symfony.com>
- */
 final class Color
 {
     private const COLORS = [

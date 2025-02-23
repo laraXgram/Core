@@ -4,7 +4,7 @@ namespace LaraGram\Console\Prompts\Themes\Default;
 
 use LaraGram\Console\Prompts\Output\BufferedConsoleOutput;
 use LaraGram\Console\Prompts\Table;
-use LaraGram\Console\Helper\Table as SymfonyTable;
+use LaraGram\Console\Helper\Table as LaraGramTable;
 use LaraGram\Console\Helper\TableStyle;
 
 class TableRenderer extends Renderer
@@ -28,7 +28,7 @@ class TableRenderer extends Renderer
 
         $buffered = new BufferedConsoleOutput;
 
-        (new SymfonyTable($buffered))
+        (new LaraGramTable($buffered))
             ->setHeaders($table->headers)
             ->setRows($table->rows)
             ->setStyle($tableStyle)

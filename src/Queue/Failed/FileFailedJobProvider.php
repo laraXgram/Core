@@ -176,7 +176,7 @@ class FileFailedJobProvider implements CountableFailedJobProvider, FailedJobProv
         }
 
         return ($this->lockProviderResolver)()
-            ->lock('laravel-failed-jobs', 5)
+            ->lock('laragram-failed-jobs', 5)
             ->block(10, function () use ($callback) {
                 return $callback();
             });

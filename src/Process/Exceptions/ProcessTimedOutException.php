@@ -3,7 +3,7 @@
 namespace LaraGram\Process\Exceptions;
 
 use LaraGram\Contracts\Process\ProcessResult;
-use LaraGram\Console\Process\Exception\ProcessTimedOutException as SymfonyTimeoutException;
+use LaraGram\Console\Process\Exception\ProcessTimedOutException as LaraGramTimeoutException;
 use LaraGram\Console\Process\Exception\RuntimeException;
 
 class ProcessTimedOutException extends RuntimeException
@@ -22,7 +22,7 @@ class ProcessTimedOutException extends RuntimeException
      * @param  \LaraGram\Contracts\Process\ProcessResult  $result
      * @return void
      */
-    public function __construct(SymfonyTimeoutException $original, ProcessResult $result)
+    public function __construct(LaraGramTimeoutException $original, ProcessResult $result)
     {
         $this->result = $result;
 

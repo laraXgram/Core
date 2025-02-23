@@ -6,7 +6,6 @@ use BackedEnum;
 use CachingIterator;
 use Closure;
 use Exception;
-use LaraGram\Support\Traits\Conditionable;
 use LaraGram\Contracts\Support\Arrayable;
 use LaraGram\Contracts\Support\Jsonable;
 use LaraGram\Support\Arr;
@@ -21,9 +20,6 @@ use UnitEnum;
 use WeakMap;
 
 use function LaraGram\Support\enum_value;
-use function LaraGram\Support\Traits\dd;
-use function LaraGram\Support\Traits\dump;
-use function LaraGram\Support\Traits\e;
 
 /**
  * @template TKey of array-key
@@ -225,30 +221,6 @@ trait EnumeratesValues
     public function some($key, $operator = null, $value = null)
     {
         return $this->contains(...func_get_args());
-    }
-
-    /**
-     * Dump the given arguments and terminate execution.
-     *
-     * @param  mixed  ...$args
-     * @return never
-     */
-    public function dd(...$args)
-    {
-        dd($this->all(), ...$args);
-    }
-
-    /**
-     * Dump the items.
-     *
-     * @param  mixed  ...$args
-     * @return $this
-     */
-    public function dump(...$args)
-    {
-        dump($this->all(), ...$args);
-
-        return $this;
     }
 
     /**
@@ -1001,9 +973,7 @@ trait EnumeratesValues
      */
     public function __toString()
     {
-        return $this->escapeWhenCastingToString
-                    ? e($this->toJson())
-                    : $this->toJson();
+        return $this->toJson();
     }
 
     /**

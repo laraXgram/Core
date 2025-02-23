@@ -19,7 +19,7 @@ trait InteractsWithTime
         $delay = $this->parseDateInterval($delay);
 
         return $delay instanceof DateTimeInterface
-            ? max(0, $delay->getTimestamp() - $this->getCurrentTime())
+            ? max(0, $delay->getTimestamp() - $this->currentTime())
             : (int) $delay;
     }
 
@@ -35,7 +35,7 @@ trait InteractsWithTime
 
         return $delay instanceof DateTimeInterface
             ? $delay->getTimestamp()
-            : $this->getCurrentTime() + (int)$delay;
+            : $this->currentTime() + (int)$delay;
     }
 
     /**
@@ -60,7 +60,7 @@ trait InteractsWithTime
      *
      * @return int
      */
-    protected function getCurrentTime()
+    protected function currentTime()
     {
         return (new DateTime())->getTimestamp();
     }

@@ -455,12 +455,6 @@ class Filesystem
      */
     public function guessExtension($path)
     {
-        if (! class_exists(MimeTypes::class)) {
-            throw new RuntimeException(
-                'To enable support for guessing extensions, please install the symfony/mime package.'
-            );
-        }
-
         return (new MimeTypes)->getExtensions($this->mimeType($path))[0] ?? null;
     }
 

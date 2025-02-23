@@ -125,6 +125,8 @@ class Kernel implements KernelContract
 
             return $this->getCommander()->run($input, $output);
         } catch (Throwable $e) {
+            $this->reportException($e);
+
             $this->renderException($output, $e);
 
             return 1;
@@ -151,7 +153,7 @@ class Kernel implements KernelContract
         foreach ($this->commandLifecycleDurationHandlers as ['threshold' => $threshold, 'handler' => $handler]) {
             $end ??= new \DateTime();
 
-            if ($this->commandStartedAt->diffInMilliseconds($end) > $threshold) {
+            if ($this->commandStartedAt->diff($end) > $threshold) {
                 $handler($this->commandStartedAt, $input, $status);
             }
         }
@@ -449,6 +451,17 @@ class Kernel implements KernelContract
     protected function bootstrappers()
     {
         return $this->bootstrappers;
+    }
+
+    /**
+     * Report the exception to the exception handler.
+     *
+     * @param  \Throwable  $e
+     * @return void
+     */
+    protected function reportException(Throwable $e)
+    {
+        $this->app[ExceptionHandler::class]->report($e);
     }
 
     /**

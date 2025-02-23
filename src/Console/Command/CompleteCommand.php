@@ -45,24 +45,24 @@ final class CompleteCommand extends Command
             ->addOption('input', 'i', InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY, 'An array of input tokens (e.g. COMP_WORDS or argv)')
             ->addOption('current', 'c', InputOption::VALUE_REQUIRED, 'The index of the "input" array that the cursor is in (e.g. COMP_CWORD)')
             ->addOption('api-version', 'a', InputOption::VALUE_REQUIRED, 'The API version of the completion script')
-            ->addOption('symfony', 'S', InputOption::VALUE_REQUIRED, 'deprecated')
+            ->addOption('laragram', 'S', InputOption::VALUE_REQUIRED, 'deprecated')
         ;
     }
 
     protected function initialize(InputInterface $input, OutputInterface $output): void
     {
-        $this->isDebug = filter_var(getenv('SYMFONY_COMPLETION_DEBUG'), \FILTER_VALIDATE_BOOL);
+        $this->isDebug = filter_var(getenv('LARAGRAM_COMPLETION_DEBUG'), \FILTER_VALIDATE_BOOL);
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         try {
-            $version = $input->getOption('symfony') ? '1' : $input->getOption('api-version');
+            $version = $input->getOption('laragram') ? '1' : $input->getOption('api-version');
             if ($version && version_compare($version, self::COMPLETION_API_VERSION, '<')) {
                 $message = \sprintf('Completion script version is not supported ("%s" given, ">=%s" required).', $version, self::COMPLETION_API_VERSION);
                 $this->log($message);
 
-                $output->writeln($message.' Install the Symfony completion script again by using the "completion" command.');
+                $output->writeln($message.' Install the LaraGram completion script again by using the "completion" command.');
 
                 return 126;
             }

@@ -71,10 +71,10 @@ class SqliteSchemaState extends SchemaState
             return;
         }
 
-        $process = $this->makeProcess($this->baseCommand().' < "${:LARAVEL_LOAD_PATH}"');
+        $process = $this->makeProcess($this->baseCommand().' < "${:LARAGRAM_LOAD_PATH}"');
 
         $process->mustRun(null, array_merge($this->baseVariables($this->connection->getConfig()), [
-            'LARAVEL_LOAD_PATH' => $path,
+            'LARAGRAM_LOAD_PATH' => $path,
         ]));
     }
 
@@ -85,7 +85,7 @@ class SqliteSchemaState extends SchemaState
      */
     protected function baseCommand()
     {
-        return 'sqlite3 "${:LARAVEL_LOAD_DATABASE}"';
+        return 'sqlite3 "${:LARAGRAM_LOAD_DATABASE}"';
     }
 
     /**
@@ -97,7 +97,7 @@ class SqliteSchemaState extends SchemaState
     protected function baseVariables(array $config)
     {
         return [
-            'LARAVEL_LOAD_DATABASE' => $config['database'],
+            'LARAGRAM_LOAD_DATABASE' => $config['database'],
         ];
     }
 }

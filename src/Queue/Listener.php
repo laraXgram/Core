@@ -70,7 +70,7 @@ class Listener
      */
     protected function commanderBinary()
     {
-        return 'commander';
+        return 'laragram';
     }
 
     /**
@@ -95,7 +95,7 @@ class Listener
     }
 
     /**
-     * Create a new Symfony process for the worker.
+     * Create a new LaraGram process for the worker.
      *
      * @param  string  $connection
      * @param  string  $queue
@@ -169,7 +169,7 @@ class Listener
     /**
      * Run the given process.
      *
-     * @param  \LaraGram\Console\Process  $process
+     * @param  \LaraGram\Console\Process\Process  $process
      * @param  int  $memory
      * @return void
      */

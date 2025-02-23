@@ -12,7 +12,6 @@ use LaraGram\Queue\Failed\DatabaseFailedJobProvider;
 use LaraGram\Queue\Failed\DatabaseUuidFailedJobProvider;
 use LaraGram\Queue\Failed\FileFailedJobProvider;
 use LaraGram\Queue\Failed\NullFailedJobProvider;
-use LaraGram\Support\Arr;
 use LaraGram\Support\Facades\Facade;
 use LaraGram\Support\ServiceProvider;
 use LaraGram\Support\SerializableClosure\SerializableClosure;

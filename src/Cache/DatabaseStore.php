@@ -3,6 +3,7 @@
 namespace LaraGram\Cache;
 
 use Closure;
+use DateTime;
 use LaraGram\Contracts\Cache\LockProvider;
 use LaraGram\Contracts\Cache\Store;
 use LaraGram\Database\ConnectionInterface;
@@ -132,7 +133,7 @@ class DatabaseStore implements LockProvider, Store
                 return is_array($value) ? (object) $value : $value;
             });
 
-        $currentTime = $this->currentTime();
+        $currentTime = (new DateTime())->getTimestamp();
 
         // If this cache expiration date is past the current time, we will remove this
         // item from the cache. Then we will return a null value since the cache is
@@ -303,7 +304,7 @@ class DatabaseStore implements LockProvider, Store
      */
     protected function getTime()
     {
-        return $this->currentTime();
+        return (new DateTime())->getTimestamp();
     }
 
     /**

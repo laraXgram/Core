@@ -45,7 +45,7 @@ trait InteractsWithIO
     protected $verbosity = OutputInterface::VERBOSITY_NORMAL;
 
     /**
-     * The mapping between human readable verbosity levels and Symfony's OutputInterface.
+     * The mapping between human readable verbosity levels and LaraGram's OutputInterface.
      *
      * @var array
      */
@@ -424,7 +424,7 @@ trait InteractsWithIO
     }
 
     /**
-     * Get the verbosity level in terms of Symfony's OutputInterface level.
+     * Get the verbosity level in terms of LaraGram's OutputInterface level.
      *
      * @param  string|int|null  $level
      * @return int

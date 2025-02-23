@@ -62,7 +62,7 @@ class ClearCommand extends Command
      */
     public function handle()
     {
-        $this->laravel['events']->dispatch(
+        $this->laragram['events']->dispatch(
             'cache:clearing', [$this->argument('store'), $this->tags()]
         );
 
@@ -74,7 +74,7 @@ class ClearCommand extends Command
             return $this->components->error('Failed to clear cache. Make sure you have the appropriate permissions.');
         }
 
-        $this->laravel['events']->dispatch(
+        $this->laragram['events']->dispatch(
             'cache:cleared', [$this->argument('store'), $this->tags()]
         );
 

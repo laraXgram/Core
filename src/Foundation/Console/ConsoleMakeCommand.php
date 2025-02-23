@@ -26,7 +26,7 @@ class ConsoleMakeCommand extends GeneratorCommand
      *
      * @var string
      */
-    protected $description = 'Create a new Artisan command';
+    protected $description = 'Create a new Commander command';
 
     /**
      * The type of class being generated.

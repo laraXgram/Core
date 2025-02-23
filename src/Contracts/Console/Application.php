@@ -5,7 +5,7 @@ namespace LaraGram\Contracts\Console;
 interface Application
 {
     /**
-     * Run an Artisan console command by name.
+     * Run an Commander console command by name.
      *
      * @param  string  $command
      * @param  array  $parameters

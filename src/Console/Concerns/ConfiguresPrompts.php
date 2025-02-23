@@ -29,7 +29,7 @@ trait ConfiguresPrompts
     {
         Prompt::setOutput($this->output);
 
-        Prompt::interactive(($input->isInteractive() && defined('STDIN') && stream_isatty(STDIN)) || $this->laragram->runningUnitTests());
+        Prompt::interactive(($input->isInteractive() && defined('STDIN') && stream_isatty(STDIN)));
 
         Prompt::validateUsing(fn (Prompt $prompt) => $this->validatePrompt($prompt->value(), $prompt->validate));
 
@@ -128,11 +128,7 @@ trait ConfiguresPrompts
             if ($required && ($result === '' || $result === [] || $result === false)) {
                 $this->components->error(is_string($required) ? $required : 'Required.');
 
-                if ($this->laragram->runningUnitTests()) {
-                    throw new PromptValidationException;
-                } else {
-                    continue;
-                }
+                continue;
             }
 
             $error = is_callable($validate) ? $validate($result) : $this->validatePrompt($result, $validate);
@@ -140,11 +136,7 @@ trait ConfiguresPrompts
             if (is_string($error) && strlen($error) > 0) {
                 $this->components->error($error);
 
-                if ($this->laragram->runningUnitTests()) {
-                    throw new PromptValidationException;
-                } else {
-                    continue;
-                }
+                continue;
             }
 
             return $result;
@@ -263,7 +255,7 @@ trait ConfiguresPrompts
     {
         $default = $default !== [] ? implode(',', $default) : null;
 
-        if ($required === false && ! $this->laragram->runningUnitTests()) {
+        if ($required === false) {
             $options = array_is_list($options)
                 ? ['None', ...$options]
                 : ['' => 'None'] + $options;

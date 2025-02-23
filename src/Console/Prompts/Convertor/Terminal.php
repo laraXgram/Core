@@ -12,7 +12,7 @@ use LaraGram\Console\Terminal as ConsoleTerminal;
 final class Terminal
 {
     /**
-     * An instance of Symfony's console terminal.
+     * An instance of LaraGram's console terminal.
      */
     private ConsoleTerminal $terminal;
 

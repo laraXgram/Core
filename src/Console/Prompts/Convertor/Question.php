@@ -8,7 +8,7 @@ use ReflectionClass;
 use LaraGram\Console\Helper\LaraGramQuestionHelper;
 use LaraGram\Console\Input\ArgvInput;
 use LaraGram\Console\Input\StreamableInputInterface;
-use LaraGram\Console\Question\Question as SymfonyQuestion;
+use LaraGram\Console\Question\Question as LaraGramQuestion;
 use LaraGram\Console\Prompts\Convertor\Helpers\QuestionHelper;
 
 /**
@@ -22,7 +22,7 @@ final class Question
     private static ?StreamableInputInterface $streamableInput;
 
     /**
-     * An instance of Symfony's question helper.
+     * An instance of LaraGram's question helper.
      */
     private LaraGramQuestionHelper $helper;
 
@@ -56,7 +56,7 @@ final class Question
     {
         $html = (new HtmlRenderer)->parse($question)->toString();
 
-        $question = new SymfonyQuestion($html);
+        $question = new LaraGramQuestion($html);
 
         if ($autocomplete !== null) {
             $question->setAutocompleterValues($autocomplete);
@@ -64,8 +64,8 @@ final class Question
 
         $output = Convertor::getRenderer();
 
-        if ($output instanceof SymfonyStyle) {
-            $property = (new ReflectionClass(SymfonyStyle::class))
+        if ($output instanceof LaraGramStyle) {
+            $property = (new ReflectionClass(LaraGramStyle::class))
                 ->getProperty('questionHelper');
 
             $property->setAccessible(true);

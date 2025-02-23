@@ -6,7 +6,6 @@ use LaraGram\Contracts\Bus\Dispatcher as DispatcherContract;
 use LaraGram\Contracts\Bus\QueueingDispatcher as QueueingDispatcherContract;
 use LaraGram\Contracts\Queue\Factory as QueueFactoryContract;
 use LaraGram\Contracts\Support\DeferrableProvider;
-use LaraGram\Support\Arr;
 use LaraGram\Support\ServiceProvider;
 
 class BusServiceProvider extends ServiceProvider implements DeferrableProvider

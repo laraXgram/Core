@@ -2,7 +2,6 @@
 
 namespace LaraGram\Queue;
 
-use DateTime;
 use LaraGram\Contracts\Cache\Repository as CacheContract;
 use LaraGram\Contracts\Debug\ExceptionHandler;
 use LaraGram\Contracts\Events\Dispatcher;
@@ -97,6 +96,7 @@ class Worker
      * @param  \LaraGram\Contracts\Queue\Factory  $manager
      * @param  \LaraGram\Contracts\Events\Dispatcher  $events
      * @param  \LaraGram\Contracts\Debug\ExceptionHandler  $exceptions
+     * @param  callable  $isDownForMaintenance
      * @param  callable|null  $resetScope
      * @return void
      */
@@ -262,7 +262,7 @@ class Worker
      */
     protected function daemonShouldRun(WorkerOptions $options, $connectionName, $queue)
     {
-        return ! ((! $options->force) ||
+        return ! (! $options->force ||
             $this->paused ||
             $this->events->until(new Looping($connectionName, $queue)) === false);
     }
@@ -360,6 +360,8 @@ class Worker
                 }
             }
         } catch (Throwable $e) {
+            $this->exceptions->report($e);
+
             $this->stopWorkerIfLostConnection($e);
 
             $this->sleep(1);
@@ -379,6 +381,8 @@ class Worker
         try {
             return $this->process($connectionName, $job, $options);
         } catch (Throwable $e) {
+            $this->exceptions->report($e);
+
             $this->stopWorkerIfLostConnection($e);
         }
     }
@@ -386,7 +390,7 @@ class Worker
     /**
      * Stop the worker if we have lost connection to a database.
      *
-     * @param Throwable $e
+     * @param  \Throwable  $e
      * @return void
      */
     protected function stopWorkerIfLostConnection($e)
@@ -404,7 +408,7 @@ class Worker
      * @param  \LaraGram\Queue\WorkerOptions  $options
      * @return void
      *
-     * @throws Throwable
+     * @throws \Throwable
      */
     public function process($connectionName, $job, WorkerOptions $options)
     {
@@ -445,10 +449,10 @@ class Worker
      * @param  string  $connectionName
      * @param  \LaraGram\Contracts\Queue\Job  $job
      * @param  \LaraGram\Queue\WorkerOptions  $options
-     * @param Throwable $e
+     * @param  \Throwable  $e
      * @return void
      *
-     * @throws Throwable
+     * @throws \Throwable
      */
     protected function handleJobException($connectionName, $job, WorkerOptions $options, Throwable $e)
     {
@@ -495,7 +499,7 @@ class Worker
      * @param  int  $maxTries
      * @return void
      *
-     * @throws Throwable
+     * @throws \Throwable
      */
     protected function markJobAsFailedIfAlreadyExceedsMaxAttempts($connectionName, $job, $maxTries)
     {
@@ -503,7 +507,7 @@ class Worker
 
         $retryUntil = $job->retryUntil();
 
-        if ($retryUntil && (new DateTime())->getTimestamp() <= $retryUntil) {
+        if ($retryUntil && (new \DateTime())->getTimestamp() <= $retryUntil) {
             return;
         }
 
@@ -522,14 +526,14 @@ class Worker
      * @param  string  $connectionName
      * @param  \LaraGram\Contracts\Queue\Job  $job
      * @param  int  $maxTries
-     * @param  Throwable $e
+     * @param  \Throwable  $e
      * @return void
      */
     protected function markJobAsFailedIfWillExceedMaxAttempts($connectionName, $job, $maxTries, Throwable $e)
     {
         $maxTries = ! is_null($job->maxTries()) ? $job->maxTries() : $maxTries;
 
-        if ($job->retryUntil() && $job->retryUntil() <= (new DateTime())->getTimestamp()) {
+        if ($job->retryUntil() && $job->retryUntil() <= (new \DateTime())->getTimestamp()) {
             $this->failJob($job, $e);
         }
 
@@ -543,7 +547,7 @@ class Worker
      *
      * @param  string  $connectionName
      * @param  \LaraGram\Contracts\Queue\Job  $job
-     * @param  Throwable $e
+     * @param  \Throwable  $e
      * @return void
      */
     protected function markJobAsFailedIfWillExceedMaxExceptions($connectionName, $job, Throwable $e)
@@ -554,8 +558,7 @@ class Worker
         }
 
         if (! $this->cache->get('job-exceptions:'.$uuid)) {
-            $expiration = (new DateTime())->modify('+1 day');
-            $this->cache->put('job-exceptions:'.$uuid, 0, $expiration);
+            $this->cache->put('job-exceptions:'.$uuid, 0, (new \DateTime())->modify('+1 day')->format('Y-m-d H:i:s'));
         }
 
         if ($maxExceptions <= $this->cache->increment('job-exceptions:'.$uuid)) {
@@ -570,7 +573,7 @@ class Worker
      *
      * @param  string  $connectionName
      * @param  \LaraGram\Contracts\Queue\Job  $job
-     * @param  Throwable $e
+     * @param  \Throwable  $e
      * @return void
      */
     protected function markJobAsFailedIfItShouldFailOnTimeout($connectionName, $job, Throwable $e)
@@ -584,7 +587,7 @@ class Worker
      * Mark the given job as failed and raise the relevant event.
      *
      * @param  \LaraGram\Contracts\Queue\Job  $job
-     * @param  Throwable $e
+     * @param  \Throwable  $e
      * @return void
      */
     protected function failJob($job, Throwable $e)
@@ -604,8 +607,8 @@ class Worker
         $backoff = explode(
             ',',
             method_exists($job, 'backoff') && ! is_null($job->backoff())
-                        ? $job->backoff()
-                        : $options->backoff
+                ? $job->backoff()
+                : $options->backoff
         );
 
         return (int) ($backoff[$job->attempts() - 1] ?? last($backoff));
@@ -669,7 +672,7 @@ class Worker
      *
      * @param  string  $connectionName
      * @param  \LaraGram\Contracts\Queue\Job  $job
-     * @param Throwable $e
+     * @param  \Throwable  $e
      * @return void
      */
     protected function raiseExceptionOccurredJobEvent($connectionName, $job, Throwable $e)
