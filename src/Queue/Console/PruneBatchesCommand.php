@@ -2,7 +2,6 @@
 
 namespace LaraGram\Queue\Console;
 
-use DateTime;
 use LaraGram\Bus\BatchRepository;
 use LaraGram\Bus\DatabaseBatchRepository;
 use LaraGram\Bus\PrunableBatchRepository;
@@ -41,7 +40,7 @@ class PruneBatchesCommand extends Command
         $count = 0;
 
         if ($repository instanceof PrunableBatchRepository) {
-            $count = $repository->prune((new DateTime())->modify('-' . $this->option('hours') . ' hours'));
+            $count = $repository->prune((new \DateTime())->modify('-' . $this->option('hours') . ' hours'));
         }
 
         $this->components->info("{$count} entries deleted.");
@@ -50,7 +49,7 @@ class PruneBatchesCommand extends Command
             $count = 0;
 
             if ($repository instanceof DatabaseBatchRepository) {
-                $count = $repository->pruneUnfinished((new DateTime())->modify('-' . $this->option('unfinished') . ' hours'));
+                $count = $repository->pruneUnfinished((new \DateTime())->modify('-' . $this->option('unfinished') . ' hours'));
             }
 
             $this->components->info("{$count} unfinished entries deleted.");
@@ -60,7 +59,7 @@ class PruneBatchesCommand extends Command
             $count = 0;
 
             if ($repository instanceof DatabaseBatchRepository) {
-                $count = $repository->pruneCancelled((new DateTime())->modify('-' . $this->option('cancelled') . ' hours'));
+                $count = $repository->pruneCancelled((new \DateTime())->modify('-' . $this->option('cancelled') . ' hours'));
             }
 
             $this->components->info("{$count} cancelled entries deleted.");

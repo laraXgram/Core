@@ -2,7 +2,6 @@
 
 namespace LaraGram\Queue\Console;
 
-use DateTime;
 use LaraGram\Console\Command;
 use LaraGram\Contracts\Cache\Repository as Cache;
 use LaraGram\Support\InteractsWithTime;

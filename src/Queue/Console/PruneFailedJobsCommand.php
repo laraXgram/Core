@@ -2,7 +2,6 @@
 
 namespace LaraGram\Queue\Console;
 
-use DateTime;
 use LaraGram\Console\Command;
 use LaraGram\Queue\Failed\PrunableFailedJobProvider;
 use LaraGram\Console\Attribute\AsCommand;
@@ -35,7 +34,7 @@ class PruneFailedJobsCommand extends Command
         $failer = $this->laragram['queue.failer'];
 
         if ($failer instanceof PrunableFailedJobProvider) {
-            $count = $failer->prune((new DateTime())->modify('-' . $this->option('hours') . ' hours'));
+            $count = $failer->prune((new \DateTime())->modify('-' . $this->option('hours') . ' hours'));
         } else {
             $this->components->error('The ['.class_basename($failer).'] failed job storage driver does not support pruning.');
 

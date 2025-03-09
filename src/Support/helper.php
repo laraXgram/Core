@@ -1,5 +1,6 @@
 <?php
 
+use LaraGram\Console\Process\PhpExecutableFinder;
 use LaraGram\Database\Eloquent\Model;
 use LaraGram\Support\Arr;
 use LaraGram\Support\Collection;

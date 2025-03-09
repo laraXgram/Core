@@ -5,6 +5,9 @@ namespace LaraGram\Queue;
 use Closure;
 use LaraGram\Console\Process\Process;
 
+use function LaraGram\Support\commander_binary;
+use function LaraGram\Support\php_binary;
+
 class Listener
 {
     /**
@@ -60,7 +63,7 @@ class Listener
      */
     protected function phpBinary()
     {
-        return 'php';
+        return php_binary();
     }
 
     /**
@@ -70,7 +73,7 @@ class Listener
      */
     protected function commanderBinary()
     {
-        return 'laragram';
+        return commander_binary();
     }
 
     /**

@@ -18,7 +18,7 @@ class CallQueuedClosure implements ShouldQueue
     /**
      * The serializable Closure instance.
      *
-     * @var SerializableClosure
+     * @var \LaraGram\Support\SerializableClosure\SerializableClosure
      */
     public $closure;
 
@@ -39,7 +39,7 @@ class CallQueuedClosure implements ShouldQueue
     /**
      * Create a new job instance.
      *
-     * @param  SerializableClosure  $closure
+     * @param  \LaraGram\Support\SerializableClosure\SerializableClosure  $closure
      * @return void
      */
     public function __construct($closure)
@@ -78,8 +78,8 @@ class CallQueuedClosure implements ShouldQueue
     public function onFailure($callback)
     {
         $this->failureCallbacks[] = $callback instanceof Closure
-            ? new SerializableClosure($callback)
-            : $callback;
+                        ? new SerializableClosure($callback)
+                        : $callback;
 
         return $this;
     }

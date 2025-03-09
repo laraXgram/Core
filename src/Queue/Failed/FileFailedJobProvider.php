@@ -3,7 +3,6 @@
 namespace LaraGram\Queue\Failed;
 
 use Closure;
-use DateTime;
 use DateTimeInterface;
 use LaraGram\Support\Collection;
 
@@ -61,7 +60,7 @@ class FileFailedJobProvider implements CountableFailedJobProvider, FailedJobProv
 
             $jobs = $this->read();
 
-            $failedAt = new DateTime();
+            $failedAt = new \DateTime();
 
             array_unshift($jobs, [
                 'id' => $id,
@@ -141,7 +140,7 @@ class FileFailedJobProvider implements CountableFailedJobProvider, FailedJobProv
      */
     public function flush($hours = null)
     {
-        $this->prune((new DateTime())->modify('-' . ($hours ?: 0) . ' hours'));
+        $this->prune((new \DateTime())->modify('-' . ($hours ?: 0) . ' hours'));
     }
 
     /**

@@ -28,7 +28,7 @@ class ClearCommand extends Command
      *
      * @var string
      */
-    protected $description = "Delete all of the jobs from the specified queue";
+    protected $description = 'Delete all of the jobs from the specified queue';
 
     /**
      * Execute the console command.

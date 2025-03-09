@@ -2,7 +2,6 @@
 
 namespace LaraGram\Queue\Failed;
 
-use DateTime;
 use DateTimeInterface;
 use LaraGram\Database\ConnectionResolverInterface;
 
@@ -61,7 +60,7 @@ class DatabaseUuidFailedJobProvider implements CountableFailedJobProvider, Faile
             'queue' => $queue,
             'payload' => $payload,
             'exception' => (string) mb_convert_encoding($exception, 'UTF-8'),
-            'failed_at' => new DateTime(),
+            'failed_at' => new \DateTime()
         ]);
 
         return $uuid;
@@ -133,9 +132,9 @@ class DatabaseUuidFailedJobProvider implements CountableFailedJobProvider, Faile
     public function flush($hours = null)
     {
         $this->getTable()->when($hours, function ($query, $hours) {
-            $dateTime = new DateTime();
-            $dateTime->modify('-' . $hours . ' hours');
-            $query->where('failed_at', '<=', $dateTime->format('Y-m-d H:i:s'));
+            $date = new \DateTime();
+            $date->modify("-{$hours} hours");
+            $query->where('failed_at', '<=', $date->format('Y-m-d H:i:s'));
         })->delete();
     }
 

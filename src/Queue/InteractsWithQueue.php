@@ -94,18 +94,6 @@ trait InteractsWithQueue
     }
 
     /**
-     * Ensure that queue interactions have been faked.
-     *
-     * @return void
-     */
-    private function ensureQueueInteractionsHaveBeenFaked()
-    {
-        if (! $this->job instanceof FakeJob) {
-            throw new RuntimeException('Queue interactions have not been faked.');
-        }
-    }
-
-    /**
      * Set the base queue job instance.
      *
      * @param  \LaraGram\Contracts\Queue\Job  $job

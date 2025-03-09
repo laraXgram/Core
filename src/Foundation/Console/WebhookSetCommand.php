@@ -29,12 +29,12 @@ class WebhookSetCommand extends Command
      */
     public function handle()
     {
-        $result = request()->setWebhook(config('bot.bot.domain'));
+        $result = request()->setWebhook(config('bot.bot.domain'), secret_token: config('bot.bot.secret_token') ?? null);
 
-        if (!$result['ok']){
-            $this->components->error($result['message']);
+        if (!$result->ok){
+            $this->components->error($result->message);
         }else{
-            $this->components->info($result['description']);
+            $this->components->info($result->description);
         }
     }
 }

@@ -6,6 +6,8 @@ use LaraGram\Contracts\Queue\ClearableQueue;
 use LaraGram\Contracts\Queue\Queue as QueueContract;
 use LaraGram\Contracts\Redis\Factory as Redis;
 use LaraGram\Queue\Jobs\RedisJob;
+use LaraGram\Redis\Connections\PhpRedisClusterConnection;
+use LaraGram\Redis\Connections\PredisClusterConnection;
 use LaraGram\Support\Str;
 
 class RedisQueue extends Queue implements QueueContract, ClearableQueue
@@ -118,17 +120,25 @@ class RedisQueue extends Queue implements QueueContract, ClearableQueue
      */
     public function bulk($jobs, $data = '', $queue = null)
     {
-        $this->getConnection()->pipeline(function () use ($jobs, $data, $queue) {
-            $this->getConnection()->transaction(function () use ($jobs, $data, $queue) {
-                foreach ((array) $jobs as $job) {
-                    if (isset($job->delay)) {
-                        $this->later($job->delay, $job, $data, $queue);
-                    } else {
-                        $this->push($job, $data, $queue);
-                    }
+        $connection = $this->getConnection();
+
+        $bulk = function () use ($jobs, $data, $queue) {
+            foreach ((array) $jobs as $job) {
+                if (isset($job->delay)) {
+                    $this->later($job->delay, $job, $data, $queue);
+                } else {
+                    $this->push($job, $data, $queue);
                 }
-            });
-        });
+            }
+        };
+
+        if ($connection instanceof PhpRedisClusterConnection) {
+            $connection->transaction($bulk);
+        } elseif ($connection instanceof PredisClusterConnection) {
+            $connection->pipeline($bulk);
+        } else {
+            $connection->pipeline(fn () => $connection->transaction($bulk));
+        }
     }
 
     /**

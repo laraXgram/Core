@@ -63,8 +63,7 @@ class CallQueuedHandler
                 $job, $this->getCommand($data)
             );
         } catch (ModelNotFoundException $e) {
-            $this->handleModelNotFound($job, $e);
-            return;
+            return $this->handleModelNotFound($job, $e);
         }
 
         $this->dispatchThroughMiddleware($job, $command);
@@ -256,8 +255,8 @@ class CallQueuedHandler
         $context = $this->container->make(ContextRepository::class);
 
         [$store, $key] = [
-            $context->getHidden('laravel_unique_job_cache_store'),
-            $context->getHidden('laravel_unique_job_key'),
+            $context->getHidden('laragram_unique_job_cache_store'),
+            $context->getHidden('laragram_unique_job_key'),
         ];
 
         if ($store && $key) {

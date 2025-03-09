@@ -40,6 +40,7 @@ use LaraGram\Foundation\Console\EventClearCommand;
 use LaraGram\Foundation\Console\EventGenerateCommand;
 use LaraGram\Foundation\Console\EventListCommand;
 use LaraGram\Foundation\Console\EventMakeCommand;
+use LaraGram\Foundation\Console\GenerateAppCommand;
 use LaraGram\Foundation\Console\InterfaceMakeCommand;
 use LaraGram\Foundation\Console\JobMakeCommand;
 use LaraGram\Foundation\Console\JobMiddlewareMakeCommand;
@@ -127,7 +128,7 @@ class CommanderServiceProvider extends ServiceProvider implements DeferrableProv
      * @var array
      */
     protected $commandsWithDependencied = [
-//        GenerateAppCommand::class          => ['files'],
+        GenerateAppCommand::class          => ['files'],
         ConfigCacheCommand::class          => ['files'],
         ConfigClearCommand::class          => ['files'],
         EventCacheCommand::class           => ['files'],

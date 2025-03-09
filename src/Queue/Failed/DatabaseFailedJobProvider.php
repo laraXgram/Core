@@ -124,7 +124,6 @@ class DatabaseFailedJobProvider implements CountableFailedJobProvider, FailedJob
             $dateTime->modify('-' . $hours . ' hours');
             $query->where('failed_at', '<=', $dateTime);
         })->delete();
-
     }
 
     /**

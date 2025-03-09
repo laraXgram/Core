@@ -3,7 +3,6 @@
 namespace LaraGram\Queue\Console;
 
 use DateTime;
-use DateTimeZone;
 use LaraGram\Console\Command;
 use LaraGram\Contracts\Cache\Repository as Cache;
 use LaraGram\Contracts\Queue\Job;
@@ -88,8 +87,8 @@ class WorkCommand extends Command
     /**
      * Create a new queue work command.
      *
-     * @param \LaraGram\Queue\Worker $worker
-     * @param \LaraGram\Contracts\Cache\Repository $cache
+     * @param  \LaraGram\Queue\Worker  $worker
+     * @param  \LaraGram\Contracts\Cache\Repository  $cache
      * @return void
      */
     public function __construct(Worker $worker, Cache $cache)
@@ -111,14 +110,20 @@ class WorkCommand extends Command
             return $this->worker->sleep($this->option('sleep'));
         }
 
+        // We'll listen to the processed and failed events so we can write information
+        // to the console as jobs are processed, which will let the developer watch
+        // which jobs are coming through a queue and be informed on its progress.
         $this->listenForEvents();
 
         $connection = $this->argument('connection')
-            ?: $this->laragram['config']['queue.default'];
+                        ?: $this->laragram['config']['queue.default'];
 
+        // We need to get the right queue for the connection which is set in the queue
+        // configuration file for the application. We will pull it based on the set
+        // connection being run for the queue operation currently being executed.
         $queue = $this->getQueue($connection);
 
-        if (!$this->outputUsingJson() && Terminal::hasSttyAvailable()) {
+        if (! $this->outputUsingJson() && Terminal::hasSttyAvailable()) {
             $this->components->info(
                 sprintf('Processing jobs from the [%s] %s.', $queue, (new Stringable('queue'))->plural(explode(',', $queue)))
             );
@@ -132,8 +137,8 @@ class WorkCommand extends Command
     /**
      * Run the worker instance.
      *
-     * @param string $connection
-     * @param string $queue
+     * @param  string  $connection
+     * @param  string  $queue
      * @return int|null
      */
     protected function runWorker($connection, $queue)
@@ -203,9 +208,9 @@ class WorkCommand extends Command
     /**
      * Write the status output for the queue worker for JSON or TTY.
      *
-     * @param Job $job
-     * @param string $status
-     * @param Throwable|null $exception
+     * @param  Job  $job
+     * @param  string  $status
+     * @param  Throwable|null  $exception
      * @return void
      */
     protected function writeOutput(Job $job, $status, ?Throwable $exception = null)
@@ -218,8 +223,8 @@ class WorkCommand extends Command
     /**
      * Write the status output for the queue worker.
      *
-     * @param \LaraGram\Contracts\Queue\Job $job
-     * @param string $status
+     * @param  \LaraGram\Contracts\Queue\Job  $job
+     * @param  string  $status
      * @return void
      */
     protected function writeOutputForCli(Job $job, $status)
@@ -238,9 +243,9 @@ class WorkCommand extends Command
 
             $dots = max(terminal()->width() - mb_strlen($job->resolveName()) - (
                 $this->output->isVerbose() ? (mb_strlen($job->getJobId()) + 1) : 0
-                ) - 33, 0);
+            ) - 33, 0);
 
-            $this->output->write(' ' . str_repeat('<fg=gray>.</>', $dots));
+            $this->output->write(' '.str_repeat('<fg=gray>.</>', $dots));
 
             return $this->output->writeln(' <fg=yellow;options=bold>RUNNING</>');
         }
@@ -249,9 +254,9 @@ class WorkCommand extends Command
 
         $dots = max(terminal()->width() - mb_strlen($job->resolveName()) - (
             $this->output->isVerbose() ? (mb_strlen($job->getJobId()) + 1) : 0
-            ) - mb_strlen($runTime) - 31, 0);
+        ) - mb_strlen($runTime) - 31, 0);
 
-        $this->output->write(' ' . str_repeat('<fg=gray>.</>', $dots));
+        $this->output->write(' '.str_repeat('<fg=gray>.</>', $dots));
         $this->output->write(" <fg=gray>$runTime</>");
 
         $this->output->writeln(match ($status) {
@@ -264,9 +269,9 @@ class WorkCommand extends Command
     /**
      * Write the status output for the queue worker in JSON format.
      *
-     * @param \LaraGram\Contracts\Queue\Job $job
-     * @param string $status
-     * @param Throwable|null $exception
+     * @param  \LaraGram\Contracts\Queue\Job  $job
+     * @param  string  $status
+     * @param  Throwable|null  $exception
      * @return void
      */
     protected function writeOutputAsJson(Job $job, $status, ?Throwable $exception = null)
@@ -304,6 +309,7 @@ class WorkCommand extends Command
      * Get the current date / time.
      *
      * @return DateTime
+     * @throws \Exception
      */
     protected function now()
     {
@@ -311,18 +317,16 @@ class WorkCommand extends Command
         $defaultTimezone = $this->laragram['config']->get('app.timezone');
 
         if ($queueTimezone && $queueTimezone !== $defaultTimezone) {
-            $dateTime = new DateTime(null, new DateTimeZone($queueTimezone));
-            return $dateTime;
+            return new DateTime(null, new \DateTimeZone($queueTimezone));
         }
 
         return new DateTime();
-
     }
 
     /**
      * Store a failed job event.
      *
-     * @param \LaraGram\Queue\Events\JobFailed $event
+     * @param  \LaraGram\Queue\Events\JobFailed  $event
      * @return void
      */
     protected function logFailedJob(JobFailed $event)
@@ -338,7 +342,7 @@ class WorkCommand extends Command
     /**
      * Get the queue name for the worker.
      *
-     * @param string $connection
+     * @param  string  $connection
      * @return string
      */
     protected function getQueue($connection)
@@ -355,7 +359,7 @@ class WorkCommand extends Command
      */
     protected function outputUsingJson()
     {
-        if (!$this->hasOption('json')) {
+        if (! $this->hasOption('json')) {
             return false;
         }
 

@@ -54,10 +54,10 @@ class DatabaseQueue extends Queue implements QueueContract, ClearableQueue
      */
     public function __construct(
         Connection $database,
-                   $table,
-                   $default = 'default',
-                   $retryAfter = 60,
-                   $dispatchAfterCommit = false,
+        $table,
+        $default = 'default',
+        $retryAfter = 60,
+        $dispatchAfterCommit = false,
     ) {
         $this->table = $table;
         $this->default = $default;
@@ -304,7 +304,7 @@ class DatabaseQueue extends Queue implements QueueContract, ClearableQueue
      */
     protected function isReservedButExpired($query)
     {
-        $expiration = (new \DateTime())->modify("-{$this->retryAfter} seconds")->getTimestamp();;
+        $expiration = (new \DateTime())->modify("-{$this->retryAfter} seconds")->getTimestamp();
 
         $query->orWhere(function ($query) use ($expiration) {
             $query->where('reserved_at', '<=', $expiration);

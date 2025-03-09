@@ -25,7 +25,7 @@ abstract class Job
     /**
      * The IoC container instance.
      *
-     * @var \LaraGram\Contracts\Container\Container
+     * @var \LaraGram\Container\Container
      */
     protected $container;
 
@@ -391,7 +391,7 @@ abstract class Job
     /**
      * Get the service container instance.
      *
-     * @return \LaraGram\Contracts\Container\Container
+     * @return \LaraGram\Container\Container
      */
     public function getContainer()
     {

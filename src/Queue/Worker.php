@@ -96,7 +96,6 @@ class Worker
      * @param  \LaraGram\Contracts\Queue\Factory  $manager
      * @param  \LaraGram\Contracts\Events\Dispatcher  $events
      * @param  \LaraGram\Contracts\Debug\ExceptionHandler  $exceptions
-     * @param  callable  $isDownForMaintenance
      * @param  callable|null  $resetScope
      * @return void
      */
@@ -134,7 +133,7 @@ class Worker
             // Before reserving any jobs, we will make sure this queue is not paused and
             // if it is we will just pause this worker for a given amount of time and
             // make sure we do not need to kill this worker process off completely.
-            if (! $this->daemonShouldRun($options, $connectionName, $queue)) {
+            if (! $this->daemonShouldRun($connectionName, $queue)) {
                 $status = $this->pauseWorker($options, $lastRestart);
 
                 if (! is_null($status)) {
@@ -260,11 +259,9 @@ class Worker
      * @param  string  $queue
      * @return bool
      */
-    protected function daemonShouldRun(WorkerOptions $options, $connectionName, $queue)
+    protected function daemonShouldRun($connectionName, $queue)
     {
-        return ! (! $options->force ||
-            $this->paused ||
-            $this->events->until(new Looping($connectionName, $queue)) === false);
+        return ! ($this->paused || $this->events->until(new Looping($connectionName, $queue)) === false);
     }
 
     /**
@@ -557,8 +554,9 @@ class Worker
             return;
         }
 
-        if (! $this->cache->get('job-exceptions:'.$uuid)) {
-            $this->cache->put('job-exceptions:'.$uuid, 0, (new \DateTime())->modify('+1 day')->format('Y-m-d H:i:s'));
+        if (!$this->cache->get('job-exceptions:' . $uuid)) {
+            $expiration = (new \DateTime())->modify('+1 day');
+            $this->cache->put('job-exceptions:' . $uuid, 0, $expiration->getTimestamp());
         }
 
         if ($maxExceptions <= $this->cache->increment('job-exceptions:'.$uuid)) {
@@ -607,8 +605,8 @@ class Worker
         $backoff = explode(
             ',',
             method_exists($job, 'backoff') && ! is_null($job->backoff())
-                ? $job->backoff()
-                : $options->backoff
+                        ? $job->backoff()
+                        : $options->backoff
         );
 
         return (int) ($backoff[$job->attempts() - 1] ?? last($backoff));
