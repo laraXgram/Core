@@ -1,6 +1,6 @@
 <?php
 
-namespace LaraGram\Listener;
+namespace LaraGram\Listening;
 
 enum Type: string
 {
