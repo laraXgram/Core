@@ -8,7 +8,7 @@ if (!function_exists('chat')) {
         /**
          * @var Request $request ;
          */
-        $request = app('request');
+        $request = app('laraquest');
         return match (true) {
             $request->message != null => $request->message->chat,
             $request->edited_message != null => $request->edited_message->chat,
@@ -36,7 +36,7 @@ if (!function_exists('user')) {
         /**
          * @var Request $request ;
          */
-        $request = app('request');
+        $request = app('laraquest');
         return match (true) {
             $request->message != null => $request->message->from,
             $request->edited_message != null => $request->edited_message->from,
@@ -60,13 +60,32 @@ if (!function_exists('user')) {
     }
 }
 
+if (!function_exists('text')) {
+    function text(): string|null
+    {
+        /**
+         * @var Request $request ;
+         */
+        $request = app('laraquest');
+        return match (true) {
+            $request->message != null => $request->message->text,
+            $request->edited_message != null => $request->edited_message->text,
+            $request->channel_post != null => $request->channel_post->text,
+            $request->edited_channel_post != null => $request->edited_channel_post->text,
+            $request->business_message != null => $request->business_message->text,
+            $request->edited_business_message != null => $request->edited_business_message->text,
+            default => null
+        };
+    }
+}
+
 if (!function_exists('update_id')) {
     function update_id(): int|null
     {
         /**
          * @var Request $request ;
          */
-        $request = app('request');
+        $request = app('laraquest');
         return $request->update_id;
     }
 }
@@ -77,7 +96,7 @@ if (!function_exists('message')) {
         /**
          * @var Request $request ;
          */
-        $request = app('request');
+        $request = app('laraquest');
         return $request->message;
     }
 }
@@ -88,7 +107,7 @@ if (!function_exists('edited_message')) {
         /**
          * @var Request $request ;
          */
-        $request = app('request');
+        $request = app('laraquest');
         return $request->edited_message;
     }
 }
@@ -99,7 +118,7 @@ if (!function_exists('channel_post')) {
         /**
          * @var Request $request ;
          */
-        $request = app('request');
+        $request = app('laraquest');
         return $request->channel_post;
     }
 }
@@ -110,7 +129,7 @@ if (!function_exists('edited_channel_post')) {
         /**
          * @var Request $request ;
          */
-        $request = app('request');
+        $request = app('laraquest');
         return $request->edited_channel_post;
     }
 }
@@ -121,7 +140,7 @@ if (!function_exists('business_connection')) {
         /**
          * @var Request $request ;
          */
-        $request = app('request');
+        $request = app('laraquest');
         return $request->business_connection;
     }
 }
@@ -132,7 +151,7 @@ if (!function_exists('business_message')) {
         /**
          * @var Request $request ;
          */
-        $request = app('request');
+        $request = app('laraquest');
         return $request->business_message;
     }
 }
@@ -143,7 +162,7 @@ if (!function_exists('edited_business_message')) {
         /**
          * @var Request $request ;
          */
-        $request = app('request');
+        $request = app('laraquest');
         return $request->edited_business_message;
     }
 }
@@ -154,7 +173,7 @@ if (!function_exists('deleted_business_messages')) {
         /**
          * @var Request $request ;
          */
-        $request = app('request');
+        $request = app('laraquest');
         return $request->deleted_business_messages;
     }
 }
@@ -165,7 +184,7 @@ if (!function_exists('message_reaction')) {
         /**
          * @var Request $request ;
          */
-        $request = app('request');
+        $request = app('laraquest');
         return $request->message_reaction;
     }
 }
@@ -176,7 +195,7 @@ if (!function_exists('message_reaction_count')) {
         /**
          * @var Request $request ;
          */
-        $request = app('request');
+        $request = app('laraquest');
         return $request->message_reaction_count;
     }
 }
@@ -187,7 +206,7 @@ if (!function_exists('inline_query')) {
         /**
          * @var Request $request ;
          */
-        $request = app('request');
+        $request = app('laraquest');
         return $request->inline_query;
     }
 }
@@ -198,7 +217,7 @@ if (!function_exists('chosen_inline_result')) {
         /**
          * @var Request $request ;
          */
-        $request = app('request');
+        $request = app('laraquest');
         return $request->chosen_inline_result;
     }
 }
@@ -209,7 +228,7 @@ if (!function_exists('callback_query')) {
         /**
          * @var Request $request ;
          */
-        $request = app('request');
+        $request = app('laraquest');
         return $request->callback_query;
     }
 }
@@ -220,7 +239,7 @@ if (!function_exists('shipping_query')) {
         /**
          * @var Request $request ;
          */
-        $request = app('request');
+        $request = app('laraquest');
         return $request->shipping_query;
     }
 }
@@ -231,7 +250,7 @@ if (!function_exists('pre_checkout_query')) {
         /**
          * @var Request $request ;
          */
-        $request = app('request');
+        $request = app('laraquest');
         return $request->pre_checkout_query;
     }
 }
@@ -242,7 +261,7 @@ if (!function_exists('poll')) {
         /**
          * @var Request $request ;
          */
-        $request = app('request');
+        $request = app('laraquest');
         return $request->poll;
     }
 }
@@ -253,7 +272,7 @@ if (!function_exists('poll_answer')) {
         /**
          * @var Request $request ;
          */
-        $request = app('request');
+        $request = app('laraquest');
         return $request->poll_answer;
     }
 }
@@ -264,7 +283,7 @@ if (!function_exists('my_chat_member')) {
         /**
          * @var Request $request ;
          */
-        $request = app('request');
+        $request = app('laraquest');
         return $request->my_chat_member;
     }
 }
@@ -275,7 +294,7 @@ if (!function_exists('chat_member')) {
         /**
          * @var Request $request ;
          */
-        $request = app('request');
+        $request = app('laraquest');
         return $request->chat_member;
     }
 }
@@ -286,7 +305,7 @@ if (!function_exists('chat_join_request')) {
         /**
          * @var Request $request ;
          */
-        $request = app('request');
+        $request = app('laraquest');
         return $request->chat_join_request;
     }
 }
@@ -297,7 +316,7 @@ if (!function_exists('chat_join_request')) {
         /**
          * @var Request $request ;
          */
-        $request = app('request');
+        $request = app('laraquest');
         return $request->chat_join_request;
     }
 }
@@ -308,7 +327,7 @@ if (!function_exists('chat_boost')) {
         /**
          * @var Request $request ;
          */
-        $request = app('request');
+        $request = app('laraquest');
         return $request->chat_boost;
     }
 }
@@ -319,7 +338,7 @@ if (!function_exists('removed_chat_boost')) {
         /**
          * @var Request $request ;
          */
-        $request = app('request');
+        $request = app('laraquest');
         return $request->removed_chat_boost;
     }
 }

@@ -96,7 +96,7 @@ if (!function_exists('mention_user_by_ID')) {
 if (!function_exists('mention_reply_user')) {
     function mention_reply_user(): string
     {
-        $request = app('request');
+        $request = app('laraquest');
         return "[{$request->message->reply_to_message->from->first_name}](tg://user?id={$request->message->reply_to_message->from->id})";
     }
 }
@@ -104,7 +104,7 @@ if (!function_exists('mention_reply_user')) {
 if (!function_exists('mention_sender_user')) {
     function mention_sender_user(): string
     {
-        $request = app('request');
+        $request = app('laraquest');
         return "[{$request->message->from->first_name}](tg://user?id={$request->message->from->id})";
     }
 }

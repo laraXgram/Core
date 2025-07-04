@@ -1,28 +1,28 @@
 <?php
 
 if (!function_exists('auth')) {
-    function auth(): LaraGram\Auth\Auth
+    function auth(): LaraGram\Auth0\Auth
     {
         return app()->make('auth');
     }
 }
 
 if (!function_exists('role')) {
-    function role(): LaraGram\Auth\Role
+    function role(): LaraGram\Auth0\Role
     {
         return app()->make('auth.role');
     }
 }
 
 if (!function_exists('level')) {
-    function level(): LaraGram\Auth\Level
+    function level(): LaraGram\Auth0\Level
     {
         return app()->make('auth.level');
     }
 }
 
 if (!function_exists('bot')) {
-    function bot(): LaraGram\Listener\Listener
+    function bot(): LaraGram\Listening\Listener
     {
         return app()->make('listener');
     }
@@ -36,9 +36,9 @@ if (!function_exists('keyboard')) {
 }
 
 if (!function_exists('request')) {
-    function request(): LaraGram\Request\Request
+    function request(): LaraGram\Laraquest\Laraquest
     {
-        return app()->make('request');
+        return app()->make('laraquest');
     }
 }
 
