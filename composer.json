@@ -1,21 +1,11 @@
 {
     "name": "laraxgram/core",
     "description": "The core of the LaraGram!",
-    "type": "library",
+    "keywords": ["framework", "laragram", "laravel", "laraquest", "bot", "telegram"],
     "license": "MIT",
-    "autoload": {
-        "files": [
-            "src/Foundation/helpers.php",
-            "src/Helpers/auth.php",
-            "src/Helpers/format.php",
-            "src/Helpers/keyboard.php",
-            "src/Helpers/laraquest.php",
-            "src/Helpers/facades.php",
-            "src/Helpers/common.php"
-        ],
-        "psr-4": {
-            "LaraGram\\": "src/"
-        }
+    "support": {
+        "issues": "https://github.com/laraxgram/core/issues",
+        "source": "https://github.com/laraxgram/core"
     },
     "authors": [
         {
@@ -23,18 +13,46 @@
             "email": "laraxgram@gmail.com"
         }
     ],
-    "minimum-stability": "stable",
-    "prefer-stable": true,
     "require": {
-        "bramus/ansi-php": "^3",
-        "laravel/serializable-closure": "^1",
-        "ext-fileinfo": "*"
+        "php": "^8.2",
+        "ext-ctype": "*",
+        "ext-curl": "*",
+        "ext-filter": "*",
+        "ext-hash": "*",
+        "ext-mbstring": "*",
+        "laraxgram/laraquest": "^1",
+        "ext-intl": "*"
     },
-    "extra": {
-        "laragram": {
-            "dont-discover": [
-                "nesbot"
-            ]
+    "autoload": {
+        "files": [
+            "src/Foundation/helpers.php",
+            "src/Auth/helpers.php",
+            "src/Keyboard/helpers.php",
+            "src/Request/helpers.php",
+            "src/Support/Facades/helpers.php",
+            "src/Console/Prompts/helpers.php",
+            "src/Console/Prompts/Convertor/Functions.php",
+            "src/Filesystem/functions.php",
+            "src/Support/helper.php",
+            "src/Support/functions.php"
+        ],
+        "psr-4": {
+            "LaraGram\\": "src/",
+            "App\\": "app/"
         }
-    }
+    },
+    "suggest": {
+        "ext-apcu": "Required to use the APC cache driver.",
+        "ext-fileinfo": "Required to use the Filesystem class.",
+        "ext-memcached": "Required to use the memcache cache driver.",
+        "ext-pcntl": "Required to use all features of the queue worker and console signal trapping.",
+        "ext-pdo": "Required to use all database features.",
+        "ext-posix": "Required to use all features of the queue worker.",
+        "ext-redis": "Required to use the Redis cache and queue drivers (^4.0|^5.0|^6.0)."
+    },
+    "config": {
+        "sort-packages": true
+    },
+    "minimum-stability": "stable",
+    "prefer-stable": true
 }
