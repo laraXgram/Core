@@ -21,7 +21,7 @@ class Conversation
         $name = ucfirst($name);
         $user_id = user()->id ?? callback_query()->from->id;
         if (Cache::hasNot("conversation.$user_id")) {
-            $class = new (include app()->appPath("Conversations/$name.php"));
+            $class = new (include app()->path("Conversations/$name.php"));
 
             $class->start();
 

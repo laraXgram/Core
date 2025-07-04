@@ -66,8 +66,8 @@ class ConversationListener
 
     private function cancelConversation($conversationName, $cacheKey, $reason): void
     {
-        $class = new (include app()->appPath("Conversations/{$conversationName}.php"));
-        $class->onCancel(app('request'), $reason);
+        $class = new (include app()->path("Conversations/{$conversationName}.php"));
+        $class->onCancel(app('laraquest'), $reason);
         Cache::forgot($cacheKey);
     }
 
@@ -113,8 +113,8 @@ class ConversationListener
 
     private function completeConversation(&$conversation_cache, $cacheKey): void
     {
-        $class = new (include app()->appPath("Conversations/{$conversation_cache['name']}.php"));
-        $class->onComplete(app('request'), $conversation_cache['answers']);
+        $class = new (include app()->path("Conversations/{$conversation_cache['name']}.php"));
+        $class->onComplete(app('laraquest'), $conversation_cache['answers']);
         $conversation_cache['complete'] = true;
 
         if ($conversation_cache['forgot']) {

@@ -232,7 +232,7 @@ abstract class GeneratorCommand extends Command implements PromptsForMissingInpu
             return $model;
         }
 
-        return is_dir(app()->appPath('Models'))
+        return is_dir(app()->path('Models'))
                     ? $rootNamespace.'Models\\'.$model
                     : $rootNamespace.$model;
     }
@@ -244,7 +244,7 @@ abstract class GeneratorCommand extends Command implements PromptsForMissingInpu
      */
     protected function possibleModels()
     {
-        $modelPath = is_dir(app()->appPath('Models')) ? app()->appPath('Models') : app()->appPath();
+        $modelPath = is_dir(app()->path('Models')) ? app()->path('Models') : app()->path();
 
         $files = scandir($modelPath);
         $phpFiles = [];
@@ -267,7 +267,7 @@ abstract class GeneratorCommand extends Command implements PromptsForMissingInpu
      */
     protected function possibleEvents()
     {
-        $eventPath = app()->appPath('Events');
+        $eventPath = app()->path('Events');
 
         if (! is_dir($eventPath)) {
             return [];
@@ -322,7 +322,7 @@ abstract class GeneratorCommand extends Command implements PromptsForMissingInpu
             $name = substr($name, strlen($rootNamespace));
         }
 
-        return $this->laragram['path.app'].'/'.str_replace('\\', '/', $name).'.php';
+        return $this->laragram['path'].'/'.str_replace('\\', '/', $name).'.php';
     }
 
     /**
