@@ -4,6 +4,7 @@ namespace LaraGram\Support;
 
 use Closure;
 use LaraGram\Contracts\Foundation\CachesConfiguration;
+use LaraGram\Contracts\Foundation\CachesListens;
 use LaraGram\Contracts\Support\DeferrableProvider;
 use LaraGram\Console\Application as Commander;
 
@@ -85,6 +86,19 @@ abstract class ServiceProvider
         }
     }
 
+    /**
+     * Load the given listens file if listens are not already cached.
+     *
+     * @param  string  $path
+     * @return void
+     */
+    protected function loadListensFrom($path)
+    {
+        if (! ($this->app instanceof CachesListens && $this->app->listensAreCached())) {
+            require $path;
+        }
+    }
+
     protected function loadTranslationsFrom($path, $namespace)
     {
         $this->callAfterResolving('translator', function ($translator) use ($path, $namespace) {
@@ -107,6 +121,16 @@ abstract class ServiceProvider
             }
         });
     }
+
+    protected function loadFactoriesFrom($paths)
+    {
+        $this->callAfterResolving(ModelFactory::class, function ($factory) use ($paths) {
+            foreach ((array) $paths as $path) {
+                $factory->load($path);
+            }
+        });
+    }
+
 
     protected function callAfterResolving($name, $callback): void
     {

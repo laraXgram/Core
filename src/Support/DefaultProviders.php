@@ -2,6 +2,8 @@
 
 namespace LaraGram\Support;
 
+use LaraGram\Template\TemplateServiceProvider;
+
 class DefaultProviders
 {
     /**
@@ -19,23 +21,24 @@ class DefaultProviders
     public function __construct(?array $providers = null)
     {
         $this->providers = $providers ?: [
-            \LaraGram\Auth\AuthServiceProvider::class,
+//            \LaraGram\Auth0\AuthServiceProvider::class,
             \LaraGram\Bus\BusServiceProvider::class,
             \LaraGram\Cache\CacheServiceProvider::class,
+            \LaraGram\Conversation\ConversationServiceProvider::class,
             \LaraGram\Foundation\Providers\ConsoleSupportServiceProvider::class,
             \LaraGram\Concurrency\ConcurrencyServiceProvider::class,
             \LaraGram\Database\DatabaseServiceProvider::class,
             \LaraGram\Encryption\EncryptionServiceProvider::class,
+            \LaraGram\Filesystem\FilesystemServiceProvider::class,
             \LaraGram\Foundation\Providers\FoundationServiceProvider::class,
             \LaraGram\Hashing\HashServiceProvider::class,
+            \LaraGram\Keyboard\KeyboardServiceProvider::class,
+            \LaraGram\Request\LaraquestServiceProvider::class,
             \LaraGram\Pipeline\PipelineServiceProvider::class,
             \LaraGram\Queue\QueueServiceProvider::class,
             \LaraGram\Redis\RedisServiceProvider::class,
+            \LaraGram\Template\TemplateServiceProvider::class,
             \LaraGram\Translation\TranslationServiceProvider::class,
-            \LaraGram\Listener\ListenerServiceProvider::class,
-            \LaraGram\Request\RequestServiceProvider::class,
-            \LaraGram\Conversation\ConversationServiceProvider::class,
-            \LaraGram\Keyboard\KeyboardServiceProvider::class,
         ];
     }
 
