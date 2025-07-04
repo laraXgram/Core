@@ -3,6 +3,7 @@
 namespace LaraGram\Database\Eloquent;
 
 use ArrayAccess;
+use LaraGram\Contracts\Listening\UrlListenable;
 use LaraGram\Contracts\Queue\QueueableCollection;
 use LaraGram\Contracts\Queue\QueueableEntity;
 use LaraGram\Contracts\Support\Arrayable;
@@ -24,7 +25,7 @@ use JsonSerializable;
 use LogicException;
 use Stringable;
 
-abstract class Model implements Arrayable, ArrayAccess, CanBeEscapedWhenCastToString, Jsonable, JsonSerializable, QueueableEntity, Stringable
+abstract class Model implements Arrayable, ArrayAccess, CanBeEscapedWhenCastToString, Jsonable, JsonSerializable, QueueableEntity, Stringable, UrlListenable
 {
     use Concerns\HasAttributes,
         Concerns\HasEvents,
@@ -2021,21 +2022,21 @@ abstract class Model implements Arrayable, ArrayAccess, CanBeEscapedWhenCastToSt
     }
 
     /**
-     * Get the value of the model's route key.
+     * Get the value of the model's listen key.
      *
      * @return mixed
      */
-    public function getRouteKey()
+    public function getListenKey()
     {
-        return $this->getAttribute($this->getRouteKeyName());
+        return $this->getAttribute($this->getListenKeyName());
     }
 
     /**
-     * Get the route key for the model.
+     * Get the listen key for the model.
      *
      * @return string
      */
-    public function getRouteKeyName()
+    public function getListenKeyName()
     {
         return $this->getKeyName();
     }
@@ -2047,9 +2048,9 @@ abstract class Model implements Arrayable, ArrayAccess, CanBeEscapedWhenCastToSt
      * @param  string|null  $field
      * @return \LaraGram\Database\Eloquent\Model|null
      */
-    public function resolveRouteBinding($value, $field = null)
+    public function resolveListenBinding($value, $field = null)
     {
-        return $this->resolveRouteBindingQuery($this, $value, $field)->first();
+        return $this->resolveListenBindingQuery($this, $value, $field)->first();
     }
 
     /**
@@ -2059,9 +2060,9 @@ abstract class Model implements Arrayable, ArrayAccess, CanBeEscapedWhenCastToSt
      * @param  string|null  $field
      * @return \LaraGram\Database\Eloquent\Model|null
      */
-    public function resolveSoftDeletableRouteBinding($value, $field = null)
+    public function resolveSoftDeletableListenBinding($value, $field = null)
     {
-        return $this->resolveRouteBindingQuery($this, $value, $field)->withTrashed()->first();
+        return $this->resolveListenBindingQuery($this, $value, $field)->withTrashed()->first();
     }
 
     /**
@@ -2072,9 +2073,9 @@ abstract class Model implements Arrayable, ArrayAccess, CanBeEscapedWhenCastToSt
      * @param  string|null  $field
      * @return \LaraGram\Database\Eloquent\Model|null
      */
-    public function resolveChildRouteBinding($childType, $value, $field)
+    public function resolveChildListenBinding($childType, $value, $field)
     {
-        return $this->resolveChildRouteBindingQuery($childType, $value, $field)->first();
+        return $this->resolveChildListenBindingQuery($childType, $value, $field)->first();
     }
 
     /**
@@ -2085,9 +2086,9 @@ abstract class Model implements Arrayable, ArrayAccess, CanBeEscapedWhenCastToSt
      * @param  string|null  $field
      * @return \LaraGram\Database\Eloquent\Model|null
      */
-    public function resolveSoftDeletableChildRouteBinding($childType, $value, $field)
+    public function resolveSoftDeletableChildListenBinding($childType, $value, $field)
     {
-        return $this->resolveChildRouteBindingQuery($childType, $value, $field)->withTrashed()->first();
+        return $this->resolveChildListenBindingQuery($childType, $value, $field)->withTrashed()->first();
     }
 
     /**
@@ -2098,11 +2099,11 @@ abstract class Model implements Arrayable, ArrayAccess, CanBeEscapedWhenCastToSt
      * @param  string|null  $field
      * @return \LaraGram\Database\Eloquent\Relations\Relation<\LaraGram\Database\Eloquent\Model, $this, *>
      */
-    protected function resolveChildRouteBindingQuery($childType, $value, $field)
+    protected function resolveChildListenBindingQuery($childType, $value, $field)
     {
-        $relationship = $this->{$this->childRouteBindingRelationshipName($childType)}();
+        $relationship = $this->{$this->childListenBindingRelationshipName($childType)}();
 
-        $field = $field ?: $relationship->getRelated()->getRouteKeyName();
+        $field = $field ?: $relationship->getRelated()->getListenKeyName();
 
         if ($relationship instanceof HasManyThrough ||
             $relationship instanceof BelongsToMany) {
@@ -2110,17 +2111,17 @@ abstract class Model implements Arrayable, ArrayAccess, CanBeEscapedWhenCastToSt
         }
 
         return $relationship instanceof Model
-            ? $relationship->resolveRouteBindingQuery($relationship, $value, $field)
-            : $relationship->getRelated()->resolveRouteBindingQuery($relationship, $value, $field);
+            ? $relationship->resolveListenBindingQuery($relationship, $value, $field)
+            : $relationship->getRelated()->resolveListenBindingQuery($relationship, $value, $field);
     }
 
     /**
-     * Retrieve the child route model binding relationship name for the given child type.
+     * Retrieve the child listen model binding relationship name for the given child type.
      *
      * @param  string  $childType
      * @return string
      */
-    protected function childRouteBindingRelationshipName($childType)
+    protected function childListenBindingRelationshipName($childType)
     {
         return Str::plural(Str::camel($childType));
     }
@@ -2133,9 +2134,9 @@ abstract class Model implements Arrayable, ArrayAccess, CanBeEscapedWhenCastToSt
      * @param  string|null  $field
      * @return \LaraGram\Contracts\Database\Eloquent\Builder
      */
-    public function resolveRouteBindingQuery($query, $value, $field = null)
+    public function resolveListenBindingQuery($query, $value, $field = null)
     {
-        return $query->where($field ?? $this->getRouteKeyName(), $value);
+        return $query->where($field ?? $this->getListenKeyName(), $value);
     }
 
     /**
@@ -2202,11 +2203,11 @@ abstract class Model implements Arrayable, ArrayAccess, CanBeEscapedWhenCastToSt
     }
 
     /**
-     * Get the broadcast channel route definition that is associated with the given entity.
+     * Get the broadcast channel listen definition that is associated with the given entity.
      *
      * @return string
      */
-    public function broadcastChannelRoute()
+    public function broadcastChannelListen()
     {
         return str_replace('\\', '.', get_class($this)).'.{'.Str::camel(class_basename($this)).'}';
     }

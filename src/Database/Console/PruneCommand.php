@@ -143,7 +143,7 @@ class PruneCommand extends Command
                 return $namespace . str_replace(
                         ['/', '.php'],
                         ['\\', ''],
-                        substr($model->getRealPath(), strlen(realpath($this->laragram->appPath()) . DIRECTORY_SEPARATOR))
+                        substr($model->getRealPath(), strlen(realpath($this->laragram->path()) . DIRECTORY_SEPARATOR))
                     );
             })->when(!empty($except), function ($models) use ($except) {
                 return $models->reject(fn($model) => in_array($model, $except));
@@ -165,7 +165,7 @@ class PruneCommand extends Command
                 ->all();
         }
 
-        return $this->laragram->appPath('Models');
+        return $this->laragram->path('Models');
     }
 
     /**

@@ -51,17 +51,17 @@ trait HasUniqueStringIds
      *
      * @throws \LaraGram\Database\Eloquent\ModelNotFoundException
      */
-    public function resolveRouteBindingQuery($query, $value, $field = null)
+    public function resolveListenBindingQuery($query, $value, $field = null)
     {
         if ($field && in_array($field, $this->uniqueIds()) && ! $this->isValidUniqueId($value)) {
             $this->handleInvalidUniqueId($value, $field);
         }
 
-        if (! $field && in_array($this->getRouteKeyName(), $this->uniqueIds()) && ! $this->isValidUniqueId($value)) {
+        if (! $field && in_array($this->getListenKeyName(), $this->uniqueIds()) && ! $this->isValidUniqueId($value)) {
             $this->handleInvalidUniqueId($value, $field);
         }
 
-        return parent::resolveRouteBindingQuery($query, $value, $field);
+        return parent::resolveListenBindingQuery($query, $value, $field);
     }
 
     /**

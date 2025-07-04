@@ -123,7 +123,7 @@ class FactoryMakeCommand extends GeneratorCommand
             return $modelName;
         }
 
-        if (is_dir($this->laragram->appPath('Models/'))) {
+        if (is_dir($this->laragram->path('Models/'))) {
             return $this->rootNamespace().'Models\Model';
         }
 
