@@ -258,7 +258,7 @@ abstract class ServiceProvider
         }
     }
 
-    public function provides(): array
+    public function provides()
     {
         return [];
     }
