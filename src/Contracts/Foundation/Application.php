@@ -69,7 +69,6 @@ interface Application extends Container
      */
     public function storagePath($path = '');
 
-
     /**
      * Get or check the current application environment.
      *
@@ -194,6 +193,13 @@ interface Application extends Container
      * @return void
      */
     public function setLocale($locale);
+
+    /**
+     * Determine if middleware has been disabled for the application.
+     *
+     * @return bool
+     */
+    public function shouldSkipMiddleware();
 
     /**
      * Register a terminating callback with the application.
