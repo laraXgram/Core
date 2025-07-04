@@ -33,7 +33,7 @@ class ProcessDriver implements Driver
 
         $results = $this->processFactory->pool(function (Pool $pool) use ($tasks, $command) {
             foreach (Arr::wrap($tasks) as $task) {
-                $pool->path(app()->basePath())->env([
+                $pool->path(base_path())->env([
                     'LARAGRAM_INVOKABLE_CLOSURE' => serialize(new SerializableClosure($task)),
                 ])->command($command);
             }
@@ -48,7 +48,9 @@ class ProcessDriver implements Driver
 
             if (! $result['successful']) {
                 throw new $result['exception'](
-                    $result['message']
+                    ...(! empty(array_filter($result['parameters']))
+                    ? $result['parameters']
+                    : [$result['message']])
                 );
             }
 
@@ -65,7 +67,7 @@ class ProcessDriver implements Driver
 
         return defer(function () use ($tasks, $command) {
             foreach (Arr::wrap($tasks) as $task) {
-                $this->processFactory->path(app()->basePath())->env([
+                $this->processFactory->path(base_path())->env([
                     'LARAGRAM_INVOKABLE_CLOSURE' => serialize(new SerializableClosure($task)),
                 ])->run($command.' 2>&1 &');
             }
