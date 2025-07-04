@@ -2,8 +2,6 @@
 
 namespace LaraGram\Support;
 
-use LaraGram\Template\TemplateServiceProvider;
-
 class DefaultProviders
 {
     /**
@@ -33,7 +31,6 @@ class DefaultProviders
             \LaraGram\Foundation\Providers\FoundationServiceProvider::class,
             \LaraGram\Hashing\HashServiceProvider::class,
             \LaraGram\Keyboard\KeyboardServiceProvider::class,
-            \LaraGram\Request\LaraquestServiceProvider::class,
             \LaraGram\Pipeline\PipelineServiceProvider::class,
             \LaraGram\Queue\QueueServiceProvider::class,
             \LaraGram\Redis\RedisServiceProvider::class,

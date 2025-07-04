@@ -5,6 +5,7 @@ namespace LaraGram\Foundation;
 use Exception;
 use LaraGram\Filesystem\Filesystem;
 use LaraGram\Support\Collection;
+use LaraGram\Support\Env;
 
 class PackageManifest
 {
@@ -56,7 +57,7 @@ class PackageManifest
         $this->files = $files;
         $this->basePath = $basePath;
         $this->manifestPath = $manifestPath;
-        $this->vendorPath = $basePath.'/vendor';
+        $this->vendorPath = Env::get('COMPOSER_VENDOR_DIR') ?: $basePath.'/vendor';
     }
 
     /**
