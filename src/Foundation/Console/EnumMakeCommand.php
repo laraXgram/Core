@@ -70,8 +70,8 @@ class EnumMakeCommand extends GeneratorCommand
     protected function getDefaultNamespace($rootNamespace)
     {
         return match (true) {
-            is_dir($this->laragram->appPath('Enums')) => $rootNamespace.'\\Enums',
-            is_dir($this->laragram->appPath('Enumerations')) => $rootNamespace.'\\Enumerations',
+            is_dir($this->laragram->path('Enums')) => $rootNamespace.'\\Enums',
+            is_dir($this->laragram->path('Enumerations')) => $rootNamespace.'\\Enumerations',
             default => $rootNamespace,
         };
     }

@@ -49,8 +49,8 @@ class InterfaceMakeCommand extends GeneratorCommand
     protected function getDefaultNamespace($rootNamespace)
     {
         return match (true) {
-            is_dir($this->laragram->appPath('Contracts')) => $rootNamespace.'\\Contracts',
-            is_dir($this->laragram->appPath('Interfaces')) => $rootNamespace.'\\Interfaces',
+            is_dir($this->laragram->path('Contracts')) => $rootNamespace.'\\Contracts',
+            is_dir($this->laragram->path('Interfaces')) => $rootNamespace.'\\Interfaces',
             default => $rootNamespace,
         };
     }

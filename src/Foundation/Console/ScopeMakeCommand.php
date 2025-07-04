@@ -61,7 +61,7 @@ class ScopeMakeCommand extends GeneratorCommand
      */
     protected function getDefaultNamespace($rootNamespace)
     {
-        return is_dir($this->laragram->appPath('Models')) ? $rootNamespace.'\\Models\\Scopes' : $rootNamespace.'\Scopes';
+        return is_dir($this->laragram->path('Models')) ? $rootNamespace.'\\Models\\Scopes' : $rootNamespace.'\Scopes';
     }
 
     /**

@@ -2,12 +2,15 @@
 
 namespace LaraGram\Foundation\Configuration;
 
+use Closure;
 use LaraGram\Console\Application as Commander;
 use LaraGram\Console\Scheduling\Schedule;
 use LaraGram\Foundation\Application;
 use LaraGram\Foundation\Bootstrap\RegisterProviders;
 use LaraGram\Foundation\Support\Providers\EventServiceProvider as AppEventServiceProvider;
+use LaraGram\Foundation\Support\Providers\ListenServiceProvider as AppListenServiceProvider;
 use LaraGram\Support\Collection;
+use LaraGram\Support\Facades\Bot;
 
 class ApplicationBuilder
 {
@@ -17,6 +20,13 @@ class ApplicationBuilder
      * @var array
      */
     protected array $pendingProviders = [];
+
+    /**
+     * Any additional listening callbacks that should be invoked while registering listens.
+     *
+     * @var array
+     */
+    protected array $additionalListeningCallbacks = [];
 
     /**
      * Create a new application builder instance.
@@ -32,6 +42,12 @@ class ApplicationBuilder
      */
     public function withKernels()
     {
+
+        $this->app->singleton(
+            \LaraGram\Contracts\Bot\Kernel::class,
+            \LaraGram\Foundation\Bot\Kernel::class,
+        );
+
         $this->app->singleton(
             \LaraGram\Contracts\Console\Kernel::class,
             \LaraGram\Foundation\Console\Kernel::class,
@@ -87,6 +103,119 @@ class ApplicationBuilder
     }
 
     /**
+     * Register the listener services for the application.
+     *
+     * @param  \Closure|null  $using
+     * @param  array|string|null  $bot
+     * @param  string|null  $commands
+     * @param  string|null  $channels
+     * @param  string|null  $pages
+     * @param  callable|null  $then
+     * @return $this
+     */
+    public function withListener(?Closure $using = null,
+                                array|string|null $bot = null,
+                                ?string $commands = null,
+                                ?string $channels = null,
+                                ?callable $then = null)
+    {
+        if (is_null($using) && (is_string($bot) || is_array($bot) || is_callable($then))) {
+            $using = $this->buildListenerCallback($bot, $then);
+        }
+
+        AppListenServiceProvider::loadListensUsing($using);
+
+        $this->app->booting(function () {
+            $this->app->register(AppListenServiceProvider::class, force: true);
+        });
+
+        if (is_string($commands) && realpath($commands) !== false) {
+            $this->withCommands([$commands]);
+        }
+
+//        if (is_string($channels) && realpath($channels) !== false) {
+//            $this->withBroadcasting($channels);
+//        }
+
+        return $this;
+    }
+
+    /**
+     * Create the listening callback for the application.
+     *
+     * @param  array|string|null  $web
+     * @param  array|string|null  $api
+     * @param  string|null  $pages
+     * @param  string|null  $health
+     * @param  string  $apiPrefix
+     * @param  callable|null  $then
+     * @return \Closure
+     */
+    protected function buildListenerCallback(array|string|null $bot, ?callable $then)
+    {
+        return function () use ($bot, $then) {
+            if (is_string($bot) || is_array($bot)) {
+                if (is_array($bot)) {
+                    foreach ($bot as $botListen) {
+                        if (realpath($botListen) !== false) {
+                            Bot::middleware('bot')->group($botListen);
+                        }
+                    }
+                } else {
+                    Bot::middleware('bot')->group($bot);
+                }
+            }
+
+            foreach ($this->additionalListeningCallbacks as $callback) {
+                $callback();
+            }
+
+            if (is_callable($then)) {
+                $then($this->app);
+            }
+        };
+    }
+
+    /**
+     * Register the global middleware, middleware groups, and middleware aliases for the application.
+     *
+     * @param  callable|null  $callback
+     * @return $this
+     */
+    public function withMiddleware(?callable $callback = null)
+    {
+        $this->app->afterResolving(\LaraGram\Contracts\Bot\Kernel::class, function ($kernel) use ($callback) {
+            $middleware = new Middleware;
+
+            if (! is_null($callback)) {
+                $callback($middleware);
+            }
+
+            $kernel->setGlobalMiddleware($middleware->getGlobalMiddleware());
+            $kernel->setMiddlewareGroups($middleware->getMiddlewareGroups());
+            $kernel->setMiddlewareAliases($middleware->getMiddlewareAliases());
+
+            if ($priorities = $middleware->getMiddlewarePriority()) {
+                $kernel->setMiddlewarePriority($priorities);
+            }
+
+            if ($priorityAppends = $middleware->getMiddlewarePriorityAppends()) {
+                foreach ($priorityAppends as $newMiddleware => $after) {
+                    $kernel->addToMiddlewarePriorityAfter($after, $newMiddleware);
+                }
+            }
+
+            if ($priorityPrepends = $middleware->getMiddlewarePriorityPrepends()) {
+                foreach ($priorityPrepends as $newMiddleware => $before) {
+                    $kernel->addToMiddlewarePriorityBefore($before, $newMiddleware);
+                }
+            }
+        });
+
+        return $this;
+    }
+
+    /**
      * Register additional Commander commands with the application.
      *
      * @param  array  $commands
@@ -95,16 +224,33 @@ class ApplicationBuilder
     public function withCommands(array $commands = [])
     {
         if (empty($commands)) {
-            $commands = [$this->app->appPath('Console/Commands')];
+            $commands = [$this->app->path('Console/Commands')];
         }
 
         $this->app->afterResolving(\LaraGram\Contracts\Console\Kernel::class, function ($kernel) use ($commands) {
             [$commands, $paths] = (new Collection($commands))->partition(fn ($command) => class_exists($command));
+            [$listens, $paths] = $paths->partition(fn ($path) => is_file($path));
 
-            $this->app->booted(static function () use ($kernel, $commands, $paths) {
+            $this->app->booted(static function () use ($kernel, $commands, $paths, $listens) {
                 $kernel->addCommands($commands->all());
                 $kernel->addCommandPaths($paths->all());
+                $kernel->addCommandListenPaths($listens->all());
             });
+        });
+
+        return $this;
+    }
+
+    /**
+     * Register additional Commander listen paths.
+     *
+     * @param  array  $paths
+     * @return $this
+     */
+    protected function withCommandListening(array $paths)
+    {
+        $this->app->afterResolving(\LaraGram\Contracts\Console\Kernel::class, function ($kernel) use ($paths) {
+            $this->app->booted(fn () => $kernel->addCommandListenPaths($paths));
         });
 
         return $this;

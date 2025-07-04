@@ -56,6 +56,13 @@ class Kernel implements KernelContract
     protected $commandPaths = [];
 
     /**
+     * The paths where Commander "listens" should be automatically discovered.
+     *
+     * @var array
+     */
+    protected $commandListenPaths = [];
+
+    /**
      * Indicates if the Closure commands have been loaded.
      *
      * @var bool
@@ -89,6 +96,7 @@ class Kernel implements KernelContract
      * @var string[]
      */
     protected $bootstrappers = [
+        \LaraGram\Foundation\Bootstrap\LoadEnvironmentVariables::class,
         \LaraGram\Foundation\Bootstrap\LoadConfiguration::class,
         \LaraGram\Foundation\Bootstrap\HandleExceptions::class,
         \LaraGram\Foundation\Bootstrap\RegisterFacades::class,
@@ -270,7 +278,7 @@ class Kernel implements KernelContract
         return $namespace.str_replace(
                 ['/', '.php'],
                 ['\\', ''],
-                substr($file->getRealPath(), strlen(realpath(app()->appPath()) . DIRECTORY_SEPARATOR))
+                substr($file->getRealPath(), strlen(realpath(app()->path()) . DIRECTORY_SEPARATOR))
             );
     }
 
@@ -439,6 +447,19 @@ class Kernel implements KernelContract
     public function addCommandPaths(array $paths)
     {
         $this->commandPaths = array_values(array_unique(array_merge($this->commandPaths, $paths)));
+
+        return $this;
+    }
+
+    /**
+     * Set the paths that should have their Commander "listens" automatically discovered.
+     *
+     * @param  array  $paths
+     * @return $this
+     */
+    public function addCommandListenPaths(array $paths)
+    {
+        $this->commandListenPaths = array_values(array_unique(array_merge($this->commandListenPaths, $paths)));
 
         return $this;
     }

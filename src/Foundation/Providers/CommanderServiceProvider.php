@@ -27,6 +27,7 @@ use LaraGram\Database\Console\TableCommand as DatabaseTableCommand;
 use LaraGram\Database\Console\WipeCommand;
 use LaraGram\Foundation\Console\CastMakeCommand;
 use LaraGram\Foundation\Console\ClassMakeCommand;
+use LaraGram\Foundation\Console\ClearCompiledCommand;
 use LaraGram\Foundation\Console\ConfigCacheCommand;
 use LaraGram\Foundation\Console\ConfigClearCommand;
 use LaraGram\Foundation\Console\ConfigPublishCommand;
@@ -44,6 +45,10 @@ use LaraGram\Foundation\Console\GenerateAppCommand;
 use LaraGram\Foundation\Console\InterfaceMakeCommand;
 use LaraGram\Foundation\Console\JobMakeCommand;
 use LaraGram\Foundation\Console\JobMiddlewareMakeCommand;
+use LaraGram\Foundation\Console\KeyGenerateCommand;
+use LaraGram\Foundation\Console\ListenCacheCommand;
+use LaraGram\Foundation\Console\ListenClearCommand;
+use LaraGram\Foundation\Console\ListenerMakeCommand;
 use LaraGram\Foundation\Console\ModelMakeCommand;
 use LaraGram\Foundation\Console\ObserverMakeCommand;
 use LaraGram\Foundation\Console\OptimizeClearCommand;
@@ -90,7 +95,9 @@ class CommanderServiceProvider extends ServiceProvider implements DeferrableProv
      * @var array
      */
     protected $commands = [
+        'ClearCompiled' => ClearCompiledCommand::class,
         'DatabaseTableCommand' => DatabaseTableCommand::class,
+        'EventList' => EventListCommand::class,
         'PruneCommand' => PruneCommand::class,
         'ShowCommand' => ShowCommand::class,
         'ShowModelCommand' => ShowModelCommand::class,
@@ -120,6 +127,7 @@ class CommanderServiceProvider extends ServiceProvider implements DeferrableProv
         'StorageLinkCommand' => StorageLinkCommand::class,
         'StorageUnlinkCommand' => StorageUnlinkCommand::class,
         'InvokeSerializedClosureCommand' => InvokeSerializedClosureCommand::class,
+        'KeyGenerate' => KeyGenerateCommand::class,
     ];
 
     /**
@@ -133,6 +141,7 @@ class CommanderServiceProvider extends ServiceProvider implements DeferrableProv
         ConfigClearCommand::class          => ['files'],
         EventCacheCommand::class           => ['files'],
         EventClearCommand::class           => ['files'],
+        EventMakeCommand::class            => ['files'],
         OptimizeCommand::class             => ['files'],
         OptimizeClearCommand::class        => ['files'],
         StartApiServerCommand::class       => [],
@@ -166,6 +175,9 @@ class CommanderServiceProvider extends ServiceProvider implements DeferrableProv
         QueueWorkCommand::class            => ['queue.worker', 'cache.store'],
         JobMakeCommand::class              => ['files'],
         JobMiddlewareMakeCommand::class    => ['files'],
+        ListenerMakeCommand::class         => ['files'],
+        ListenCacheCommand::class          => ['files'],
+        ListenClearCommand::class          => ['files'],
     ];
 
     /**
@@ -174,6 +186,7 @@ class CommanderServiceProvider extends ServiceProvider implements DeferrableProv
      * @var array
      */
     protected $devCommands = [
+        'EventGenerate' => EventGenerateCommand::class,
         'StubPublishCommand' => StubPublishCommand::class,
         'SwooleInstallCommand' => SwooleInstallCommand::class,
         'BatchesTableCommand' => BatchesTableCommand::class,

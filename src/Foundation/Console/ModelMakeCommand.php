@@ -182,7 +182,7 @@ class ModelMakeCommand extends GeneratorCommand
      */
     protected function getDefaultNamespace($rootNamespace)
     {
-        return is_dir($this->laragram->appPath('Models')) ? $rootNamespace.'\\Models' : $rootNamespace;
+        return is_dir($this->laragram->path('Models')) ? $rootNamespace.'\\Models' : $rootNamespace;
     }
 
     /**

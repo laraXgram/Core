@@ -162,7 +162,7 @@ class EventServiceProvider extends ServiceProvider
     protected function discoverEventsWithin()
     {
         return static::$eventDiscoveryPaths ?: [
-            $this->app->appPath('Listeners'),
+            $this->app->path('Listeners'),
         ];
     }
 

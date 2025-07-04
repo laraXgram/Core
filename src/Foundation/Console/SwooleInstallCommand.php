@@ -18,7 +18,7 @@ class SwooleInstallCommand extends Command
      */
     protected $signature = 'install:swoole
                     {--composer=global : Absolute path to the Composer binary which should be used to install packages}
-                    {--force : Overwrite any existing API routes file}';
+                    {--force : Overwrite any existing API listens file}';
 
     /**
      * The console command description.

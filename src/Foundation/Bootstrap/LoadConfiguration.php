@@ -83,6 +83,7 @@ class LoadConfiguration
             'cache' => ['stores'],
             'database' => ['connections'],
             'filesystems' => ['disks'],
+            'logging' => ['channels'],
             'queue' => ['connections'],
         ][$name] ?? [];
     }
@@ -138,7 +139,7 @@ class LoadConfiguration
     protected function getBaseConfiguration()
     {
         $config = [];
-        $configPath = realpath(__DIR__ . '/../../../../../config');
+        $configPath = realpath(__DIR__ . '/../../../config');
 
         if (!$configPath) {
             return [];

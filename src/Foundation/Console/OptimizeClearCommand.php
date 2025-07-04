@@ -57,6 +57,7 @@ class OptimizeClearCommand extends Command
         return [
             'config' => 'config:clear',
             'events' => 'event:clear',
+            'listens' => 'listen:clear',
             ...ServiceProvider::$optimizeClearCommands,
         ];
     }

@@ -6,29 +6,41 @@ use LaraGram\Console\GeneratorCommand;
 use LaraGram\Console\Attribute\AsCommand;
 use LaraGram\Console\Input\InputOption;
 
-#[AsCommand(name: 'make:trait')]
-class TraitMakeCommand extends GeneratorCommand
+#[AsCommand(name: 'make:event')]
+class EventMakeCommand extends GeneratorCommand
 {
     /**
      * The console command name.
      *
      * @var string
      */
-    protected $name = 'make:trait';
+    protected $name = 'make:event';
 
     /**
      * The console command description.
      *
      * @var string
      */
-    protected $description = 'Create a new trait';
+    protected $description = 'Create a new event class';
 
     /**
      * The type of class being generated.
      *
      * @var string
      */
-    protected $type = 'Trait';
+    protected $type = 'Event';
+
+    /**
+     * Determine if the class already exists.
+     *
+     * @param  string  $rawName
+     * @return bool
+     */
+    protected function alreadyExists($rawName)
+    {
+        return class_exists($rawName) ||
+            $this->files->exists($this->getPath($this->qualifyClass($rawName)));
+    }
 
     /**
      * Get the stub file for the generator.
@@ -37,7 +49,7 @@ class TraitMakeCommand extends GeneratorCommand
      */
     protected function getStub()
     {
-        return $this->resolveStubPath('/stubs/trait.stub');
+        return $this->resolveStubPath('/stubs/event.stub');
     }
 
     /**
@@ -61,22 +73,18 @@ class TraitMakeCommand extends GeneratorCommand
      */
     protected function getDefaultNamespace($rootNamespace)
     {
-        return match (true) {
-            is_dir($this->laragram->path('Concerns')) => $rootNamespace.'\\Concerns',
-            is_dir($this->laragram->path('Traits')) => $rootNamespace.'\\Traits',
-            default => $rootNamespace,
-        };
+        return $rootNamespace.'\Events';
     }
 
     /**
-     * Get the console command arguments.
+     * Get the console command options.
      *
      * @return array
      */
     protected function getOptions()
     {
         return [
-            ['force', 'f', InputOption::VALUE_NONE, 'Create the trait even if the trait already exists'],
+            ['force', 'f', InputOption::VALUE_NONE, 'Create the class even if the event already exists'],
         ];
     }
 }

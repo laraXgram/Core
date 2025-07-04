@@ -36,7 +36,7 @@ if (! function_exists('app_path')) {
      */
     function app_path($path = '')
     {
-        return app()->appPath($path);
+        return app()->path($path);
     }
 }
 
@@ -279,16 +279,6 @@ if (! function_exists('logger')) {
         }
 
         return app('log')->debug($message, $context);
-    }
-}
-
-if (! function_exists('request')) {
-    /**
-     * @return LaraGram\Request\Request
-     */
-    function request()
-    {
-        return app('request');
     }
 }
 
