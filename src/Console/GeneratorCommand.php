@@ -6,6 +6,9 @@ use LaraGram\Console\Concerns\CreatesMatchingTest;
 use LaraGram\Contracts\Console\PromptsForMissingInput;
 use LaraGram\Filesystem\Filesystem;
 use LaraGram\Console\Input\InputArgument;
+use LaraGram\Support\Collection;
+use LaraGram\Support\Finder\Finder;
+use LaraGram\Support\Str;
 
 abstract class GeneratorCommand extends Command implements PromptsForMissingInput
 {
@@ -205,7 +208,7 @@ abstract class GeneratorCommand extends Command implements PromptsForMissingInpu
 
         $rootNamespace = $this->rootNamespace();
 
-        if (str_starts_with($name, $rootNamespace)) {
+        if (Str::startsWith($name, $rootNamespace)) {
             return $name;
         }
 
@@ -228,13 +231,13 @@ abstract class GeneratorCommand extends Command implements PromptsForMissingInpu
 
         $rootNamespace = $this->rootNamespace();
 
-        if (str_starts_with($model, $rootNamespace)) {
+        if (Str::startsWith($model, $rootNamespace)) {
             return $model;
         }
 
-        return is_dir(app()->path('Models'))
-                    ? $rootNamespace.'Models\\'.$model
-                    : $rootNamespace.$model;
+        return is_dir(app_path('Models'))
+            ? $rootNamespace.'Models\\'.$model
+            : $rootNamespace.$model;
     }
 
     /**
@@ -244,20 +247,13 @@ abstract class GeneratorCommand extends Command implements PromptsForMissingInpu
      */
     protected function possibleModels()
     {
-        $modelPath = is_dir(app()->path('Models')) ? app()->path('Models') : app()->path();
+        $modelPath = is_dir(app_path('Models')) ? app_path('Models') : app_path();
 
-        $files = scandir($modelPath);
-        $phpFiles = [];
-
-        foreach ($files as $file) {
-            if (is_file($modelPath . DIRECTORY_SEPARATOR . $file) && pathinfo($file, PATHINFO_EXTENSION) === 'php') {
-                $phpFiles[] = pathinfo($file, PATHINFO_FILENAME);
-            }
-        }
-
-        sort($phpFiles);
-
-        return $phpFiles;
+        return (new Collection(Finder::create()->files()->depth(0)->in($modelPath)))
+            ->map(fn ($file) => $file->getBasename('.php'))
+            ->sort()
+            ->values()
+            ->all();
     }
 
     /**
@@ -267,24 +263,17 @@ abstract class GeneratorCommand extends Command implements PromptsForMissingInpu
      */
     protected function possibleEvents()
     {
-        $eventPath = app()->path('Events');
+        $eventPath = app_path('Events');
 
         if (! is_dir($eventPath)) {
             return [];
         }
 
-        $files = scandir($eventPath);
-        $phpFiles = [];
-
-        foreach ($files as $file) {
-            if (is_file($eventPath . DIRECTORY_SEPARATOR . $file) && pathinfo($file, PATHINFO_EXTENSION) === 'php') {
-                $phpFiles[] = pathinfo($file, PATHINFO_FILENAME);
-            }
-        }
-
-        sort($phpFiles);
-
-        return $phpFiles;
+        return (new Collection(Finder::create()->files()->depth(0)->in($eventPath)))
+            ->map(fn ($file) => $file->getBasename('.php'))
+            ->sort()
+            ->values()
+            ->all();
     }
 
     /**
@@ -317,10 +306,7 @@ abstract class GeneratorCommand extends Command implements PromptsForMissingInpu
      */
     protected function getPath($name)
     {
-        $rootNamespace = $this->rootNamespace();
-        if (str_starts_with($name, $rootNamespace)) {
-            $name = substr($name, strlen($rootNamespace));
-        }
+        $name = Str::replaceFirst($this->rootNamespace(), '', $name);
 
         return $this->laragram['path'].'/'.str_replace('\\', '/', $name).'.php';
     }
@@ -435,8 +421,8 @@ abstract class GeneratorCommand extends Command implements PromptsForMissingInpu
     {
         $name = trim($this->argument('name'));
 
-        if (str_ends_with($name, '.php')) {
-            return substr($name, 0, -4);
+        if (Str::endsWith($name, '.php')) {
+            return Str::substr($name, 0, -4);
         }
 
         return $name;
@@ -476,9 +462,25 @@ abstract class GeneratorCommand extends Command implements PromptsForMissingInpu
     {
         return in_array(
             strtolower($name),
-            array_map(fn ($name) => strtolower($name), $this->reservedNames)
+            (new Collection($this->reservedNames))
+                ->transform(fn ($name) => strtolower($name))
+                ->all()
         );
     }
+
+    /**
+     * Get the first template directory path from the application configuration.
+     *
+     * @param  string  $path
+     * @return string
+     */
+    protected function templatePath($path = '')
+    {
+        $templates = $this->laragram['config']['template.paths'][0] ?? app_path('templates');
+
+        return $templates.($path ? DIRECTORY_SEPARATOR.$path : $path);
+    }
+
 
     /**
      * Get the console command arguments.
@@ -508,13 +510,13 @@ abstract class GeneratorCommand extends Command implements PromptsForMissingInpu
                     'Console command' => 'E.g. SendEmails',
 //                    'Component' => 'E.g. Alert',
                     'Controller' => 'E.g. UserController',
-//                    'Event' => 'E.g. PodcastProcessed',
-//                    'Exception' => 'E.g. InvalidOrderException',
+                    'Event' => 'E.g. PodcastProcessed',
+                    'Exception' => 'E.g. InvalidOrderException',
                     'Factory' => 'E.g. PostFactory',
                     'Job' => 'E.g. ProcessPodcast',
 //                    'Listener' => 'E.g. SendPodcastNotification',
 //                    'Mailable' => 'E.g. OrderShipped',
-//                    'Middleware' => 'E.g. EnsureTokenIsValid',
+                    'Middleware' => 'E.g. EnsureTokenIsValid',
                     'Model' => 'E.g. Flight',
 //                    'Notification' => 'E.g. InvoicePaid',
                     'Observer' => 'E.g. UserObserver',

@@ -25,6 +25,7 @@ use LaraGram\Database\Console\ShowCommand;
 use LaraGram\Database\Console\ShowModelCommand;
 use LaraGram\Database\Console\TableCommand as DatabaseTableCommand;
 use LaraGram\Database\Console\WipeCommand;
+use LaraGram\Foundation\Console\AboutCommand;
 use LaraGram\Foundation\Console\CastMakeCommand;
 use LaraGram\Foundation\Console\ClassMakeCommand;
 use LaraGram\Foundation\Console\ClearCompiledCommand;
@@ -36,11 +37,15 @@ use LaraGram\Foundation\Console\ConsoleMakeCommand;
 use LaraGram\Foundation\Console\ControllerMakeCommand;
 use LaraGram\Foundation\Console\ConversationMakeCommand;
 use LaraGram\Foundation\Console\EnumMakeCommand;
+use LaraGram\Foundation\Console\EnvironmentCommand;
+use LaraGram\Foundation\Console\EnvironmentDecryptCommand;
+use LaraGram\Foundation\Console\EnvironmentEncryptCommand;
 use LaraGram\Foundation\Console\EventCacheCommand;
 use LaraGram\Foundation\Console\EventClearCommand;
 use LaraGram\Foundation\Console\EventGenerateCommand;
 use LaraGram\Foundation\Console\EventListCommand;
 use LaraGram\Foundation\Console\EventMakeCommand;
+use LaraGram\Foundation\Console\ExceptionMakeCommand;
 use LaraGram\Foundation\Console\GenerateAppCommand;
 use LaraGram\Foundation\Console\InterfaceMakeCommand;
 use LaraGram\Foundation\Console\JobMakeCommand;
@@ -49,6 +54,7 @@ use LaraGram\Foundation\Console\KeyGenerateCommand;
 use LaraGram\Foundation\Console\ListenCacheCommand;
 use LaraGram\Foundation\Console\ListenClearCommand;
 use LaraGram\Foundation\Console\ListenerMakeCommand;
+use LaraGram\Foundation\Console\ListenListCommand;
 use LaraGram\Foundation\Console\ModelMakeCommand;
 use LaraGram\Foundation\Console\ObserverMakeCommand;
 use LaraGram\Foundation\Console\OptimizeClearCommand;
@@ -62,6 +68,9 @@ use LaraGram\Foundation\Console\StorageLinkCommand;
 use LaraGram\Foundation\Console\StorageUnlinkCommand;
 use LaraGram\Foundation\Console\StubPublishCommand;
 use LaraGram\Foundation\Console\SwooleInstallCommand;
+use LaraGram\Foundation\Console\TemplateCacheCommand;
+use LaraGram\Foundation\Console\TemplateClearCommand;
+use LaraGram\Foundation\Console\TemplateMakeCommand;
 use LaraGram\Foundation\Console\TraitMakeCommand;
 use LaraGram\Foundation\Console\VendorPublishCommand;
 use LaraGram\Foundation\Console\WebhookDeleteCommand;
@@ -95,6 +104,8 @@ class CommanderServiceProvider extends ServiceProvider implements DeferrableProv
      * @var array
      */
     protected $commands = [
+        'ViewCache' => TemplateCacheCommand::class,
+        'EnvironmentCommand' => EnvironmentCommand::class,
         'ClearCompiled' => ClearCompiledCommand::class,
         'DatabaseTableCommand' => DatabaseTableCommand::class,
         'EventList' => EventListCommand::class,
@@ -136,6 +147,13 @@ class CommanderServiceProvider extends ServiceProvider implements DeferrableProv
      * @var array
      */
     protected $commandsWithDependencied = [
+        TemplateClearCommand::class        => ['files'],
+        TemplateMakeCommand::class         => ['files'],
+        AboutCommand::class                => ['composer'],
+        EnvironmentDecryptCommand::class   => ['files'],
+        EnvironmentEncryptCommand::class   => ['files'],
+        ExceptionMakeCommand::class        => ['files'],
+        ListenListCommand::class           => ['listener'],
         GenerateAppCommand::class          => ['files'],
         ConfigCacheCommand::class          => ['files'],
         ConfigClearCommand::class          => ['files'],

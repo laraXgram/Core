@@ -55,9 +55,10 @@ class OptimizeCommand extends Command
     protected function getOptimizeTasks()
     {
         return [
-            'config'  => 'config:cache',
-            'events'  => 'event:cache',
-            'listens' => 'listen:cache',
+            'config'   => 'config:cache',
+            'events'   => 'event:cache',
+            'listens'  => 'listen:cache',
+            'template' => 'template:cache',
             ...ServiceProvider::$optimizeCommands,
         ];
     }

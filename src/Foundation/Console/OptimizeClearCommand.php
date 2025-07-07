@@ -55,9 +55,10 @@ class OptimizeClearCommand extends Command
     public function getOptimizeClearTasks()
     {
         return [
-            'config' => 'config:clear',
-            'events' => 'event:clear',
-            'listens' => 'listen:clear',
+            'config'   => 'config:clear',
+            'events'   => 'event:clear',
+            'listens'  => 'listen:clear',
+            'template' => 'template:clear',
             ...ServiceProvider::$optimizeClearCommands,
         ];
     }
