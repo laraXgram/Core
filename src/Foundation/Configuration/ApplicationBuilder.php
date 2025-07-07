@@ -120,7 +120,7 @@ class ApplicationBuilder
                                 ?callable $then = null)
     {
         if (is_null($using) && (is_string($bot) || is_array($bot) || is_callable($then))) {
-            $using = $this->buildListenerCallback($bot, $then);
+            $using = $this->buildListeningCallback($bot, $then);
         }
 
         AppListenServiceProvider::loadListensUsing($using);
@@ -151,7 +151,7 @@ class ApplicationBuilder
      * @param  callable|null  $then
      * @return \Closure
      */
-    protected function buildListenerCallback(array|string|null $bot, ?callable $then)
+    protected function buildListeningCallback(array|string|null $bot, ?callable $then)
     {
         return function () use ($bot, $then) {
             if (is_string($bot) || is_array($bot)) {

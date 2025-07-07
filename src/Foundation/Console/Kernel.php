@@ -5,12 +5,16 @@ namespace LaraGram\Foundation\Console;
 use Closure;
 use LaraGram\Console\Application as Commander;
 use LaraGram\Console\Command;
+use LaraGram\Console\Scheduling\Schedule;
 use LaraGram\Contracts\Console\Kernel as KernelContract;
 use LaraGram\Contracts\Debug\ExceptionHandler;
 use LaraGram\Events\Dispatcher;
 use LaraGram\Foundation\Application;
 use LaraGram\Foundation\Events\Terminating;
 use LaraGram\Support\Arr;
+use LaraGram\Support\Collection;
+use LaraGram\Support\Env;
+use LaraGram\Support\Finder\Finder;
 use LaraGram\Support\InteractsWithTime;
 use ReflectionClass;
 use SplFileInfo;
@@ -39,7 +43,7 @@ class Kernel implements KernelContract
      *
      * @var \LaraGram\Console\Application|null
      */
-    protected $Commander;
+    protected $commander;
 
     /**
      * The Commander commands provided by the application.
@@ -113,6 +117,10 @@ class Kernel implements KernelContract
      */
     public function __construct(Application $app, Dispatcher $events)
     {
+        if (! defined('COMMANDER_BINARY')) {
+            define('COMMANDER_BINARY', 'laragram');
+        }
+
         $this->app = $app;
         $this->events = $events;
     }
@@ -129,6 +137,10 @@ class Kernel implements KernelContract
         $this->commandStartedAt = new \DateTime();
 
         try {
+            if (in_array($input->getFirstArgument(), ['env:encrypt', 'env:decrypt'], true)) {
+                $this->bootstrapWithoutBootingProviders();
+            }
+
             $this->bootstrap();
 
             return $this->getCommander()->run($input, $output);
@@ -199,6 +211,53 @@ class Kernel implements KernelContract
     }
 
     /**
+     * Define the application's command schedule.
+     *
+     * @param  \LaraGram\Console\Scheduling\Schedule  $schedule
+     * @return void
+     */
+    protected function schedule(Schedule $schedule)
+    {
+        //
+    }
+
+    /**
+     * Resolve a console schedule instance.
+     *
+     * @return \LaraGram\Console\Scheduling\Schedule
+     */
+    public function resolveConsoleSchedule()
+    {
+        return tap(new Schedule($this->scheduleTimezone()), function ($schedule) {
+            $this->schedule($schedule->useCache($this->scheduleCache()));
+        });
+    }
+
+    /**
+     * Get the timezone that should be used by default for scheduled events.
+     *
+     * @return \DateTimeZone|string|null
+     */
+    protected function scheduleTimezone()
+    {
+        $config = $this->app['config'];
+
+        return $config->get('app.schedule_timezone', $config->get('app.timezone'));
+    }
+
+    /**
+     * Get the name of the cache store that should manage scheduling mutexes.
+     *
+     * @return string|null
+     */
+    protected function scheduleCache()
+    {
+        return $this->app['config']->get('cache.schedule_store', Env::get('SCHEDULE_CACHE_DRIVER', function () {
+            return Env::get('SCHEDULE_CACHE_STORE');
+        }));
+    }
+
+    /**
      * Register the commands for the application.
      *
      * @return void
@@ -250,18 +309,14 @@ class Kernel implements KernelContract
 
         $namespace = $this->app->getNamespace();
 
-        foreach (scandir($paths) as $file) {
-            $filePath = $paths . DIRECTORY_SEPARATOR . $file;
+        foreach (Finder::create()->in($paths)->files() as $file) {
+            $command = $this->commandClassFromFile($file, $namespace);
 
-            if (is_file($filePath) && pathinfo($filePath, PATHINFO_EXTENSION) === 'php') {
-                $command = $this->commandClassFromFile($filePath, $namespace);
-
-                if (is_subclass_of($command, Command::class) &&
-                    ! (new ReflectionClass($command))->isAbstract()) {
-                    Commander::starting(function ($Commander) use ($command) {
-                        $Commander->resolve($command);
-                    });
-                }
+            if (is_subclass_of($command, Command::class) &&
+                ! (new ReflectionClass($command))->isAbstract()) {
+                Commander::starting(function ($commander) use ($command) {
+                    $commander->resolve($command);
+                });
             }
         }
     }
@@ -312,6 +367,18 @@ class Kernel implements KernelContract
         $this->bootstrap();
 
         return $this->getCommander()->call($command, $parameters, $outputBuffer);
+    }
+
+    /**
+     * Queue the given console command.
+     *
+     * @param  string  $command
+     * @param  array  $parameters
+     * @return \LaraGram\Foundation\Bus\PendingDispatch
+     */
+    public function queue($command, array $parameters = [])
+    {
+        return QueuedCommand::dispatch(func_get_args());
     }
 
     /**
@@ -372,6 +439,12 @@ class Kernel implements KernelContract
         foreach ($this->commandPaths as $path) {
             $this->load($path);
         }
+
+        foreach ($this->commandListenPaths as $path) {
+            if (file_exists($path)) {
+                require $path;
+            }
+        }
     }
 
     /**
@@ -382,9 +455,9 @@ class Kernel implements KernelContract
     public function bootstrapWithoutBootingProviders()
     {
         $this->app->bootstrapWith(
-            array_values(array_filter($this->bootstrappers(), function ($bootstrapper) {
-                return $bootstrapper !== \LaraGram\Foundation\Bootstrap\BootProviders::class;
-            }))
+            (new Collection($this->bootstrappers()))
+                ->reject(fn ($bootstrapper) => $bootstrapper === \LaraGram\Foundation\Bootstrap\BootProviders::class)
+                ->all()
         );
     }
 
@@ -405,24 +478,24 @@ class Kernel implements KernelContract
      */
     protected function getCommander()
     {
-        if (is_null($this->Commander)) {
-            $this->Commander = (new Commander($this->app, $this->events, $this->app->version()))
+        if (is_null($this->commander)) {
+            $this->commander = (new commander($this->app, $this->events, $this->app->version()))
                 ->resolveCommands($this->commands)
                 ->setContainerCommandLoader();
         }
 
-        return $this->Commander;
+        return $this->commander;
     }
 
     /**
      * Set the Commander application instance.
      *
-     * @param  \LaraGram\Console\Application|null  $Commander
+     * @param  \LaraGram\Console\Application|null  $commander
      * @return void
      */
-    public function setCommander($Commander)
+    public function setCommander($commander)
     {
-        $this->Commander = $Commander;
+        $this->commander = $commander;
     }
 
     /**

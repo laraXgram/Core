@@ -6,8 +6,8 @@ namespace LaraGram\Support\Env\Parser;
 
 use LaraGram\Support\Env\Exception\InvalidFileException;
 use LaraGram\Support\Env\Util\Regex;
-use GrahamCampbell\ResultType\Result;
-use GrahamCampbell\ResultType\Success;
+use LaraGram\Support\Env\Util\Result;
+use LaraGram\Support\Env\Util\Success;
 
 final class Parser implements ParserInterface
 {
@@ -36,11 +36,11 @@ final class Parser implements ParserInterface
      *
      * @param string[] $entries
      *
-     * @return \GrahamCampbell\ResultType\Result<\LaraGram\Support\Env\Parser\Entry[], string>
+     * @return \LaraGram\Support\Env\Util\Result<\LaraGram\Support\Env\Parser\Entry[], string>
      */
     private static function process(array $entries)
     {
-        /** @var \GrahamCampbell\ResultType\Result<\LaraGram\Support\Env\Parser\Entry[], string> */
+        /** @var \LaraGram\Support\Env\Util\Result<\LaraGram\Support\Env\Parser\Entry[], string> */
         return \array_reduce($entries, static function (Result $result, string $raw) {
             return $result->flatMap(static function (array $entries) use ($raw) {
                 return EntryParser::parse($raw)->map(static function (Entry $entry) use ($entries) {

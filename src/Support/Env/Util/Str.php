@@ -4,9 +4,6 @@ declare(strict_types=1);
 
 namespace LaraGram\Support\Env\Util;
 
-use GrahamCampbell\ResultType\Error;
-use GrahamCampbell\ResultType\Success;
-
 /**
  * @internal
  */
@@ -30,12 +27,12 @@ final class Str
      * @param string      $input
      * @param string|null $encoding
      *
-     * @return \GrahamCampbell\ResultType\Result<string, string>
+     * @return \LaraGram\Support\Env\Util\Result<string, string>
      */
     public static function utf8(string $input, ?string $encoding = null)
     {
         if ($encoding !== null && !\in_array($encoding, \mb_list_encodings(), true)) {
-            /** @var \GrahamCampbell\ResultType\Result<string, string> */
+            /** @var \LaraGram\Support\Env\Util\Result<string, string> */
             return Error::create(
                 \sprintf('Illegal character encoding [%s] specified.', $encoding)
             );
@@ -46,7 +43,7 @@ final class Str
             @\mb_convert_encoding($input, 'UTF-8', $encoding);
 
         if (!is_string($converted)) {
-            /** @var \GrahamCampbell\ResultType\Result<string, string> */
+            /** @var \LaraGram\Support\Env\Util\Result<string, string> */
             return Error::create(
                 \sprintf('Conversion from encoding [%s] failed.', $encoding ?? 'NULL')
             );
@@ -61,7 +58,7 @@ final class Str
             $converted = \substr($converted, 3);
         }
 
-        /** @var \GrahamCampbell\ResultType\Result<string, string> */
+        /** @var \LaraGram\Support\Env\Util\Result<string, string> */
         return Success::create($converted);
     }
 

@@ -5,6 +5,7 @@ namespace LaraGram\Foundation\Bootstrap;
 use LaraGram\Config\Repository;
 use LaraGram\Contracts\Config\Repository as RepositoryContract;
 use LaraGram\Contracts\Foundation\Application;
+use LaraGram\Support\Finder\Finder;
 use SplFileInfo;
 
 class LoadConfiguration
@@ -94,35 +95,19 @@ class LoadConfiguration
 
         $configPath = realpath($app->configPath());
 
-        if (!$configPath) {
+        if (! $configPath) {
             return [];
         }
 
-        $this->findPhpFiles($configPath, $files, $configPath);
+        foreach (Finder::create()->files()->name('*.php')->in($configPath) as $file) {
+            $directory = $this->getNestedDirectory($file, $configPath);
+
+            $files[$directory.basename($file->getRealPath(), '.php')] = $file->getRealPath();
+        }
 
         ksort($files, SORT_NATURAL);
 
         return $files;
-    }
-
-    protected function findPhpFiles($directory, &$files, $baseDirectory)
-    {
-        $items = scandir($directory);
-
-        foreach ($items as $item) {
-            if ($item === '.' || $item === '..') {
-                continue;
-            }
-
-            $fullPath = $directory . DIRECTORY_SEPARATOR . $item;
-
-            if (is_dir($fullPath)) {
-                $this->findPhpFiles($fullPath, $files, $baseDirectory);
-            } elseif (is_file($fullPath) && pathinfo($fullPath, PATHINFO_EXTENSION) === 'php') {
-                $nestedDirectory = str_replace($baseDirectory . DIRECTORY_SEPARATOR, '', $directory . DIRECTORY_SEPARATOR);
-                $files[$nestedDirectory . basename($fullPath, '.php')] = $fullPath;
-            }
-        }
     }
 
     protected function getNestedDirectory(SplFileInfo $file, $configPath)
@@ -139,31 +124,11 @@ class LoadConfiguration
     protected function getBaseConfiguration()
     {
         $config = [];
-        $configPath = realpath(__DIR__ . '/../../../config');
 
-        if (!$configPath) {
-            return [];
+        foreach (Finder::create()->files()->name('*.php')->in(__DIR__.'/../../../config') as $file) {
+            $config[basename($file->getRealPath(), '.php')] = require $file->getRealPath();
         }
-
-        $this->findPhpConfigFiles($configPath, $config);
 
         return $config;
-    }
-
-    protected function findPhpConfigFiles($directory, &$config)
-    {
-        $items = scandir($directory);
-
-        foreach ($items as $item) {
-            if ($item === '.' || $item === '..') {
-                continue;
-            }
-
-            $fullPath = $directory . DIRECTORY_SEPARATOR . $item;
-
-            if (is_file($fullPath) && pathinfo($fullPath, PATHINFO_EXTENSION) === 'php') {
-                $config[basename($fullPath, '.php')] = require $fullPath;
-            }
-        }
     }
 }

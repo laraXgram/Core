@@ -10,6 +10,7 @@ use LaraGram\Container\Container;
 use LaraGram\Contracts\Foundation\Application as ApplicationContract;
 use LaraGram\Contracts\Console\Kernel as ConsoleKernelContract;
 use LaraGram\Contracts\Bot\Kernel as BotKernelContract;
+use LaraGram\Foundation\Bootstrap\LoadEnvironmentVariables;
 use LaraGram\Request\Request;
 use LaraGram\Contracts\Foundation\CachesConfiguration;
 use LaraGram\Conversation\ConversationListener;
@@ -40,7 +41,7 @@ class Application extends Container implements ApplicationContract, CachesConfig
      *
      * @var string
      */
-    const VERSION = "2.5.0";
+    const VERSION = "3.0.0";
 
     /**
      * The base path for the LaraGram installation.
@@ -314,6 +315,19 @@ class Application extends Container implements ApplicationContract, CachesConfig
 
             $this['events']->dispatch('bootstrapped: ' . $bootstrapper, [$this]);
         }
+    }
+
+    /**
+     * Register a callback to run after loading the environment.
+     *
+     * @param  \Closure  $callback
+     * @return void
+     */
+    public function afterLoadingEnvironment(Closure $callback)
+    {
+        $this->afterBootstrapping(
+            LoadEnvironmentVariables::class, $callback
+        );
     }
 
     /**
@@ -743,7 +757,7 @@ class Application extends Container implements ApplicationContract, CachesConfig
     public function runningInConsole()
     {
         if ($this->isRunningInConsole === null) {
-            $this->isRunningInConsole = (\PHP_SAPI === 'cli' || \PHP_SAPI === 'phpdbg');
+            $this->isRunningInConsole = Env::get('APP_RUNNING_IN_CONSOLE') ?? (\PHP_SAPI === 'cli' || \PHP_SAPI === 'phpdbg');
         }
 
         return $this->isRunningInConsole;
@@ -1545,30 +1559,6 @@ class Application extends Container implements ApplicationContract, CachesConfig
         $this->globalBeforeResolvingCallbacks = [];
         $this->globalResolvingCallbacks = [];
         $this->globalAfterResolvingCallbacks = [];
-    }
-
-    public function loadResources($once = true): void
-    {
-        $directory = app('path') . DIRECTORY_SEPARATOR . 'Resources';
-        $files = [];
-        $iterator = new \FilesystemIterator($directory, \FilesystemIterator::SKIP_DOTS);
-        foreach ($iterator as $fileinfo) {
-            if ($fileinfo->isFile()) {
-                $files[] = $fileinfo->getFilename();
-            }
-        }
-
-        foreach ($files as $file) {
-            if ($once) {
-                require_once $directory . DIRECTORY_SEPARATOR . $file;
-            } else {
-                require $directory . DIRECTORY_SEPARATOR . $file;
-            }
-        }
-
-        if (file_exists($this->storagePath('app/cache/conversation/' . md5("conversation." . (user()->id ?? callback_query()->from->id ?? '')) . '.cache'))) {
-            $this->make(ConversationListener::class);
-        }
     }
 
     public function handleRequests()

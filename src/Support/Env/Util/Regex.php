@@ -4,9 +4,6 @@ declare(strict_types=1);
 
 namespace LaraGram\Support\Env\Util;
 
-use GrahamCampbell\ResultType\Error;
-use GrahamCampbell\ResultType\Success;
-
 /**
  * @internal
  */
@@ -30,7 +27,7 @@ final class Regex
      * @param string $pattern
      * @param string $subject
      *
-     * @return \GrahamCampbell\ResultType\Result<bool, string>
+     * @return \LaraGram\Support\Env\Util\Result<bool, string>
      */
     public static function matches(string $pattern, string $subject)
     {
@@ -45,7 +42,7 @@ final class Regex
      * @param string $pattern
      * @param string $subject
      *
-     * @return \GrahamCampbell\ResultType\Result<int, string>
+     * @return \LaraGram\Support\Env\Util\Result<int, string>
      */
     public static function occurrences(string $pattern, string $subject)
     {
@@ -62,7 +59,7 @@ final class Regex
      * @param string                     $subject
      * @param int|null                   $limit
      *
-     * @return \GrahamCampbell\ResultType\Result<string, string>
+     * @return \LaraGram\Support\Env\Util\Result<string, string>
      */
     public static function replaceCallback(string $pattern, callable $callback, string $subject, ?int $limit = null)
     {
@@ -77,7 +74,7 @@ final class Regex
      * @param string $pattern
      * @param string $subject
      *
-     * @return \GrahamCampbell\ResultType\Result<string[], string>
+     * @return \LaraGram\Support\Env\Util\Result<string[], string>
      */
     public static function split(string $pattern, string $subject)
     {
@@ -95,18 +92,18 @@ final class Regex
      * @param callable(string): V $operation
      * @param string              $subject
      *
-     * @return \GrahamCampbell\ResultType\Result<V, string>
+     * @return \LaraGram\Support\Env\Util\Result<V, string>
      */
     private static function pregAndWrap(callable $operation, string $subject)
     {
         $result = $operation($subject);
 
         if (\preg_last_error() !== \PREG_NO_ERROR) {
-            /** @var \GrahamCampbell\ResultType\Result<V,string> */
+            /** @var \LaraGram\Support\Env\Util\Result<V,string> */
             return Error::create(\preg_last_error_msg());
         }
 
-        /** @var \GrahamCampbell\ResultType\Result<V,string> */
+        /** @var \LaraGram\Support\Env\Util\Result<V,string> */
         return Success::create($result);
     }
 }
