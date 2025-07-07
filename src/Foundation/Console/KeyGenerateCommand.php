@@ -79,9 +79,9 @@ class KeyGenerateCommand extends Command
             return false;
         }
 
-//        if (! $this->writeNewEnvironmentFileWith($key)) {
-//            return false;
-//        }
+        if (! $this->writeNewEnvironmentFileWith($key)) {
+            return false;
+        }
 
         return true;
     }
