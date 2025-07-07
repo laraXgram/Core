@@ -29,9 +29,9 @@ class WebhookInfoCommand extends Command
      */
     public function handle(): void
     {
-        $info = request()->getWebhookInfo()['result'];
+        $info = request()->getWebhookInfo()['result'] ?? null;
 
-        if ($info["url"] == ''){
+        if ($info == null || $info["url"] == ''){
             $this->components->error("Webhook not set");
             return;
         }
