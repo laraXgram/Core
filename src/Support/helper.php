@@ -6,6 +6,7 @@ use LaraGram\Contracts\Support\Htmlable;
 use LaraGram\Database\Eloquent\Model;
 use LaraGram\Support\Arr;
 use LaraGram\Support\Collection;
+use LaraGram\Support\Env;
 use LaraGram\Support\Fluent;
 use LaraGram\Support\HigherOrderTapProxy;
 use LaraGram\Support\Once;
@@ -94,6 +95,43 @@ if (! function_exists('class_basename')) {
     }
 }
 
+if (! function_exists('class_uses_recursive')) {
+    /**
+     * Returns all traits used by a class, its parent classes and trait of their traits.
+     *
+     * @param  object|string  $class
+     * @return array
+     */
+    function class_uses_recursive($class)
+    {
+        if (is_object($class)) {
+            $class = get_class($class);
+        }
+
+        $results = [];
+
+        foreach (array_reverse(class_parents($class) ?: []) + [$class => $class] as $class) {
+            $results += trait_uses_recursive($class);
+        }
+
+        return array_unique($results);
+    }
+}
+
+if (! function_exists('env')) {
+    /**
+     * Gets the value of an environment variable.
+     *
+     * @param  string  $key
+     * @param  mixed  $default
+     * @return mixed
+     */
+    function env($key, $default = null)
+    {
+        return Env::get($key, $default);
+    }
+}
+
 if (! function_exists('filled')) {
     /**
      * Determine if a value is "filled".
@@ -166,29 +204,6 @@ if (! function_exists('object_get')) {
         }
 
         return $object;
-    }
-}
-
-if (! function_exists('class_uses_recursive')) {
-    /**
-     * Returns all traits used by a class, its parent classes and trait of their traits.
-     *
-     * @param  object|string  $class
-     * @return array
-     */
-    function class_uses_recursive($class)
-    {
-        if (is_object($class)) {
-            $class = get_class($class);
-        }
-
-        $results = [];
-
-        foreach (array_reverse(class_parents($class) ?: []) + [$class => $class] as $class) {
-            $results += trait_uses_recursive($class);
-        }
-
-        return array_unique($results);
     }
 }
 
@@ -329,22 +344,6 @@ if (! function_exists('tap')) {
     }
 }
 
-if (! function_exists('collect')) {
-    /**
-     * Create a collection from the given value.
-     *
-     * @template TKey of array-key
-     * @template TValue
-     *
-     * @param  \LaraGram\Contracts\Support\Arrayable<TKey, TValue>|iterable<TKey, TValue>|null  $value
-     * @return \LaraGram\Support\Collection<TKey, TValue>
-     */
-    function collect($value = [])
-    {
-        return new Collection($value);
-    }
-}
-
 if (! function_exists('throw_if')) {
     /**
      * Throw the given exception if the given condition is true.
@@ -438,6 +437,51 @@ if (! function_exists('transform')) {
         }
 
         return $default;
+    }
+}
+
+if (! function_exists('windows_os')) {
+    /**
+     * Determine whether the current environment is Windows based.
+     *
+     * @return bool
+     */
+    function windows_os()
+    {
+        return PHP_OS_FAMILY === 'Windows';
+    }
+}
+
+if (! function_exists('with')) {
+    /**
+     * Return the given value, optionally passed through the given callback.
+     *
+     * @template TValue
+     * @template TReturn
+     *
+     * @param  TValue  $value
+     * @param  (callable(TValue): (TReturn))|null  $callback
+     * @return ($callback is null ? TValue : TReturn)
+     */
+    function with($value, ?callable $callback = null)
+    {
+        return is_null($callback) ? $value : $callback($value);
+    }
+}
+
+if (! function_exists('collect')) {
+    /**
+     * Create a collection from the given value.
+     *
+     * @template TKey of array-key
+     * @template TValue
+     *
+     * @param  \LaraGram\Contracts\Support\Arrayable<TKey, TValue>|iterable<TKey, TValue>|null  $value
+     * @return \LaraGram\Support\Collection<TKey, TValue>
+     */
+    function collect($value = [])
+    {
+        return new Collection($value);
     }
 }
 
@@ -675,80 +719,5 @@ if (! function_exists('when')) {
         }
 
         return value($default, $condition);
-    }
-}
-
-if (! function_exists('windows_os')) {
-    /**
-     * Determine whether the current environment is Windows based.
-     *
-     * @return bool
-     */
-    function windows_os()
-    {
-        return PHP_OS_FAMILY === 'Windows';
-    }
-}
-
-if (! function_exists('with')) {
-    /**
-     * Return the given value, optionally passed through the given callback.
-     *
-     * @template TValue
-     * @template TReturn
-     *
-     * @param  TValue  $value
-     * @param  (callable(TValue): (TReturn))|null  $callback
-     * @return ($callback is null ? TValue : TReturn)
-     */
-    function with($value, ?callable $callback = null)
-    {
-        return is_null($callback) ? $value : $callback($value);
-    }
-}
-
-if (! function_exists('once')) {
-    /**
-     * Ensures a callable is only called once, and returns the result on subsequent calls.
-     *
-     * @template  TReturnType
-     *
-     * @param  callable(): TReturnType  $callback
-     * @return TReturnType
-     */
-    function once(callable $callback)
-    {
-        $onceable = Onceable::tryFromTrace(
-            debug_backtrace(DEBUG_BACKTRACE_PROVIDE_OBJECT, 2),
-            $callback,
-        );
-
-        return $onceable ? Once::instance()->value($onceable) : call_user_func($callback);
-    }
-}
-
-if (! function_exists('e')) {
-    /**
-     * Encode HTML special characters in a string.
-     *
-     * @param  \LaraGram\Contracts\Support\DeferringDisplayableValue|\LaraGram\Contracts\Support\Htmlable|\BackedEnum|string|int|float|null  $value
-     * @param  bool  $doubleEncode
-     * @return string
-     */
-    function e($value, $doubleEncode = true)
-    {
-        if ($value instanceof DeferringDisplayableValue) {
-            $value = $value->resolveDisplayableValue();
-        }
-
-        if ($value instanceof Htmlable) {
-            return $value->toHtml();
-        }
-
-        if ($value instanceof BackedEnum) {
-            $value = $value->value;
-        }
-
-        return htmlspecialchars($value ?? '', ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8', $doubleEncode);
     }
 }
