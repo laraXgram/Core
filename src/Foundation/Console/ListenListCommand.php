@@ -4,7 +4,6 @@ namespace LaraGram\Foundation\Console;
 
 use Closure;
 use LaraGram\Console\Command;
-use LaraGram\Contracts\Listening\UrlGenerator;
 use LaraGram\Listening\Listen;
 use LaraGram\Listening\Listener;
 use LaraGram\Listening\TEmplateController;
@@ -432,8 +431,7 @@ class ListenListCommand extends Command
 
         $name = $name ? "$name   " : null;
 
-        $rootControllerNamespace = $this->laragram[UrlGenerator::class]->getRootControllerNamespace()
-            ?? ($this->laragram->getNamespace().'Http\\Controllers');
+        $rootControllerNamespace = ($this->laragram->getNamespace().'Http\\Controllers');
 
         if (str_starts_with($action, $rootControllerNamespace)) {
             return $name.substr($action, mb_strlen($rootControllerNamespace) + 1);
@@ -506,7 +504,7 @@ class ListenListCommand extends Command
             ['pattern', null, InputOption::VALUE_OPTIONAL, 'Only show listens matching the given pattern'],
             ['except-path', null, InputOption::VALUE_OPTIONAL, 'Do not display the listens matching the given path pattern'],
             ['reverse', 'r', InputOption::VALUE_NONE, 'Reverse the ordering of the listens'],
-            ['sort', null, InputOption::VALUE_OPTIONAL, 'The column (domain, method, uri, name, action, middleware, definition) to sort by', 'uri'],
+            ['sort', null, InputOption::VALUE_OPTIONAL, 'The column (method, pattern, name, action, middleware, definition) to sort by', 'pattern'],
             ['except-vendor', null, InputOption::VALUE_NONE, 'Do not display listens defined by vendor packages'],
             ['only-vendor', null, InputOption::VALUE_NONE, 'Only display listens defined by vendor packages'],
         ];
