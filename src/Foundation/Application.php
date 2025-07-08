@@ -13,7 +13,6 @@ use LaraGram\Contracts\Bot\Kernel as BotKernelContract;
 use LaraGram\Foundation\Bootstrap\LoadEnvironmentVariables;
 use LaraGram\Request\Request;
 use LaraGram\Contracts\Foundation\CachesConfiguration;
-use LaraGram\Conversation\ConversationListener;
 use LaraGram\Events\EventServiceProvider;
 use LaraGram\Filesystem\Filesystem;
 use LaraGram\Foundation\Events\LocaleUpdated;
@@ -1523,7 +1522,7 @@ class Application extends Container implements ApplicationContract, CachesConfig
                      'redis.connection' => [\LaraGram\Redis\Connections\Connection::class, \LaraGram\Contracts\Redis\Connection::class],
                      'request' => [\LaraGram\Request\Request::class],
                      'listener' => [\LaraGram\Listening\Listener::class, \LaraGram\Contracts\Listening\Registrar::class, \LaraGram\Contracts\Listening\BindingRegistrar::class],
-                     't8.compiler' => [\LaraGram\Template\Compilers\T8Compiler::class],
+                     't8.compiler' => [\LaraGram\Template\Compilers\Temple8Compiler::class],
                      'template' => [\LaraGram\Template\Factory::class, \LaraGram\Contracts\Template\Factory::class],
                      'conversation' => [\LaraGram\Conversation\Conversation::class],
                      'keyboard' => [\LaraGram\Keyboard\Keyboard::class],
@@ -1559,48 +1558,6 @@ class Application extends Container implements ApplicationContract, CachesConfig
         $this->globalBeforeResolvingCallbacks = [];
         $this->globalResolvingCallbacks = [];
         $this->globalAfterResolvingCallbacks = [];
-    }
-
-    public function handleRequests()
-    {
-        if (! $this->hasBeenBootstrapped()) {
-            $this->bootstrapWith([
-                \LaraGram\Foundation\Bootstrap\LoadConfiguration::class,
-                \LaraGram\Foundation\Bootstrap\HandleExceptions::class,
-                \LaraGram\Foundation\Bootstrap\RegisterFacades::class,
-                \LaraGram\Foundation\Bootstrap\RegisterProviders::class,
-                \LaraGram\Foundation\Bootstrap\BootProviders::class,
-            ]);
-        }
-
-        $this->loadDeferredProviders();
-
-        $update_type = config('laraquest.update_type');
-        if ($update_type == 'openswoole') {
-            $ip = config('server.openswoole.ip');
-            $port = config('server.openswoole.port');
-            $server = new SwooleServer($ip, $port);
-
-            $server->on("request", function (SwooleRequest $swooleRequest, SwooleResponse $swooleResponse) {
-                $swooleResponse->end();
-                global $swoole;
-                $swoole = json_decode($swooleRequest->getContent());
-
-                app()->loadResources(false);
-            });
-
-            $server->start();
-        } elseif ($update_type == 'polling') {
-            Laraquest::polling(function () {
-                $this->loadResources(false);
-            });
-        } else {
-            global $data;
-            global $argv;
-            $data = json_decode($argv[1] ?? '{}');
-
-            $this->loadResources();
-        }
     }
 
     /**
