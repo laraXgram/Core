@@ -5,11 +5,8 @@ namespace LaraGram\Support\Facades;
 /**
  * @method static \LaraGram\Keyboard\Keyboard replyKeyboardMarkup(array ...$rows)
  * @method static \LaraGram\Keyboard\Keyboard inlineKeyboardMarkup(array ...$rows)
- * @method static \LaraGram\Keyboard\Keyboard replyKeyboardRemove($selective = false)
- * @method static \LaraGram\Keyboard\Keyboard forceReply($input_field_placeholder = '', $selective = false)
- * @method static \LaraGram\Keyboard\Keyboard copyTextButton(string $text)
- * @method static void macro(string $name, callable $macro)
- * @method static bool hasMacro(string $name)
+ * @method static \LaraGram\Keyboard\Keyboard replyKeyboardRemove(bool $selective = false)
+ * @method static \LaraGram\Keyboard\Keyboard forceReply(string $input_field_placeholder = '', bool $selective = false)
  */
 class Keyboard extends Facade
 {
