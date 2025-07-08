@@ -12,8 +12,10 @@ namespace LaraGram\Support\Facades;
  * @method static isLeft(int|string|null $user_id = null, int|string|null $chat_id = null)
  * @method static isBotAdmin(int|string|null $user_id = null, int|string|null $chat_id = null)
  * @method static isBotOwner(int|string|null $user_id = null, int|string|null $chat_id = null)
- * @method static void macro(string $name, callable $macro)
+ * @method static void macro(string $name, object|callable $macro)
+ * @method static void mixin(object $mixin, bool $replace = true)
  * @method static bool hasMacro(string $name)
+ * @method static void flushMacros()
  */
 class Auth extends Facade
 {

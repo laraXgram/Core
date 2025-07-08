@@ -134,8 +134,10 @@ use LaraGram\Laraquest\Mode;
  * @method static editChatSubscriptionInviteLink($chat_id, $invite_link, $name = null)
  * @method static getUpdateType()
  * @method static getUpdateMessageSubType(object $message)
- * @method static void macro(string $name, callable $macro)
+ * @method static void macro(string $name, object|callable $macro)
+ * @method static void mixin(object $mixin, bool $replace = true)
  * @method static bool hasMacro(string $name)
+ * @method static void flushMacros()
  */
 class Request extends Facade
 {

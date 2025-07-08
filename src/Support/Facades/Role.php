@@ -8,8 +8,10 @@ namespace LaraGram\Support\Facades;
  * @method static addBotOwner(int|string $user_id, int|string|null $chat_id = null)
  * @method static removeRole(int|string $user_id, int|string|null $chat_id = null)
  * @method static getRole(int|string $user_id, int|string|null $chat_id = null)
- * @method static void macro(string $name, callable $macro)
+ * @method static void macro(string $name, object|callable $macro)
+ * @method static void mixin(object $mixin, bool $replace = true)
  * @method static bool hasMacro(string $name)
+ * @method static void flushMacros()
  */
 class Role extends Facade
 {
