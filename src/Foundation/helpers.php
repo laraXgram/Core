@@ -324,16 +324,16 @@ if (! function_exists('resolve')) {
     }
 }
 
-if (! function_exists('resource_path')) {
+if (! function_exists('template_path')) {
     /**
-     * Get the path to the resources folder.
+     * Get the path to the templates folder.
      *
      * @param  string  $path
      * @return string
      */
-    function resource_path($path = '')
+    function template_path($path = '')
     {
-        return app()->resourcePath($path);
+        return app()->templatePath($path);
     }
 }
 
