@@ -36,6 +36,7 @@ class DefaultProviders
             \LaraGram\Redis\RedisServiceProvider::class,
             \LaraGram\Template\TemplateServiceProvider::class,
             \LaraGram\Translation\TranslationServiceProvider::class,
+            \LaraGram\Validation\ValidationServiceProvider::class,
         ];
     }
 
