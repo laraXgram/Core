@@ -5,7 +5,11 @@ use LaraGram\Contracts\Bus\Dispatcher;
 use LaraGram\Contracts\Debug\ExceptionHandler;
 use LaraGram\Foundation\Bus\PendingClosureDispatch;
 use LaraGram\Foundation\Bus\PendingDispatch;
+use LaraGram\Log\Context\Repository;
 use LaraGram\Queue\CallQueuedClosure;
+use LaraGram\Support\Facades\Date;
+use LaraGram\Validation\Factory as ValidationFactory;
+use LaraGram\Template\Factory as TemplateFactory;
 
 if (! function_exists('app')) {
     /**
@@ -136,6 +140,26 @@ if (! function_exists('config_path')) {
     }
 }
 
+if (! function_exists('context')) {
+    /**
+     * Get / set the specified context value.
+     *
+     * @param  array|string|null  $key
+     * @param  mixed  $default
+     * @return ($key is string ? mixed : \LaraGram\Log\Context\Repository)
+     */
+    function context($key = null, $default = null)
+    {
+        $context = app(Repository::class);
+
+        return match (true) {
+            is_null($key) => $context,
+            is_array($key) => $context->add($key),
+            default => $context->get($key, $default),
+        };
+    }
+}
+
 if (! function_exists('database_path')) {
     /**
      * Get the database path.
@@ -238,29 +262,17 @@ if (! function_exists('event')) {
     }
 }
 
-if (! function_exists('lang_path')) {
+if (! function_exists('info')) {
     /**
-     * Get the path to the language folder.
+     * Write some information to the log.
      *
-     * @param  string  $path
-     * @return string
+     * @param  string  $message
+     * @param  array  $context
+     * @return void
      */
-    function lang_path($path = '')
+    function info($message, $context = [])
     {
-        return app()->langPath($path);
-    }
-}
-
-if (! function_exists('public_path')) {
-    /**
-     * Get the path to the public folder.
-     *
-     * @param  string  $path
-     * @return string
-     */
-    function public_path($path = '')
-    {
-        return app()->publicPath($path);
+        app('log')->info($message, $context);
     }
 }
 
@@ -279,6 +291,107 @@ if (! function_exists('logger')) {
         }
 
         return app('log')->debug($message, $context);
+    }
+}
+
+if (! function_exists('lang_path')) {
+    /**
+     * Get the path to the language folder.
+     *
+     * @param  string  $path
+     * @return string
+     */
+    function lang_path($path = '')
+    {
+        return app()->langPath($path);
+    }
+}
+
+if (! function_exists('logs')) {
+    /**
+     * Get a log driver instance.
+     *
+     * @param  string|null  $driver
+     * @return ($driver is null ? \LaraGram\Log\LogManager : \LaraGram\Log\LoggerInterface)
+     */
+    function logs($driver = null)
+    {
+        return $driver ? app('log')->driver($driver) : app('log');
+    }
+}
+
+if (! function_exists('now')) {
+    /**
+     * Create a new Carbon instance for the current time.
+     *
+     * @param  \DateTimeZone|string|null  $tz
+     * @return \LaraGram\Support\Tempora
+     */
+    function now($tz = null)
+    {
+        return Date::now($tz);
+    }
+}
+
+if (! function_exists('public_path')) {
+    /**
+     * Get the path to the public folder.
+     *
+     * @param  string  $path
+     * @return string
+     */
+    function public_path($path = '')
+    {
+        return app()->publicPath($path);
+    }
+}
+
+if (! function_exists('report')) {
+    /**
+     * Report an exception.
+     *
+     * @param  \Throwable|string  $exception
+     * @return void
+     */
+    function report($exception)
+    {
+        if (is_string($exception)) {
+            $exception = new Exception($exception);
+        }
+
+        app(ExceptionHandler::class)->report($exception);
+    }
+}
+
+if (! function_exists('report_if')) {
+    /**
+     * Report an exception if the given condition is true.
+     *
+     * @param  bool  $boolean
+     * @param  \Throwable|string  $exception
+     * @return void
+     */
+    function report_if($boolean, $exception)
+    {
+        if ($boolean) {
+            report($exception);
+        }
+    }
+}
+
+if (! function_exists('report_unless')) {
+    /**
+     * Report an exception unless the given condition is true.
+     *
+     * @param  bool  $boolean
+     * @param  \Throwable|string  $exception
+     * @return void
+     */
+    function report_unless($boolean, $exception)
+    {
+        if (! $boolean) {
+            report($exception);
+        }
     }
 }
 
@@ -324,6 +437,41 @@ if (! function_exists('resolve')) {
     }
 }
 
+if (! function_exists('storage_path')) {
+    /**
+     * Get the path to the storage folder.
+     *
+     * @param  string  $path
+     * @return string
+     */
+    function storage_path($path = '')
+    {
+        return app()->storagePath($path);
+    }
+}
+
+if (! function_exists('template')) {
+    /**
+     * Get the evaluated view contents for the given view.
+     *
+     * @param  string|null  $view
+     * @param  \LaraGram\Contracts\Support\Arrayable|array  $data
+     * @param  array  $mergeData
+     * @return ($view is null ? \LaraGram\Contracts\Template\Factory : \LaraGram\Contracts\Template\Template)
+     */
+    function template($view = null, $data = [], $mergeData = [])
+    {
+        $factory = app(TemplateFactory::class);
+
+        if (func_num_args() === 0) {
+            return $factory;
+        }
+
+        return $factory->make($view, $data, $mergeData);
+    }
+}
+
+
 if (! function_exists('template_path')) {
     /**
      * Get the path to the templates folder.
@@ -337,16 +485,16 @@ if (! function_exists('template_path')) {
     }
 }
 
-if (! function_exists('storage_path')) {
+if (! function_exists('today')) {
     /**
-     * Get the path to the storage folder.
+     * Create a new Tempora instance for the current date.
      *
-     * @param  string  $path
-     * @return string
+     * @param  \DateTimeZone|string|null  $tz
+     * @return \LaraGram\Support\Tempora
      */
-    function storage_path($path = '')
+    function today($tz = null)
     {
-        return app()->storagePath($path);
+        return Date::today($tz);
     }
 }
 
@@ -404,22 +552,28 @@ if (! function_exists('__')) {
     }
 }
 
-if (! function_exists('report')) {
+if (! function_exists('validator')) {
     /**
-     * Report an exception.
+     * Create a new Validator instance.
      *
-     * @param  \Throwable|string  $exception
-     * @return void
+     * @param  array|null  $data
+     * @param  array  $rules
+     * @param  array  $messages
+     * @param  array  $attributes
+     * @return ($data is null ? \LaraGram\Contracts\Validation\Factory : \LaraGram\Contracts\Validation\Validator)
      */
-    function report($exception)
+    function validator(?array $data = null, array $rules = [], array $messages = [], array $attributes = [])
     {
-        if (is_string($exception)) {
-            $exception = new Exception($exception);
+        $factory = app(ValidationFactory::class);
+
+        if (func_num_args() === 0) {
+            return $factory;
         }
 
-        app(ExceptionHandler::class)->report($exception);
+        return $factory->make($data ?? [], $rules, $messages, $attributes);
     }
 }
+
 
 if (! function_exists('report_if')) {
     /**
