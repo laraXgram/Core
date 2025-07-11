@@ -183,11 +183,11 @@ class Temple8Compiler extends Compiler implements CompilerInterface
         if (! is_null($this->cachePath)) {
             $contents = $this->compileString($this->files->get($this->getPath()));
 
+            $contents = $this->appendMethodCall($contents);
+
             if (! empty($this->getPath())) {
                 $contents = $this->appendFilePath($contents);
             }
-
-            $contents = $this->appendMethodCall($contents);
 
             $this->ensureCompiledDirectoryExists(
                 $compiledPath = $this->getCompiledPath($this->getPath())
@@ -224,6 +224,10 @@ class Temple8Compiler extends Compiler implements CompilerInterface
     {
         preg_match("/@method\(['\"](\w+)['\"]\)/", $contents, $methodMatch);
         $method = $methodMatch[1] ?? 'sendMessage';
+
+        if (!preg_match('/@chat_id\s*\(.*?\)/', $contents)) {
+            $contents = "<?php \$__t8__chat_id = id(); ?>\n" . $contents;
+        }
 
         preg_match_all('/\$\__t8__([a-zA-Z_]+)/', $contents, $varMatches);
         $params = array_unique($varMatches[1]);
