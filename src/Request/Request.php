@@ -6,7 +6,6 @@ use Closure;
 use LaraGram\Laraquest\Exceptions\InvalidUpdateType;
 use LaraGram\Laraquest\Methode as MethodeTrait;
 use LaraGram\Laraquest\Updates as UpdatesTrait;
-use LaraGram\Laraquest\Updates\Updates;
 use LaraGram\Listening\Type;
 use LaraGram\Support\Arr;
 use LaraGram\Support\Collection;
@@ -50,7 +49,7 @@ class Request
     /**
      * The request contents.
      *
-     * @var Updates|Collection
+     * @var UpdatesTrait|Collection
      */
     protected $content;
 
@@ -98,7 +97,7 @@ class Request
      */
     public function getUpdateType(): false|string
     {
-        /** @var Updates $update */
+        /** @var UpdatesTrait $update */
         $update = json_decode($this->update()[0]);
         return match (true) {
             isset($update->inline_query) => 'inline_query',
@@ -145,7 +144,7 @@ class Request
      */
     public function scope()
     {
-        /** @var Updates $update */
+        /** @var UpdatesTrait $update */
         $update = json_decode($this->update()[0]);
         return match (true) {
             isset($update->message->chat->type) => $update->message->chat->type,
@@ -175,7 +174,7 @@ class Request
      */
     public function isReply()
     {
-        /** @var Updates $update */
+        /** @var UpdatesTrait $update */
         $update = json_decode($this->update()[0]);
         return match (true) {
             isset($update->message->reply_to_message),
@@ -192,7 +191,7 @@ class Request
     /**
      * Get the full update for the request.
      *
-     * @return Updates
+     * @return UpdatesTrait
      */
     public function update()
     {
@@ -469,11 +468,11 @@ class Request
     /**
      * Get an input element from the request.
      *
-     * @param string $key
+     * @param string $name
      * @return mixed
      */
-    public function __get($key)
+    public function __get($name)
     {
-        return Arr::get($this->content->all(), $key, fn() => $this->listen($key));
+        return Arr::get($this->content->all(), $name, fn() => $this->listen($name));
     }
 }
