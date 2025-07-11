@@ -2,7 +2,10 @@
 
 namespace LaraGram\Foundation\Events;
 
+use LaraGram\Support\Collection;
+use LaraGram\Support\Finder\Finder;
 use LaraGram\Support\Reflector;
+use LaraGram\Support\Str;
 use ReflectionClass;
 use ReflectionException;
 use ReflectionMethod;

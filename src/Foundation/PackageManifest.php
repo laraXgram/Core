@@ -12,7 +12,7 @@ class PackageManifest
     /**
      * The filesystem instance.
      *
-     * @var Filesystem
+     * @var \LaraGram\Filesystem\Filesystem
      */
     public $files;
 
@@ -47,7 +47,7 @@ class PackageManifest
     /**
      * Create a new package manifest instance.
      *
-     * @param  Filesystem  $files
+     * @param  \LaraGram\Filesystem\Filesystem  $files
      * @param  string  $basePath
      * @param  string  $manifestPath
      * @return void
@@ -70,6 +70,11 @@ class PackageManifest
         return $this->config('providers');
     }
 
+    /**
+     * Get all of the aliases for all packages.
+     *
+     * @return array
+     */
     public function aliases()
     {
         return $this->config('aliases');
@@ -88,6 +93,11 @@ class PackageManifest
         })->filter()->all();
     }
 
+    /**
+     * Get the current package manifest.
+     *
+     * @return array
+     */
     protected function getManifest()
     {
         if (! is_null($this->manifest)) {

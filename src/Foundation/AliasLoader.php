@@ -47,7 +47,7 @@ class AliasLoader
      * Get or create the singleton alias loader instance.
      *
      * @param  array  $aliases
-     * @return AliasLoader
+     * @return \LaraGram\Foundation\AliasLoader
      */
     public static function getInstance(array $aliases = [])
     {

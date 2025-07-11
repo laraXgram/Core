@@ -5,7 +5,7 @@ namespace LaraGram\Foundation\Bus;
 use LaraGram\Bus\UniqueLock;
 use LaraGram\Container\Container;
 use LaraGram\Contracts\Bus\Dispatcher;
-use LaraGram\Contracts\Cache\CacheDriver as Cache;
+use LaraGram\Contracts\Cache\Repository as Cache;
 use LaraGram\Contracts\Queue\ShouldBeUnique;
 
 class PendingDispatch
