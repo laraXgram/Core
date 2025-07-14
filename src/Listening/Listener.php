@@ -444,7 +444,7 @@ class Listener implements BindingRegistrar, RegistrarContract
     protected function prefix($pattern)
     {
         $prefix = $this->getLastGroupPrefix();
-        return ($prefix === '' ? '' : "$prefix ").$pattern ?: '';
+        return ($prefix ?? '').$pattern ?: '';
     }
 
     /**

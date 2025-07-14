@@ -763,7 +763,7 @@ class Listen
 
         $this->updatePrefixOnAction($prefix);
 
-        return $this->setPattern(($prefix === '' ? '' : "$prefix ").$this->pattern);
+        return $this->setPattern(($prefix ?? '').$this->pattern);
     }
 
     /**
@@ -774,7 +774,7 @@ class Listen
      */
     protected function updatePrefixOnAction($prefix)
     {
-        if (! empty($newPrefix = (($prefix === '' ? '' : "$prefix ").($this->action['prefix'] ?? '')))) {
+        if (! empty($newPrefix = (($prefix ?? '').($this->action['prefix'] ?? '')))) {
             $this->action['prefix'] = $newPrefix;
         }
     }

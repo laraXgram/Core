@@ -259,7 +259,7 @@ class CompiledListenCollection extends AbstractListenCollection
         } else {
             $prefix = $attributes['action']['prefix'];
 
-            $baseUri = ($prefix === '' ? '' : "$prefix ").$attributes['pattern'];
+            $baseUri = ($prefix ?? '').$attributes['pattern'];
         }
 
         return $this->listener->newListen($attributes['methods'], $baseUri, $attributes['action'])
