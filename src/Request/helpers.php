@@ -68,7 +68,7 @@ if (!function_exists('text')) {
          */
         $request = app('laraquest');
         return match (true) {
-            $request->message != null => $request->message->text,
+            $request->message != null && isset($request->message->text) => $request->message->text,
             $request->edited_message != null => $request->edited_message->text,
             $request->channel_post != null => $request->channel_post->text,
             $request->edited_channel_post != null => $request->edited_channel_post->text,

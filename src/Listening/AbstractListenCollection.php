@@ -117,7 +117,6 @@ abstract class AbstractListenCollection implements Countable, IteratorAggregate,
     protected function requestMethodNotAllowed($request, array $others, $method)
     {
         throw new \Exception(
-            implode(', ', $others),
             sprintf(
                 'The %s method is not supported for listen %s. Supported methods: %s.',
                 $method,

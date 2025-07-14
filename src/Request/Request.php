@@ -7,7 +7,6 @@ use LaraGram\Laraquest\Exceptions\InvalidUpdateType;
 use LaraGram\Laraquest\Methode as MethodeTrait;
 use LaraGram\Laraquest\Updates as UpdatesTrait;
 use LaraGram\Listening\Type;
-use LaraGram\Support\Arr;
 use LaraGram\Support\Collection;
 use LaraGram\Support\Traits\Conditionable;
 use LaraGram\Support\Traits\Macroable;
@@ -113,26 +112,28 @@ class Request
     /**
      * This function returns the type of the message.
      *
-     * @param  object  $message
+     * @param  object|UpdatesTrait\Message  $message
      * @return string
      * @throws InvalidUpdateType
      */
     public function getUpdateMessageSubType(object $message): string
     {
         return match (true) {
-            isset($message->text) => 'text',
-            isset($message->photo) => 'photo',
-            isset($message->video) => 'video',
-            isset($message->audio) => 'audio',
-            isset($message->voice) => 'voice',
-            isset($message->contact) => 'contact',
-            isset($message->location) => 'location',
-            isset($message->reply_to_message) => 'reply_to_message',
             isset($message->animation) => 'animation',
-            isset($message->sticker) => 'sticker',
+            isset($message->audio) => 'audio',
+            isset($message->contact) => 'contact',
+            isset($message->dice) => 'dice',
             isset($message->document) => 'document',
-            isset($message->new_chat_members) => 'new_chat_members',
             isset($message->left_chat_member) => 'left_chat_member',
+            isset($message->location) => 'location',
+            isset($message->new_chat_members) => 'new_chat_members',
+            isset($message->photo) => 'photo',
+            isset($message->reply_to_message) => 'reply_to_message',
+            isset($message->sticker) => 'sticker',
+            isset($message->text) => 'text',
+            isset($message->video) => 'video',
+            isset($message->video_note) => 'video_note',
+            isset($message->voice) => 'voice',
             default => throw new InvalidUpdateType('Unknown message type')
         };
     }
@@ -205,7 +206,44 @@ class Request
      */
     public function method()
     {
-        return strtoupper(Type::findType($this->getUpdateType())->value);
+        if (($method = $this->checkIfMethodIsCommand())){
+            return $method;
+        }
+
+        if (($method = $this->checkIfMethodIsCallbackQuery())){
+            return $method;
+        }
+
+        return strtoupper(Type::findVerb($this->getUpdateType())->value);
+    }
+
+    /**
+     * Check if the Update method is COMMAND or REFERRAL
+     *
+     * @return false|string
+     */
+    public function checkIfMethodIsCommand()
+    {
+        if (isset($this->message->entities) && $this->message->entities[0]->type === 'bot_command') {
+            $command = str_replace('/start ', '', $this->message->text);
+            return $command !== '' && $command !== $this->message->text
+                ? 'REFERRAL'
+                : 'COMMAND';
+        }
+        return false;
+    }
+
+    /**
+     * Check if the Update method is CALLBACK_DATA
+     *
+     * @return false|string
+     */
+    public function checkIfMethodIsCallbackQuery()
+    {
+        if (isset($this->callback_query)) {
+            return 'CALLBACK_DATA';
+        }
+        return false;
     }
 
     /**
@@ -473,6 +511,6 @@ class Request
      */
     public function __get($name)
     {
-        return Arr::get($this->content->all(), $name, fn() => $this->listen($name));
+        return json_decode($this->update()[0])->{$name} ?? fn() => $this->listen($name);
     }
 }

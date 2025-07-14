@@ -39,6 +39,7 @@ class Listener implements BindingRegistrar, RegistrarContract
         __call as macroCall;
     }
     use Tappable;
+    use HandlerTrait;
 
     /**
      * The event dispatcher instance.
@@ -140,10 +141,8 @@ class Listener implements BindingRegistrar, RegistrarContract
      * @var string[]
      */
     public static $verbs = [
-        'TEXT', 'COMMAND', 'DICE', 'MEDIA', 'UPDATE',
-        'MESSAGE', 'MESSAGE_TYPE', 'CALLBACK_DATA',
-        'REFERRAL', 'HASHTAG', 'CASHTAG',
-        'MENTION', 'ADD_MEMBER', 'JOIN_MEMBER',
+        'TEXT', 'DICE', 'UPDATE', 'MESSAGE', 'MESSAGE_TYPE',
+        'CALLBACK_DATA', 'ENTITIES', 'REFERRAL', 'COMMAND',
     ];
 
     /**
@@ -158,30 +157,6 @@ class Listener implements BindingRegistrar, RegistrarContract
         $this->events = $events;
         $this->listens = new ListenCollection;
         $this->container = $container ?: new Container;
-    }
-
-    /**
-     * Register a new GET listen with the listener.
-     *
-     * @param  string  $pattern
-     * @param  array|string|callable  $action
-     * @return \LaraGram\Listening\Listen
-     */
-    public function onText($pattern, $action)
-    {
-        return $this->addListen('TEXT', $pattern, $action);
-    }
-
-    /**
-     * Register a new listen responding to all verbs.
-     *
-     * @param  string  $pattern
-     * @param  array|string|callable|null  $action
-     * @return \LaraGram\Listening\Listen
-     */
-    public function onAny($action = null)
-    {
-        return $this->addListen(self::$verbs, '', $action);
     }
 
     /**
@@ -216,15 +191,15 @@ class Listener implements BindingRegistrar, RegistrarContract
      * Register a new listen that returns a view.
      *
      * @param  string  $pattern
-     * @param  string  $view
+     * @param  string  $template
      * @param  array  $data
-     * @param  int|array  $status
-     * @param  array  $headers
-     * @return \LaraGram\Listening\Listen
+     * @param  string  $method
+     * @return Listen
      */
-    public function template($pattern, $template, $data = [])
+    public function template($pattern, $template, $data = [], $method = "TEXT")
     {
-        return $this->addListen(self::$verbs, $pattern, '\LaraGram\Listening\TemplateController')
+        $methods = $method == "*" ? self::$verbs : $method;
+        return $this->addListen($methods, $pattern, '\LaraGram\Listening\TemplateController')
             ->setDefaults([
                 'template' => $template,
                 'data' => $data,

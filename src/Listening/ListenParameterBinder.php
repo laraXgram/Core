@@ -55,9 +55,9 @@ class ListenParameterBinder
     {
         return match (true){
             text() !== null => text(),
-            callback_query()->data !== null => callback_query()->data,
-            inline_query()->query !== null => inline_query()->query,
-            chosen_inline_result()->query !== null => chosen_inline_result()->query,
+            isset(callback_query()->data) => callback_query()->data,
+            isset(inline_query()->query) => inline_query()->query,
+            isset(chosen_inline_result()->query) => chosen_inline_result()->query,
             default => null
         };
     }

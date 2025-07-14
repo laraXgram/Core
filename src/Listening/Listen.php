@@ -351,7 +351,7 @@ class Listen
     {
         $this->compileListen();
 
-        foreach (self::getValidators() as $k=> $validator) {
+        foreach (self::getValidators() as $k => $validator) {
             if (! $includingMethod && $validator instanceof MethodValidator) {
                 continue;
             }

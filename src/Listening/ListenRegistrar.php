@@ -53,10 +53,8 @@ class ListenRegistrar
      * @var string[]
      */
     protected $passthru = [
-        'text', 'command', 'dice', 'media', 'update',
-        'message', 'message_type', 'callback_data',
-        'referral', 'hashtag', 'cashtag',
-        'mention', 'add_member', 'join_member',
+        'text', 'dice', 'update', 'message', 'message_type',
+        'callback_data', 'entities', 'referral', 'command',
     ];
 
     /**

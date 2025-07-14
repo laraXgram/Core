@@ -3,7 +3,10 @@
 namespace LaraGram\Foundation\Console;
 
 use Closure;
+use LaraGram\Console\Attribute\AsCommand;
 use LaraGram\Console\Command;
+use LaraGram\Console\Input\InputOption;
+use LaraGram\Console\Terminal;
 use LaraGram\Listening\Listen;
 use LaraGram\Listening\Listener;
 use LaraGram\Listening\TEmplateController;
@@ -13,9 +16,6 @@ use LaraGram\Support\Str;
 use LaraGram\Support\Stringable;
 use ReflectionClass;
 use ReflectionFunction;
-use LaraGram\Console\Attribute\AsCommand;
-use LaraGram\Console\Input\InputOption;
-use LaraGram\Console\Terminal;
 
 #[AsCommand(name: 'listen:list')]
 class ListenListCommand extends Command
@@ -61,27 +61,21 @@ class ListenListCommand extends Command
      * @var array
      */
     protected $verbColors = [
-        'ANY' => 'red',
-        'TEXT' => 'blue',
+        'CALLBACK_DATA' => 'red',
         'COMMAND' => '#6C7280',
         'DICE' => '#6C7280',
-        'MEDIA' => 'yellow',
-        'UPDATE' => 'yellow',
+        'ENTITIES' => 'green',
         'MESSAGE' => 'yellow',
-        'MESSAGE_TYPE' => 'red',
-        'CALLBACK_DATA' => 'red',
-        'REFERRAL' => 'red',
-        'HASHTAG' => 'red',
-        'CASHTAG' => 'red',
-        'MENTION' => 'red',
-        'ADD_MEMBER' => 'red',
-        'JOIN_MEMBER' => 'red',
+        'MESSAGE_TYPE' => 'white',
+        'REFERRAL' => '#e18bb5',
+        'TEXT' => 'blue',
+        'UPDATE' => 'yellow',
     ];
 
     /**
      * Create a new listen command instance.
      *
-     * @param  \LaraGram\Listening\Listener  $listener
+     * @param \LaraGram\Listening\Listener $listener
      * @return void
      */
     public function __construct(Listener $listener)
@@ -98,11 +92,11 @@ class ListenListCommand extends Command
      */
     public function handle()
     {
-        if (! $this->output->isVeryVerbose()) {
+        if (!$this->output->isVeryVerbose()) {
             $this->listener->flushMiddlewareGroups();
         }
 
-        if (! $this->listener->getListens()->count()) {
+        if (!$this->listener->getListens()->count()) {
             return $this->components->error("Your application doesn't have any listens.");
         }
 
@@ -140,7 +134,7 @@ class ListenListCommand extends Command
     /**
      * Get the listen information for a given listen.
      *
-     * @param  \LaraGram\Listening\Listen  $listen
+     * @param \LaraGram\Listening\Listen $listen
      * @return array
      */
     protected function getListenInformation(Listen $listen)
@@ -158,8 +152,8 @@ class ListenListCommand extends Command
     /**
      * Sort the listens by a given element.
      *
-     * @param  string  $sort
-     * @param  array  $listens
+     * @param string $sort
+     * @param array $listens
      * @return array
      */
     protected function sortListens($sort, array $listens)
@@ -180,7 +174,7 @@ class ListenListCommand extends Command
     /**
      * Remove unnecessary columns from the listens.
      *
-     * @param  array  $listens
+     * @param array $listens
      * @return array
      */
     protected function pluckColumns(array $listens)
@@ -193,7 +187,7 @@ class ListenListCommand extends Command
     /**
      * Display the listen information on the console.
      *
-     * @param  array  $listens
+     * @param array $listens
      * @return void
      */
     protected function displayListens(array $listens)
@@ -208,7 +202,7 @@ class ListenListCommand extends Command
     /**
      * Get the middleware for the listen.
      *
-     * @param  \LaraGram\Listening\Listen  $listen
+     * @param \LaraGram\Listening\Listen $listen
      * @return string
      */
     protected function getMiddleware($listen)
@@ -221,7 +215,7 @@ class ListenListCommand extends Command
     /**
      * Determine if the listen has been defined outside of the application.
      *
-     * @param  \LaraGram\Listening\Listen  $listen
+     * @param \LaraGram\Listening\Listen $listen
      * @return bool
      */
     protected function isVendorListen(Listen $listen)
@@ -249,31 +243,31 @@ class ListenListCommand extends Command
     /**
      * Determine if the listen uses a framework controller.
      *
-     * @param  \LaraGram\Listening\Listen  $listen
+     * @param \LaraGram\Listening\Listen $listen
      * @return bool
      */
     protected function isFrameworkController(Listen $listen)
     {
         return in_array($listen->getControllerClass(), [
             '\LaraGram\Listening\RedirectController',
-            '\LaraGram\Listening\ViewController',
+            '\LaraGram\Listening\TemplateController',
         ], true);
     }
 
     /**
      * Filter the listen by URI and / or name.
      *
-     * @param  array  $listen
+     * @param array $listen
      * @return array|null
      */
     protected function filterListen(array $listen)
     {
-        if (($this->option('name') && ! Str::contains((string) $listen['name'], $this->option('name'))) ||
-            ($this->option('action') && isset($listen['action']) && is_string($listen['action']) && ! Str::contains($listen['action'], $this->option('action'))) ||
-            ($this->option('pattern') && ! Str::contains($listen['pattern'], $this->option('pattern'))) ||
-            ($this->option('method') && ! Str::contains($listen['method'], strtoupper($this->option('method')))) ||
+        if (($this->option('name') && !Str::contains((string)$listen['name'], $this->option('name'))) ||
+            ($this->option('action') && isset($listen['action']) && is_string($listen['action']) && !Str::contains($listen['action'], $this->option('action'))) ||
+            ($this->option('pattern') && !Str::contains($listen['pattern'], $this->option('pattern'))) ||
+            ($this->option('method') && !Str::contains($listen['method'], strtoupper($this->option('method')))) ||
             ($this->option('except-vendor') && $listen['vendor']) ||
-            ($this->option('only-vendor') && ! $listen['vendor'])) {
+            ($this->option('only-vendor') && !$listen['vendor'])) {
             return;
         }
 
@@ -311,7 +305,7 @@ class ListenListCommand extends Command
     /**
      * Parse the column list.
      *
-     * @param  array  $columns
+     * @param array $columns
      * @return array
      */
     protected function parseColumns(array $columns)
@@ -332,7 +326,7 @@ class ListenListCommand extends Command
     /**
      * Convert the given listens to JSON.
      *
-     * @param  \LaraGram\Support\Collection  $listens
+     * @param \LaraGram\Support\Collection $listens
      * @return string
      */
     protected function asJson($listens)
@@ -350,15 +344,21 @@ class ListenListCommand extends Command
     /**
      * Convert the given listens to regular CLI output.
      *
-     * @param  \LaraGram\Support\Collection  $listens
+     * @param \LaraGram\Support\Collection $listens
      * @return array
      */
     protected function forCli($listens)
     {
+
         $listens = $listens->map(
-            fn ($listen) => array_merge($listen, [
+            fn($listen) => array_merge($listen, [
                 'action' => $this->formatActionForCli($listen),
-                'method' => $listen['method'] == 'TEXT|COMMAND|DICE|MEDIA|UPDATE|MESSAGE|MESSAGE_TYPE|CALLBACK_DATA|REFERRAL|HASHTAG|CASHTAG|MENTION|ADD_MEMBER|JOIN_MEMBER' ? 'ANY' : $listen['method'],
+                'method' => match ($listen['method']) {
+                    'TEXT|DICE|UPDATE|MESSAGE|MESSAGE_TYPE|CALLBACK_DATA|ENTITIES|REFERRAL|COMMAND' => 'ANY',
+                    'MESSAGE|MESSAGE_TYPE' => 'MESSAGE_TYPE',
+                    'TEXT|ENTITIES' => 'ENTITIES',
+                    default => $listen['method']
+                },
                 'pattern' => $listen['pattern'],
             ]),
         );
@@ -378,25 +378,25 @@ class ListenListCommand extends Command
             ] = $listen;
 
             $middleware = (new Stringable($middleware))->explode("\n")->filter()->whenNotEmpty(
-                fn ($collection) => $collection->map(
-                    fn ($middleware) => sprintf('         %s⇂ %s', str_repeat(' ', $maxMethod), $middleware)
+                fn($collection) => $collection->map(
+                    fn($middleware) => sprintf('         %s⇂ %s', str_repeat(' ', $maxMethod), $middleware)
                 )
             )->implode("\n");
 
-            $spaces = str_repeat(' ', max($maxMethod + 6 - mb_strlen($method), 0));
+            $spaces = str_repeat(' ', max($maxMethod + 7 - mb_strlen($method), 0));
 
             $dots = str_repeat('.', max(
-                $terminalWidth - mb_strlen($method.$spaces.$pattern.$action) - 6 - ($action ? 1 : 0), 0
+                $terminalWidth - mb_strlen($method . $spaces . $pattern . $action) - 7 - ($action ? 1 : 0), 0
             ));
 
             $dots = empty($dots) ? $dots : " $dots";
 
-            if ($action && ! $this->output->isVerbose() && mb_strlen($method.$spaces.$pattern.$action.$dots) > ($terminalWidth - 6)) {
-                $action = substr($action, 0, $terminalWidth - 7 - mb_strlen($method.$spaces.$pattern.$dots)).'…';
+            if ($action && !$this->output->isVerbose() && mb_strlen($method . $spaces . $pattern . $action . $dots) > ($terminalWidth - 7)) {
+                $action = substr($action, 0, $terminalWidth - 8 - mb_strlen($method . $spaces . $pattern . $dots)) . '…';
             }
 
             $method = (new Stringable($method))->explode('|')->map(
-                fn ($method) => sprintf('<fg=%s>%s</>', $this->verbColors[$method] ?? 'default', $method),
+                fn($method) => sprintf('<fg=%s>%s</>', $this->verbColors[$method] ?? 'default', $method),
             )->implode('<fg=#6C7280>|</>');
 
             return [sprintf(
@@ -406,7 +406,7 @@ class ListenListCommand extends Command
                 preg_replace('#({[^}]+})#', '<fg=yellow>$1</>', $pattern),
                 $dots,
                 str_replace('   ', ' › ', $action ?? ''),
-            ), $this->output->isVerbose() && ! empty($middleware) ? "<fg=#6C7280>$middleware</>" : null];
+            ), $this->output->isVerbose() && !empty($middleware) ? "<fg=#6C7280>$middleware</>" : null];
         })
             ->flatten()
             ->filter()
@@ -418,7 +418,7 @@ class ListenListCommand extends Command
     /**
      * Get the formatted action for display on the CLI.
      *
-     * @param  array  $listen
+     * @param array $listen
      * @return string
      */
     protected function formatActionForCli($listen)
@@ -431,10 +431,10 @@ class ListenListCommand extends Command
 
         $name = $name ? "$name   " : null;
 
-        $rootControllerNamespace = ($this->laragram->getNamespace().'Http\\Controllers');
+        $rootControllerNamespace = ($this->laragram->getNamespace() . 'Controllers');
 
         if (str_starts_with($action, $rootControllerNamespace)) {
-            return $name.substr($action, mb_strlen($rootControllerNamespace) + 1);
+            return $name . substr($action, mb_strlen($rootControllerNamespace) + 1);
         }
 
         $actionClass = explode('@', $action)[0];
@@ -442,28 +442,28 @@ class ListenListCommand extends Command
         if (class_exists($actionClass) && str_starts_with((new ReflectionClass($actionClass))->getFilename(), base_path('vendor'))) {
             $actionCollection = new Collection(explode('\\', $action));
 
-            return $name.$actionCollection->take(2)->implode('\\').'   '.$actionCollection->last();
+            return $name . $actionCollection->take(2)->implode('\\') . '   ' . $actionCollection->last();
         }
 
-        return $name.$action;
+        return $name . $action;
     }
 
     /**
      * Determine and return the output for displaying the number of listens in the CLI output.
      *
-     * @param  \LaraGram\Support\Collection  $listens
-     * @param  int  $terminalWidth
+     * @param \LaraGram\Support\Collection $listens
+     * @param int $terminalWidth
      * @return string
      */
     protected function determineListenCountOutput($listens, $terminalWidth)
     {
-        $listenCountText = 'Showing ['.$listens->count().'] listens';
+        $listenCountText = 'Showing [' . $listens->count() . '] listens';
 
         $offset = $terminalWidth - mb_strlen($listenCountText) - 2;
 
         $spaces = str_repeat(' ', $offset);
 
-        return $spaces.'<fg=blue;options=bold>Showing ['.$listens->count().'] listens</>';
+        return $spaces . '<fg=blue;options=bold>Showing [' . $listens->count() . '] listens</>';
     }
 
     /**
@@ -481,7 +481,7 @@ class ListenListCommand extends Command
     /**
      * Set a callback that should be used when resolving the terminal width.
      *
-     * @param  \Closure|null  $resolver
+     * @param \Closure|null $resolver
      * @return void
      */
     public static function resolveTerminalWidthUsing($resolver)

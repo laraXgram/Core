@@ -5,29 +5,13 @@ namespace LaraGram\Listening;
 enum Type: string
 {
     case TEXT = 'text';
-    case COMMAND = 'command';
     case DICE = 'dice';
-    case MEDIA = 'media';
     case UPDATE = 'update';
     case MESSAGE = 'message';
-    case MESSAGE_TYPE = 'message_type';
-    case CALLBACK_DATA = 'callback_query_data';
-    case REFERRAL = 'referral';
-    case ANY = 'any';
-    case HASHTAG = 'hashtag';
-    case CASHTAG = 'cashtag';
-    case MENTION = 'mention';
-    case ADD_MEMBER = 'add_member';
-    case JOIN_MEMBER = 'join_member';
 
     const TYPES = [
         'text' => ['text'],
-        'command' => ['command'],
         'dice' => ['dice'],
-        'media' => [
-            'voice', 'video_note', 'video', 'sticker',
-            'photo', 'document', 'audio', 'animation'
-        ],
         'update' => [
             'message', 'edited_message',
             'channel_post', 'edited_channel_post',
@@ -37,6 +21,8 @@ enum Type: string
             'my_chat_member', 'chat_member', 'chat_join_request'
         ],
         'message' => [
+            'voice', 'video_note', 'video', 'sticker',
+            'photo', 'document', 'audio', 'animation',
             'game', 'poll', 'venue', 'location',
             'new_chat_members', 'left_chat_member',
             'new_chat_title', 'new_chat_photo',
@@ -50,18 +36,9 @@ enum Type: string
             'video_chat_started', 'video_chat_ended',
             'video_chat_participants_invited', 'web_app_data'
         ],
-        'message_type' => ['message_type'],
-        'callback_query_data' => ['callback_query_data'],
-        'referral' => ['referral'],
-        'hashtag' => ['hashtag'],
-        'cashtag' => ['cashtag'],
-        'mention' => ['mention'],
-        'add_member' => ['add_member'],
-        'join_member' => ['join_member'],
-        'any' => ['any'],
     ];
 
-    public static function findType(string $value): ?self
+    public static function findVerb(string $value): ?self
     {
         foreach (self::TYPES as $type => $items) {
             if (in_array($value, $items)) {
