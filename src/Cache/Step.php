@@ -94,4 +94,26 @@ class Step
     {
         return $this->cache->pull($this->key);
     }
+
+    /**
+     * Check if the step has a specific value.
+     *
+     * @param  string $key
+     * @return bool
+     */
+    public function is($key): mixed
+    {
+        return $this->get() === $key;
+    }
+
+    /**
+     * Check if the step has not a specific value.
+     *
+     * @param  string $key
+     * @return bool
+     */
+    public function isNot($key): mixed
+    {
+        return $this->get() !== $key;
+    }
 }

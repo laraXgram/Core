@@ -9,6 +9,8 @@ namespace LaraGram\Support\Facades;
  * @method static bool forget()
  * @method static bool hasStep()
  * @method static bool hasNotStep()
+ * @method static bool is(string $key)
+ * @method static bool isNot(string $key)
  *
  * @see \LaraGram\Cache\Step
  */
