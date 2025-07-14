@@ -5,7 +5,6 @@ namespace LaraGram\Listening;
 use LaraGram\Listening\Exceptions\MethodNotAllowedException;
 use LaraGram\Listening\Exceptions\ResourceNotFoundException;
 use LaraGram\Listening\Matcher\RedirectablePatternMatcherInterface;
-use LaraGram\Support\Arr;
 
 trait CompiledPatternMatcherTrait
 {
@@ -54,18 +53,6 @@ trait CompiledPatternMatcherTrait
                 continue;
             }
 
-            $attribute = $this->attributes[$ret['_listen']];
-            $allow_scopes = Arr::wrap($attribute['action']['scope'] ?? []);
-            $has_reply = $attribute['action']['reply'] ?? null;
-
-            if ($allow_scopes !== [] && !in_array(strtolower($this->context->getScope()), $allow_scopes)){
-                continue;
-            }
-
-            if ($has_reply !== null && $this->context->getReply() !== $has_reply){
-                continue;
-            }
-
             return $ret;
         }
 
@@ -88,18 +75,6 @@ trait CompiledPatternMatcherTrait
 
                     if ($requiredMethods && !isset($requiredMethods[$canonicalMethod]) && !isset($requiredMethods[$requestMethod])) {
                         $allow += $requiredMethods;
-                        continue;
-                    }
-
-                    $attribute = $this->attributes[$ret['_listen']];
-                    $allow_scopes = Arr::wrap($attribute['action']['scope'] ?? []);
-                    $has_reply = $attribute['action']['reply'] ?? null;
-
-                    if ($allow_scopes !== [] && !in_array(strtolower($this->context->getScope()), $allow_scopes)){
-                        continue;
-                    }
-
-                    if ($has_reply !== null && $this->context->getReply() !== $has_reply){
                         continue;
                     }
 
