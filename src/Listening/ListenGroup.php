@@ -16,10 +16,6 @@ class ListenGroup
      */
     public static function merge($new, $old, $prependExistingPrefix = true)
     {
-        if (isset($new['connection'])) {
-            unset($old['connection']);
-        }
-
         if (isset($new['controller'])) {
             unset($old['controller']);
         }
@@ -28,10 +24,11 @@ class ListenGroup
             'namespace' => static::formatNamespace($new, $old),
             'prefix' => static::formatPrefix($new, $old, $prependExistingPrefix),
             'where' => static::formatWhere($new, $old),
+            'connection' => static::formatConnection($new, $old),
         ]);
 
         return array_merge_recursive(Arr::except(
-            $old, ['namespace', 'prefix', 'where', 'as']
+            $old, ['namespace', 'prefix', 'where', 'as', 'connection']
         ), $new);
     }
 
@@ -70,6 +67,18 @@ class ListenGroup
         }
 
         return isset($new['prefix']) ? ($new['prefix'] === '' ? '' : "{$new['prefix']} ").$old : $old;
+    }
+
+    /**
+     * Format the prefix for the new group attributes.
+     *
+     * @param  array  $new
+     * @param  array  $old
+     * @return string|null
+     */
+    protected static function formatConnection($new, $old)
+    {
+        return $new['connection'] ?? $old['connection'] ?? config('bot.default', 'bot');
     }
 
     /**

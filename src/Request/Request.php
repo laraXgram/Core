@@ -4,25 +4,26 @@ namespace LaraGram\Request;
 
 use Closure;
 use LaraGram\Laraquest\Exceptions\InvalidUpdateType;
-use LaraGram\Laraquest\Methode as MethodeTrait;
 use LaraGram\Laraquest\Updates as UpdatesTrait;
+use LaraGram\Laraquest\Methode as MethodeTrait;
 use LaraGram\Listening\Type;
 use LaraGram\Support\Collection;
+use LaraGram\Support\Facades\Config;
 use LaraGram\Support\Traits\Conditionable;
 use LaraGram\Support\Traits\Macroable;
 use RuntimeException;
 
 /**
+ * @mixin \LaraGram\Laraquest\Updates|\LaraGram\Laraquest\Methode
+ *
  * @method array validate(array $rules, ...$params)
  * @method array validateWithBag(string $errorBag, array $rules, ...$params)
  * @method bool hasValidSignature(bool $absolute = true)
  */
 class Request
 {
-    use Concerns\InteractsWithServerInput,
-        MethodeTrait, UpdatesTrait,
-        Conditionable,
-        Macroable;
+    use Conditionable, Macroable,
+        UpdatesTrait, MethodeTrait;
 
     /**
      * The user resolver callback.
@@ -65,6 +66,16 @@ class Request
     public function __construct(array $request = [])
     {
         $this->request = $request;
+    }
+
+    /**
+     * Get the secret token from the request headers.
+     *
+     * @return string|null
+     */
+    public function secretToken()
+    {
+        return $this->server->get('HTTP_X_TELEGRAM_BOT_API_SECRET_TOKEN', '');
     }
 
     /**
@@ -222,7 +233,7 @@ class Request
      *
      * @return false|string
      */
-    public function checkIfMethodIsCommand()
+    protected function checkIfMethodIsCommand()
     {
         if (isset($this->message->entities) && $this->message->entities[0]->type === 'bot_command') {
             $command = str_replace('/start ', '', $this->message->text);
@@ -238,9 +249,9 @@ class Request
      *
      * @return false|string
      */
-    public function checkIfMethodIsCallbackQuery()
+    protected function checkIfMethodIsCallbackQuery()
     {
-        if (isset($this->callback_query)) {
+        if (isset($this->callback_query->data)) {
             return 'CALLBACK_DATA';
         }
         return false;
@@ -265,44 +276,6 @@ class Request
     public function listenIs(...$patterns)
     {
         return $this->listen() && $this->listen()->named(...$patterns);
-    }
-
-    /**
-     * Get the HTTP host being requested.
-     *
-     * @return string
-     */
-    public function httpHost()
-    {
-        return $this->server('HTTP_HOST');
-    }
-
-    /**
-     * Determine if the request is over HTTPS.
-     *
-     * @return bool
-     */
-    public function secure()
-    {
-        if (
-            (!$this->serverHas('HTTPS') && $this->server('HTTPS') !== 'off') ||
-            (!$this->serverHas('SERVER_PORT') && $this->server('SERVER_PORT') == 443) ||
-            (!$this->serverHas('REQUEST_SCHEME') && $this->server('REQUEST_SCHEME') === 'https') ||
-            (!$this->serverHas('HTTP_X_FORWARDED_PROTO') && $this->server('HTTP_X_FORWARDED_PROTO') === 'https')
-        ) {
-            return true;
-        }
-        return false;
-    }
-
-    /**
-     * Get the client IP address.
-     *
-     * @return string|null
-     */
-    public function ip()
-    {
-        return $this->server('REMOTE_ADDR');
     }
 
     /**

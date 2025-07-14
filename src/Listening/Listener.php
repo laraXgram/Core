@@ -113,14 +113,6 @@ class Listener implements BindingRegistrar, RegistrarContract
      */
     protected $patterns = [];
 
-
-    /**
-     * The laraquest connection instance.
-     *
-     * @var string
-     */
-    protected $connection = 'bot';
-
     /**
      * The listen group attribute stack.
      *

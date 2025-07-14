@@ -6,8 +6,6 @@ use BackedEnum;
 use Closure;
 use LaraGram\Container\Container;
 use LaraGram\Listening\Matching\MethodValidator;
-use LaraGram\Listening\Matching\ReplyValidator;
-use LaraGram\Listening\Matching\ScopeValidator;
 use LaraGram\Request\Exceptions\RequestResponseException;
 use LaraGram\Request\Request;
 use LaraGram\Listening\Contracts\CallableDispatcher;
@@ -178,7 +176,7 @@ class Listen
      * @var array
      */
     public static $allStatuses = [
-        'member', 'administrator', 'admin', 'creator', 'left', 'restricted', 'kicked'
+        'member', 'administrator', 'creator', 'left', 'restricted', 'kicked'
     ];
 
     /**
@@ -196,6 +194,10 @@ class Listen
         $this->action = Arr::except($this->parseAction($action), ['prefix']);
 
         $this->prefix(is_array($action) ? Arr::get($action, 'prefix') : '');
+
+//        if (!$this->getConnection()) {
+//            $this->connection(config('bot.default', 'bot'));
+//        }
     }
 
     /**
@@ -219,6 +221,10 @@ class Listen
     public function run()
     {
         $this->container = $this->container ?: new Container;
+
+        if (isset($this->action['connection'])){
+            app('request')->connection($this->action['connection']);
+        }
 
         try {
             if ($this->isControllerAction()) {
@@ -774,148 +780,6 @@ class Listen
     }
 
     /**
-     * Set invalid user status attribute for listen.
-     *
-     * @param  array|string $statuses
-     * @return $this
-     */
-    public function can(array|string $statuses)
-    {
-        $this->action['can'] = Arr::wrap($statuses);
-
-        return $this;
-    }
-
-    /**
-     * Set valid user status attribute for listen.
-     *
-     * @param  array|string $statuses
-     * @return $this
-     */
-    public function canNot(array|string $statuses)
-    {
-        $statuses = Arr::wrap($statuses);
-
-        $this->action['can'] = Arr::where(self::$allStatuses, function ($value) use ($statuses) {
-            return !in_array($value, $statuses);
-        });
-
-        return $this;
-    }
-
-    /**
-     * Get valid user status attribute for listen.
-     *
-     * @return array
-     */
-    public function getCanAttribute()
-    {
-        return Arr::wrap($this->action['can'] ?? self::$allStatuses);
-    }
-
-    /**
-     * Set valid scope attribute for listen.
-     *
-     * @param  array|string $scopes
-     * @return $this
-     */
-    public function scope(array|string $scopes)
-    {
-        $this->action['scope'] = Arr::wrap($scopes);
-
-        return $this;
-    }
-
-    /**
-     * Set invalid scope attribute for listen.
-     *
-     * @param  array|string $scopes
-     * @return $this
-     */
-    public function outOfScope(array|string $scopes)
-    {
-        $scopes = Arr::wrap($scopes);
-
-        $this->action['scope'] = Arr::where(self::$allScopes, function ($value) use ($scopes) {
-            return !in_array($value, $scopes);
-        });
-
-        return $this;
-    }
-
-    /**
-     * Get valid scope attribute for listen.
-     *
-     * @return array
-     */
-    public function getScopeAttribute()
-    {
-        return Arr::wrap($this->action['scope'] ?? self::$allScopes);
-    }
-
-    /**
-     * Set reply attribute true for listen.
-     *
-     * @return $this
-     */
-    public function hasReply()
-    {
-        $this->action['reply'] = true;
-
-        return $this;
-    }
-
-    /**
-     * Set reply attribute false for listen.
-     *
-     * @return $this
-     */
-    public function hasNotReply()
-    {
-        $this->action['reply'] = false;
-
-        return $this;
-    }
-
-    /**
-     * Get reply attribute for listen.
-     *
-     * @return bool
-     */
-    public function getReplyAttribute()
-    {
-        return $this->action['reply'] ?? false;
-    }
-
-    /**
-     * Set bot connection instance for listen.
-     *
-     * @param  string $connection
-     * @return $this
-     */
-    public function connection(string $connection)
-    {
-        if (blank($connection))
-            throw new \InvalidArgumentException('Connection name can not be empty');
-
-        $this->action['connection'] = $connection;
-
-        // TODO: set connection in request/laraquest/class
-
-        return $this;
-    }
-
-    /**
-     * Get bot connection instance.
-     *
-     * @return string
-     */
-    public function getConnection()
-    {
-        return $this->action['connection'];
-    }
-
-    /**
      * Get the URI associated with the listen.
      *
      * @return string
@@ -1159,19 +1023,141 @@ class Listen
     }
 
     /**
-     * Specify that the "Authorize" / "role" middleware should be applied to the listen with the given options.
+     * Specify that the "Authorize" / "can" middleware should be applied to the listen with the given options.
      *
-     * @param  \BackedEnum|string  $ability
+     * @param  \UnitEnum|string  $ability
      * @param  array|string  $models
      * @return $this
      */
-    public function role($ability, $models = [])
+    public function can($ability, $models = [])
     {
         $ability = enum_value($ability);
 
         return empty($models)
-            ? $this->middleware(['role:'.$ability])
-            : $this->middleware(['role:'.$ability.','.implode(',', Arr::wrap($models))]);
+            ? $this->middleware(['can:'.$ability])
+            : $this->middleware(['can:'.implode('|', $ability).','.implode(',', Arr::wrap($models))]);
+    }
+
+    /**
+     * Specify that the "Authorize" / "can" middleware should be applied to the listen with the given options.
+     *
+     * @param  \UnitEnum|string  $ability
+     * @param  array|string  $models
+     * @return $this
+     */
+    public function canNot($ability, $models = [])
+    {
+        $ability = Arr::wrap(enum_value($ability));
+        $ability = array_values(array_diff(self::$allStatuses, $ability));
+
+        return empty($models)
+            ? $this->middleware(['can:'.implode('|', $ability)])
+            : $this->middleware(['can:'.implode('|', $ability).','.implode(',', Arr::wrap($models))]);
+    }
+
+    /**
+     * Specify that "scope" middleware should be applied to the listen with the given options.
+     *
+     * @param  \UnitEnum|string $scope
+     * @return $this
+     */
+    public function scope($scope)
+    {
+        $scope = collect(enum_value($scope))
+            ->flatMap(function ($scope) {
+                return $scope === 'groups'
+                    ? ['group', 'supergroup']
+                    : [$scope];
+            })
+            ->unique()
+            ->values()
+            ->all();
+
+        return $this->middleware(['scope:'.implode(',', $scope)]);
+    }
+
+    /**
+     * Specify that "scope" middleware should be applied to the listen with the given options.
+     *
+     * @param  \UnitEnum|string $scope
+     * @return $this
+     */
+    public function outOfScope($scope)
+    {
+        $toExclude = collect(enum_value($scope))->flatMap(function ($scope) {
+            if ($scope === 'groups') {
+                return ['group', 'supergroup', 'groups'];
+            }
+
+            if (in_array($scope, ['group', 'supergroup'])) {
+                return [$scope, 'groups'];
+            }
+
+            return [$scope];
+        })->unique();
+
+        $scope = collect(self::$allScopes)
+            ->diff($toExclude)
+            ->values()
+            ->all();
+
+        return $this->middleware(['scope:'.implode(',', $scope)]);
+    }
+
+    /**
+     * Specify that "reply:true" middleware should be applied to the listen with the given options.
+     *
+     * @return $this
+     */
+    public function hasReply()
+    {
+        return $this->middleware(['reply:true']);
+    }
+
+    /**
+     * Specify that "reply:false" middleware should be applied to the listen with the given options.
+     *
+     * @return $this
+     */
+    public function hasNotReply()
+    {
+        return $this->middleware(['reply:false']);
+    }
+
+    /**
+     * Specify that "step" middleware should be applied to the listen with the given options.
+     *
+     * @return $this
+     */
+    public function step($key)
+    {
+        return $this->middleware(['step:'.$key]);
+    }
+
+    /**
+     * Set bot connection instance for listen.
+     *
+     * @param  string $connection
+     * @return $this
+     */
+    public function connection($connection)
+    {
+        if (blank($connection))
+            throw new \InvalidArgumentException('Connection name can not be empty');
+
+        $this->action['connection'] = $connection;
+
+        return $this;
+    }
+
+    /**
+     * Get the connection instance for listen.
+     *
+     * @return string|null
+     */
+    public function getConnection()
+    {
+        return $this->action['connection'] ?? null;
     }
 
     /**
@@ -1370,7 +1356,6 @@ class Listen
         // passes and then we will know if the listen as a whole matches request.
         return static::$validators = [
             new PatternValidator, new MethodValidator,
-            new ScopeValidator, new ReplyValidator,
         ];
     }
 

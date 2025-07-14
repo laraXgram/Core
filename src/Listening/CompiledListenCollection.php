@@ -267,6 +267,7 @@ class CompiledListenCollection extends AbstractListenCollection
             ->setDefaults($attributes['defaults'])
             ->setWheres($attributes['wheres'])
             ->setBindingFields($attributes['bindingFields'])
+            ->connection($attributes['action']['connection'])
             ->block($attributes['lockSeconds'] ?? null, $attributes['waitSeconds'] ?? null)
             ->withTrashed($attributes['withTrashed'] ?? false);
     }

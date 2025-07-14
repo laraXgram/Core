@@ -16,7 +16,6 @@ use LaraGram\Contracts\Foundation\CachesConfiguration;
 use LaraGram\Events\EventServiceProvider;
 use LaraGram\Filesystem\Filesystem;
 use LaraGram\Foundation\Events\LocaleUpdated;
-use LaraGram\Laraquest\Laraquest;
 use LaraGram\Log\Context\ContextServiceProvider;
 use LaraGram\Log\LogServiceProvider;
 use LaraGram\Listening\ListeningServiceProvider;
