@@ -235,11 +235,11 @@ class ListenCollection extends AbstractListenCollection
     }
 
     /**
-     * Convert the collection to a Symfony ListenCollection instance.
+     * Convert the collection to a BaseListenCollection instance.
      *
      * @return \LaraGram\Listening\BaseListenCollection
      */
-    public function toSymfonyListenCollection()
+    public function toBaseListenCollection()
     {
         $baseListens = parent::toBaseListenCollection();
 

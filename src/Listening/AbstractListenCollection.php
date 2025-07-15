@@ -26,7 +26,7 @@ abstract class AbstractListenCollection implements Countable, IteratorAggregate,
     protected function handleMatchedListen(Request $request, $listen)
     {
         if (! is_null($listen)) {
-            return $listen->bind();
+            return $listen->bind($request);
         }
 
         // If no listen was found we will now check if a matching listen is specified by
@@ -98,7 +98,7 @@ abstract class AbstractListenCollection implements Countable, IteratorAggregate,
         if ($request->isMethod('TEXT')) {
             return (new Listen('TEXT', text(), function () use ($methods) {
                 return new Response('');
-            }))->bind();
+            }))->bind($request);
         }
 
         $this->requestMethodNotAllowed($request, $methods, $request->method());

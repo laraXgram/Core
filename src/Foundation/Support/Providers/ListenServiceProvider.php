@@ -3,7 +3,7 @@
 namespace LaraGram\Foundation\Support\Providers;
 
 use Closure;
-use LaraGram\Contracts\Listening\PatternGenerator;
+use LaraGram\Contracts\Listening\PathGenerator;
 use LaraGram\Listening\Listener;
 use LaraGram\Support\ServiceProvider;
 use LaraGram\Support\Traits\ForwardsCalls;
@@ -119,7 +119,7 @@ class ListenServiceProvider extends ServiceProvider
     protected function setRootControllerNamespace()
     {
         if (! is_null($this->namespace)) {
-            $this->app[PatternGenerator::class]->setRootControllerNamespace($this->namespace);
+            $this->app[PathGenerator::class]->setRootControllerNamespace($this->namespace);
         }
     }
 

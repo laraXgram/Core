@@ -3,10 +3,11 @@
 namespace LaraGram\Listening;
 
 use LaraGram\Contracts\Listening\ResponseFactory as ResponseFactoryContract;
-use LaraGram\Template\Factory as TemplateFactoryContract;
+use LaraGram\Contracts\Listening\PathGenerator as PathGeneratorContract;
 use LaraGram\Listening\Contracts\CallableDispatcher as CallableDispatcherContract;
 use LaraGram\Listening\Contracts\ControllerDispatcher as ControllerDispatcherContract;
 use LaraGram\Support\ServiceProvider;
+use LaraGram\Template\Factory as TemplateFactoryContract;
 
 class ListeningServiceProvider extends ServiceProvider
 {
@@ -18,7 +19,8 @@ class ListeningServiceProvider extends ServiceProvider
     public function register()
     {
         $this->registerListener();
-//        $this->registerRedirector();
+        $this->registerPathGenerator();
+        $this->registerRedirector();
         $this->registerResponseFactory();
         $this->registerCallableDispatcher();
         $this->registerControllerDispatcher();
@@ -37,6 +39,56 @@ class ListeningServiceProvider extends ServiceProvider
     }
 
     /**
+     * Register the URL generator service.
+     *
+     * @return void
+     */
+    protected function registerPathGenerator()
+    {
+        $this->app->singleton('url', function ($app) {
+            $listens = $app['listener']->getListens();
+
+            $app->instance('listens', $listens);
+
+            return new PathGenerator(
+                $listens, $app->rebinding(
+                'request', $this->requestRebinder()
+            )
+            );
+        });
+
+        $this->app->extend('url', function (PathGeneratorContract $url, $app) {
+            $url->setCacheResolver(function () {
+                return $this->app['cache'] ?? null;
+            });
+
+            $url->setKeyResolver(function () {
+                $config = $this->app->make('config');
+
+                return [$config->get('app.key'), ...($config->get('app.previous_keys') ?? [])];
+            });
+
+            $app->rebinding('listens', function ($app, $listens) {
+                $app['url']->setListens($listens);
+            });
+
+            return $url;
+        });
+    }
+
+    /**
+     * Get the URL generator request rebinder.
+     *
+     * @return \Closure
+     */
+    protected function requestRebinder()
+    {
+        return function ($app, $request) {
+            $app['url']->setRequest($request);
+        };
+    }
+
+    /**
      * Register the Redirector service.
      *
      * @return void
@@ -44,7 +96,13 @@ class ListeningServiceProvider extends ServiceProvider
     protected function registerRedirector()
     {
         $this->app->singleton('redirect', function ($app) {
-            return new Redirector();
+            $redirector = new Redirector($app['url']);
+
+            if (isset($app['cache'])) {
+                $redirector->setCache($app['cache']);
+            }
+
+            return $redirector;
         });
     }
 
@@ -56,8 +114,7 @@ class ListeningServiceProvider extends ServiceProvider
     protected function registerResponseFactory()
     {
         $this->app->singleton(ResponseFactoryContract::class, function ($app) {
-//            return new ResponseFactory($app[TemplateFactoryContract::class], $app['redirect']);
-            return new ResponseFactory($app[TemplateFactoryContract::class]);
+            return new ResponseFactory($app[TemplateFactoryContract::class], $app['redirect']);
         });
     }
 

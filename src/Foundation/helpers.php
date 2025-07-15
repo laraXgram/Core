@@ -346,6 +346,18 @@ if (! function_exists('public_path')) {
     }
 }
 
+if (! function_exists('redirect')) {
+    /**
+     * Get an instance of the redirector.
+     *
+     * @return \LaraGram\Listening\Redirector
+     */
+    function redirect()
+    {
+        return app('redirect');
+    }
+}
+
 if (! function_exists('report')) {
     /**
      * Report an exception.
@@ -471,7 +483,6 @@ if (! function_exists('template')) {
     }
 }
 
-
 if (! function_exists('template_path')) {
     /**
      * Get the path to the templates folder.
@@ -482,6 +493,20 @@ if (! function_exists('template_path')) {
     function template_path($path = '')
     {
         return app()->templatePath($path);
+    }
+}
+
+if (! function_exists('to_listen')) {
+    /**
+     * Create a new redirect response to a named listen.
+     *
+     * @param  \BackedEnum|string  $listen
+     * @param  mixed  $parameters
+     * @return \LaraGram\Request\RedirectResponse
+     */
+    function to_listen($listen, $parameters = [])
+    {
+        return redirect()->listen($listen, $parameters);
     }
 }
 

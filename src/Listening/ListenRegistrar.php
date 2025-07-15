@@ -74,6 +74,7 @@ class ListenRegistrar
         'scopeBindings',
         'where',
         'withoutMiddleware',
+        'withoutScopedBindings',
     ];
 
     /**
@@ -84,6 +85,7 @@ class ListenRegistrar
     protected $aliases = [
         'name' => 'as',
         'scopeBindings' => 'scope_bindings',
+        'withoutScopedBindings' => 'scope_bindings',
         'withoutMiddleware' => 'excluded_middleware',
     ];
 
@@ -125,6 +127,10 @@ class ListenRegistrar
             $value = array_merge(
                 (array) ($this->attributes[$attributeKey] ?? []), Arr::wrap($value)
             );
+        }
+
+        if ($key === 'withoutScopedBindings') {
+            $value = false;
         }
 
         if ($value instanceof BackedEnum && ! is_string($value = $value->value)) {

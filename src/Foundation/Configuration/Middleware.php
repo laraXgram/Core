@@ -2,8 +2,6 @@
 
 namespace LaraGram\Foundation\Configuration;
 
-use LaraGram\Auth0\Middleware\Authenticate;
-use LaraGram\Http\Middleware\TrustHosts;
 use LaraGram\Support\Arr;
 
 class Middleware
@@ -77,13 +75,6 @@ class Middleware
      * @var array
      */
     protected $groupReplacements = [];
-
-    /**
-     * Indicates the API middleware group's rate limiter.
-     *
-     * @var string
-     */
-    protected $limiter;
 
     /**
      * Indicates if Redis throttling should be applied.
@@ -384,8 +375,7 @@ class Middleware
     public function getGlobalMiddleware()
     {
         $middleware = $this->global ?: array_values(array_filter([
-//            \LaraGram\Foundation\Http\Middleware\InvokeDeferredCallbacks::class,
-//            $this->trustHosts ? \LaraGram\Http\Middleware\TrustHosts::class : null,
+//            \LaraGram\Foundation\Request\Middleware\InvokeDeferredCallbacks::class,
         ]));
 
         $middleware = array_map(function ($middleware) {
@@ -410,7 +400,6 @@ class Middleware
         $middleware = [
             'bot' => array_values(array_filter([
                 \LaraGram\Listening\Middleware\SubstituteBindings::class,
-//                $this->limiter ? 'throttle:'.$this->limiter : null,
             ])),
         ];
 
@@ -446,72 +435,7 @@ class Middleware
     }
 
     /**
-     * Configure where users are redirected by the "guest" middleware.
-     *
-     * @param  callable|string  $redirect
-     * @return $this
-     */
-    public function redirectUsersTo(callable|string $redirect)
-    {
-        return $this->redirectTo(users: $redirect);
-    }
-
-    /**
-     * Configure where users are redirected by the authentication and guest middleware.
-     *
-     * @param  callable|string  $guests
-     * @param  callable|string  $users
-     * @return $this
-     */
-    public function redirectTo(callable|string|null $users = null)
-    {
-        $users = is_string($users) ? fn () => $users : $users;
-
-        if ($users) {
-            RedirectIfAuthenticated::redirectUsing($users);
-        }
-
-        return $this;
-    }
-
-    /**
-     * Indicate that the trusted host middleware should be enabled.
-     *
-     * @param  array<int, string>|(callable(): array<int, string>)|null  $at
-     * @param  bool  $subdomains
-     * @return $this
-     */
-    public function trustHosts(array|callable|null $at = null, bool $subdomains = true)
-    {
-        $this->trustHosts = true;
-
-        if (! is_null($at)) {
-            TrustHosts::at($at, $subdomains);
-        }
-
-        return $this;
-    }
-
-    /**
-     * Indicate that the API middleware group's throttling middleware should be enabled.
-     *
-     * @param  string  $limiter
-     * @param  bool  $redis
-     * @return $this
-     */
-    public function throttle($limiter = 'bot', $redis = false)
-    {
-        $this->limiter = $limiter;
-
-        if ($redis) {
-            $this->throttleWithRedis();
-        }
-
-        return $this;
-    }
-
-    /**
-     * Indicate that Laravel's throttling middleware should use Redis.
+     * Indicate that LaraGram's throttling middleware should use Redis.
      *
      * @return $this
      */
@@ -540,8 +464,8 @@ class Middleware
     protected function defaultAliases()
     {
         $aliases = [
-            'auth' => \LaraGram\Auth0\Middleware\Authenticate::class,
-            'can' => \LaraGram\Auth0\Middleware\Authorize::class,
+            'auth' => \LaraGram\Auth\Middleware\Authenticate::class,
+            'can' => \LaraGram\Auth\Middleware\Authorize::class,
             'throttle' => $this->throttleWithRedis
                 ? \LaraGram\Listening\Middleware\ThrottleRequestsWithRedis::class
                 : \LaraGram\Listening\Middleware\ThrottleRequests::class,

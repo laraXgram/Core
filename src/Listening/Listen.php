@@ -194,10 +194,6 @@ class Listen
         $this->action = Arr::except($this->parseAction($action), ['prefix']);
 
         $this->prefix(is_array($action) ? Arr::get($action, 'prefix') : '');
-
-//        if (!$this->getConnection()) {
-//            $this->connection(config('bot.default', 'bot'));
-//        }
     }
 
     /**
@@ -387,14 +383,15 @@ class Listen
     /**
      * Bind the listen to a given request for execution.
      *
+     * @param  \LaraGram\Request\Request $request
      * @return $this
      */
-    public function bind()
+    public function bind($request)
     {
         $this->compileListen();
 
         $this->parameters = (new ListenParameterBinder($this))
-            ->parameters();
+            ->parameters($request);
 
         $this->originalParameters = $this->parameters;
 

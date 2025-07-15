@@ -3,7 +3,7 @@
 namespace LaraGram\Database\Eloquent;
 
 use ArrayAccess;
-use LaraGram\Contracts\Listening\UrlListenable;
+use LaraGram\Contracts\Listening\PathListenable;
 use LaraGram\Contracts\Queue\QueueableCollection;
 use LaraGram\Contracts\Queue\QueueableEntity;
 use LaraGram\Contracts\Support\Arrayable;
@@ -25,7 +25,7 @@ use JsonSerializable;
 use LogicException;
 use Stringable;
 
-abstract class Model implements Arrayable, ArrayAccess, CanBeEscapedWhenCastToString, Jsonable, JsonSerializable, QueueableEntity, Stringable, UrlListenable
+abstract class Model implements Arrayable, ArrayAccess, CanBeEscapedWhenCastToString, Jsonable, JsonSerializable, QueueableEntity, Stringable, PathListenable
 {
     use Concerns\HasAttributes,
         Concerns\HasEvents,

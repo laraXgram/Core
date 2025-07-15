@@ -6,7 +6,7 @@ use Exception;
 use LaraGram\Listening\Listen;
 use LaraGram\Support\Str;
 
-class UrlGenerationException extends Exception
+class PathGenerationException extends Exception
 {
     /**
      * Create a new exception for missing listen parameters.

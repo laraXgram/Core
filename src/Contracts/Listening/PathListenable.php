@@ -2,7 +2,7 @@
 
 namespace LaraGram\Contracts\Listening;
 
-interface UrlListenable
+interface PathListenable
 {
     /**
      * Get the value of the model's listen key.

@@ -11,6 +11,7 @@ use LaraGram\Support\Fluent;
 use LaraGram\Support\HigherOrderTapProxy;
 use LaraGram\Support\Once;
 use LaraGram\Support\Onceable;
+use LaraGram\Support\Optional;
 use LaraGram\Support\Sleep;
 use LaraGram\Support\Str;
 use LaraGram\Support\Stringable as SupportStringable;
@@ -224,6 +225,27 @@ if (! function_exists('once')) {
         );
 
         return $onceable ? Once::instance()->value($onceable) : call_user_func($callback);
+    }
+}
+
+if (! function_exists('optional')) {
+    /**
+     * Provide access to optional objects.
+     *
+     * @template TValue
+     * @template TReturn
+     *
+     * @param  TValue  $value
+     * @param  (callable(TValue): TReturn)|null  $callback
+     * @return ($callback is null ? \LaraGram\Support\Optional : ($value is null ? null : TReturn))
+     */
+    function optional($value = null, ?callable $callback = null)
+    {
+        if (is_null($callback)) {
+            return new Optional($value);
+        } elseif (! is_null($value)) {
+            return $callback($value);
+        }
     }
 }
 

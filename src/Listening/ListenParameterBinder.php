@@ -28,11 +28,12 @@ class ListenParameterBinder
     /**
      * Get the parameters for the listen.
      *
+     * @param  \LaraGram\Request\Request $request
      * @return array
      */
-    public function parameters()
+    public function parameters($request)
     {
-        $parameters = $this->bindPathParameters();
+        $parameters = $this->bindPathParameters($request);
 
         return $this->replaceDefaults($parameters);
     }
@@ -40,24 +41,40 @@ class ListenParameterBinder
     /**
      * Get the parameter matches for the path portion of the URI.
      *
+     * @param \LaraGram\Request\Request $request
      * @return array
      */
-    protected function bindPathParameters()
+    protected function bindPathParameters($request)
     {
-        $path = $this->extractUpdate();
+        $path = $this->extractUpdate($request);
 
         preg_match($this->listen->compiled->getRegex(), $path, $matches);
 
         return $this->matchToKeys(array_slice($matches, 1));
     }
 
-    private function extractUpdate()
+    /**
+     * Get the parameter matches for the path portion of the URI.
+     *
+     * @param \LaraGram\Request\Request $request
+     * @return string|null
+     */
+    private function extractUpdate($request)
     {
+        $text = match (true) {
+            $request->message != null && isset($request->message->text) => $request->message->text,
+            $request->edited_message != null => $request->edited_message->text,
+            $request->channel_post != null => $request->channel_post->text,
+            $request->edited_channel_post != null => $request->edited_channel_post->text,
+            $request->business_message != null => $request->business_message->text,
+            $request->edited_business_message != null => $request->edited_business_message->text,
+            default => null
+        };
         return match (true){
-            text() !== null => text(),
-            isset(callback_query()->data) => callback_query()->data,
-            isset(inline_query()->query) => inline_query()->query,
-            isset(chosen_inline_result()->query) => chosen_inline_result()->query,
+            $text !== null => $text,
+            isset($request->callback_query->data) => $request->callback_query->data,
+            isset($request->inline_query->query) => $request->inline_query->query,
+            isset($request->chosen_inline_result->query) => $request->chosen_inline_result->query,
             default => null
         };
     }

@@ -34,11 +34,10 @@ class ResponseFactory implements FactoryContract
      * @param  \LaraGram\Listening\Redirector  $redirector
      * @return void
      */
-    public function __construct(TemplateFactory $template)
-//    public function __construct(TemplateFactory $template, Redirector $redirector)
+    public function __construct(TemplateFactory $template, Redirector $redirector)
     {
         $this->template = $template;
-//        $this->redirector = $redirector;
+        $this->redirector = $redirector;
     }
 
     /**
@@ -102,7 +101,18 @@ class ResponseFactory implements FactoryContract
     }
 
     /**
-     * Create a new redirect response to a named route.
+     * Create a new redirect response to the given path.
+     *
+     * @param  string  $path
+     * @return \LaraGram\Request\RedirectResponse
+     */
+    public function redirectTo($path)
+    {
+        return $this->redirector->to($path);
+    }
+
+    /**
+     * Create a new redirect response to a named listen.
      *
      * @param  \BackedEnum|string  $listen
      * @param  mixed  $parameters
@@ -123,16 +133,5 @@ class ResponseFactory implements FactoryContract
     public function redirectToAction($action, $parameters = [])
     {
         return $this->redirector->action($action, $parameters);
-    }
-
-    /**
-     * Create a new redirect response to the previously intended location.
-     *
-     * @param  string  $default
-     * @return \LaraGram\Request\RedirectResponse
-     */
-    public function redirectToIntended($default)
-    {
-        return $this->redirector->intended($default);
     }
 }

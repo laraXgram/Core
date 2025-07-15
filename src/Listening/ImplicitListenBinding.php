@@ -2,7 +2,7 @@
 
 namespace LaraGram\Listening;
 
-use LaraGram\Contracts\Listening\UrlListenable;
+use LaraGram\Contracts\Listening\PathListenable;
 use LaraGram\Database\Eloquent\ModelNotFoundException;
 use LaraGram\Database\Eloquent\SoftDeletes;
 use LaraGram\Listening\Exceptions\BackedEnumCaseNotFoundException;
@@ -27,14 +27,14 @@ class ImplicitListenBinding
 
         $listen = static::resolveBackedEnumsForListen($listen, $parameters);
 
-        foreach ($listen->signatureParameters(['subClass' => UrlListenable::class]) as $parameter) {
+        foreach ($listen->signatureParameters(['subClass' => PathListenable::class]) as $parameter) {
             if (! $parameterName = static::getParameterName($parameter->getName(), $parameters)) {
                 continue;
             }
 
             $parameterValue = $parameters[$parameterName];
 
-            if ($parameterValue instanceof UrlListenable) {
+            if ($parameterValue instanceof PathListenable) {
                 continue;
             }
 
@@ -46,7 +46,7 @@ class ImplicitListenBinding
                 ? 'resolveSoftDeletableListenBinding'
                 : 'resolveListenBinding';
 
-            if ($parent instanceof UrlListenable &&
+            if ($parent instanceof PathListenable &&
                 ! $listen->preventsScopedBindings() &&
                 ($listen->enforcesScopedBindings() || array_key_exists($parameterName, $listen->bindingFields()))) {
                 $childListenBindingMethod = $listen->allowsTrashedBindings() && in_array(SoftDeletes::class, class_uses_recursive($instance))

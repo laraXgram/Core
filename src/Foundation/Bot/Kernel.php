@@ -3,6 +3,7 @@
 namespace LaraGram\Foundation\Bot;
 
 use DateInterval;
+use DateTimeInterface;
 use LaraGram\Contracts\Debug\ExceptionHandler;
 use LaraGram\Foundation\Application;
 use LaraGram\Contracts\Bot\Kernel as KernelContract;
@@ -14,6 +15,8 @@ use LaraGram\Listening\Pipeline;
 use LaraGram\Support\Facades\Facade;
 use LaraGram\Support\InteractsWithTime;
 use InvalidArgumentException;
+use LaraGram\Support\Tempora;
+use LaraGram\Tempora\TemporaInterval;
 use Throwable;
 
 class Kernel implements KernelContract
@@ -88,7 +91,7 @@ class Kernel implements KernelContract
     /**
      * When the kernel starting handling the current request.
      *
-     * @var \DateTimeInterface|null
+     * @var \LaraGram\Support\Tempora|null
      */
     protected $requestStartedAt;
 
@@ -130,7 +133,7 @@ class Kernel implements KernelContract
      */
     public function handle($request)
     {
-        $this->requestStartedAt = new \DateTime();
+        $this->requestStartedAt = Tempora::now();
 
         try {
             $response = $this->sendRequestThroughListener($request);
@@ -212,10 +215,12 @@ class Kernel implements KernelContract
             return;
         }
 
-        foreach ($this->requestLifecycleDurationHandlers as ['threshold' => $threshold, 'handler' => $handler]) {
-            $end ??= new \DateTime();
+        $this->requestStartedAt->setTimezone($this->app['config']->get('app.timezone') ?? 'UTC');
 
-            if ($this->requestStartedAt->diff($end) > $threshold) {
+        foreach ($this->requestLifecycleDurationHandlers as ['threshold' => $threshold, 'handler' => $handler]) {
+            $end ??= Tempora::now();
+
+            if ($this->requestStartedAt->diffInMilliseconds($end) > $threshold) {
                 $handler($this->requestStartedAt, $request, $response);
             }
         }
@@ -255,18 +260,22 @@ class Kernel implements KernelContract
     /**
      * Register a callback to be invoked when the requests lifecycle duration exceeds a given amount of time.
      *
-     * @param \DateTimeInterface|DateInterval|float|int $threshold
+     * @param \DateTimeInterface|TemporaInterval|float|int $threshold
      * @param callable $handler
      * @return void
      */
     public function whenRequestLifecycleIsLongerThan($threshold, $handler)
     {
+        $threshold = $threshold instanceof DateTimeInterface
+            ? $this->secondsUntil($threshold) * 1000
+            : $threshold;
+
+        $threshold = $threshold instanceof TemporaInterval
+            ? $threshold->totalMilliseconds
+            : $threshold;
+
         $this->requestLifecycleDurationHandlers[] = [
-            'threshold' => $threshold instanceof \DateTimeInterface
-                ? $this->secondsUntil($threshold) * 1000
-                : ($threshold instanceof \DateInterval
-                    ? ((($threshold->y * 365 * 24 * 60 * 60) + ($threshold->m * 30 * 24 * 60 * 60) + ($threshold->d * 24 * 60 * 60) + ($threshold->h * 60 * 60) + ($threshold->i * 60) + $threshold->s) * 1000)
-                    : $threshold),
+            'threshold' => $threshold,
             'handler' => $handler,
         ];
     }

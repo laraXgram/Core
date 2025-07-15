@@ -156,25 +156,23 @@ class Request
      */
     public function scope()
     {
-        /** @var UpdatesTrait $update */
-        $update = json_decode($this->update()[0]);
         return match (true) {
-            isset($update->message->chat->type) => $update->message->chat->type,
-            isset($update->edited_message->chat->type) => $update->edited_message->chat->type,
-            isset($update->channel_post->chat->type) => $update->channel_post->chat->type,
-            isset($update->edited_channel_post->chat->type) => $update->edited_channel_post->chat->type,
-            isset($update->business_message->chat->type) => $update->business_message->chat->type,
-            isset($update->edited_business_message->chat->type) => $update->edited_business_message->chat->type,
-            isset($update->deleted_business_messages->chat->type) => $update->deleted_business_messages->chat->type,
-            isset($update->message_reaction->chat->type) => $update->message_reaction->chat->type,
-            isset($update->message_reaction_count->chat->type) => $update->message_reaction_count->chat->type,
-            isset($update->callback_query->message->chat->type) => $update->callback_query->message->chat->type,
-            isset($update->poll_answer->voter_chat->type) => $update->poll_answer->voter_chat->type,
-            isset($update->my_chat_member->chat->type) => $update->my_chat_member->chat->type,
-            isset($update->chat_member->chat->type) => $update->chat_member->chat->type,
-            isset($update->chat_join_request->chat->type) => $update->chat_join_request->chat->type,
-            isset($update->chat_boost->chat->type) => $update->chat_boost->chat->type,
-            isset($update->removed_chat_boost->chat->type) => $update->removed_chat_boost->chat->type,
+            isset($this->message->chat->type) => $this->message->chat->type,
+            isset($this->edited_message->chat->type) => $this->edited_message->chat->type,
+            isset($this->channel_post->chat->type) => $this->channel_post->chat->type,
+            isset($this->edited_channel_post->chat->type) => $this->edited_channel_post->chat->type,
+            isset($this->business_message->chat->type) => $this->business_message->chat->type,
+            isset($this->edited_business_message->chat->type) => $this->edited_business_message->chat->type,
+            isset($this->deleted_business_messages->chat->type) => $this->deleted_business_messages->chat->type,
+            isset($this->message_reaction->chat->type) => $this->message_reaction->chat->type,
+            isset($this->message_reaction_count->chat->type) => $this->message_reaction_count->chat->type,
+            isset($this->callback_query->message->chat->type) => $this->callback_query->message->chat->type,
+            isset($this->poll_answer->voter_chat->type) => $this->poll_answer->voter_chat->type,
+            isset($this->my_chat_member->chat->type) => $this->my_chat_member->chat->type,
+            isset($this->chat_member->chat->type) => $this->chat_member->chat->type,
+            isset($this->chat_join_request->chat->type) => $this->chat_join_request->chat->type,
+            isset($this->chat_boost->chat->type) => $this->chat_boost->chat->type,
+            isset($this->removed_chat_boost->chat->type) => $this->removed_chat_boost->chat->type,
             default => ''
         };
     }
@@ -189,13 +187,13 @@ class Request
         /** @var UpdatesTrait $update */
         $update = json_decode($this->update()[0]);
         return match (true) {
-            isset($update->message->reply_to_message),
-            isset($update->edited_message->reply_to_message),
-            isset($update->channel_post->reply_to_message),
-            isset($update->edited_channel_post->reply_to_message),
-            isset($update->business_message->reply_to_message),
-            isset($update->edited_business_message->reply_to_message),
-            isset($update->callback_query->message->reply_to_message) => true,
+            isset($this->message->reply_to_message),
+            isset($this->edited_message->reply_to_message),
+            isset($this->channel_post->reply_to_message),
+            isset($this->edited_channel_post->reply_to_message),
+            isset($this->business_message->reply_to_message),
+            isset($this->edited_business_message->reply_to_message),
+            isset($this->callback_query->message->reply_to_message) => true,
             default => false
         };
     }
