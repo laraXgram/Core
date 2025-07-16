@@ -368,12 +368,11 @@ class Request
     /**
      * Get the user making the request.
      *
-     * @param string|null $guard
      * @return mixed
      */
-    public function user($guard = null)
+    public function user()
     {
-        return call_user_func($this->getUserResolver(), $guard);
+        return call_user_func($this->getUserResolver());
     }
 
     /**
@@ -409,7 +408,7 @@ class Request
 
         return sha1(implode('|', array_merge(
             $listen->methods(),
-            [$listen->pattern(), id()]
+            [$listen->pattern(), user()->id]
         )));
     }
 

@@ -1495,9 +1495,7 @@ class Application extends Container implements ApplicationContract, CachesConfig
     {
         foreach ([
                      'app' => [self::class, \LaraGram\Contracts\Container\Container::class, \LaraGram\Contracts\Foundation\Application::class],
-//                     'auth' => [\LaraGram\Auth0\Auth::class],
-//                     'auth.level' => [\LaraGram\Auth0\Level::class],
-//                     'auth.role' => [\LaraGram\Auth0\Role::class],
+                     'auth' => [\LaraGram\Auth\AuthManager::class],
                      'cache' => [\LaraGram\Cache\CacheManager::class, \LaraGram\Contracts\Cache\Factory::class],
                      'cache.store' => [\LaraGram\Cache\Repository::class, \LaraGram\Contracts\Cache\Repository::class],
                      'config' => [\LaraGram\Config\Repository::class, \LaraGram\Contracts\Config\Repository::class],

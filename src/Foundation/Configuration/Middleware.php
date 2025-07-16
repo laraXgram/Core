@@ -464,7 +464,6 @@ class Middleware
     protected function defaultAliases()
     {
         $aliases = [
-            'auth' => \LaraGram\Auth\Middleware\Authenticate::class,
             'can' => \LaraGram\Auth\Middleware\Authorize::class,
             'throttle' => $this->throttleWithRedis
                 ? \LaraGram\Listening\Middleware\ThrottleRequestsWithRedis::class

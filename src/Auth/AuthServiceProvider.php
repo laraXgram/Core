@@ -2,28 +2,69 @@
 
 namespace LaraGram\Auth;
 
-use LaraGram\Contracts\Support\DeferrableProvider;
+use LaraGram\Auth\Access\Gate;
+use LaraGram\Contracts\Auth\Access\Gate as GateContract;
+use LaraGram\Contracts\Auth\Authenticatable as AuthenticatableContract;
 use LaraGram\Support\ServiceProvider;
 
-class AuthServiceProvider extends ServiceProvider implements DeferrableProvider
+class AuthServiceProvider extends ServiceProvider
 {
-    public function register(): void
+    /**
+     * Register the service provider.
+     *
+     * @return void
+     */
+    public function register()
     {
-        $this->app->singleton('auth', function () {
-            return new Auth();
-        });
+        $this->registerAuthenticator();
+        $this->registerUserResolver();
+        $this->registerAccessGate();
+        $this->registerRequestRebindHandler();
+    }
 
-        $this->app->singleton('auth.level', function () {
-            return new Level();
-        });
+    /**
+     * Register the authenticator services.
+     *
+     * @return void
+     */
+    protected function registerAuthenticator()
+    {
+        $this->app->singleton('auth', fn ($app) => new AuthManager($app));
+    }
 
-        $this->app->singleton('auth.role', function () {
-            return new Role();
+    /**
+     * Register a resolver for the authenticated user.
+     *
+     * @return void
+     */
+    protected function registerUserResolver()
+    {
+        $this->app->bind(AuthenticatableContract::class, fn ($app) => call_user_func($app['auth']->userResolver()));
+    }
+
+    /**
+     * Register the access gate service.
+     *
+     * @return void
+     */
+    protected function registerAccessGate()
+    {
+        $this->app->singleton(GateContract::class, function ($app) {
+            return new Gate($app, fn () => call_user_func($app['auth']->userResolver()));
         });
     }
 
-    public function provides(): array
+    /**
+     * Handle the re-binding of the request binding.
+     *
+     * @return void
+     */
+    protected function registerRequestRebindHandler()
     {
-        return ['auth', 'auth.level', 'auth.role'];
+        $this->app->rebinding('request', function ($app, $request) {
+            $request->setUserResolver(function () use ($app) {
+                return call_user_func($app['auth']->userResolver());
+            });
+        });
     }
 }

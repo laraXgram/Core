@@ -19,7 +19,7 @@ class DefaultProviders
     public function __construct(?array $providers = null)
     {
         $this->providers = $providers ?: [
-//            \LaraGram\Auth0\AuthServiceProvider::class,
+            \LaraGram\Auth\AuthServiceProvider::class,
             \LaraGram\Bus\BusServiceProvider::class,
             \LaraGram\Cache\CacheServiceProvider::class,
             \LaraGram\Conversation\ConversationServiceProvider::class,
