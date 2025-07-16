@@ -95,12 +95,6 @@ abstract class AbstractListenCollection implements Countable, IteratorAggregate,
      */
     protected function getListenForMethods($request, array $methods)
     {
-        if ($request->isMethod('TEXT')) {
-            return (new Listen('TEXT', text(), function () use ($methods) {
-                return new Response('');
-            }))->bind($request);
-        }
-
         $this->requestMethodNotAllowed($request, $methods, $request->method());
     }
 

@@ -64,7 +64,7 @@ trait HandlerTrait
     public function onDice(Closure|array|string $action, string|array $emoji = 'any', int|array $value = 0)
     {
         $emoji = is_array($emoji) ? implode('|', $emoji) : $emoji;
-        $value = is_array($value) ? implode('|', $value) : $value;
+        $value = is_array($value) ? implode('|', $value) : (string)$value;
         return $this->addListen('DICE', "{$emoji},{$value}", $action);
     }
 

@@ -70,6 +70,7 @@ class ListenParameterBinder
             $request->edited_business_message != null => $request->edited_business_message->text,
             default => null
         };
+
         return match (true){
             $text !== null => $text,
             isset($request->callback_query->data) => $request->callback_query->data,

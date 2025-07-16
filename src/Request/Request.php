@@ -8,7 +8,6 @@ use LaraGram\Laraquest\Updates as UpdatesTrait;
 use LaraGram\Laraquest\Methode as MethodeTrait;
 use LaraGram\Listening\Type;
 use LaraGram\Support\Collection;
-use LaraGram\Support\Facades\Config;
 use LaraGram\Support\Traits\Conditionable;
 use LaraGram\Support\Traits\Macroable;
 use RuntimeException;
@@ -107,15 +106,13 @@ class Request
      */
     public function getUpdateType(): false|string
     {
-        /** @var UpdatesTrait $update */
-        $update = json_decode($this->update()[0]);
         return match (true) {
-            isset($update->inline_query) => 'inline_query',
-            isset($update->callback_query) => 'callback_query',
-            isset($update->edited_message) => 'edited_message',
-            isset($update->message) => $this->getUpdateMessageSubType($update->message),
-            isset($update->my_chat_member) => 'my_chat_member',
-            isset($update->channel_post) => 'channel_post',
+            isset($this->inline_query) => 'inline_query',
+            isset($this->callback_query) => 'callback_query',
+            isset($this->edited_message) => 'edited_message',
+            isset($this->message) => $this->getUpdateMessageSubType($this->message),
+            isset($this->my_chat_member) => 'my_chat_member',
+            isset($this->channel_post) => 'channel_post',
             default => false
         };
     }
@@ -123,9 +120,8 @@ class Request
     /**
      * This function returns the type of the message.
      *
-     * @param  object|UpdatesTrait\Message  $message
+     * @param  object $message
      * @return string
-     * @throws InvalidUpdateType
      */
     public function getUpdateMessageSubType(object $message): string
     {
@@ -184,8 +180,6 @@ class Request
      */
     public function isReply()
     {
-        /** @var UpdatesTrait $update */
-        $update = json_decode($this->update()[0]);
         return match (true) {
             isset($this->message->reply_to_message),
             isset($this->edited_message->reply_to_message),
@@ -205,7 +199,7 @@ class Request
      */
     public function update()
     {
-        return $this->content;
+        return json_decode($this->content);
     }
 
     /**
@@ -481,6 +475,6 @@ class Request
      */
     public function __get($name)
     {
-        return json_decode($this->update()[0])->{$name} ?? fn() => $this->listen($name);
+        return json_decode($this->update()[0])->{$name} ?? null;
     }
 }

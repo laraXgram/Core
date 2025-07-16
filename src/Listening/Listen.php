@@ -1352,7 +1352,7 @@ class Listen
         // validator implementations. We will spin through each one making sure it
         // passes and then we will know if the listen as a whole matches request.
         return static::$validators = [
-            new PatternValidator, new MethodValidator,
+            new MethodValidator, new PatternValidator,
         ];
     }
 

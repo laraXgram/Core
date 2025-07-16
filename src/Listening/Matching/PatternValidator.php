@@ -16,15 +16,18 @@ class PatternValidator implements ValidatorInterface
      */
     public function matches(Listen $listen, Request $request)
     {
-        if ($listen->methods() == [
-                'TEXT', 'DICE', 'UPDATE', 'MESSAGE', 'MESSAGE_TYPE',
-                'CALLBACK_DATA', 'ENTITIES', 'REFERRAL',
+        $listenMethods = $listen->methods();
+
+        sort($listenMethods);
+        if ($listenMethods == [
+                "CALLBACK_DATA", "COMMAND", "DICE",
+                "ENTITIES", "MESSAGE", "MESSAGE_TYPE",
+                "REFERRAL", "TEXT", "UPDATE"
             ]) return true;
 
         $method = $request->method();
         $regex = $listen->getCompiled()->getRegex();
         $pattern = $listen->pattern();
-        $listenMethods = $listen->methods();
 
         $matcher = match ($method) {
             'TEXT' => function () use ($request, $regex, $pattern, $listenMethods) {
