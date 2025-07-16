@@ -1,7 +1,6 @@
 <?php
 
-
-namespace Laragram\Support;
+namespace LaraGram\Support;
 
 class HigherOrderWhenProxy
 {

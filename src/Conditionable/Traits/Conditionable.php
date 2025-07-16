@@ -3,7 +3,7 @@
 namespace LaraGram\Support\Traits;
 
 use Closure;
-use Laragram\Support\HigherOrderWhenProxy;
+use LaraGram\Support\HigherOrderWhenProxy;
 
 trait Conditionable
 {
@@ -16,7 +16,7 @@ trait Conditionable
      * @param  (\Closure($this): TWhenParameter)|TWhenParameter|null  $value
      * @param  (callable($this, TWhenParameter): TWhenReturnType)|null  $callback
      * @param  (callable($this, TWhenParameter): TWhenReturnType)|null  $default
-     * @return HigherOrderWhenProxy|static
+     * @return $this|TWhenReturnType
      */
     public function when($value = null, ?callable $callback = null, ?callable $default = null)
     {
