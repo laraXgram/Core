@@ -139,6 +139,9 @@ class PathGenerator implements PathGeneratorContract
             }
         });
 
+        $listen->bind(app('request'))->parameters = $parameters;
+        $listen->run();
+
         return $this->listenPath()->to(
             $listen, $this->formatParameters($parameters)
         );
