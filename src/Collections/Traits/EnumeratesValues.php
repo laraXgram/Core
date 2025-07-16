@@ -12,7 +12,6 @@ use LaraGram\Contracts\Support\Arrayable;
 use LaraGram\Contracts\Support\Jsonable;
 use LaraGram\Support\Arr;
 use LaraGram\Support\Collection;
-use LaraGram\Support\Conditionable;
 use LaraGram\Support\Enumerable;
 use LaraGram\Support\HigherOrderCollectionProxy;
 use Traversable;
