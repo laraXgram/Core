@@ -2,8 +2,6 @@
 
 namespace LaraGram\Request\Exceptions;
 
-use Throwable;
-
 class ThrottleRequestsException extends \RuntimeException
 {
     /**
@@ -14,8 +12,8 @@ class ThrottleRequestsException extends \RuntimeException
      * @param  \Throwable|null  $previous
      * @return void
      */
-    public function __construct(string $message = '', int $code = 0, ?Throwable $previous = null)
+    public function __construct(string $message = '')
     {
-        parent::__construct($message, $code, $previous);
+        parent::__construct($message);
     }
 }
