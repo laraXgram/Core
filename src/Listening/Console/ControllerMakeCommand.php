@@ -1,14 +1,13 @@
 <?php
 
-namespace LaraGram\Foundation\Console;
+namespace LaraGram\Listening\Console;
 
+use LaraGram\Console\Attribute\AsCommand;
 use LaraGram\Console\Concerns\CreatesMatchingTest;
 use LaraGram\Console\GeneratorCommand;
-use LaraGram\Console\Attribute\AsCommand;
 use LaraGram\Console\Input\InputInterface;
 use LaraGram\Console\Input\InputOption;
 use LaraGram\Console\Output\OutputInterface;
-
 use function LaraGram\Console\Prompts\select;
 
 #[AsCommand(name: 'make:controller')]

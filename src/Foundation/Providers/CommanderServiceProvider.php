@@ -3,6 +3,8 @@
 namespace LaraGram\Foundation\Providers;
 
 use LaraGram\Cache\Console\CacheTableCommand;
+use LaraGram\Cache\Console\ClearCommand as CacheClearCommand;
+use LaraGram\Cache\Console\ForgetCommand as CacheForgetCommand;
 use LaraGram\Cache\Console\PruneStaleTagsCommand;
 use LaraGram\Concurrency\Console\InvokeSerializedClosureCommand;
 use LaraGram\Console\Scheduling\ScheduleClearCacheCommand;
@@ -34,7 +36,6 @@ use LaraGram\Foundation\Console\ConfigClearCommand;
 use LaraGram\Foundation\Console\ConfigPublishCommand;
 use LaraGram\Foundation\Console\ConfigShowCommand;
 use LaraGram\Foundation\Console\ConsoleMakeCommand;
-use LaraGram\Foundation\Console\ControllerMakeCommand;
 use LaraGram\Foundation\Console\ConversationMakeCommand;
 use LaraGram\Foundation\Console\EnumMakeCommand;
 use LaraGram\Foundation\Console\EnvironmentCommand;
@@ -77,23 +78,23 @@ use LaraGram\Foundation\Console\WebhookDeleteCommand;
 use LaraGram\Foundation\Console\WebhookDropCommand;
 use LaraGram\Foundation\Console\WebhookInfoCommand;
 use LaraGram\Foundation\Console\WebhookSetCommand;
-use LaraGram\Cache\Console\ClearCommand as CacheClearCommand;
-use LaraGram\Cache\Console\ForgetCommand as CacheForgetCommand;
+use LaraGram\Listening\Console\ControllerMakeCommand;
+use LaraGram\Listening\Console\MiddlewareMakeCommand;
+use LaraGram\Queue\Console\BatchesTableCommand;
 use LaraGram\Queue\Console\ClearCommand as QueueClearCommand;
+use LaraGram\Queue\Console\FailedTableCommand;
 use LaraGram\Queue\Console\FlushFailedCommand as FlushFailedQueueCommand;
 use LaraGram\Queue\Console\ForgetFailedCommand as ForgetFailedQueueCommand;
 use LaraGram\Queue\Console\ListenCommand as QueueListenCommand;
 use LaraGram\Queue\Console\ListFailedCommand as ListFailedQueueCommand;
 use LaraGram\Queue\Console\MonitorCommand as QueueMonitorCommand;
+use LaraGram\Queue\Console\PruneBatchesCommand;
 use LaraGram\Queue\Console\PruneFailedJobsCommand as QueuePruneFailedJobsCommand;
 use LaraGram\Queue\Console\RestartCommand as QueueRestartCommand;
 use LaraGram\Queue\Console\RetryBatchCommand as QueueRetryBatchCommand;
 use LaraGram\Queue\Console\RetryCommand as QueueRetryCommand;
-use LaraGram\Queue\Console\WorkCommand as QueueWorkCommand;
-use LaraGram\Queue\Console\BatchesTableCommand;
-use LaraGram\Queue\Console\FailedTableCommand;
-use LaraGram\Queue\Console\PruneBatchesCommand;
 use LaraGram\Queue\Console\TableCommand;
+use LaraGram\Queue\Console\WorkCommand as QueueWorkCommand;
 use LaraGram\Support\ServiceProvider;
 
 class CommanderServiceProvider extends ServiceProvider implements DeferrableProvider
@@ -174,6 +175,7 @@ class CommanderServiceProvider extends ServiceProvider implements DeferrableProv
         EnumMakeCommand::class             => ['files'],
         InterfaceMakeCommand::class        => ['files'],
         ModelMakeCommand::class            => ['files'],
+        MiddlewareMakeCommand::class       => ['files'],
         ObserverMakeCommand::class         => ['files'],
         ProviderMakeCommand::class         => ['files'],
         ScopeMakeCommand::class            => ['files'],
