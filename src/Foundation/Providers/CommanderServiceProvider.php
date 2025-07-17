@@ -31,6 +31,7 @@ use LaraGram\Foundation\Console\AboutCommand;
 use LaraGram\Foundation\Console\CastMakeCommand;
 use LaraGram\Foundation\Console\ClassMakeCommand;
 use LaraGram\Foundation\Console\ClearCompiledCommand;
+use LaraGram\Foundation\Console\ComponentMakeCommand;
 use LaraGram\Foundation\Console\ConfigCacheCommand;
 use LaraGram\Foundation\Console\ConfigClearCommand;
 use LaraGram\Foundation\Console\ConfigPublishCommand;
@@ -47,11 +48,11 @@ use LaraGram\Foundation\Console\EventGenerateCommand;
 use LaraGram\Foundation\Console\EventListCommand;
 use LaraGram\Foundation\Console\EventMakeCommand;
 use LaraGram\Foundation\Console\ExceptionMakeCommand;
-use LaraGram\Foundation\Console\GenerateAppCommand;
 use LaraGram\Foundation\Console\InterfaceMakeCommand;
 use LaraGram\Foundation\Console\JobMakeCommand;
 use LaraGram\Foundation\Console\JobMiddlewareMakeCommand;
 use LaraGram\Foundation\Console\KeyGenerateCommand;
+use LaraGram\Foundation\Console\LangPublishCommand;
 use LaraGram\Foundation\Console\ListenCacheCommand;
 use LaraGram\Foundation\Console\ListenClearCommand;
 use LaraGram\Foundation\Console\ListenerMakeCommand;
@@ -61,14 +62,15 @@ use LaraGram\Foundation\Console\ObserverMakeCommand;
 use LaraGram\Foundation\Console\OptimizeClearCommand;
 use LaraGram\Foundation\Console\OptimizeCommand;
 use LaraGram\Foundation\Console\PackageDiscoverCommand;
+use LaraGram\Foundation\Console\PolicyMakeCommand;
 use LaraGram\Foundation\Console\ProviderMakeCommand;
+use LaraGram\Foundation\Console\RuleMakeCommand;
 use LaraGram\Foundation\Console\ScopeMakeCommand;
 use LaraGram\Foundation\Console\ServeCommand;
 use LaraGram\Foundation\Console\StartApiServerCommand;
 use LaraGram\Foundation\Console\StorageLinkCommand;
 use LaraGram\Foundation\Console\StorageUnlinkCommand;
 use LaraGram\Foundation\Console\StubPublishCommand;
-use LaraGram\Foundation\Console\SwooleInstallCommand;
 use LaraGram\Foundation\Console\TemplateCacheCommand;
 use LaraGram\Foundation\Console\TemplateClearCommand;
 use LaraGram\Foundation\Console\TemplateMakeCommand;
@@ -105,6 +107,7 @@ class CommanderServiceProvider extends ServiceProvider implements DeferrableProv
      * @var array
      */
     protected $commands = [
+        'LangPublish' => LangPublishCommand::class,
         'ViewCache' => TemplateCacheCommand::class,
         'EnvironmentCommand' => EnvironmentCommand::class,
         'ClearCompiled' => ClearCompiledCommand::class,
@@ -155,7 +158,7 @@ class CommanderServiceProvider extends ServiceProvider implements DeferrableProv
         EnvironmentEncryptCommand::class   => ['files'],
         ExceptionMakeCommand::class        => ['files'],
         ListenListCommand::class           => ['listener'],
-        GenerateAppCommand::class          => ['files'],
+        ComponentMakeCommand::class        => ['files'],
         ConfigCacheCommand::class          => ['files'],
         ConfigClearCommand::class          => ['files'],
         EventCacheCommand::class           => ['files'],
@@ -198,6 +201,8 @@ class CommanderServiceProvider extends ServiceProvider implements DeferrableProv
         ListenerMakeCommand::class         => ['files'],
         ListenCacheCommand::class          => ['files'],
         ListenClearCommand::class          => ['files'],
+        PolicyMakeCommand::class           => ['files'],
+        RuleMakeCommand::class             => ['files'],
     ];
 
     /**
@@ -208,7 +213,6 @@ class CommanderServiceProvider extends ServiceProvider implements DeferrableProv
     protected $devCommands = [
         'EventGenerate' => EventGenerateCommand::class,
         'StubPublishCommand' => StubPublishCommand::class,
-        'SwooleInstallCommand' => SwooleInstallCommand::class,
         'BatchesTableCommand' => BatchesTableCommand::class,
         'FailedTableCommand' => FailedTableCommand::class,
         'TableCommand' => TableCommand::class,

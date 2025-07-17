@@ -359,8 +359,7 @@ abstract class GeneratorCommand extends Command implements PromptsForMissingInpu
         foreach ($searches as $search) {
             $stub = str_replace(
                 $search,
-//                [$this->getNamespace($name), $this->rootNamespace(), $this->userProviderModel()],
-                [$this->getNamespace($name), $this->rootNamespace()],
+                [$this->getNamespace($name), $this->rootNamespace(), $this->userProviderModel()],
                 $stub
             );
         }
@@ -443,14 +442,14 @@ abstract class GeneratorCommand extends Command implements PromptsForMissingInpu
      *
      * @return string|null
      */
-//    protected function userProviderModel()
-//    {
-//        $config = $this->laragram['config'];
-//
-//        $provider = $config->get('auth.guards.'.$config->get('auth.defaults.guard').'.provider');
-//
-//        return $config->get("auth.providers.{$provider}.model");
-//    }
+    protected function userProviderModel()
+    {
+        $config = $this->laragram['config'];
+
+        $provider = $config->get('auth.defaults.provider');
+
+        return $config->get("auth.providers.{$provider}.model");
+    }
 
     /**
      * Checks whether the given name is reserved.
@@ -508,23 +507,23 @@ abstract class GeneratorCommand extends Command implements PromptsForMissingInpu
                     'Cast' => 'E.g. Json',
 //                    'Channel' => 'E.g. OrderChannel',
                     'Console command' => 'E.g. SendEmails',
-//                    'Component' => 'E.g. Alert',
+                    'Component' => 'E.g. Alert',
                     'Controller' => 'E.g. UserController',
                     'Event' => 'E.g. PodcastProcessed',
                     'Exception' => 'E.g. InvalidOrderException',
                     'Factory' => 'E.g. PostFactory',
                     'Job' => 'E.g. ProcessPodcast',
-//                    'Listener' => 'E.g. SendPodcastNotification',
+                    'Listener' => 'E.g. SendPodcastNotification',
 //                    'Mailable' => 'E.g. OrderShipped',
                     'Middleware' => 'E.g. EnsureTokenIsValid',
                     'Model' => 'E.g. Flight',
 //                    'Notification' => 'E.g. InvoicePaid',
                     'Observer' => 'E.g. UserObserver',
-//                    'Policy' => 'E.g. PostPolicy',
+                    'Policy' => 'E.g. PostPolicy',
                     'Provider' => 'E.g. ElasticServiceProvider',
 //                    'Request' => 'E.g. StorePodcastRequest',
                     'Resource' => 'E.g. UserResource',
-//                    'Rule' => 'E.g. Uppercase',
+                    'Rule' => 'E.g. Uppercase',
                     'Scope' => 'E.g. TrendingScope',
                     'Seeder' => 'E.g. UserSeeder',
 //                    'Test' => 'E.g. UserTest',

@@ -1,0 +1,26 @@
+<?php
+
+namespace {{ namespace }};
+
+use Closure;
+use LaraGram\Template\Component;
+use LaraGram\Contracts\Template\Template;
+
+class {{ class }} extends Component
+{
+    /**
+     * Create a new component instance.
+     */
+    public function __construct()
+    {
+        //
+    }
+
+    /**
+     * Get the template / contents that represent the component.
+     */
+    public function render(): Template|Closure|string
+    {
+        return {{ template }};
+    }
+}
