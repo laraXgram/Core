@@ -2,15 +2,12 @@
 
 namespace LaraGram\Cache;
 
-use LaraGram\Support\Facades\Cache;
-use LaraGram\Support\Facades\Hash;
-
 class Step
 {
     /**
      * The cache store implementation.
      *
-     * @var \LaraGram\Contracts\Cache\Repository
+     * @var \LaraGram\Cache\CacheManager
      */
     protected $cache;
 
@@ -24,13 +21,13 @@ class Step
     /**
      * Create a new step manager instance.
      *
-     * @param  \LaraGram\Contracts\Cache\Repository  $cache
+     * @param  \LaraGram\Cache\CacheManager  $cache
      * @return void
      */
-    public function __construct(Cache $cache)
+    public function __construct(CacheManager $cache)
     {
         $this->cache = $cache;
-        $this->key = Hash::make(id().":step");
+        $this->key = user()->id.":step";
     }
 
     /**
@@ -42,6 +39,8 @@ class Step
      */
     public function set(string $step, int $ttl = null): bool
     {
+        $this->forget();
+
         return $this->cache->set($this->key, $step, $ttl);
     }
 
