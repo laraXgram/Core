@@ -6,7 +6,6 @@ use Closure;
 use LaraGram\Laraquest\Updates as UpdatesTrait;
 use LaraGram\Laraquest\Methode as MethodeTrait;
 use LaraGram\Listening\Type;
-use LaraGram\Request\InteractWithUpdate;
 use LaraGram\Support\Collection;
 use LaraGram\Support\Traits\Conditionable;
 use LaraGram\Support\Traits\Macroable;
@@ -26,6 +25,8 @@ class Request
         MethodeTrait, UpdatesTrait {
         InteractWithUpdate::getUpdateType insteadof UpdatesTrait;
         InteractWithUpdate::getUpdateMessageSubType insteadof UpdatesTrait;
+        InteractWithUpdate::scope insteadof UpdatesTrait;
+        InteractWithUpdate::isReply insteadof UpdatesTrait;
     }
 
     /**
