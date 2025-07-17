@@ -11,7 +11,9 @@ use LaraGram\Console\Attribute\AsCommand;
 use LaraGram\Console\Input\InputOption;
 use LaraGram\Console\Input\InputInterface;
 use LaraGram\Console\Output\OutputInterface;
-
+use Swoole\Http\Request;
+use Swoole\Http\Response;
+use Swoole\Http\Server;
 use LaraGram\Support\Stringable;
 use LaraGram\Support\Tempora;
 use function LaraGram\Console\Prompts\Convertor\terminal;
@@ -113,24 +115,10 @@ class ServeCommand extends Command
      */
     public function handle()
     {
-        if ($this->option('openswoole')) {
-            if (!extension_loaded('swoole') && !extension_loaded('openswoole')) {
-                $this->components->error('Extension swoole/openswoole is not installed!');
-                return 0;
-            }
-
-            if (!in_array(config('laraquest.update_type'), ['openswoole', 'swoole'])) {
-                $this->components->error('laraquest.update_type is not swoole/openswoole!');
-                return 0;
-            }
-
-            $this->components->info("Server running on [http://{$this->host()}:{$this->port()}].");
-            $this->comment('  <fg=yellow;options=bold>Press Ctrl+C to stop the server</>');
-
-            config('server.openswoole.ip', $this->host());
-            config('server.openswoole.port', $this->port());
-
-            require_once $this->laragram->bootstrapPath('server.php');
+        if ($this->option('swoole')) {
+            $this->call('surge:start', [
+                'server' => 'swoole'
+            ]);
         } elseif ($this->option('polling')) {
             if (config('laraquest.update_type') != 'polling') {
                 $this->components->error('laraquest.update_type is not polling!');
@@ -140,7 +128,7 @@ class ServeCommand extends Command
             $this->components->info("Polling Started...");
             $this->comment('  <fg=yellow;options=bold>Press Ctrl+C to stop the server</>');
 
-            require_once $this->laragram->bootstrapPath('server.php');
+            require_once $this->laragram->publicPath('index.php');
         } else {
             $environmentFile = $this->option('env')
                 ? base_path('.env').'.'.$this->option('env')
@@ -226,17 +214,12 @@ class ServeCommand extends Command
      */
     protected function serverCommand()
     {
-        $command = [
+        return [
             php_binary(),
             '-S',
             $this->host().':'.$this->port(),
+            __DIR__.'/../resources/server.php'
         ];
-
-        if (file_exists($server = __DIR__.'/../resources/server.php')){
-            $command[] = $server;
-        }
-
-        return $command;
     }
 
     /**
@@ -449,7 +432,7 @@ class ServeCommand extends Command
         return [
             ['host', null, InputOption::VALUE_OPTIONAL, "Specify the host IP address for the development server", Env::get('SERVER_HOST', '127.0.0.1')],
             ['port', null, InputOption::VALUE_OPTIONAL, 'Specify the port for the development server.', Env::get('SERVER_PORT')],
-            ['openswoole', null, InputOption::VALUE_NONE, 'If set, the server will use OpenSwoole for serving requests.'],
+            ['swoole', null, InputOption::VALUE_NONE, 'If set, the server will use Swoole/OpenSwoole for serving requests.'],
             ['polling', null, InputOption::VALUE_NONE, 'If set, enables polling mode for handling requests.'],
             ['tries', null, InputOption::VALUE_OPTIONAL, 'The max number of ports to attempt to serve from', 10],
             ['no-reload', null, InputOption::VALUE_NONE, 'Do not reload the development server on .env file changes'],

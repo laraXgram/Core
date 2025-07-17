@@ -206,8 +206,7 @@ class AboutCommand extends Command
 
                 return $logs;
             },
-//            'Mail' => config('mail.default'),
-//            'Octane' => config('octane.server'),
+            'Surge' => config('surge.server'),
             'Queue' => config('queue.default'),
         ]));
 
