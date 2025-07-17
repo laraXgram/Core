@@ -104,6 +104,7 @@ class Kernel implements KernelContract
         \LaraGram\Foundation\Bootstrap\LoadConfiguration::class,
         \LaraGram\Foundation\Bootstrap\HandleExceptions::class,
         \LaraGram\Foundation\Bootstrap\RegisterFacades::class,
+        \LaraGram\Foundation\Bootstrap\SetRequestForConsole::class,
         \LaraGram\Foundation\Bootstrap\RegisterProviders::class,
         \LaraGram\Foundation\Bootstrap\BootProviders::class,
     ];

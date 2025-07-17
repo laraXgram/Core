@@ -62,9 +62,69 @@ class Request
     protected ?string $locale = null;
     protected string $defaultLocale = 'en';
 
-    public function __construct(array $request = [])
+    public function __construct(array $request = [], array $server = [])
     {
         $this->request = $request;
+        $this->server = $server;
+    }
+
+    /**
+     * Creates a Request based on a given configuration.
+     *
+     *
+     * @param array                $server     The server parameters ($_SERVER)
+     * @param array                $content    The raw body data
+     *
+     */
+    public static function create(array $content = [], array $server = []): static
+    {
+        $server = array_replace([
+            'SERVER_NAME' => 'localhost',
+            'SERVER_PORT' => 80,
+            'HTTP_HOST' => 'localhost',
+            'HTTP_USER_AGENT' => 'LaraGram',
+            'HTTP_ACCEPT' => 'text/html,application/xhtml+xml,application/xml;q=0.9,application/json;q=0.9,*/*;q=0.8',
+            'HTTP_ACCEPT_LANGUAGE' => 'en-us,en;q=0.5',
+            'HTTP_ACCEPT_CHARSET' => 'ISO-8859-1,utf-8;q=0.7,*;q=0.7',
+            'REMOTE_ADDR' => '127.0.0.1',
+            'SCRIPT_NAME' => '',
+            'SCRIPT_FILENAME' => '',
+            'SERVER_PROTOCOL' => 'HTTP/1.1',
+            'REQUEST_TIME' => time(),
+            'REQUEST_TIME_FLOAT' => microtime(true),
+        ], $server);
+
+        $server['PATH_INFO'] = '';
+
+        if (isset($components['host'])) {
+            $server['SERVER_NAME'] = $components['host'];
+            $server['HTTP_HOST'] = $components['host'];
+        }
+
+        if (isset($components['scheme'])) {
+            if ('https' === $components['scheme']) {
+                $server['HTTPS'] = 'on';
+                $server['SERVER_PORT'] = 443;
+            } else {
+                unset($server['HTTPS']);
+                $server['SERVER_PORT'] = 80;
+            }
+        }
+
+        if (isset($components['port'])) {
+            $server['SERVER_PORT'] = $components['port'];
+            $server['HTTP_HOST'] .= ':'.$components['port'];
+        }
+
+        if (isset($components['user'])) {
+            $server['PHP_AUTH_USER'] = $components['user'];
+        }
+
+        if (isset($components['pass'])) {
+            $server['PHP_AUTH_PW'] = $components['pass'];
+        }
+
+        return new static($content, $server);
     }
 
     /**
