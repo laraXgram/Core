@@ -40,7 +40,11 @@ abstract class AbstractListenCollection implements Countable, IteratorAggregate,
 
         throw new \Exception(sprintf(
             'The listen %s could not be found.',
-            $request->method()
+            $request->message->text ??
+            $request->message->caption ??
+            $request->callback_query->data ??
+            $request->inline_query->query ??
+            '*',
         ));
     }
 
