@@ -8,7 +8,7 @@ if (!function_exists('chat')) {
         /**
          * @var Request $request ;
          */
-        $request = app('laraquest');
+        $request = app('request');
         return match (true) {
             $request->message != null => $request->message->chat,
             $request->edited_message != null => $request->edited_message->chat,
@@ -36,7 +36,7 @@ if (!function_exists('user')) {
         /**
          * @var Request $request ;
          */
-        $request = app('laraquest');
+        $request = app('request');
         return match (true) {
             $request->message != null => $request->message->from,
             $request->edited_message != null => $request->edited_message->from,
@@ -66,7 +66,7 @@ if (!function_exists('text')) {
         /**
          * @var Request $request ;
          */
-        $request = app('laraquest');
+        $request = app('request');
         return match (true) {
             $request->message != null && isset($request->message->text) => $request->message->text,
             $request->edited_message != null => $request->edited_message->text,
@@ -85,7 +85,7 @@ if (!function_exists('update_id')) {
         /**
          * @var Request $request ;
          */
-        $request = app('laraquest');
+        $request = app('request');
         return $request->update_id;
     }
 }
@@ -96,7 +96,7 @@ if (!function_exists('message')) {
         /**
          * @var Request $request ;
          */
-        $request = app('laraquest');
+        $request = app('request');
         return $request->message;
     }
 }
@@ -107,7 +107,7 @@ if (!function_exists('edited_message')) {
         /**
          * @var Request $request ;
          */
-        $request = app('laraquest');
+        $request = app('request');
         return $request->edited_message;
     }
 }
@@ -118,7 +118,7 @@ if (!function_exists('channel_post')) {
         /**
          * @var Request $request ;
          */
-        $request = app('laraquest');
+        $request = app('request');
         return $request->channel_post;
     }
 }
@@ -129,7 +129,7 @@ if (!function_exists('edited_channel_post')) {
         /**
          * @var Request $request ;
          */
-        $request = app('laraquest');
+        $request = app('request');
         return $request->edited_channel_post;
     }
 }
@@ -140,7 +140,7 @@ if (!function_exists('business_connection')) {
         /**
          * @var Request $request ;
          */
-        $request = app('laraquest');
+        $request = app('request');
         return $request->business_connection;
     }
 }
@@ -151,7 +151,7 @@ if (!function_exists('business_message')) {
         /**
          * @var Request $request ;
          */
-        $request = app('laraquest');
+        $request = app('request');
         return $request->business_message;
     }
 }
@@ -162,7 +162,7 @@ if (!function_exists('edited_business_message')) {
         /**
          * @var Request $request ;
          */
-        $request = app('laraquest');
+        $request = app('request');
         return $request->edited_business_message;
     }
 }
@@ -173,7 +173,7 @@ if (!function_exists('deleted_business_messages')) {
         /**
          * @var Request $request ;
          */
-        $request = app('laraquest');
+        $request = app('request');
         return $request->deleted_business_messages;
     }
 }
@@ -184,7 +184,7 @@ if (!function_exists('message_reaction')) {
         /**
          * @var Request $request ;
          */
-        $request = app('laraquest');
+        $request = app('request');
         return $request->message_reaction;
     }
 }
@@ -195,7 +195,7 @@ if (!function_exists('message_reaction_count')) {
         /**
          * @var Request $request ;
          */
-        $request = app('laraquest');
+        $request = app('request');
         return $request->message_reaction_count;
     }
 }
@@ -206,7 +206,7 @@ if (!function_exists('inline_query')) {
         /**
          * @var Request $request ;
          */
-        $request = app('laraquest');
+        $request = app('request');
         return $request->inline_query;
     }
 }
@@ -217,7 +217,7 @@ if (!function_exists('chosen_inline_result')) {
         /**
          * @var Request $request ;
          */
-        $request = app('laraquest');
+        $request = app('request');
         return $request->chosen_inline_result;
     }
 }
@@ -228,7 +228,7 @@ if (!function_exists('callback_query')) {
         /**
          * @var Request $request ;
          */
-        $request = app('laraquest');
+        $request = app('request');
         return $request->callback_query;
     }
 }
@@ -239,7 +239,7 @@ if (!function_exists('shipping_query')) {
         /**
          * @var Request $request ;
          */
-        $request = app('laraquest');
+        $request = app('request');
         return $request->shipping_query;
     }
 }
@@ -250,7 +250,7 @@ if (!function_exists('pre_checkout_query')) {
         /**
          * @var Request $request ;
          */
-        $request = app('laraquest');
+        $request = app('request');
         return $request->pre_checkout_query;
     }
 }
@@ -261,7 +261,7 @@ if (!function_exists('poll')) {
         /**
          * @var Request $request ;
          */
-        $request = app('laraquest');
+        $request = app('request');
         return $request->poll;
     }
 }
@@ -272,7 +272,7 @@ if (!function_exists('poll_answer')) {
         /**
          * @var Request $request ;
          */
-        $request = app('laraquest');
+        $request = app('request');
         return $request->poll_answer;
     }
 }
@@ -283,7 +283,7 @@ if (!function_exists('my_chat_member')) {
         /**
          * @var Request $request ;
          */
-        $request = app('laraquest');
+        $request = app('request');
         return $request->my_chat_member;
     }
 }
@@ -294,7 +294,7 @@ if (!function_exists('chat_member')) {
         /**
          * @var Request $request ;
          */
-        $request = app('laraquest');
+        $request = app('request');
         return $request->chat_member;
     }
 }
@@ -305,7 +305,7 @@ if (!function_exists('chat_join_request')) {
         /**
          * @var Request $request ;
          */
-        $request = app('laraquest');
+        $request = app('request');
         return $request->chat_join_request;
     }
 }
@@ -316,7 +316,7 @@ if (!function_exists('chat_join_request')) {
         /**
          * @var Request $request ;
          */
-        $request = app('laraquest');
+        $request = app('request');
         return $request->chat_join_request;
     }
 }
@@ -327,7 +327,7 @@ if (!function_exists('chat_boost')) {
         /**
          * @var Request $request ;
          */
-        $request = app('laraquest');
+        $request = app('request');
         return $request->chat_boost;
     }
 }
@@ -338,7 +338,7 @@ if (!function_exists('removed_chat_boost')) {
         /**
          * @var Request $request ;
          */
-        $request = app('laraquest');
+        $request = app('request');
         return $request->removed_chat_boost;
     }
 }
@@ -450,7 +450,7 @@ if (!function_exists('mention_user_by_ID')) {
 if (!function_exists('mention_reply_user')) {
     function mention_reply_user(): string
     {
-        $request = app('laraquest');
+        $request = app('request');
         return "[{$request->message->reply_to_message->from->first_name}](tg://user?id={$request->message->reply_to_message->from->id})";
     }
 }
@@ -458,7 +458,7 @@ if (!function_exists('mention_reply_user')) {
 if (!function_exists('mention_sender_user')) {
     function mention_sender_user(): string
     {
-        $request = app('laraquest');
+        $request = app('request');
         return "[{$request->message->from->first_name}](tg://user?id={$request->message->from->id})";
     }
 }
@@ -466,6 +466,6 @@ if (!function_exists('mention_sender_user')) {
 if (!function_exists('selfDelete')) {
     function selfDelete(): void
     {
-        request()->mode(LaraGram\Laraquest\Mode::NO_RESPONSE_CURL)->deleteMessage(chat()->id, message()->message_id);
+        app('request')->mode(LaraGram\Laraquest\Mode::NO_RESPONSE_CURL)->deleteMessage(chat()->id, message()->message_id);
     }
 }
