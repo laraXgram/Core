@@ -465,6 +465,9 @@ class Middleware
     {
         $aliases = [
             'can' => \LaraGram\Auth\Middleware\Authorize::class,
+            'reply' => \LaraGram\Listening\Middleware\Reply::class,
+            'scope' => \LaraGram\Listening\Middleware\Scope::class,
+            'step' => \LaraGram\Listening\Middleware\Step::class,
             'throttle' => $this->throttleWithRedis
                 ? \LaraGram\Listening\Middleware\ThrottleRequestsWithRedis::class
                 : \LaraGram\Listening\Middleware\ThrottleRequests::class,
