@@ -5,12 +5,30 @@ namespace LaraGram\Foundation\Providers;
 use LaraGram\Console\Events\CommandFinished;
 use LaraGram\Console\Scheduling\Schedule;
 use LaraGram\Contracts\Console\Kernel as ConsoleKernel;
+use LaraGram\Contracts\Events\Dispatcher;
+use LaraGram\Foundation\Exceptions\Renderer\Listener;
 use LaraGram\Queue\Events\JobAttempted;
+use LaraGram\Request\Request;
 use LaraGram\Support\AggregateServiceProvider;
 use LaraGram\Support\Defer\DeferredCallbackCollection;
+use LaraGram\Validation\ValidationException;
 
 class FoundationServiceProvider extends AggregateServiceProvider
 {
+    /**
+     * Boot the service provider.
+     *
+     * @return void
+     */
+    public function boot()
+    {
+        if ($this->app->hasDebugModeEnabled()) {
+            $this->app->make(Listener::class)->registerListeners(
+                $this->app->make(Dispatcher::class)
+            );
+        }
+    }
+
     /**
      * Register the service provider.
      *
@@ -21,6 +39,7 @@ class FoundationServiceProvider extends AggregateServiceProvider
         parent::register();
 
         $this->registerConsoleSchedule();
+        $this->registerRequestValidation();
         $this->registerDeferHandler();
     }
 
@@ -33,6 +52,28 @@ class FoundationServiceProvider extends AggregateServiceProvider
     {
         $this->app->singleton(Schedule::class, function ($app) {
             return $app->make(ConsoleKernel::class)->resolveConsoleSchedule();
+        });
+    }
+
+    /**
+     * Register the "validate" macro on the request.
+     *
+     * @return void
+     */
+    public function registerRequestValidation()
+    {
+        Request::macro('validate', function (array $rules, ...$params) {
+            return validator($this->all(), $rules, ...$params)->validate();
+        });
+
+        Request::macro('validateWithBag', function (string $errorBag, array $rules, ...$params) {
+            try {
+                return $this->validate($rules, ...$params);
+            } catch (ValidationException $e) {
+                $e->errorBag = $errorBag;
+
+                throw $e;
+            }
         });
     }
 
