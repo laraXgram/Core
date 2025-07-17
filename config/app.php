@@ -131,15 +131,15 @@ return [
     ],
 
     /*
-|--------------------------------------------------------------------------
-| Autoloaded Service Providers
-|--------------------------------------------------------------------------
-|
-| The service providers listed here will be automatically loaded on any
-| requests to your application. You may add your own services to the
-| arrays below to provide additional features to this application.
-|
-*/
+    |--------------------------------------------------------------------------
+    | Autoloaded Service Providers
+    |--------------------------------------------------------------------------
+    |
+    | The service providers listed here will be automatically loaded on any
+    | requests to your application. You may add your own services to the
+    | arrays below to provide additional features to this application.
+    |
+    */
 
     'providers' => ServiceProvider::defaultProviders()->merge([
         // Package Service Providers...

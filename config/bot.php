@@ -25,7 +25,7 @@ return [
     ],
 
     'api_server' => [
-        'endpoint' => 'https:api.telegram.org',
+        'endpoint' => 'https://api.telegram.org',
         'dir' => storage_path('app/api-server'),
         'log_dir' => '',
         'ip' => '127.0.0.1',
