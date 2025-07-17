@@ -3,10 +3,10 @@
 namespace LaraGram\Request;
 
 use Closure;
-use LaraGram\Laraquest\Exceptions\InvalidUpdateType;
 use LaraGram\Laraquest\Updates as UpdatesTrait;
 use LaraGram\Laraquest\Methode as MethodeTrait;
 use LaraGram\Listening\Type;
+use LaraGram\Request\InteractWithUpdate;
 use LaraGram\Support\Collection;
 use LaraGram\Support\Traits\Conditionable;
 use LaraGram\Support\Traits\Macroable;
@@ -22,7 +22,11 @@ use RuntimeException;
 class Request
 {
     use Conditionable, Macroable,
-        UpdatesTrait, MethodeTrait;
+        InteractWithUpdate,
+        MethodeTrait, UpdatesTrait {
+        InteractWithUpdate::getUpdateType insteadof UpdatesTrait;
+        InteractWithUpdate::getUpdateMessageSubType insteadof UpdatesTrait;
+    }
 
     /**
      * The user resolver callback.
@@ -156,100 +160,6 @@ class Request
     public function instance()
     {
         return $this;
-    }
-
-    /**
-     * This function returns the type of the update.
-     *
-     * @return false|string
-     * @throws InvalidUpdateType
-     */
-    public function getUpdateType(): false|string
-    {
-        return match (true) {
-            isset($this->inline_query) => 'inline_query',
-            isset($this->callback_query) => 'callback_query',
-            isset($this->edited_message) => 'edited_message',
-            isset($this->message) => $this->getUpdateMessageSubType($this->message),
-            isset($this->my_chat_member) => 'my_chat_member',
-            isset($this->channel_post) => 'channel_post',
-            default => false
-        };
-    }
-
-    /**
-     * This function returns the type of the message.
-     *
-     * @param  object $message
-     * @return string
-     */
-    public function getUpdateMessageSubType(object $message): string
-    {
-        return match (true) {
-            isset($message->animation) => 'animation',
-            isset($message->audio) => 'audio',
-            isset($message->contact) => 'contact',
-            isset($message->dice) => 'dice',
-            isset($message->document) => 'document',
-            isset($message->left_chat_member) => 'left_chat_member',
-            isset($message->location) => 'location',
-            isset($message->new_chat_members) => 'new_chat_members',
-            isset($message->photo) => 'photo',
-            isset($message->reply_to_message) => 'reply_to_message',
-            isset($message->sticker) => 'sticker',
-            isset($message->text) => 'text',
-            isset($message->video) => 'video',
-            isset($message->video_note) => 'video_note',
-            isset($message->voice) => 'voice',
-            default => throw new InvalidUpdateType('Unknown message type')
-        };
-    }
-
-    /**
-     * detect the scope of message.
-     *
-     * @return string
-     */
-    public function scope()
-    {
-        return match (true) {
-            isset($this->message->chat->type) => $this->message->chat->type,
-            isset($this->edited_message->chat->type) => $this->edited_message->chat->type,
-            isset($this->channel_post->chat->type) => $this->channel_post->chat->type,
-            isset($this->edited_channel_post->chat->type) => $this->edited_channel_post->chat->type,
-            isset($this->business_message->chat->type) => $this->business_message->chat->type,
-            isset($this->edited_business_message->chat->type) => $this->edited_business_message->chat->type,
-            isset($this->deleted_business_messages->chat->type) => $this->deleted_business_messages->chat->type,
-            isset($this->message_reaction->chat->type) => $this->message_reaction->chat->type,
-            isset($this->message_reaction_count->chat->type) => $this->message_reaction_count->chat->type,
-            isset($this->callback_query->message->chat->type) => $this->callback_query->message->chat->type,
-            isset($this->poll_answer->voter_chat->type) => $this->poll_answer->voter_chat->type,
-            isset($this->my_chat_member->chat->type) => $this->my_chat_member->chat->type,
-            isset($this->chat_member->chat->type) => $this->chat_member->chat->type,
-            isset($this->chat_join_request->chat->type) => $this->chat_join_request->chat->type,
-            isset($this->chat_boost->chat->type) => $this->chat_boost->chat->type,
-            isset($this->removed_chat_boost->chat->type) => $this->removed_chat_boost->chat->type,
-            default => ''
-        };
-    }
-
-    /**
-     * detect the message is reply or not.
-     *
-     * @return bool
-     */
-    public function isReply()
-    {
-        return match (true) {
-            isset($this->message->reply_to_message),
-            isset($this->edited_message->reply_to_message),
-            isset($this->channel_post->reply_to_message),
-            isset($this->edited_channel_post->reply_to_message),
-            isset($this->business_message->reply_to_message),
-            isset($this->edited_business_message->reply_to_message),
-            isset($this->callback_query->message->reply_to_message) => true,
-            default => false
-        };
     }
 
     /**
