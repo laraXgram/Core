@@ -1,4 +1,4 @@
-### This is a core for LaraGram version 2.0.0.
+### This is a core for LaraGram 3
 
 
 All processing of LaraGram is delegated to this core, which is developed similarly to the Laravel structure.
