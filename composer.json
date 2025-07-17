@@ -19,26 +19,70 @@
         "ext-curl": "*",
         "ext-filter": "*",
         "ext-hash": "*",
+        "ext-intl": "*",
         "ext-mbstring": "*",
         "laraxgram/laraquest": "^1",
-        "ext-intl": "*"
+        "laraxgram/tempora": "^1"
+    },
+    "replace": {
+        "laraxgram/auth": "self.version",
+        "laraxgram/bus": "self.version",
+        "laraxgram/cache": "self.version",
+        "laraxgram/collections": "self.version",
+        "laraxgram/concurrency": "self.version",
+        "laraxgram/conditionable": "self.version",
+        "laraxgram/config": "self.version",
+        "laraxgram/console": "self.version",
+        "laraxgram/container": "self.version",
+        "laraxgram/contracts": "self.version",
+        "laraxgram/conecrsation": "self.version",
+        "laraxgram/database": "self.version",
+        "laraxgram/encryption": "self.version",
+        "laraxgram/events": "self.version",
+        "laraxgram/filesystem": "self.version",
+        "laraxgram/hashing": "self.version",
+        "laraxgram/jdb": "self.version",
+        "laraxgram/keyboard": "self.version",
+        "laraxgram/listening": "self.version",
+        "laraxgram/log": "self.version",
+        "laraxgram/macroable": "self.version",
+        "laraxgram/pipeline": "self.version",
+        "laraxgram/process": "self.version",
+        "laraxgram/queue": "self.version",
+        "laraxgram/redis": "self.version",
+        "laraxgram/request": "self.version",
+        "laraxgram/support": "self.version",
+        "laraxgram/template": "self.version",
+        "laraxgram/translation": "self.version",
+        "laraxgram/validation": "self.version"
     },
     "autoload": {
         "files": [
+            "src/Collections/functions.php",
+            "src/Collections/helpers.php",
+            "src/Events/functions.php",
+            "src/Filesystem/functions.php",
             "src/Foundation/helpers.php",
-            "src/Auth/helpers.php",
+            "src/Log/functions.php",
+            "src/Support/functions.php",
+            "src/Support/helpers.php",
             "src/Keyboard/helpers.php",
             "src/Request/helpers.php",
-            "src/Support/Facades/helpers.php",
             "src/Console/Prompts/helpers.php",
-            "src/Console/Prompts/Convertor/Functions.php",
-            "src/Filesystem/functions.php",
-            "src/Support/helper.php",
-            "src/Support/functions.php"
+            "src/Console/Prompts/Convertor/Functions.php"
         ],
         "psr-4": {
             "LaraGram\\": "src/",
-            "App\\": "app/"
+            "LaraGram\\Support\\": [
+                "src/Macroable/",
+                "src/Collections/",
+                "src/Conditionable/"
+            ]
+        }
+    },
+    "extra": {
+        "branch-alias": {
+            "dev-master": "3.x-dev"
         }
     },
     "suggest": {
@@ -48,11 +92,13 @@
         "ext-pcntl": "Required to use all features of the queue worker and console signal trapping.",
         "ext-pdo": "Required to use all database features.",
         "ext-posix": "Required to use all features of the queue worker.",
-        "ext-redis": "Required to use the Redis cache and queue drivers (^4.0|^5.0|^6.0)."
+        "ext-redis": "Required to use the Redis cache and queue drivers (^4.0|^5.0|^6.0).",
+        "ext-gmp": "*",
+        "ext-bcmath": "*"
     },
     "config": {
         "sort-packages": true
     },
-    "minimum-stability": "stable",
+    "minimum-stability": "dev",
     "prefer-stable": true
 }
