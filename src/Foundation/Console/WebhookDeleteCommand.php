@@ -4,6 +4,7 @@ namespace LaraGram\Foundation\Console;
 
 use LaraGram\Console\Command;
 use LaraGram\Console\Attribute\AsCommand;
+use LaraGram\Console\Input\InputOption;
 
 #[AsCommand(name: 'webhook:delete')]
 class WebhookDeleteCommand extends Command
@@ -29,12 +30,28 @@ class WebhookDeleteCommand extends Command
      */
     public function handle()
     {
-        $result = request()->deleteWebhook();
+        $connection = $this->option('connection') ?? config('bot.default');
+
+        $result = app('request')
+            ->connection($connection)
+            ->deleteWebhook();
 
         if (!$result['ok']){
             $this->components->error($result['description']);
         }else{
             $this->components->info($result['description']);
         }
+    }
+
+    /**
+     * Get the console command arguments.
+     *
+     * @return array
+     */
+    protected function getOptions()
+    {
+        return [
+            ['connection', null, InputOption::VALUE_OPTIONAL, 'The bot connections for deleteWebhook', config('bot.default')],
+        ];
     }
 }

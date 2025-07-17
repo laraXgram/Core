@@ -4,6 +4,7 @@ namespace LaraGram\Foundation\Console;
 
 use LaraGram\Console\Command;
 use LaraGram\Console\Attribute\AsCommand;
+use LaraGram\Console\Input\InputOption;
 
 #[AsCommand(name: 'webhook:info')]
 class WebhookInfoCommand extends Command
@@ -29,7 +30,11 @@ class WebhookInfoCommand extends Command
      */
     public function handle(): void
     {
-        $info = request()->getWebhookInfo()['result'] ?? null;
+        $connection = $this->option('connection') ?? config('bot.default');
+
+        $info = app('request')
+            ->connection($connection)
+            ->getWebhookInfo()['result'] ?? null;
 
         if ($info == null || $info["url"] == ''){
             $this->components->error("Webhook not set");
@@ -40,5 +45,17 @@ class WebhookInfoCommand extends Command
             if ($key == 'has_custom_certificate') $value = $value ? "True" : "False";
             $this->components->twoColumnDetail("<fg=bright-blue;options=bold>$key:</>", "<fg=bright-blue;options=bold>$value</>");
         }
+    }
+
+    /**
+     * Get the console command arguments.
+     *
+     * @return array
+     */
+    protected function getOptions()
+    {
+        return [
+            ['connection', null, InputOption::VALUE_OPTIONAL, 'The bot connections for webhookInfo', config('bot.default')],
+        ];
     }
 }

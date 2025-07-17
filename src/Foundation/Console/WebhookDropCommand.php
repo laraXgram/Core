@@ -4,6 +4,7 @@ namespace LaraGram\Foundation\Console;
 
 use LaraGram\Console\Command;
 use LaraGram\Console\Attribute\AsCommand;
+use LaraGram\Console\Input\InputOption;
 
 #[AsCommand(name: 'webhook:drop')]
 class WebhookDropCommand extends Command
@@ -29,12 +30,28 @@ class WebhookDropCommand extends Command
      */
     public function handle()
     {
-        $result = request()->setWebhook(config('bot.bot.domain'), drop_pending_updates: true);
+        $connection = $this->option('connection') ?? config('bot.default');
+
+        $result = app('request')
+            ->connection($connection)
+            ->setWebhook(config('bot.bot.domain'), drop_pending_updates: true);
 
         if (!$result['ok']){
             $this->components->error($result['description']);
         }else{
             $this->components->info("Pending updates dropped successfully!");
         }
+    }
+
+    /**
+     * Get the console command arguments.
+     *
+     * @return array
+     */
+    protected function getOptions()
+    {
+        return [
+            ['connection', null, InputOption::VALUE_OPTIONAL, 'The bot connections for drop', config('bot.default')],
+        ];
     }
 }
