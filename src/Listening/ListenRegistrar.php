@@ -64,6 +64,12 @@ class ListenRegistrar
      */
     protected $allowedAttributes = [
         'as',
+        'can',
+        'canNot',
+        'hasReply',
+        'hasNotReply',
+        'scope',
+        'outOfScope',
         'connection',
         'controller',
         'middleware',
