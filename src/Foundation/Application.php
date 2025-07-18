@@ -208,7 +208,7 @@ class Application extends Container implements ApplicationContract, CachesConfig
      * @param  string|null  $basePath
      * @return void
      */
-    public function __construct(string $basePath = null)
+    public function __construct(?string $basePath = null)
     {
         if ($basePath) {
             $this->setBasePath($basePath);
