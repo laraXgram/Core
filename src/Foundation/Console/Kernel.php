@@ -3,6 +3,7 @@
 namespace LaraGram\Foundation\Console;
 
 use Closure;
+use DateTimeInterface;
 use LaraGram\Console\Application as Commander;
 use LaraGram\Console\Command;
 use LaraGram\Console\Scheduling\Schedule;
@@ -16,6 +17,8 @@ use LaraGram\Support\Collection;
 use LaraGram\Support\Env;
 use LaraGram\Support\Finder\Finder;
 use LaraGram\Support\InteractsWithTime;
+use LaraGram\Support\Tempora;
+use LaraGram\Tempora\TemporaInterval;
 use ReflectionClass;
 use SplFileInfo;
 use Throwable;
@@ -90,7 +93,7 @@ class Kernel implements KernelContract
     /**
      * When the currently handled command started.
      *
-     * @var \DateTimeInterface|null
+     * @var \LAraGram\Support\Tempora|null
      */
     protected $commandStartedAt;
 
@@ -135,7 +138,7 @@ class Kernel implements KernelContract
      */
     public function handle($input, $output = null)
     {
-        $this->commandStartedAt = new \DateTime();
+        $this->commandStartedAt = Tempora::now();
 
         try {
             if (in_array($input->getFirstArgument(), ['env:encrypt', 'env:decrypt'], true)) {
@@ -171,10 +174,12 @@ class Kernel implements KernelContract
             return;
         }
 
-        foreach ($this->commandLifecycleDurationHandlers as ['threshold' => $threshold, 'handler' => $handler]) {
-            $end ??= new \DateTime();
+        $this->commandStartedAt->setTimezone($this->app['config']->get('app.timezone') ?? 'UTC');
 
-            if ($this->commandStartedAt->diff($end) > $threshold) {
+        foreach ($this->commandLifecycleDurationHandlers as ['threshold' => $threshold, 'handler' => $handler]) {
+            $end ??= Tempora::now();
+
+            if ($this->commandStartedAt->diffInMilliseconds($end) > $threshold) {
                 $handler($this->commandStartedAt, $input, $status);
             }
         }
@@ -191,12 +196,16 @@ class Kernel implements KernelContract
      */
     public function whenCommandLifecycleIsLongerThan($threshold, $handler)
     {
+        $threshold = $threshold instanceof DateTimeInterface
+            ? $this->secondsUntil($threshold) * 1000
+            : $threshold;
+
+        $threshold = $threshold instanceof TemporaInterval
+            ? $threshold->totalMilliseconds
+            : $threshold;
+
         $this->commandLifecycleDurationHandlers[] = [
-            'threshold' => $threshold instanceof \DateTimeInterface
-                ? $this->secondsUntil($threshold) * 1000
-                : ($threshold instanceof \DateInterval
-                    ? (($seconds = ($threshold->y * 365 * 24 * 60 * 60) + ($threshold->m * 30 * 24 * 60 * 60) + ($threshold->d * 24 * 60 * 60) + ($threshold->h * 60 * 60) + ($threshold->i * 60) + $threshold->s) * 1000)
-                    : $threshold),
+            'threshold' => $threshold,
             'handler' => $handler,
         ];
     }
@@ -204,7 +213,7 @@ class Kernel implements KernelContract
     /**
      * When the command being handled started.
      *
-     * @return \DateTimeInterface|null
+     * @return \LaraGram\Support\Tempora|null
      */
     public function commandStartedAt()
     {

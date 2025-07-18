@@ -2,7 +2,6 @@
 
 namespace LaraGram\Foundation\Bot;
 
-use DateInterval;
 use DateTimeInterface;
 use LaraGram\Contracts\Debug\ExceptionHandler;
 use LaraGram\Foundation\Application;
