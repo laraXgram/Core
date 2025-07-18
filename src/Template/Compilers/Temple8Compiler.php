@@ -239,7 +239,7 @@ class Temple8Compiler extends Compiler implements CompilerInterface
         $args = array_map(fn($p) => "    {$p} : \$__t8__{$p}", $params);
         $argsString = implode(",\n", $args);
 
-        $call = "\n\n<?php app('laraquest')->{$method}(\n{$argsString},\n); ?>\n";
+        $call = "\n\n<?php app('request')->{$method}(\n{$argsString},\n); ?>\n";
 
         return $contents . $call;
     }

@@ -148,6 +148,6 @@ class Request extends Facade
      */
     protected static function getFacadeAccessor(): string
     {
-        return 'laraquest';
+        return 'request';
     }
 }
