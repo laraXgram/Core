@@ -34,7 +34,7 @@ class WebhookDropCommand extends Command
 
         $result = app('request')
             ->connection($connection)
-            ->setWebhook(config('bot.bot.domain'), drop_pending_updates: true);
+            ->setWebhook(config('bot.bot.url'), drop_pending_updates: true);
 
         if (!$result['ok']){
             $this->components->error($result['description']);

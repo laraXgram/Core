@@ -35,7 +35,7 @@ class WebhookSetCommand extends Command
         $result = app('request')
             ->connection($connection)
             ->setWebhook(
-                config('bot.connections.'.$connection.'.domain'),
+                config('bot.connections.'.$connection.'.url'),
                 allowed_updates: ($allowed = config('bot.connections.'.$connection.'.allowed_updates')) == ['*'] ? null : $allowed,
                 secret_token: config('bot.connections.'.$connection.'.secret_token') ?? null
             );
