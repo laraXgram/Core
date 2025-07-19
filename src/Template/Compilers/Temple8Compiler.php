@@ -239,7 +239,18 @@ class Temple8Compiler extends Compiler implements CompilerInterface
         $args = array_map(fn($p) => "    {$p} : \$__t8__{$p}", $params);
         $argsString = implode(",\n", $args);
 
-        $call = "\n\n<?php app('request')->{$method}(\n{$argsString},\n); ?>\n";
+        $connection = null;
+
+        if (preg_match('/@connection\s*\(\s*(["\']?)(\w+)\1\s*\)/', $contents, $match)) {
+            $connection = $match[2];
+            $contents = preg_replace('/@connection\s*\(\s*(["\']?)(\w+)\1\s*\)/', '', $contents);
+        }
+
+        if ($connection) {
+            $call = "\n\n<?php app('request')->connection('{$connection}')->{$method}(\n{$argsString},\n); ?>\n";
+        } else {
+            $call = "\n\n<?php app('request')->{$method}(\n{$argsString},\n); ?>\n";
+        }
 
         return $contents . $call;
     }
