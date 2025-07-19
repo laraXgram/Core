@@ -16,6 +16,7 @@ use LaraGram\Database\Eloquent\ModelNotFoundException;
 use LaraGram\Database\MultipleRecordsFoundException;
 use LaraGram\Database\RecordNotFoundException;
 use LaraGram\Database\RecordsNotFoundException;
+use LaraGram\Listening\Exceptions\ListenNotFoundException;
 use LaraGram\Support\Arr;
 use LaraGram\Support\Collection;
 use LaraGram\Support\Lottery;
@@ -46,7 +47,9 @@ class Handler implements ExceptionHandlerContract
      *
      * @var array<int, class-string<\Throwable>>
      */
-    protected $dontReport = [];
+    protected $dontReport = [
+        ListenNotFoundException::class,
+    ];
 
     /**
      * The callbacks that should be used during reporting.

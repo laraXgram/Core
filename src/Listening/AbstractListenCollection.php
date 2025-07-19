@@ -4,8 +4,8 @@ namespace LaraGram\Listening;
 
 use ArrayIterator;
 use Countable;
+use LaraGram\Listening\Exceptions\ListenNotFoundException;
 use LaraGram\Request\Request;
-use LaraGram\Request\Response;
 use LaraGram\Support\Collection;
 use LaraGram\Support\Str;
 use IteratorAggregate;
@@ -38,7 +38,7 @@ abstract class AbstractListenCollection implements Countable, IteratorAggregate,
             return $this->getListenForMethods($request, $others);
         }
 
-        throw new \Exception(sprintf(
+        throw new ListenNotFoundException(sprintf(
             'The listen %s could not be found.',
             $request->message->text ??
             $request->message->caption ??
