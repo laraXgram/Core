@@ -56,5 +56,5 @@ abstract class Descriptor implements DescriptorInterface
     /**
      * Describes an Application instance.
      */
-    abstract protected function describeApplication(Application $application, array $options = []): void;
+    abstract protected function describeApplication($application, array $options = []): void;
 }

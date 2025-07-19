@@ -33,7 +33,7 @@ class JsonDescriptor extends Descriptor
         $this->writeData($this->getCommandData($command, $options['short'] ?? false), $options);
     }
 
-    protected function describeApplication(Application $application, array $options = []): void
+    protected function describeApplication($application, array $options = []): void
     {
         $describedNamespace = $options['namespace'] ?? null;
         $description = new ApplicationDescription($application, $describedNamespace, true);

@@ -63,7 +63,7 @@ class XmlDescriptor extends Descriptor
         return $dom;
     }
 
-    public function getApplicationDocument(Application $application, ?string $namespace = null, bool $short = false): \DOMDocument
+    public function getApplicationDocument($application, ?string $namespace = null, bool $short = false): \DOMDocument
     {
         $dom = new \DOMDocument('1.0', 'UTF-8');
         $dom->appendChild($rootXml = $dom->createElement('laragram'));
@@ -124,7 +124,7 @@ class XmlDescriptor extends Descriptor
         $this->writeDocument($this->getCommandDocument($command, $options['short'] ?? false));
     }
 
-    protected function describeApplication(Application $application, array $options = []): void
+    protected function describeApplication($application, array $options = []): void
     {
         $this->writeDocument($this->getApplicationDocument($application, $options['namespace'] ?? null, $options['short'] ?? false));
     }

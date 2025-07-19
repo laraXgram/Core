@@ -39,7 +39,7 @@ final class LazyCommand extends Command
         $this->getCommand()->ignoreValidationErrors();
     }
 
-    public function setApplication(?Application $application): void
+    public function setApplication($application): void
     {
         if ($this->command instanceof parent) {
             $this->command->setApplication($application);

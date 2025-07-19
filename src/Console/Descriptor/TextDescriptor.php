@@ -141,7 +141,7 @@ class TextDescriptor extends Descriptor
         }
     }
 
-    protected function describeApplication(Application $application, array $options = []): void
+    protected function describeApplication($application, array $options = []): void
     {
         $describedNamespace = $options['namespace'] ?? null;
         $description = new ApplicationDescription($application, $describedNamespace);

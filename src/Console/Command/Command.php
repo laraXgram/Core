@@ -25,7 +25,7 @@ class Command
     public const FAILURE = 1;
     public const INVALID = 2;
 
-    private ?Application $application = null;
+    private $application = null;
     private ?string $name = null;
     private ?string $processTitle = null;
     private array $aliases = [];
@@ -99,7 +99,7 @@ class Command
         $this->ignoreValidationErrors = true;
     }
 
-    public function setApplication(?Application $application): void
+    public function setApplication($application): void
     {
         $this->application = $application;
         if ($application) {
@@ -127,7 +127,7 @@ class Command
     /**
      * Gets the application instance for this command.
      */
-    public function getApplication(): ?Application
+    public function getApplication()
     {
         return $this->application;
     }

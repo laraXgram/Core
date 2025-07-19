@@ -142,7 +142,7 @@ class ReStructuredTextDescriptor extends Descriptor
         }
     }
 
-    protected function describeApplication(Application $application, array $options = []): void
+    protected function describeApplication($application, array $options = []): void
     {
         $description = new ApplicationDescription($application, $options['namespace'] ?? null);
         $title = $this->getApplicationTitle($application);
@@ -152,7 +152,7 @@ class ReStructuredTextDescriptor extends Descriptor
         $this->describeCommands($application, $options);
     }
 
-    private function getApplicationTitle(Application $application): string
+    private function getApplicationTitle($application): string
     {
         if ('UNKNOWN' === $application->getName()) {
             return 'Console Tool';
@@ -184,7 +184,7 @@ class ReStructuredTextDescriptor extends Descriptor
         }
     }
 
-    private function createTableOfContents(ApplicationDescription $description, Application $application): void
+    private function createTableOfContents(ApplicationDescription $description, $application): void
     {
         $this->setVisibleNamespaces($description);
         $chapterTitle = 'Table of Contents';
