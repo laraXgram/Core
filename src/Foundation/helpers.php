@@ -9,7 +9,7 @@ use LaraGram\Log\Context\Repository;
 use LaraGram\Queue\CallQueuedClosure;
 use LaraGram\Support\Facades\Date;
 use LaraGram\Validation\Factory as ValidationFactory;
-use LaraGram\Template\Factory as TemplateFactory;
+use LaraGram\Contracts\Template\Factory as TemplateFactory;
 
 if (! function_exists('app')) {
     /**
@@ -479,7 +479,7 @@ if (! function_exists('template')) {
             return $factory;
         }
 
-        return $factory->make($view, $data, $mergeData);
+        return $factory->make($view, $data, $mergeData)->render();
     }
 }
 
