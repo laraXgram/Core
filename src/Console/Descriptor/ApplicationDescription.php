@@ -23,7 +23,7 @@ class ApplicationDescription
     private array $aliases = [];
 
     public function __construct(
-        private Application $application,
+        private $application,
         private ?string $namespace = null,
         private bool $showHidden = false,
     ) {

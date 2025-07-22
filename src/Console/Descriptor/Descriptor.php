@@ -2,9 +2,9 @@
 
 namespace LaraGram\Console\Descriptor;
 
-use LaraGram\Console\Application;
 use LaraGram\Console\Command\Command;
 use LaraGram\Console\Exception\InvalidArgumentException;
+use LaraGram\Console\ExtendedApplication;
 use LaraGram\Console\Input\InputArgument;
 use LaraGram\Console\Input\InputDefinition;
 use LaraGram\Console\Input\InputOption;
@@ -23,7 +23,7 @@ abstract class Descriptor implements DescriptorInterface
             $object instanceof InputOption => $this->describeInputOption($object, $options),
             $object instanceof InputDefinition => $this->describeInputDefinition($object, $options),
             $object instanceof Command => $this->describeCommand($object, $options),
-            $object instanceof Application => $this->describeApplication($object, $options),
+            $object instanceof ExtendedApplication => $this->describeApplication($object, $options),
             default => throw new InvalidArgumentException(\sprintf('Object of type "%s" is not describable.', get_debug_type($object))),
         };
     }
