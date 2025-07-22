@@ -86,8 +86,11 @@ class TemplateCacheCommand extends Command
             ->map(fn ($extension) => "*.{$extension}")
             ->all();
 
+        $paths = array_filter($paths, 'is_dir');
         return new Collection(
-            Finder::create()
+            empty($paths)
+                ? []
+                : Finder::create()
                 ->in($paths)
                 ->exclude('vendor')
                 ->name($extensions)
