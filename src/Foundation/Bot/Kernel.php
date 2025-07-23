@@ -102,11 +102,10 @@ class Kernel implements KernelContract
      * @var string[]
      */
     protected $middlewarePriority = [
-//        \LaraGram\Contracts\Auth\Middleware\AuthenticatesRequests::class,
-//        \LaraGram\Listening\Middleware\ThrottleRequests::class,
-//        \LaraGram\Listening\Middleware\ThrottleRequestsWithRedis::class,
+        \LaraGram\Listening\Middleware\ThrottleRequests::class,
+        \LaraGram\Listening\Middleware\ThrottleRequestsWithRedis::class,
         \LaraGram\Listening\Middleware\SubstituteBindings::class,
-//        \LaraGram\Auth\Middleware\Authorize::class,
+        \LaraGram\Auth\Middleware\Authorize::class,
     ];
 
     /**
