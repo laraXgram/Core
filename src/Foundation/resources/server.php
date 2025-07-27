@@ -1,15 +1,15 @@
 <?php
 
-$publicPath = getcwd();
+use LaraGram\Foundation\Application;
+use LaraGram\Request\Request;
 
-if (!file_exists($index = $publicPath.'/index.php')) {
-    $index = $publicPath.'/public/index.php';
-}
+define('LARAGRAM_START', microtime(true));
 
-$server = escapeshellarg(json_encode($_SERVER));
-$inputs = escapeshellarg(file_get_contents('php://input'));
+// Register the Composer autoloader...
+require __DIR__.'/../../../../../autoload.php';
 
-$output = '/dev/null'; // You can change it to specifics file.
-$output = 'log.log'; // You can change it to specifics file.
+// Bootstrap LaraGram and handle the request...
+/** @var Application $app */
+$app = require_once __DIR__.'/../../../../../../bootstrap/app.php';
 
-popen("php \"{$index}\" {$inputs} {$server} >> {$output} 2>&1 &", "r");
+$app->handleRequest(Request::capture());
