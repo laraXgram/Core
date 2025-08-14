@@ -63,10 +63,10 @@ class ListenGroup
         $old = $old['prefix'] ?? '';
 
         if ($prependExistingPrefix) {
-            return isset($new['prefix']) ? ($old === '' ? '' : "$old ").$new['prefix'] : $old;
+            return isset($new['prefix']) ? $old.$new['prefix'] : $old;
         }
 
-        return isset($new['prefix']) ? ($new['prefix'] === '' ? '' : "{$new['prefix']} ").$old : $old;
+        return isset($new['prefix']) ? $new['prefix'].$old : $old;
     }
 
     /**
