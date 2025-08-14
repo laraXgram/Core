@@ -375,7 +375,7 @@ class Middleware
     public function getGlobalMiddleware()
     {
         $middleware = $this->global ?: array_values(array_filter([
-//            \LaraGram\Foundation\Request\Middleware\InvokeDeferredCallbacks::class,
+            \LaraGram\Foundation\Bot\Middleware\InvokeDeferredCallbacks::class,
         ]));
 
         $middleware = array_map(function ($middleware) {
