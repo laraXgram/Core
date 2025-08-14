@@ -116,7 +116,6 @@ class ApplicationBuilder
     public function withListener(?Closure $using = null,
                                 array|string|null $bot = null,
                                 ?string $commands = null,
-                                ?string $channels = null,
                                 ?callable $then = null)
     {
         if (is_null($using) && (is_string($bot) || is_array($bot) || is_callable($then))) {
@@ -132,10 +131,6 @@ class ApplicationBuilder
         if (is_string($commands) && realpath($commands) !== false) {
             $this->withCommands([$commands]);
         }
-
-//        if (is_string($channels) && realpath($channels) !== false) {
-//            $this->withBroadcasting($channels);
-//        }
 
         return $this;
     }
