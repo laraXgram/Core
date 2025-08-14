@@ -376,7 +376,7 @@ class Kernel implements KernelContract
             throw new InvalidArgumentException("The [{$group}] middleware group has not been defined.");
         }
 
-        if (!in_array($middleware, $this->middlewareGroups[$group])) {
+        if (array_search($middleware, $this->middlewareGroups[$group]) === false) {
             array_unshift($this->middlewareGroups[$group], $middleware);
         }
 
@@ -400,7 +400,7 @@ class Kernel implements KernelContract
             throw new InvalidArgumentException("The [{$group}] middleware group has not been defined.");
         }
 
-        if (!in_array($middleware, $this->middlewareGroups[$group])) {
+        if (array_search($middleware, $this->middlewareGroups[$group]) === false) {
             $this->middlewareGroups[$group][] = $middleware;
         }
 
