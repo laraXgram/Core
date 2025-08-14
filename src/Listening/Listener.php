@@ -185,7 +185,7 @@ class Listener implements BindingRegistrar, RegistrarContract
      * @param  string  $pattern
      * @param  string  $template
      * @param  array  $data
-     * @param  string  $method
+     * @param  array|string  $method
      * @return Listen
      */
     public function template($pattern, $template, $data = [], $method = "TEXT")
