@@ -3,8 +3,6 @@
 namespace LaraGram\Listening\Middleware;
 
 use Closure;
-use LaraGram\Contracts\Listening\Registrar;
-use LaraGram\Database\Eloquent\ModelNotFoundException;
 
 class Reply
 {
@@ -17,14 +15,10 @@ class Reply
      */
     public function handle($request, Closure $next, $bool)
     {
-        if ($bool) {
-            return $request->isReply()
-                ? $next($request)
-                : false;
+        if (($bool || $bool == 'true') && $request->isReply()) {
+           return $next($request);
         }
 
-        return $request->isReply()
-            ? false
-            : $next($request);
+        return false;
     }
 }
