@@ -10,6 +10,7 @@ use LaraGram\Support\Reflector;
 use InvalidArgumentException;
 
 /**
+ * @mixin  \LaraGram\Listening\HandlerTrait
  * @method \LaraGram\Listening\ListenRegistrar as(string $value)
  * @method \LaraGram\Listening\ListenRegistrar controller(string $controller)
  * @method \LaraGram\Listening\ListenRegistrar middleware(array|string|null $middleware)
@@ -53,8 +54,19 @@ class ListenRegistrar
      * @var string[]
      */
     protected $passthru = [
-        'text', 'dice', 'update', 'message', 'message_type',
-        'callback_data', 'entities', 'referral', 'command',
+        'on', 'ontext', 'oncommand', 'onanimation', 'onaudio', 'ondocument',
+        'onphoto', 'onsticker', 'onvideo', 'onvideonote', 'onvoice', 'ondice',
+        'ongame', 'onpoll', 'onvenue', 'onlocation', 'onnewchatmembers', 'onleftchatmember',
+        'onnewchattitle', 'onnewchatphoto', 'ondeletechatphoto', 'ongroupchatcreated', 'onsupergroupchatcreated',
+        'onmessageautodeletetimerchanged', 'onmigratetochatid', 'onmigratefromchatid', 'onpinnedmessage',
+        'oninvoice', 'onsuccessfulpayment', 'onconnectedwebsite', 'onpassportdata', 'onproximityalerttriggered',
+        'onforumtopiccreated', 'onforumtopicedited', 'onforumtopicclosed', 'onforumtopicreopened',
+        'onvideochatscheduled', 'onvideochatstarted', 'onvideochatended', 'onvideochatparticipantsinvited',
+        'onwebappdata', 'onmessage', 'oneditedmessage', 'onchannelpost', 'oneditedchannelpost',
+        'oninlinequery', 'onchoseninlineresult', 'oncallbackquery', 'onshippingquery', 'onprecheckoutquery',
+        'onpollanswer', 'onmychatmember', 'onchatmember', 'onchatjoinrequest', 'oncallbackquerydata',
+        'onmessagetype', 'onreferral', 'onhashtag', 'oncashtag', 'onmention',
+        'onaddmember', 'onjoinmember'
     ];
 
     /**
@@ -233,7 +245,7 @@ class ListenRegistrar
      */
     public function __call($method, $parameters)
     {
-        if (in_array($method, $this->passthru)) {
+        if (in_array(strtolower($method), $this->passthru)) {
             return $this->registerListen($method, ...$parameters);
         }
 
