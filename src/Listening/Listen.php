@@ -1022,30 +1022,29 @@ class Listen
     /**
      * Specify that the "Authorize" / "can" middleware should be applied to the listen with the given options.
      *
-     * @param  \UnitEnum|string  $ability
+     * @param  array|string  $ability
      * @param  array|string  $models
      * @return $this
      */
     public function can($ability, $models = [])
     {
-        $ability = enum_value($ability);
+        $ability = Arr::wrap($ability);
 
         return empty($models)
-            ? $this->middleware(['can:'.$ability])
+            ? $this->middleware(['can:'.implode('|', $ability)])
             : $this->middleware(['can:'.implode('|', $ability).','.implode(',', Arr::wrap($models))]);
     }
 
     /**
      * Specify that the "Authorize" / "can" middleware should be applied to the listen with the given options.
      *
-     * @param  \UnitEnum|string  $ability
+     * @param  array|string  $ability
      * @param  array|string  $models
      * @return $this
      */
     public function canNot($ability, $models = [])
     {
-        $ability = Arr::wrap(enum_value($ability));
-        $ability = array_values(array_diff(self::$allStatuses, $ability));
+        $ability = array_values(array_diff(self::$allStatuses, Arr::wrap($ability)));
 
         return empty($models)
             ? $this->middleware(['can:'.implode('|', $ability)])
@@ -1055,12 +1054,12 @@ class Listen
     /**
      * Specify that "scope" middleware should be applied to the listen with the given options.
      *
-     * @param  \UnitEnum|string $scope
+     * @param  array|string $scope
      * @return $this
      */
     public function scope($scope)
     {
-        $scope = collect(enum_value($scope))
+        $scope = collect($scope)
             ->flatMap(function ($scope) {
                 return $scope === 'groups'
                     ? ['group', 'supergroup']
@@ -1076,12 +1075,12 @@ class Listen
     /**
      * Specify that "scope" middleware should be applied to the listen with the given options.
      *
-     * @param  \UnitEnum|string $scope
+     * @param  array|string $scope
      * @return $this
      */
     public function outOfScope($scope)
     {
-        $toExclude = collect(enum_value($scope))->flatMap(function ($scope) {
+        $toExclude = collect($scope)->flatMap(function ($scope) {
             if ($scope === 'groups') {
                 return ['group', 'supergroup', 'groups'];
             }
