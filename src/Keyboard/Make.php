@@ -143,6 +143,19 @@ class Make
     // TODO: add callbackGame button
 
     /**
+     * Text of the button. If none of the optional fields are used, it will be sent as a message when the button is pressed.
+     *
+     * @param string $text
+     * @return array
+     */
+    public static function text(string $text): array
+    {
+        return [
+            'text' => $text
+        ];
+    }
+
+    /**
      * send a Pay button. Substrings “⭐” and “XTR” in the button's text will be replaced with a Telegram Star icon.
      *
      * @param string $text
