@@ -116,11 +116,37 @@ class Keyboard
      * @param array $row
      * @return $this
      */
-    public function addRow(array $row): static
+    public function appendRow(array $row): static
     {
         $this->keyboard[$this->type][] = $row;
 
         return $this;
+    }
+
+    /**
+     * Prepend a new row to keyboard. You can use Make::row() or row().
+     *
+     * @param array $row
+     * @return $this
+     */
+    public function prependRow(array $row): static
+    {
+        array_unshift($this->keyboard[$this->type], $row);
+
+        return $this;
+    }
+
+    /**
+     * Add a new row to keyboard. You can use Make::row() or row().
+     *
+     * @param array $row
+     * @return $this
+     *
+     * @deprecated Use `appendRow`
+     */
+    public function addRow(array $row): static
+    {
+        return $this->appendRow($row);
     }
 
     /**
@@ -159,13 +185,47 @@ class Keyboard
      * @param int|null $rowIndex
      * @return $this
      */
-    public function addCol(array $col, int|null $rowIndex = null): static
+    public function appendCol(array $col, int|null $rowIndex = null): static
     {
         $rowIndex = $rowIndex ?? count($this->keyboard[$this->type]);
 
         $this->keyboard[$this->type][$rowIndex - 1][] = $col;
 
         return $this;
+    }
+
+    /**
+     * Prepend a new col to keyboard. You can use `Make` class.
+     *
+     * @param array $col
+     * @param int|null $rowIndex
+     * @return $this
+     */
+    public function prependCol(array $col, int|null $rowIndex = null): static
+    {
+        $rowIndex = $rowIndex ?? count($this->keyboard[$this->type]);
+
+        if (!isset($this->keyboard[$this->type][$rowIndex - 1])) {
+            $this->keyboard[$this->type][$rowIndex - 1] = [];
+        }
+
+        array_unshift($this->keyboard[$this->type][$rowIndex - 1], $col);
+
+        return $this;
+    }
+
+    /**
+     * Add a new col to keyboard. You can use `Make` class.
+     *
+     * @param array $col
+     * @param int|null $rowIndex
+     * @return $this
+     *
+     * @deprecated Use `appendCol`
+     */
+    public function addCol(array $col, int|null $rowIndex = null): static
+    {
+        return $this->appendCol($col, $rowIndex);
     }
 
     /**
