@@ -245,4 +245,10 @@ trait CompilesInputs
 
         return null;
     }
+
+    public function compileMethod($expression)
+    {
+        $method = str_replace(['(', ')', '("', '")', '(\'', '\')', ], '', $expression);
+        return "<?php \$__t8__method = $method ?>";
+    }
 }

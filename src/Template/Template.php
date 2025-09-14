@@ -167,7 +167,21 @@ class Template implements ArrayAccess, Htmlable, Stringable, TemplateContract
             // another template gets rendered in the future by the application developer.
             $this->factory->flushStateIfDoneRendering();
 
-            return ! is_null($response) ? $response : $contents;
+            $result = ! is_null($response) ? $response : $contents;
+
+            if (preg_match('/\{(?:[^{}]|(?R))*\}/s', $result, $matches)) {
+                $jsonPart = $matches[0];
+
+                $data = json_decode($jsonPart, true);
+
+                if (json_last_error() === JSON_ERROR_NONE) {
+                    return json_encode($data);
+                } else {
+                    return json_last_error_msg();
+                }
+            }
+
+            return $result;
         } catch (Throwable $e) {
             $this->factory->flushState();
 

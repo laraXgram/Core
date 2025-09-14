@@ -183,7 +183,9 @@ class Temple8Compiler extends Compiler implements CompilerInterface
         if (! is_null($this->cachePath)) {
             $contents = $this->compileString($this->files->get($this->getPath()));
 
-            $contents = $this->appendMethodCall($contents);
+            if (!str_contains($contents, '<!-- !component! -->')){
+                $contents = $this->appendMethodCall($contents);
+            };
 
             if (! empty($this->getPath())) {
                 $contents = $this->appendFilePath($contents);
@@ -222,9 +224,6 @@ class Temple8Compiler extends Compiler implements CompilerInterface
      */
     protected function appendMethodCall(string $contents): string
     {
-        preg_match("/@method\(['\"](\w+)['\"]\)/", $contents, $methodMatch);
-        $method = $methodMatch[1] ?? 'sendMessage';
-
         if (!preg_match('/@chat_id\s*\(.*?\)/', $contents)) {
             $contents = "<?php \$__t8__chat_id = id(); ?>\n" . $contents;
         }
@@ -236,23 +235,29 @@ class Temple8Compiler extends Compiler implements CompilerInterface
             return $contents;
         }
 
-        $args = array_map(fn($p) => "    {$p} : \$__t8__{$p}", $params);
-        $argsString = implode(",\n", $args);
+        $argsBuilderCode = "<?php\n";
+        $argsBuilderCode .= "    \$__t8__final_args = [];\n";
+        $allowedParams = array_filter($params, fn($p) => in_array($p, $this->allowedInputsDirectives));
+        foreach ($allowedParams as $p) {
+            $argsBuilderCode .= "    if (isset(\$__t8__{$p})) {\n";
+            $argsBuilderCode .= "        \$__t8__final_args['{$p}'] = \$__t8__{$p};\n";
+            $argsBuilderCode .= "    }\n";
+        }
+        $argsBuilderCode .= "?>\n";
 
         $connection = null;
-
         if (preg_match('/@connection\s*\(\s*(["\']?)(\w+)\1\s*\)/', $contents, $match)) {
             $connection = $match[2];
             $contents = preg_replace('/@connection\s*\(\s*(["\']?)(\w+)\1\s*\)/', '', $contents);
         }
 
         if ($connection) {
-            $call = "\n\n<?php app('request')->connection('{$connection}')->{$method}(\n{$argsString},\n); ?>\n";
+            $call = "\n\n<?php echo json_encode(app('request')->connection('{$connection}')->{\$__t8__method ?? 'sendMessage'}(...\$__t8__final_args)); ?>\n";
         } else {
-            $call = "\n\n<?php app('request')->{$method}(\n{$argsString},\n); ?>\n";
+            $call = "\n\n<?php echo json_encode(app('request')->{\$__t8__method ?? 'sendMessage'}(...\$__t8__final_args)); ?>\n";
         }
 
-        return $contents . $call;
+        return $contents . $argsBuilderCode . $call;
     }
 
     /**
