@@ -11,7 +11,6 @@ use LaraGram\Support\Collection;
 use LaraGram\Support\Str;
 use LaraGram\Support\Stringable;
 use LaraGram\Support\Traits\ReflectsClosures;
-use LaraGram\Template\Compilers\Concerns\CompilesKeyboards;
 use LaraGram\Template\Component;
 use InvalidArgumentException;
 
@@ -252,9 +251,9 @@ class Temple8Compiler extends Compiler implements CompilerInterface
         }
 
         if ($connection) {
-            $call = "\n\n<?php echo json_encode(app('request')->connection('{$connection}')->{\$__t8__method ?? 'sendMessage'}(...\$__t8__final_args)); ?>\n";
+            $call = "\n\n<?php echo json_encode(app('request')->mode(32)->connection('{$connection}')->{\$__t8__method ?? 'sendMessage'}(...\$__t8__final_args)); ?>\n";
         } else {
-            $call = "\n\n<?php echo json_encode(app('request')->{\$__t8__method ?? 'sendMessage'}(...\$__t8__final_args)); ?>\n";
+            $call = "\n\n<?php echo json_encode(app('request')->mode(32)->{\$__t8__method ?? 'sendMessage'}(...\$__t8__final_args)); ?>\n";
         }
 
         return $contents . $argsBuilderCode . $call;
