@@ -3,19 +3,20 @@
 namespace LaraGram\Support\Facades;
 
 /**
- * @method static getStatus(int|string|null $user_id = null, int|string|null $chat_id = null)
- * @method static isChatAdmin(int|string|null $user_id = null, int|string|null $chat_id = null)
- * @method static isChatCreator(int|string|null $user_id = null, int|string|null $chat_id = null)
- * @method static isChatMember(int|string|null $user_id = null, int|string|null $chat_id = null)
- * @method static isKicked(int|string|null $user_id = null, int|string|null $chat_id = null)
- * @method static isRestricted(int|string|null $user_id = null, int|string|null $chat_id = null)
- * @method static isLeft(int|string|null $user_id = null, int|string|null $chat_id = null)
- * @method static isBotAdmin(int|string|null $user_id = null, int|string|null $chat_id = null)
- * @method static isBotOwner(int|string|null $user_id = null, int|string|null $chat_id = null)
+ * @method static \Closure userResolver()
+ * @method static \LaraGram\Auth\AuthManager resolveUsersUsing(\Closure $userResolver)
+ * @method static \LaraGram\Auth\AuthManager provider(string $name, \Closure $callback)
+ * @method static \LaraGram\Auth\AuthManager setApplication(\LaraGram\Contracts\Foundation\Application $app)
+ * @method static \LaraGram\Contracts\Auth\UserProvider|null createUserProvider(string|null $provider = null)
+ * @method static string getDefaultUserProvider()
+ * @method static bool check()
+ * @method static \LaraGram\Contracts\Auth\Authenticatable|null user()
  * @method static void macro(string $name, object|callable $macro)
  * @method static void mixin(object $mixin, bool $replace = true)
  * @method static bool hasMacro(string $name)
  * @method static void flushMacros()
+ *
+ * @see \LaraGram\Auth\AuthManager
  */
 class Auth extends Facade
 {
