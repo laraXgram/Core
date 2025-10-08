@@ -1521,7 +1521,6 @@ class Application extends Container implements ApplicationContract, CachesConfig
                      'listener' => [\LaraGram\Listening\Listener::class, \LaraGram\Contracts\Listening\Registrar::class, \LaraGram\Contracts\Listening\BindingRegistrar::class],
                      't8.compiler' => [\LaraGram\Template\Compilers\Temple8Compiler::class],
                      'template' => [\LaraGram\Template\Factory::class, \LaraGram\Contracts\Template\Factory::class],
-                     'conversation' => [\LaraGram\Conversation\Conversation::class],
                      'keyboard' => [\LaraGram\Keyboard\Keyboard::class],
                  ] as $key => $aliases) {
             foreach ($aliases as $alias) {

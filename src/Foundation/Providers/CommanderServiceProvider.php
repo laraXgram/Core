@@ -37,7 +37,6 @@ use LaraGram\Foundation\Console\ConfigClearCommand;
 use LaraGram\Foundation\Console\ConfigPublishCommand;
 use LaraGram\Foundation\Console\ConfigShowCommand;
 use LaraGram\Foundation\Console\ConsoleMakeCommand;
-use LaraGram\Foundation\Console\ConversationMakeCommand;
 use LaraGram\Foundation\Console\EnumMakeCommand;
 use LaraGram\Foundation\Console\EnvironmentCommand;
 use LaraGram\Foundation\Console\EnvironmentDecryptCommand;
@@ -183,7 +182,6 @@ class CommanderServiceProvider extends ServiceProvider implements DeferrableProv
         ProviderMakeCommand::class         => ['files'],
         ScopeMakeCommand::class            => ['files'],
         TraitMakeCommand::class            => ['files'],
-        ConversationMakeCommand::class     => ['files'],
         VendorPublishCommand::class        => ['files'],
         ConfigPublishCommand::class        => [],
         CacheTableCommand::class           => ['files'],
