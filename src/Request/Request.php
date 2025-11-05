@@ -12,8 +12,6 @@ use LaraGram\Support\Traits\Macroable;
 use RuntimeException;
 
 /**
- * @mixin \LaraGram\Laraquest\Updates|\LaraGram\Laraquest\Methode
- *
  * @method array validate(array $rules, ...$params)
  * @method array validateWithBag(string $errorBag, array $rules, ...$params)
  * @method bool hasValidSignature(bool $absolute = true)
@@ -188,7 +186,7 @@ class Request
             return $method;
         }
 
-        return strtoupper(Type::findVerb($this->getUpdateType())->value);
+        return strtoupper(Type::findVerb($this->getUpdateType())?->value);
     }
 
     /**
