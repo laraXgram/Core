@@ -148,7 +148,14 @@ class Request
     public static function capture()
     {
         global $argv;
-        return static::createFromBase($argv);
+
+        $payload = json_decode($argv[1]);
+        $request = [
+            $payload->_->UPDATE,
+            $payload->_->SERVER,
+        ];
+
+        return static::createFromBase($request);
     }
 
     /**
@@ -299,9 +306,9 @@ class Request
     {
         $newRequest = new static($request);
 
-        $newRequest->server = collect(json_decode($request[2]));
+        $newRequest->content = collect($request[0]);
 
-        $newRequest->content = collect(json_decode($request[1]));
+        $newRequest->server = collect($request[1]);
 
         return $newRequest;
     }
