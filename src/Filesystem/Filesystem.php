@@ -7,6 +7,7 @@ use ErrorException;
 use FilesystemIterator;
 use LaraGram\Contracts\Filesystem\FileNotFoundException;
 use LaraGram\Filesystem\Mime\MimeTypes;
+use LaraGram\Support\Finder\Finder;
 use LaraGram\Support\LazyCollection;
 use LaraGram\Support\Traits\Conditionable;
 use LaraGram\Support\Traits\Macroable;
@@ -353,7 +354,11 @@ class Filesystem
     public function link($target, $link)
     {
         if (! windows_os()) {
-            return symlink($target, $link);
+            if (function_exists('symlink')) {
+                return symlink($target, $link);
+            } else {
+                return exec('ln -s '.escapeshellarg($target).' '.escapeshellarg($link)) !== false;
+            }
         }
 
         $mode = $this->isDirectory($target) ? 'J' : 'H';
@@ -455,6 +460,12 @@ class Filesystem
      */
     public function guessExtension($path)
     {
+        if (! class_exists(MimeTypes::class)) {
+            throw new RuntimeException(
+                'To enable support for guessing extensions, please install the symfony/mime package.'
+            );
+        }
+
         return (new MimeTypes)->getExtensions($this->mimeType($path))[0] ?? null;
     }
 
@@ -522,26 +533,7 @@ class Filesystem
      */
     public function isEmptyDirectory($directory, $ignoreDotFiles = false)
     {
-        if (!is_dir($directory)) {
-            throw new RuntimeException("The provided path is not a directory.");
-        }
-
-        $handle = opendir($directory);
-
-        while (($file = readdir($handle)) !== false) {
-            if ($ignoreDotFiles && $file[0] === '.') {
-                continue;
-            }
-
-            if ($file !== '.' && $file !== '..') {
-                closedir($handle);
-                return false;
-            }
-        }
-
-        closedir($handle);
-
-        return true;
+        return ! Finder::create()->ignoreDotFiles($ignoreDotFiles)->in($directory)->depth(0)->hasResults();
     }
 
     /**
@@ -606,25 +598,16 @@ class Filesystem
     /**
      * Get an array of all files in a directory.
      *
-     * @param string $directory
-     * @param bool $hidden
-     * @return array
+     * @param  string  $directory
+     * @param  bool  $hidden
+     * @return \LaraGram\Support\Finder\SplFileInfo[]
      */
-    public function files($directory, $hidden = false)
+    public function files($directory, $hidden = false, array|string|int $depth = 0)
     {
-        $files = [];
-        $iterator = new DirectoryIterator($directory);
-
-        foreach ($iterator as $file) {
-            if ($file->isFile()) {
-                if ($hidden || !$file->isDot()) {
-                    $files[] = $file->getRealPath();
-                }
-            }
-        }
-
-        sort($files);
-        return $files;
+        return iterator_to_array(
+            Finder::create()->files()->ignoreDotFiles(! $hidden)->in($directory)->depth($depth)->sortByName(),
+            false
+        );
     }
 
     /**
@@ -636,21 +619,7 @@ class Filesystem
      */
     public function allFiles($directory, $hidden = false)
     {
-        $files = [];
-        $iterator = new RecursiveIteratorIterator(
-            new RecursiveDirectoryIterator($directory, RecursiveDirectoryIterator::SKIP_DOTS)
-        );
-
-        foreach ($iterator as $file) {
-            if ($file->isFile()) {
-                if ($hidden || !$file->isDot()) {
-                    $files[] = $file->getRealPath();
-                }
-            }
-        }
-
-        sort($files);
-        return $files;
+        return $this->files($directory, $hidden, []);
     }
 
 
@@ -660,19 +629,25 @@ class Filesystem
      * @param  string  $directory
      * @return array
      */
-    public function directories($directory)
+    public function directories($directory, array|string|int $depth = 0)
     {
         $directories = [];
 
-        foreach (new DirectoryIterator($directory) as $dir) {
-            if ($dir->isDir() && !$dir->isDot()) {
-                $directories[] = $dir->getRealPath();
-            }
+        foreach (Finder::create()->in($directory)->directories()->depth($depth)->sortByName() as $dir) {
+            $directories[] = $dir->getPathname();
         }
 
-        sort($directories);
-
         return $directories;
+    }
+
+    /**
+     * Get all the directories within a given directory (recursive).
+     *
+     * @return array
+     */
+    public function allDirectories(string $directory): array
+    {
+        return $this->directories($directory, []);
     }
 
     /**
