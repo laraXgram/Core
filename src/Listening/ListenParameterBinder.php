@@ -3,7 +3,7 @@
 namespace LaraGram\Listening;
 
 use LaraGram\Support\Arr;
-use LaraGram\Support\Facades\Log;
+use LaraGram\Support\Str;
 
 class ListenParameterBinder
 {
@@ -61,15 +61,13 @@ class ListenParameterBinder
      */
     private function extractUpdate($request)
     {
-        $text = match (true) {
-            $request->message != null && isset($request->message->text) => $request->message->text,
-            $request->edited_message != null => $request->edited_message->text,
-            $request->channel_post != null => $request->channel_post->text,
-            $request->edited_channel_post != null => $request->edited_channel_post->text,
-            $request->business_message != null => $request->business_message->text,
-            $request->edited_business_message != null => $request->edited_business_message->text,
-            default => null
-        };
+        if (in_array('COMMAND', $this->listen->methods())) {
+            $text = Str::replaceFirst('/', '', text());
+        } elseif (in_array('REFERRAL', $this->listen->methods())) {
+            $text = Str::replaceFirst('/start ', '', text());
+        } else {
+            $text = text();
+        }
 
         return match (true){
             $text !== null => $text,

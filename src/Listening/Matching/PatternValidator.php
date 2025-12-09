@@ -4,6 +4,7 @@ namespace LaraGram\Listening\Matching;
 
 use LaraGram\Listening\Listen;
 use LaraGram\Request\Request;
+use LaraGram\Support\Str;
 
 class PatternValidator implements ValidatorInterface
 {
@@ -45,11 +46,12 @@ class PatternValidator implements ValidatorInterface
                 return false;
             },
             'COMMAND' => function () use ($regex) {
-                $text = ltrim(text(), '/');
+                $text = Str::replaceFirst('/', '', text());
                 return preg_match($regex, $text);
             },
-            'REFERRAL' => function () {
-                return true;
+            'REFERRAL' => function () use ($regex) {
+                $text = Str::replaceFirst('/start ', '', text());
+                return preg_match($regex, $text);
             },
             'DICE' => function () use ($pattern) {
                 [$pEmoji, $pValue] = explode(',', $pattern);
