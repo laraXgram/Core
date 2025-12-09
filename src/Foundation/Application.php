@@ -24,9 +24,6 @@ use LaraGram\Support\Collection;
 use LaraGram\Support\Env;
 use LaraGram\Support\Str;
 use LaraGram\Support\Traits\Macroable;
-use Swoole\Http\Request as SwooleRequest;
-use Swoole\Http\Response as SwooleResponse;
-use Swoole\Http\Server as SwooleServer;
 
 use function LaraGram\Filesystem\join_paths;
 
@@ -1521,7 +1518,6 @@ class Application extends Container implements ApplicationContract, CachesConfig
                      'listener' => [\LaraGram\Listening\Listener::class, \LaraGram\Contracts\Listening\Registrar::class, \LaraGram\Contracts\Listening\BindingRegistrar::class],
                      't8.compiler' => [\LaraGram\Template\Compilers\Temple8Compiler::class],
                      'template' => [\LaraGram\Template\Factory::class, \LaraGram\Contracts\Template\Factory::class],
-                     'conversation' => [\LaraGram\Conversation\Conversation::class],
                      'keyboard' => [\LaraGram\Keyboard\Keyboard::class],
                  ] as $key => $aliases) {
             foreach ($aliases as $alias) {

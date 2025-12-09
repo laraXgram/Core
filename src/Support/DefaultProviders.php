@@ -22,7 +22,6 @@ class DefaultProviders
             \LaraGram\Auth\AuthServiceProvider::class,
             \LaraGram\Bus\BusServiceProvider::class,
             \LaraGram\Cache\CacheServiceProvider::class,
-            \LaraGram\Conversation\ConversationServiceProvider::class,
             \LaraGram\Foundation\Providers\ConsoleSupportServiceProvider::class,
             \LaraGram\Concurrency\ConcurrencyServiceProvider::class,
             \LaraGram\Database\DatabaseServiceProvider::class,

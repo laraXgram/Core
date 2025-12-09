@@ -11,10 +11,10 @@ if (!function_exists('chat')) {
         $request = app('request');
         return match (true) {
             $request->message != null => $request->message->chat,
+            $request->callback_query != null => $request->callback_query->message->chat,
             $request->edited_message != null => $request->edited_message->chat,
             $request->channel_post != null => $request->channel_post->chat,
             $request->edited_channel_post != null => $request->edited_channel_post->chat,
-            $request->business_connection != null => $request->business_connection->user_chat_id,
             $request->business_message != null => $request->business_message->chat,
             $request->edited_business_message != null => $request->edited_business_message->chat,
             $request->deleted_business_messages != null => $request->deleted_business_messages->chat,
@@ -25,6 +25,7 @@ if (!function_exists('chat')) {
             $request->chat_join_request != null => $request->chat_join_request->chat,
             $request->chat_boost != null => $request->chat_boost->chat,
             $request->removed_chat_boost != null => $request->removed_chat_boost->chat,
+            $request->poll_answer != null => $request->poll_answer->voter_chat,
             default => null
         };
     }
@@ -55,6 +56,9 @@ if (!function_exists('user')) {
             $request->my_chat_member != null => $request->my_chat_member->from,
             $request->chat_member != null => $request->chat_member->from,
             $request->chat_join_request != null => $request->chat_join_request->from,
+            $request->purchased_paid_media != null => $request->purchased_paid_media->from,
+            $request->chat_boost != null => $request->chat_boost->boost->source->user,
+            $request->removed_chat_boost != null => $request->removed_chat_boost->source->user,
             default => null
         };
     }
@@ -74,6 +78,7 @@ if (!function_exists('text')) {
             $request->edited_channel_post != null => $request->edited_channel_post->text,
             $request->business_message != null => $request->business_message->text,
             $request->edited_business_message != null => $request->edited_business_message->text,
+            $request->callback_query != null => $request->callback_query->message->text,
             default => null
         };
     }
@@ -97,7 +102,16 @@ if (!function_exists('message')) {
          * @var Request $request ;
          */
         $request = app('request');
-        return $request->message;
+        return match (true) {
+            $request->message != null => $request->message,
+            $request->edited_message != null => $request->edited_message,
+            $request->channel_post != null => $request->channel_post,
+            $request->edited_channel_post != null => $request->edited_channel_post,
+            $request->business_message != null => $request->business_message,
+            $request->edited_business_message != null => $request->edited_business_message,
+            $request->callback_query != null => $request->callback_query->message,
+            default => null
+        };
     }
 }
 
@@ -108,30 +122,13 @@ if (!function_exists('edited_message')) {
          * @var Request $request ;
          */
         $request = app('request');
-        return $request->edited_message;
-    }
-}
-
-if (!function_exists('channel_post')) {
-    function channel_post(): object|null
-    {
-        /**
-         * @var Request $request ;
-         */
-        $request = app('request');
-        return $request->channel_post;
-    }
-}
-
-if (!function_exists('edited_channel_post')) {
-    function edited_channel_post(): object|null
-    {
-        /**
-         * @var Request $request ;
-         */
-        $request = app('request');
-        return $request->edited_channel_post;
-    }
+        return match (true) {
+            $request->edited_message != null => $request->edited_message,
+            $request->edited_channel_post != null => $request->edited_channel_post,
+            $request->edited_business_message != null => $request->edited_business_message,
+            $request->callback_query != null => $request->callback_query->message,
+            default => null
+        };    }
 }
 
 if (!function_exists('business_connection')) {
@@ -142,28 +139,6 @@ if (!function_exists('business_connection')) {
          */
         $request = app('request');
         return $request->business_connection;
-    }
-}
-
-if (!function_exists('business_message')) {
-    function business_message(): object|null
-    {
-        /**
-         * @var Request $request ;
-         */
-        $request = app('request');
-        return $request->business_message;
-    }
-}
-
-if (!function_exists('edited_business_message')) {
-    function edited_business_message(): object|null
-    {
-        /**
-         * @var Request $request ;
-         */
-        $request = app('request');
-        return $request->edited_business_message;
     }
 }
 
@@ -310,17 +285,6 @@ if (!function_exists('chat_join_request')) {
     }
 }
 
-if (!function_exists('chat_join_request')) {
-    function chat_join_request(): object|null
-    {
-        /**
-         * @var Request $request ;
-         */
-        $request = app('request');
-        return $request->chat_join_request;
-    }
-}
-
 if (!function_exists('chat_boost')) {
     function chat_boost(): object|null
     {
@@ -340,17 +304,6 @@ if (!function_exists('removed_chat_boost')) {
          */
         $request = app('request');
         return $request->removed_chat_boost;
-    }
-}
-
-if (!function_exists('id')) {
-    function id()
-    {
-        return match (true) {
-            isset(user()->id) => user()->id,
-            isset(chat()->id) => chat()->id,
-            default => null
-        };
     }
 }
 
@@ -436,8 +389,8 @@ if (!function_exists('bold')) {
     }
 }
 
-if (!function_exists('mention_user_by_ID')) {
-    function mention_user_by_ID($user_id, $text, $parse_mode = 'markdown'): false|string
+if (!function_exists('mentionUserById')) {
+    function mentionUserById($user_id, $text, $parse_mode = 'markdown'): false|string
     {
         return match (strtolower($parse_mode)){
             'markdown' => "[{$text}](tg://user?id={$user_id})",
@@ -447,16 +400,16 @@ if (!function_exists('mention_user_by_ID')) {
     }
 }
 
-if (!function_exists('mention_reply_user')) {
-    function mention_reply_user(): string
+if (!function_exists('mentionReplyUser')) {
+    function mentionReplyUser(): string
     {
         $request = app('request');
         return "[{$request->message->reply_to_message->from->first_name}](tg://user?id={$request->message->reply_to_message->from->id})";
     }
 }
 
-if (!function_exists('mention_sender_user')) {
-    function mention_sender_user(): string
+if (!function_exists('mentionSenderUser')) {
+    function mentionSenderUser(): string
     {
         $request = app('request');
         return "[{$request->message->from->first_name}](tg://user?id={$request->message->from->id})";

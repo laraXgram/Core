@@ -50,7 +50,7 @@ namespace LaraGram\Support\Facades;
  * @method static void boot()
  * @method static void booting(callable $callback)
  * @method static void booted(callable $callback)
- * @method static void handleRequest()
+ * @method static void handleRequest(\LaraGram\Request\Request $request)
  * @method static int handleCommand(\LaraGram\Console\Input\InputInterface $input)
  * @method static bool shouldMergeFrameworkConfiguration()
  * @method static \LaraGram\Foundation\Application dontMergeFrameworkConfiguration()

@@ -6,6 +6,7 @@ class Keyboard
 {
     protected $type;
     protected $keyboard = [];
+    protected $rtl = false;
 
     /**
      * This object represents a custom keyboard with reply options.
@@ -34,7 +35,7 @@ class Keyboard
      * @param bool $selective
      * @return $this
      */
-    public function replyKeyboardRemove($selective = false): static
+    public function replyKeyboardRemove($selective = false)
     {
         $this->type = 'keyboard';
         $this->keyboard = [
@@ -70,7 +71,7 @@ class Keyboard
      * @param bool $selective
      * @return $this
      */
-    public function forceReply(string $input_field_placeholder = '', bool $selective = false): static
+    public function forceReply(string $input_field_placeholder = '', bool $selective = false)
     {
         $this->type = 'keyboard';
         $this->keyboard = [
@@ -89,7 +90,7 @@ class Keyboard
      * @param mixed $value
      * @return $this
      */
-    public function setOption(string $key, mixed $value): static
+    public function setOption(string $key, mixed $value)
     {
         $this->keyboard[$key] = $value;
         return $this;
@@ -101,7 +102,7 @@ class Keyboard
      * @param array $options
      * @return $this
      */
-    public function setOptions(array $options): static
+    public function setOptions(array $options)
     {
         foreach ($options as $key => $value) {
             $this->keyboard[$key] = $value;
@@ -116,7 +117,7 @@ class Keyboard
      * @param array $row
      * @return $this
      */
-    public function appendRow(array $row): static
+    public function appendRow(array $row)
     {
         $this->keyboard[$this->type][] = $row;
 
@@ -129,7 +130,7 @@ class Keyboard
      * @param array $row
      * @return $this
      */
-    public function prependRow(array $row): static
+    public function prependRow(array $row)
     {
         array_unshift($this->keyboard[$this->type], $row);
 
@@ -144,7 +145,7 @@ class Keyboard
      *
      * @deprecated Use `appendRow`
      */
-    public function addRow(array $row): static
+    public function addRow(array $row)
     {
         return $this->appendRow($row);
     }
@@ -155,7 +156,7 @@ class Keyboard
      * @param int $offset
      * @return $this
      */
-    public function removeRow(int $offset): static
+    public function removeRow(int $offset)
     {
         unset($this->keyboard[$this->type][$offset - 1]);
 
@@ -169,7 +170,7 @@ class Keyboard
      * @param int $offset
      * @return $this
      */
-    public function editRow(array $row, int $offset): static
+    public function editRow(array $row, int $offset)
     {
         if ($this->keyboard[$this->type][$offset - 1] != null) {
             $this->keyboard[$this->type][$offset - 1] = $row;
@@ -185,7 +186,7 @@ class Keyboard
      * @param int|null $rowIndex
      * @return $this
      */
-    public function appendCol(array $col, int|null $rowIndex = null): static
+    public function appendCol(array $col, int|null $rowIndex = null)
     {
         $rowIndex = $rowIndex ?? count($this->keyboard[$this->type]);
 
@@ -201,7 +202,7 @@ class Keyboard
      * @param int|null $rowIndex
      * @return $this
      */
-    public function prependCol(array $col, int|null $rowIndex = null): static
+    public function prependCol(array $col, int|null $rowIndex = null)
     {
         $rowIndex = $rowIndex ?? count($this->keyboard[$this->type]);
 
@@ -223,7 +224,7 @@ class Keyboard
      *
      * @deprecated Use `appendCol`
      */
-    public function addCol(array $col, int|null $rowIndex = null): static
+    public function addCol(array $col, int|null $rowIndex = null)
     {
         return $this->appendCol($col, $rowIndex);
     }
@@ -235,7 +236,7 @@ class Keyboard
      * @param int $offset
      * @return $this
      */
-    public function removeCol(int $rowIndex, int $offset): static
+    public function removeCol(int $rowIndex, int $offset)
     {
         unset($this->keyboard[$this->type][$rowIndex - 1][$offset - 1]);
 
@@ -250,11 +251,23 @@ class Keyboard
      * @param int $offset
      * @return $this
      */
-    public function editCol(array $row, int $rowIndex, int $offset): static
+    public function editCol(array $row, int $rowIndex, int $offset)
     {
         if ($this->keyboard[$this->type][$rowIndex - 1][$offset - 1] != null) {
             $this->keyboard[$this->type][$rowIndex - 1][$offset - 1] = $row;
         }
+
+        return $this;
+    }
+
+    /**
+     * Reverse columns for right to left keyboards
+     *
+     * @return $this
+     */
+    public function rightToLeft()
+    {
+        $this->rtl = true;
 
         return $this;
     }
@@ -267,6 +280,10 @@ class Keyboard
      */
     public function get(bool $array = false)
     {
+        if ($this->rtl) {
+            $this->keyboard = array_reverse($this->keyboard);
+        }
+
         if ($array) {
             return $this->keyboard;
         }

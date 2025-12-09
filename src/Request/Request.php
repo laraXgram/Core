@@ -12,8 +12,6 @@ use LaraGram\Support\Traits\Macroable;
 use RuntimeException;
 
 /**
- * @mixin \LaraGram\Laraquest\Updates|\LaraGram\Laraquest\Methode
- *
  * @method array validate(array $rules, ...$params)
  * @method array validateWithBag(string $errorBag, array $rules, ...$params)
  * @method bool hasValidSignature(bool $absolute = true)
@@ -69,16 +67,16 @@ class Request
 
     public function __construct(array $request = [], array $server = [])
     {
-        $this->request = $request;
-        $this->server = $server;
+        $this->request = collect($request);
+        $this->server = collect($server);
     }
 
     /**
      * Creates a Request based on a given configuration.
      *
      *
-     * @param array                $server     The server parameters ($_SERVER)
-     * @param array                $content    The raw body data
+     * @param array $server The server parameters ($_SERVER)
+     * @param array $content The raw body data
      *
      */
     public static function create(array $content = [], array $server = []): static
@@ -118,7 +116,7 @@ class Request
 
         if (isset($components['port'])) {
             $server['SERVER_PORT'] = $components['port'];
-            $server['HTTP_HOST'] .= ':'.$components['port'];
+            $server['HTTP_HOST'] .= ':' . $components['port'];
         }
 
         if (isset($components['user'])) {
@@ -170,7 +168,7 @@ class Request
      */
     public function update()
     {
-        return json_decode($this->content);
+        return $this->getInputSource();
     }
 
     /**
@@ -180,15 +178,15 @@ class Request
      */
     public function method()
     {
-        if (($method = $this->checkIfMethodIsCommand())){
+        if (($method = $this->checkIfMethodIsCommand())) {
             return $method;
         }
 
-        if (($method = $this->checkIfMethodIsCallbackQuery())){
+        if (($method = $this->checkIfMethodIsCallbackQuery())) {
             return $method;
         }
 
-        return strtoupper(Type::findVerb($this->getUpdateType())->value);
+        return strtoupper(Type::findVerb($this->getUpdateType())?->value);
     }
 
     /**
@@ -301,9 +299,9 @@ class Request
     {
         $newRequest = new static($request);
 
-        $newRequest->server = collect($request[2]);
+        $newRequest->server = collect(json_decode($request[2]));
 
-        $newRequest->content = collect($request[1]);
+        $newRequest->content = collect(json_decode($request[1]));
 
         return $newRequest;
     }
@@ -446,6 +444,6 @@ class Request
      */
     public function __get($name)
     {
-        return json_decode($this->update()[0])->{$name} ?? null;
+        return $this?->update()?->get($name);
     }
 }

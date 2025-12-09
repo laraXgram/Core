@@ -8,6 +8,7 @@ use LaraGram\Contracts\Auth\Access\Gate as GateContract;
 use LaraGram\Contracts\Auth\Authenticatable as AuthenticatableContract;
 use LaraGram\Request\Request;
 use LaraGram\Support\Facades\Bot;
+use LaraGram\Support\Facades\Schema;
 use LaraGram\Support\ServiceProvider;
 
 class AuthServiceProvider extends ServiceProvider
@@ -23,7 +24,6 @@ class AuthServiceProvider extends ServiceProvider
         $this->registerUserResolver();
         $this->registerAccessGate();
         $this->registerRequestRebindHandler();
-
 
         if ($this->app['config']->get('auth.observe_users_status', false)){
             $this->registerListens();
@@ -80,14 +80,9 @@ class AuthServiceProvider extends ServiceProvider
 
     public function registerGates()
     {
-        foreach ([
-                     'creator',
-                     'administrator',
-                     'member',
-                     'restricted',
-                     'left',
-                     'kicked'
-                 ] as $status) {
+        $statuses = ['creator', 'administrator', 'member', 'restricted', 'left', 'kicked'];
+
+        foreach ($statuses as $status) {
             \LaraGram\Support\Facades\Gate::define($status, function (User $user) use ($status) {
                 return $user->status === $status;
             });
@@ -97,53 +92,46 @@ class AuthServiceProvider extends ServiceProvider
     public function registerListens()
     {
         Bot::onChatMember(function (Request $request) {
-            $user_id = $request->chat_member->new_chat_member->user->id;
-            $chat_id = $request->chat_member->chat->id;
-            $first_name = $request->chat_member->new_chat_member->user->first_name;
-            $last_name = $request->chat_member->new_chat_member->user->last_name ?? '';
-            $status = $request->chat_member->new_chat_member->status;
-
-            $user = User::where('user_id', $user_id)
-                ->where('chat_id', $chat_id)
-                ->first();
-
-            if (!$user) {
-                User::create([
-                    'user_id' => $user_id,
-                    'chat_id' => $chat_id,
-                    'first_name' => $first_name,
-                    'last_name' => $last_name,
-                    'status' => $status,
-                ]);
-            } else {
-                $user->status = $status;
-                $user->save();
-            }
+            $this->storeOrUpdateUser(
+                $request->chat_member->new_chat_member->user,
+                $request->chat_member->chat,
+                $request->chat_member->new_chat_member->status
+            );
         })->name('laragram-auth-chat-member');
 
         Bot::onMyChatMember(function (Request $request) {
-            $user_id = $request->my_chat_member->new_chat_member->user->id;
-            $chat_id = $request->my_chat_member->chat->id;
-            $first_name = $request->my_chat_member->new_chat_member->user->first_name;
-            $last_name = $request->my_chat_member->new_chat_member->user->last_name ?? '';
-            $status = $request->my_chat_member->new_chat_member->status;
-
-            $user = User::where('user_id', $user_id)
-                ->where('chat_id', $chat_id)
-                ->first();
-
-            if (!$user) {
-                User::create([
-                    'user_id' => $user_id,
-                    'chat_id' => $chat_id,
-                    'first_name' => $first_name,
-                    'last_name' => $last_name,
-                    'status' => $status,
-                ]);
-            } else {
-                $user->status = $status;
-                $user->save();
-            }
+            $this->storeOrUpdateUser(
+                $request->my_chat_member->new_chat_member->user,
+                $request->my_chat_member->chat,
+                $request->my_chat_member->new_chat_member->status
+            );
         })->name('laragram-auth-my-chat-member');
+    }
+
+    private function storeOrUpdateUser($user, $chat, $status)
+    {
+        if (!Schema::hasTable('users')) {
+            return;
+        }
+
+        $existingUser = User::where('user_id', $user->id)
+            ->where('chat_id', $chat->id)
+            ->first();
+
+        if ($existingUser) {
+            $existingUser->update([
+                'first_name' => $user->first_name,
+                'last_name'  => $user->last_name ?? '',
+                'status'     => $status,
+            ]);
+        } else {
+            User::create([
+                'user_id'    => $user->id,
+                'chat_id'    => $chat->id,
+                'first_name' => $user->first_name,
+                'last_name'  => $user->last_name ?? '',
+                'status'     => $status,
+            ]);
+        }
     }
 }

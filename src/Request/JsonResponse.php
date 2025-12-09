@@ -70,12 +70,7 @@ class JsonResponse extends Response
         return $this->setContent($this->data);
     }
 
-    /**
-     * {@inheritdoc}
-     *
-     * @return static
-     */
-    #[\Override]
+
     public static function fromJsonString(?string $data = null): static
     {
         return new static($data, 0, true);
@@ -109,7 +104,6 @@ class JsonResponse extends Response
      *
      * @return static
      */
-    #[\Override]
     public function setData($data = []): static
     {
         $this->original = $data;

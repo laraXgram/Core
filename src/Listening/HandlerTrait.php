@@ -3,6 +3,7 @@
 namespace LaraGram\Listening;
 
 use Closure;
+use LaraGram\Support\Str;
 
 trait HandlerTrait
 {
@@ -18,7 +19,7 @@ trait HandlerTrait
 
     public function onCommand(string $pattern, Closure|array|string $action)
     {
-        return $this->addListen('COMMAND', ltrim($pattern, '/'), $action);
+        return $this->addListen('COMMAND', Str::replaceFirst('/', '', $pattern), $action);
     }
 
     public function onAnimation(Closure|array|string $action)
@@ -290,9 +291,9 @@ trait HandlerTrait
         return $this->addListen(['MESSAGE', 'MESSAGE_TYPE'], $type, $action);
     }
 
-    public function onReferral(Closure|array|string $action)
+    public function onReferral(string $pattern, Closure|array|string $action)
     {
-        return $this->addListen('REFERRAL', '*', $action);
+        return $this->addListen('REFERRAL', $pattern, $action);
     }
 
     public function onHashtag(Closure|array|string $action)

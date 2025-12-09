@@ -42,7 +42,6 @@ class ApplicationBuilder
      */
     public function withKernels()
     {
-
         $this->app->singleton(
             \LaraGram\Contracts\Bot\Kernel::class,
             \LaraGram\Foundation\Bot\Kernel::class,
