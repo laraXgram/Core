@@ -78,7 +78,6 @@ if (!function_exists('text')) {
             $request->edited_channel_post != null => $request->edited_channel_post->text,
             $request->business_message != null => $request->business_message->text,
             $request->edited_business_message != null => $request->edited_business_message->text,
-            $request->callback_query != null => $request->callback_query->message->text,
             default => null
         };
     }
