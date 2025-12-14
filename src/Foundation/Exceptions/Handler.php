@@ -171,7 +171,6 @@ class Handler implements ExceptionHandlerContract
             $this->reportCallbacks[] = $callback;
         });
     }
-    
 
     /**
      * Register a new exception mapping.
@@ -470,7 +469,7 @@ class Handler implements ExceptionHandlerContract
     {
         try {
             return array_filter([
-                'userId' => id(),
+                'userId' => user()->id,
             ]);
         } catch (Throwable) {
             return [];
