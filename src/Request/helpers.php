@@ -402,16 +402,16 @@ if (!function_exists('mentionUserById')) {
 if (!function_exists('mentionReplyUser')) {
     function mentionReplyUser(): string
     {
-        $request = app('request');
-        return "[{$request->message->reply_to_message->from->first_name}](tg://user?id={$request->message->reply_to_message->from->id})";
+        $message = message();
+        return "[{$message->reply_to_message->from->first_name}](tg://user?id={$message->reply_to_message->from->id})";
     }
 }
 
 if (!function_exists('mentionSenderUser')) {
     function mentionSenderUser(): string
     {
-        $request = app('request');
-        return "[{$request->message->from->first_name}](tg://user?id={$request->message->from->id})";
+        $message = message();
+        return "[{$message->from->first_name}](tg://user?id={$message->from->id})";
     }
 }
 
