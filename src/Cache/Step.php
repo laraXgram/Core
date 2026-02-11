@@ -2,6 +2,8 @@
 
 namespace LaraGram\Cache;
 
+use LaraGram\Support\Collection;
+
 class Step
 {
     /**
@@ -114,5 +116,160 @@ class Step
     public function isNot($key): mixed
     {
         return $this->get() !== $key;
+    }
+
+    private function getSequenceKey(): string
+    {
+        return user()->id . ':sequence';
+    }
+
+    /**
+     * Get the current sequence data from cache.
+     *
+     * @return array|null  The sequence structure or null if not started.
+     */
+    public function getSequence(): ?array
+    {
+        return $this->cache->get($this->getSequenceKey());
+    }
+
+    private function saveSequence(array $data): void
+    {
+        $this->cache->set($this->getSequenceKey(), $data);
+    }
+
+    private function clearSequence(): void
+    {
+        $this->cache->forget($this->getSequenceKey());
+    }
+
+    private function hasNext(array $data): bool
+    {
+        return $data['current'] < count($data['steps']) - 1;
+    }
+
+    private function hasPrevious(array $data): bool
+    {
+        return $data['current'] > 0;
+    }
+
+    /**
+     * Start a new step sequence.
+     *
+     * Stores the sequence in cache and activates the first step.
+     *
+     * @param  array<int, string>  $sequence
+     * @return void
+     */
+    public function startSequence(array $sequence): void
+    {
+        if (empty($sequence)) {
+            return;
+        }
+
+        $data = [
+            'steps'   => array_values($sequence),
+            'current' => 0,
+        ];
+
+        $this->saveSequence($data);
+
+        $this->set($data['steps'][0]);
+    }
+
+    /**
+     * End the current sequence and clear the active step.
+     *
+     * @return void
+     */
+    public function endSequence(): void
+    {
+        $this->clearSequence();
+        $this->forget();
+    }
+
+    /**
+     * Move to the next step in the sequence.
+     *
+     * Does nothing if already at the last step
+     * or if no sequence exists.
+     *
+     * @return void
+     */
+    public function next(): void
+    {
+        $this->move(1);
+    }
+
+    /**
+     * Move to the previous step in the sequence.
+     *
+     * Does nothing if already at the first step
+     * or if no sequence exists.
+     *
+     * @return void
+     */
+    public function previous(): void
+    {
+        $this->move(-1);
+    }
+
+    private function move(int $direction): void
+    {
+        $data = $this->getSequence();
+
+        if (!$data) {
+            return;
+        }
+
+        $newIndex = $data['current'] + $direction;
+
+        if ($newIndex < 0 || $newIndex >= count($data['steps'])) {
+            return;
+        }
+
+        $data['current'] = $newIndex;
+
+        $this->saveSequence($data);
+
+        $this->set($data['steps'][$newIndex]);
+    }
+
+    /**
+     * Get the current step from the active sequence.
+     *
+     * @return string|null
+     */
+    public function current()
+    {
+        $data = $this->getSequence();
+
+        return $data
+            ? $data['steps'][$data['current']]
+            : null;
+    }
+
+    /**
+     * Determine if the current step is the first in sequence.
+     *
+     * @return bool
+     */
+    public function isFirst(): bool
+    {
+        $data = $this->getSequence();
+
+        return !$data || $data['current'] === 0;
+    }
+
+    /**
+     * Determine if the current step is the last in sequence.
+     *
+     * @return bool
+     */
+    public function isLast(): bool
+    {
+        $data = $this->getSequence();
+
+        return !$data || $data['current'] === count($data['steps']) - 1;
     }
 }
