@@ -6,6 +6,7 @@ use BackedEnum;
 use Closure;
 use LaraGram\Container\Container;
 use LaraGram\Listening\Matching\MethodValidator;
+use LaraGram\Listening\Matching\StepValidator;
 use LaraGram\Request\Exceptions\RequestResponseException;
 use LaraGram\Request\Request;
 use LaraGram\Listening\Contracts\CallableDispatcher;
@@ -55,6 +56,13 @@ class Listen
      * @var bool
      */
     public $isFallback = false;
+
+    /**
+     * The step name this listen is bound to.
+     *
+     * @var string|null
+     */
+    public ?string $stepName = null;
 
     /**
      * The controller instance.
@@ -729,6 +737,39 @@ class Listen
     }
 
     /**
+     * Set the step name this listen is bound to.
+     *
+     * @param  string|null  $name
+     * @return $this
+     */
+    public function setStepName(?string $name): static
+    {
+        $this->stepName = $name;
+
+        return $this;
+    }
+
+    /**
+     * Get the step name this listen is bound to.
+     *
+     * @return string|null
+     */
+    public function getStepName(): ?string
+    {
+        return $this->stepName;
+    }
+
+    /**
+     * Determine if this listen is a step listen.
+     *
+     * @return bool
+     */
+    public function isStepListen(): bool
+    {
+        return $this->stepName !== null;
+    }
+
+    /**
      * Get the update methods the listen responds to.
      *
      * @return array
@@ -1351,7 +1392,9 @@ class Listen
         // validator implementations. We will spin through each one making sure it
         // passes and then we will know if the listen as a whole matches request.
         return static::$validators = [
-            new MethodValidator, new PatternValidator,
+            new StepValidator,
+            new MethodValidator,
+            new PatternValidator,
         ];
     }
 

@@ -264,6 +264,7 @@ class CompiledListenCollection extends AbstractListenCollection
 
         return $this->listener->newListen($attributes['methods'], $baseUri, $attributes['action'])
             ->setFallback($attributes['fallback'])
+            ->setStepName($attributes['stepName'] ?? null)
             ->setDefaults($attributes['defaults'])
             ->setWheres($attributes['wheres'])
             ->setBindingFields($attributes['bindingFields'])

@@ -20,11 +20,23 @@ class PatternValidator implements ValidatorInterface
         $listenMethods = $listen->methods();
 
         sort($listenMethods);
-        if ($listenMethods == [
+        if (
+            $listenMethods == [
                 "CALLBACK_DATA", "COMMAND", "DICE",
                 "ENTITIES", "MESSAGE", "MESSAGE_TYPE",
                 "REFERRAL", "TEXT", "UPDATE"
-            ]) return true;
+            ]
+        ) {
+            if ($listen->isStepListen()) {
+                return $this->matchStepPattern($listen, $request);
+            }
+
+            return true;
+        }
+
+        if ($listen->isStepListen()) {
+            return $this->matchStepPattern($listen, $request);
+        }
 
         $method = $request->method();
         $regex = $listen->getCompiled()->getRegex();
@@ -104,5 +116,67 @@ class PatternValidator implements ValidatorInterface
         };
 
         return $matcher();
+    }
+
+    /**
+     * Match a step listen's compiled pattern against the update content.
+     *
+     * Delegates to the same matching logic used by the main matches()
+     * method, resolved by the real request method.
+     *
+     * @param  \LaraGram\Listening\Listen  $listen
+     * @param  \LaraGram\Request\Request  $request
+     * @return bool
+     */
+    protected function matchStepPattern(Listen $listen, Request $request): bool
+    {
+        $method  = $request->method();
+        $regex   = $listen->getCompiled()->getRegex();
+        $pattern = $listen->pattern();
+
+        return match ($method) {
+            'TEXT' => (bool) preg_match($regex, text() ?? ''),
+
+            'COMMAND' => (bool) preg_match($regex, Str::replaceFirst('/', '', text() ?? '')),
+
+            'REFERRAL' => (bool) preg_match($regex, Str::replaceFirst('/start ', '', text() ?? '')),
+
+            'CALLBACK_DATA' => (bool) preg_match($regex, callback_query()->data ?? ''),
+
+            'DICE' => (function () use ($pattern) {
+                [$pEmoji, $pValue] = explode(',', $pattern);
+                $emoji = message()->dice->emoji;
+                $value = message()->dice->value;
+
+                return ($pEmoji == 'any' || $pEmoji == $emoji || in_array($emoji, explode('|', $pEmoji), true))
+                    && ($pValue == '0' || (is_numeric($pValue) && $pValue == $value) || in_array((string) $value, explode('|', $pValue), true));
+            })(),
+
+            'MESSAGE' => (function () use ($request, $pattern) {
+                if ($pattern === 'add_member') {
+                    return isset($request->message->new_chat_members)
+                        && $request->message->new_chat_members[0]->id != $request->message->from->id;
+                }
+
+                if ($pattern === 'join_member') {
+                    return isset($request->message->new_chat_members)
+                        && $request->message->new_chat_members[0]->id == $request->message->from->id;
+                }
+
+                // Support pipe-separated types (e.g. "photo|voice|document")
+                $types = explode('|', $pattern);
+                foreach ($types as $type) {
+                    if (isset($request->message->{$type})) {
+                        return true;
+                    }
+                }
+
+                return false;
+            })(),
+
+            'UPDATE' => isset($request->{$pattern}),
+
+            default => false,
+        };
     }
 }

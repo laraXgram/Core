@@ -66,6 +66,7 @@ namespace LaraGram\Support\Facades;
  * @method static \LaraGram\Listening\Listen onMention(callable|array|string $action)
  * @method static \LaraGram\Listening\Listen onHashtag(callable|array|string $action)
  * @method static \LaraGram\Listening\Listen onCashtag(callable|array|string $action)
+ * @method static \LaraGram\Listening\Listen onStep(string $step, callable|array|string $action, string|null $pattern = null, array|string|null $method = null)
  * @method static \LaraGram\Listening\Listen fallback(array|string|callable|null $action)
  * @method static \LaraGram\Listening\Listen redirect(string $uri, string $destination)
  * @method static \LaraGram\Listening\Listen template(string $pattern, string $template, array $data = [])

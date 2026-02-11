@@ -320,4 +320,23 @@ trait HandlerTrait
     {
         return $this->addListen('MESSAGE', 'join_member', $action);
     }
+
+    public function onStep(string $step, Closure|array|string $action, ?string $pattern = null, array|string|null $method = null)
+    {
+        $methods = $method !== null
+            ? array_map('strtoupper', (array) $method)
+            : Listener::$verbs;
+
+        $placeholder = '_stepCatchAll';
+        $listenPattern = $pattern ?? "{{$placeholder}}";
+
+        $listen = $this->addListen($methods, $listenPattern, $action);
+        $listen->setStepName($step);
+
+        if ($pattern === null) {
+            $listen->where($placeholder, '.*');
+        }
+
+        return $listen;
+    }
 }
