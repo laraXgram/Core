@@ -138,12 +138,9 @@ class ApplicationBuilder
     /**
      * Create the listening callback for the application.
      *
-     * @param  array|string|null  $web
-     * @param  array|string|null  $api
-     * @param  string|null  $pages
-     * @param  string|null  $health
-     * @param  string  $apiPrefix
-     * @param  callable|null  $then
+     * @param array|string|null $bot
+     * @param array|string|null $client
+     * @param callable|null $then
      * @return \Closure
      */
     protected function buildListeningCallback(array|string|null $bot, array|string|null $client, ?callable $then)
