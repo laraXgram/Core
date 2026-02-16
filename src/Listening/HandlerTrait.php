@@ -323,7 +323,7 @@ trait HandlerTrait
 
     public function onStep(string $step, Closure|array|string $action, ?string $pattern = null, array|string|null $method = null)
     {
-        $placeholder = 'var';
+        $placeholder = 's_' . substr(md5($step), 0, 8);
 
         if ($method === '*') {
             $methods = Listener::$verbs;

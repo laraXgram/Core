@@ -164,7 +164,9 @@ class ListenCollection extends AbstractListenCollection
 
         $methodListens = $this->get($request->method());
 
-        $normalListens = array_values(array_filter($methodListens, fn ($l) => ! $l->isStepListen()));
+        $normalListens = array_values(array_filter(
+            $methodListens, fn ($l) => ! $l->isStepListen() && ! $l->isFallback
+        ));
 
         $listen = $this->matchAgainstListens($normalListens, $request);
 
@@ -175,6 +177,14 @@ class ListenCollection extends AbstractListenCollection
         $stepListens = array_values(array_filter($this->getListens(), fn ($l) => $l->isStepListen()));
 
         $listen = $this->matchAgainstListens($stepListens, $request);
+
+        if (! is_null($listen)) {
+            return $this->handleMatchedListen($request, $listen);
+        }
+
+        $fallbackListens = array_values(array_filter($methodListens, fn ($l) => $l->isFallback));
+
+        $listen = $this->matchAgainstListens($fallbackListens, $request);
 
         return $this->handleMatchedListen($request, $listen);
     }
