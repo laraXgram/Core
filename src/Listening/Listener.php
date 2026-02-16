@@ -138,6 +138,15 @@ class Listener implements BindingRegistrar, RegistrarContract
     ];
 
     /**
+     * When true, step listens are matched in definition order mixed with
+     * normal listens. When false (default), normal listens are matched
+     * first, then step listens, then fallbacks.
+     *
+     * @var bool
+     */
+    public static bool $enableStepListensPriorityRegister = false;
+
+    /**
      * Create a new Listener instance.
      *
      * @param  \LaraGram\Contracts\Events\Dispatcher  $events
@@ -1200,6 +1209,19 @@ class Listener implements BindingRegistrar, RegistrarContract
     public function setContainer(Container $container)
     {
         $this->container = $container;
+
+        return $this;
+    }
+
+    /**
+     * Enable or disable step listens priority registration.
+     *
+     * @param bool $enable
+     * @return $this
+     */
+    public function enableStepListensPriorityRegister(bool $enable = true)
+    {
+        self::$enableStepListensPriorityRegister = $enable;
 
         return $this;
     }

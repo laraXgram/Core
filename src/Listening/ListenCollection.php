@@ -150,12 +150,31 @@ class ListenCollection extends AbstractListenCollection
      */
     public function match(Request $request)
     {
-        $listens = $this->get($request->method());
+        if (Listener::$enableStepListensPriorityRegister) {
+            // When enabled, step listens are matched in definition order
+            // mixed with normal listens - registration order wins.
+            $candidates = array_values(array_filter($this->getListens(), function ($l) use ($request) {
+                return in_array($request->method(), $l->methods()) || $l->isStepListen();
+            }));
 
-        // First, we will see if we can find a matching listen for this current request
-        // method. If we can, great, we can just return it so that it can be called
-        // by the consumer. Otherwise we will check for listens with another verb.
-        $listen = $this->matchAgainstListens($listens, $request);
+            $listen = $this->matchAgainstListens($candidates, $request);
+
+            return $this->handleMatchedListen($request, $listen);
+        }
+
+        $methodListens = $this->get($request->method());
+
+        $normalListens = array_values(array_filter($methodListens, fn ($l) => ! $l->isStepListen()));
+
+        $listen = $this->matchAgainstListens($normalListens, $request);
+
+        if (! is_null($listen)) {
+            return $this->handleMatchedListen($request, $listen);
+        }
+
+        $stepListens = array_values(array_filter($this->getListens(), fn ($l) => $l->isStepListen()));
+
+        $listen = $this->matchAgainstListens($stepListens, $request);
 
         return $this->handleMatchedListen($request, $listen);
     }

@@ -99,6 +99,7 @@ namespace LaraGram\Support\Facades;
  * @method static \LaraGram\Listening\Listener pushMiddlewareToGroup(string $group, string $middleware)
  * @method static \LaraGram\Listening\Listener removeMiddlewareFromGroup(string $group, string $middleware)
  * @method static \LaraGram\Listening\Listener flushMiddlewareGroups()
+ * @method static \LaraGram\Listening\Listener enableStepListensPriorityRegister(bool $enable = true)
  * @method static void bind(string $key, string|callable $binder)
  * @method static void model(string $key, string $class, \Closure|null $callback = null)
  * @method static \Closure|null getBindingCallback(string $key)

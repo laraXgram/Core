@@ -323,11 +323,16 @@ trait HandlerTrait
 
     public function onStep(string $step, Closure|array|string $action, ?string $pattern = null, array|string|null $method = null)
     {
-        $methods = $method !== null
-            ? array_map('strtoupper', (array) $method)
-            : Listener::$verbs;
+        $placeholder = 'var';
 
-        $placeholder = '_stepCatchAll';
+        if ($method === '*') {
+            $methods = Listener::$verbs;
+        } elseif ($method !== null) {
+            $methods = array_map('strtoupper', (array) $method);
+        } else {
+            $methods = ['TEXT'];
+        }
+
         $listenPattern = $pattern ?? "{{$placeholder}}";
 
         $listen = $this->addListen($methods, $listenPattern, $action);
