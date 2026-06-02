@@ -416,8 +416,11 @@ if (!function_exists('mentionSenderUser')) {
 }
 
 if (!function_exists('selfDelete')) {
-    function selfDelete(): void
+    function selfDelete($methods = ['*']): void
     {
-        app('request')->mode(LaraGram\Laraquest\Mode::NO_RESPONSE_CURL)->deleteMessage(chat()->id, message()->message_id);
+        $request = app('request');
+        if ($methods === ['*'] || in_array($request->method(), \LaraGram\Support\Arr::wrap($methods))) {
+            $request->mode(LaraGram\Laraquest\Mode::NO_RESPONSE_CURL)->deleteMessage(chat()->id, message()->message_id);
+        }
     }
 }
