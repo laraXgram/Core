@@ -6,7 +6,9 @@ use Closure;
 use LaraGram\Laraquest\Updates as UpdatesTrait;
 use LaraGram\Laraquest\Methode as MethodeTrait;
 use LaraGram\Listening\Type;
+use LaraGram\Request\Files\FileBag;
 use LaraGram\Support\Collection;
+use LaraGram\Support\Facades\Log;
 use LaraGram\Support\Traits\Conditionable;
 use LaraGram\Support\Traits\Macroable;
 use RuntimeException;
@@ -64,6 +66,13 @@ class Request
 
     protected ?string $locale = null;
     protected string $defaultLocale = 'en';
+
+    /**
+     * Cached FileBag instance for the current update.
+     *
+     * @var FileBag|null
+     */
+    private ?FileBag $fileBag = null;
 
     public function __construct(array $request = [], array $server = [])
     {
@@ -373,6 +382,64 @@ class Request
             $listen->methods(),
             [$listen->pattern(), user()->id]
         )));
+    }
+
+    /**
+     * Determine whether the current update contains any media file.
+     *
+     * Checks for the presence of photo, video, document, sticker, audio,
+     * voice, video_note, animation, or live_photo in the message.
+     *
+     * @return bool
+     */
+    public function hasFile(): bool
+    {
+        $message = $this->message ?? null;
+
+        if ($message === null) {
+            return false;
+        }
+
+        return isset($message->photo)
+            || isset($message->video)
+            || isset($message->document)
+            || isset($message->sticker)
+            || isset($message->audio)
+            || isset($message->voice)
+            || isset($message->video_note)
+            || isset($message->animation)
+            || isset($message->live_photo)
+            || isset($message->paid_media);
+    }
+
+    /**
+     * Get the FileBag for the current update.
+     *
+     * @return FileBag|null
+     */
+    public function file(): ?FileBag
+    {
+        if ($this->fileBag !== null) {
+            return $this->fileBag;
+        }
+
+        $message = $this->message ?? null;
+
+        if ($message === null) {
+            return null;
+        }
+
+        $cfg = $this->resolveConfig();
+        $token = $this->resolveToken($this->resolveConnection());
+        $apiServer = $cfg['api_server'];
+
+        $bag = FileBag::fromMessage($message, $token, $apiServer);
+
+        if ($bag->isEmpty()) {
+            return null;
+        }
+
+        return $this->fileBag = $bag;
     }
 
     /**
