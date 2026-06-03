@@ -24,5 +24,7 @@ class HandleMultiBotUpdate
                 }
             }
         }
+
+        return $next($request);
     }
 }
