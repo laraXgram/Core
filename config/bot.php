@@ -8,7 +8,8 @@ return [
     |--------------------------------------------------------------------------
     |
     | The bot connection with which the request is sent by default.
-    |
+    | Set 'auto' for Multi Bot Update Handling. connection detected by `secret_token`
+    | Or set "connection_name" for a specific connection.
     */
 
     'default' => 'bot',
