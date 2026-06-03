@@ -225,9 +225,9 @@ class Filesystem
 
         // Fix permissions of tempPath because `tempnam()` creates it with permissions set to 0600...
         if (! is_null($mode)) {
-            chmod($tempPath, $mode);
+            @chmod($tempPath, $mode);
         } else {
-            chmod($tempPath, 0777 - umask());
+            @chmod($tempPath, 0777 - umask());
         }
 
         file_put_contents($tempPath, $content);
@@ -251,9 +251,10 @@ class Filesystem
     /**
      * Prepend to a file.
      *
-     * @param  string  $path
-     * @param  string  $data
+     * @param string $path
+     * @param string $data
      * @return int
+     * @throws FileNotFoundException
      */
     public function prepend($path, $data)
     {
