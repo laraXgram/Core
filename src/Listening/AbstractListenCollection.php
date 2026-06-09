@@ -23,6 +23,21 @@ abstract class AbstractListenCollection implements Countable, IteratorAggregate,
      *
      * @throws \Exception
      */
+    protected function listenMatchesConnection(Listen $listen, ?string $currentConnection): bool
+    {
+        $forConnections = $listen->getForConnections();
+
+        if (in_array('*', $forConnections, true)) {
+            return true;
+        }
+
+        if ($currentConnection === null) {
+            return true;
+        }
+
+        return in_array($currentConnection, $forConnections, true);
+    }
+
     protected function handleMatchedListen(Request $request, $listen)
     {
         if (! is_null($listen)) {

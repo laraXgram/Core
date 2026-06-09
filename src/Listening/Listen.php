@@ -1198,6 +1198,17 @@ class Listen
     }
 
     /**
+     * Get the incoming bot connections this listen applies to.
+     *
+     * @return array
+     */
+    public function getForConnections(): array
+    {
+        $value = $this->action['for_connections'] ?? ['*'];
+        return (array) $value;
+    }
+
+    /**
      * Get the middleware for the listen's controller.
      *
      * @return array

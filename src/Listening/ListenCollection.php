@@ -61,12 +61,16 @@ class ListenCollection extends AbstractListenCollection
     {
         $methods = $listen->methods();
         $pattern = $listen->pattern();
+        $connections = $listen->getForConnections();
+        $collectionKey = (count($connections) === 1 && $connections[0] === '*')
+            ? $pattern
+            : $pattern . '@' . implode(',', $connections);
 
         foreach ($methods as $method) {
-            $this->listens[$method][$pattern] = $listen;
+            $this->listens[$method][$collectionKey] = $listen;
         }
 
-        $this->allListens[implode('|', $methods).$pattern] = $listen;
+        $this->allListens[implode('|', $methods) . $collectionKey] = $listen;
     }
 
     /**
@@ -150,11 +154,14 @@ class ListenCollection extends AbstractListenCollection
      */
     public function match(Request $request)
     {
+        $currentConnection = Request::getDefaultConnection();
+
         if (Listener::$enableStepListensPriorityRegister) {
             // When enabled, step listens are matched in definition order
             // mixed with normal listens - registration order wins.
-            $candidates = array_values(array_filter($this->getListens(), function ($l) use ($request) {
-                return in_array($request->method(), $l->methods()) || $l->isStepListen();
+            $candidates = array_values(array_filter($this->getListens(), function ($l) use ($request, $currentConnection) {
+                return (in_array($request->method(), $l->methods()) || $l->isStepListen())
+                    && $this->listenMatchesConnection($l, $currentConnection);
             }));
 
             $listen = $this->matchAgainstListens($candidates, $request);
@@ -165,7 +172,9 @@ class ListenCollection extends AbstractListenCollection
         $methodListens = $this->get($request->method());
 
         $normalListens = array_values(array_filter(
-            $methodListens, fn ($l) => ! $l->isStepListen() && ! $l->isFallback
+            $methodListens,
+            fn ($l) => ! $l->isStepListen() && ! $l->isFallback
+                && $this->listenMatchesConnection($l, $currentConnection)
         ));
 
         $listen = $this->matchAgainstListens($normalListens, $request);
@@ -174,7 +183,10 @@ class ListenCollection extends AbstractListenCollection
             return $this->handleMatchedListen($request, $listen);
         }
 
-        $stepListens = array_values(array_filter($this->getListens(), fn ($l) => $l->isStepListen()));
+        $stepListens = array_values(array_filter(
+            $this->getListens(),
+            fn ($l) => $l->isStepListen() && $this->listenMatchesConnection($l, $currentConnection)
+        ));
 
         $listen = $this->matchAgainstListens($stepListens, $request);
 
@@ -182,7 +194,10 @@ class ListenCollection extends AbstractListenCollection
             return $this->handleMatchedListen($request, $listen);
         }
 
-        $fallbackListens = array_values(array_filter($methodListens, fn ($l) => $l->isFallback));
+        $fallbackListens = array_values(array_filter(
+            $methodListens,
+            fn ($l) => $l->isFallback && $this->listenMatchesConnection($l, $currentConnection)
+        ));
 
         $listen = $this->matchAgainstListens($fallbackListens, $request);
 

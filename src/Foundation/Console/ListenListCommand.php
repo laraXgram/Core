@@ -46,7 +46,7 @@ class ListenListCommand extends Command
      *
      * @var string[]
      */
-    protected $headers = ['Method', 'Pattern', 'Name', 'Action', 'Middleware'];
+    protected $headers = ['Method', 'Pattern', 'Name', 'Action', 'Middleware', 'Connections'];
 
     /**
      * The terminal width resolver callback.
@@ -145,6 +145,7 @@ class ListenListCommand extends Command
             'name' => $listen->getName(),
             'action' => ltrim($listen->getActionName(), '\\'),
             'middleware' => $this->getMiddleware($listen),
+            'connections' => $this->getForConnections($listen),
             'vendor' => $this->isVendorListen($listen),
         ]);
     }
@@ -210,6 +211,23 @@ class ListenListCommand extends Command
         return (new Collection($this->listener->gatherListenMiddleware($listen)))->map(function ($middleware) {
             return $middleware instanceof Closure ? 'Closure' : $middleware;
         })->implode("\n");
+    }
+
+    /**
+     * Get the for_connections value for the listen as a display string.
+     *
+     * @param \LaraGram\Listening\Listen $listen
+     * @return string
+     */
+    protected function getForConnections(Listen $listen)
+    {
+        $connections = $listen->getForConnections();
+
+        if (empty($connections) || $connections === ['*']) {
+            return '*';
+        }
+
+        return implode(', ', $connections);
     }
 
     /**
@@ -375,6 +393,7 @@ class ListenListCommand extends Command
                 'method' => $method,
                 'middleware' => $middleware,
                 'pattern' => $pattern,
+                'connections' => $connections,
             ] = $listen;
 
             $middleware = (new Stringable($middleware))->explode("\n")->filter()->whenNotEmpty(
@@ -382,6 +401,10 @@ class ListenListCommand extends Command
                     fn($middleware) => sprintf('         %s⇂ %s', str_repeat(' ', $maxMethod), $middleware)
                 )
             )->implode("\n");
+
+            $connectionsLine = ($connections !== '*' && !empty($connections))
+                ? sprintf('         %s⇂ <fg=cyan>connections:</> %s', str_repeat(' ', $maxMethod), $connections)
+                : null;
 
             $spaces = str_repeat(' ', max($maxMethod + 7 - mb_strlen($method), 0));
 
@@ -406,7 +429,8 @@ class ListenListCommand extends Command
                 preg_replace('#({[^}]+})#', '<fg=yellow>$1</>', $pattern),
                 $dots,
                 str_replace('   ', ' › ', $action ?? ''),
-            ), $this->output->isVerbose() && !empty($middleware) ? "<fg=#6C7280>$middleware</>" : null];
+            ), $this->output->isVerbose() && !empty($middleware) ? "<fg=#6C7280>$middleware</>" : null,
+               $connectionsLine];
         })
             ->flatten()
             ->filter()

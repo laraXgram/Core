@@ -83,6 +83,7 @@ class ListenRegistrar
         'scope',
         'outOfScope',
         'connection',
+        'for_connections',
         'controller',
         'middleware',
         'missing',
@@ -158,6 +159,17 @@ class ListenRegistrar
         $this->attributes[$attributeKey] = $value;
 
         return $this;
+    }
+
+    /**
+     * Set the incoming bot connections this group applies to.
+     *
+     * @param  array|string  $connections
+     * @return $this
+     */
+    public function forConnections(array|string $connections)
+    {
+        return $this->attribute('for_connections', (array) $connections);
     }
 
     /**

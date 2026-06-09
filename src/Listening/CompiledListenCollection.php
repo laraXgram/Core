@@ -110,9 +110,17 @@ class CompiledListenCollection extends AbstractListenCollection
 
         $listen = null;
 
+        $currentConnection = Request::getDefaultConnection();
+
         try {
             if ($result = $matcher->matchRequest($request)) {
-                $listen = $this->getByName($result['_listen']);
+                $candidate = $this->getByName($result['_listen']);
+
+                if ($candidate && $this->listenMatchesConnection($candidate, $currentConnection)) {
+                    $listen = $candidate;
+                } else {
+                    return $this->listens->match($request);
+                }
             }
         } catch (ResourceNotFoundException|MethodNotAllowedException) {
             try {
