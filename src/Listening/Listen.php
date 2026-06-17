@@ -8,6 +8,7 @@ use LaraGram\Container\Container;
 use LaraGram\Listening\Matching\MethodValidator;
 use LaraGram\Listening\Matching\StepValidator;
 use LaraGram\Request\Exceptions\RequestResponseException;
+use LaraGram\Listening\Contracts\ProvidesListenContext;
 use LaraGram\Request\Request;
 use LaraGram\Listening\Contracts\CallableDispatcher;
 use LaraGram\Listening\Contracts\ControllerDispatcher as ControllerDispatcherContract;
@@ -353,11 +354,11 @@ class Listen
     /**
      * Determine if the listen matches a given request.
      *
-     * @param  \LaraGram\Request\Request  $request
+     * @param  \LaraGram\Listening\Contracts\ProvidesListenContext  $request
      * @param  bool  $includingMethod
      * @return bool
      */
-    public function matches(Request $request, $includingMethod = true)
+    public function matches(ProvidesListenContext $request, $includingMethod = true)
     {
         $this->compileListen();
 

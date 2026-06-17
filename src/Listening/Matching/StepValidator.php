@@ -2,8 +2,8 @@
 
 namespace LaraGram\Listening\Matching;
 
+use LaraGram\Listening\Contracts\ProvidesListenContext;
 use LaraGram\Listening\Listen;
-use LaraGram\Request\Request;
 use LaraGram\Support\Facades\Step;
 
 class StepValidator implements ValidatorInterface
@@ -16,10 +16,10 @@ class StepValidator implements ValidatorInterface
      * declared step name.
      *
      * @param  \LaraGram\Listening\Listen  $listen
-     * @param  \LaraGram\Request\Request  $request
+     * @param  \LaraGram\Listening\Contracts\ProvidesListenContext  $request
      * @return bool
      */
-    public function matches(Listen $listen, Request $request): bool
+    public function matches(Listen $listen, ProvidesListenContext $request): bool
     {
         $stepName = $listen->getStepName();
 

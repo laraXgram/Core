@@ -3,6 +3,7 @@
 namespace LaraGram\Listening;
 
 use LaraGram\Container\Container;
+use LaraGram\Listening\Contracts\ProvidesListenContext;
 use LaraGram\Request\Request;
 use LaraGram\Support\Arr;
 
@@ -149,10 +150,10 @@ class ListenCollection extends AbstractListenCollection
     /**
      * Find the first listen matching a given request.
      *
-     * @param  \LaraGram\Request\Request  $request
+     * @param  \LaraGram\Listening\Contracts\ProvidesListenContext  $request
      * @return \LaraGram\Listening\Listen
      */
-    public function match(Request $request)
+    public function match(ProvidesListenContext $request)
     {
         $currentConnection = Request::getDefaultConnection();
 
@@ -160,7 +161,7 @@ class ListenCollection extends AbstractListenCollection
             // When enabled, step listens are matched in definition order
             // mixed with normal listens - registration order wins.
             $candidates = array_values(array_filter($this->getListens(), function ($l) use ($request, $currentConnection) {
-                return (in_array($request->method(), $l->methods()) || $l->isStepListen())
+                return (in_array($request->listenVerb(), $l->methods()) || $l->isStepListen())
                     && $this->listenMatchesConnection($l, $currentConnection);
             }));
 
@@ -169,7 +170,7 @@ class ListenCollection extends AbstractListenCollection
             return $this->handleMatchedListen($request, $listen);
         }
 
-        $methodListens = $this->get($request->method());
+        $methodListens = $this->get($request->listenVerb());
 
         $normalListens = array_values(array_filter(
             $methodListens,

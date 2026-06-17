@@ -2,6 +2,7 @@
 
 namespace LaraGram\Listening\Matching;
 
+use LaraGram\Listening\Contracts\ProvidesListenContext;
 use LaraGram\Listening\Listen;
 use LaraGram\Request\Request;
 use LaraGram\Support\Str;
@@ -12,11 +13,15 @@ class PatternValidator implements ValidatorInterface
      * Validate a given rule against a listen and request.
      *
      * @param \LaraGram\Listening\Listen $listen
-     * @param \LaraGram\Request\Request $request
+     * @param \LaraGram\Listening\Contracts\ProvidesListenContext $request
      * @return bool
      */
-    public function matches(Listen $listen, Request $request)
+    public function matches(Listen $listen, ProvidesListenContext $request)
     {
+        if (! $request instanceof Request) {
+            return $this->matchesContext($listen, $request);
+        }
+
         $listenMethods = $listen->methods();
 
         sort($listenMethods);
@@ -178,5 +183,26 @@ class PatternValidator implements ValidatorInterface
 
             default => false,
         };
+    }
+
+    /**
+     * Match a listen's compiled pattern against a context-providing request
+     * that is not the Bot-API Request (e.g. the MTProto ClientRequest).
+     *
+     * @param  \LaraGram\Listening\Listen  $listen
+     * @param  \LaraGram\Listening\Contracts\ProvidesListenContext  $request
+     * @return bool
+     */
+    protected function matchesContext(Listen $listen, ProvidesListenContext $request): bool
+    {
+        $verb  = $request->listenVerb();
+        $value = $request->listenValue($verb);
+
+        // Structural verb — no string to regex-match; verb match is enough.
+        if ($value === null) {
+            return true;
+        }
+
+        return (bool) preg_match($listen->getCompiled()->getRegex(), $value);
     }
 }

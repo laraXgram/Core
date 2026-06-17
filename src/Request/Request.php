@@ -5,10 +5,11 @@ namespace LaraGram\Request;
 use Closure;
 use LaraGram\Laraquest\Updates as UpdatesTrait;
 use LaraGram\Laraquest\Methode as MethodeTrait;
+use LaraGram\Listening\Contracts\ProvidesListenContext;
 use LaraGram\Listening\Type;
 use LaraGram\Request\Files\FileBag;
 use LaraGram\Support\Collection;
-use LaraGram\Support\Facades\Log;
+use LaraGram\Support\Str;
 use LaraGram\Support\Traits\Conditionable;
 use LaraGram\Support\Traits\Macroable;
 use RuntimeException;
@@ -18,7 +19,7 @@ use RuntimeException;
  * @method array validateWithBag(string $errorBag, array $rules, ...$params)
  * @method bool hasValidSignature(bool $absolute = true)
  */
-class Request
+class Request implements ProvidesListenContext
 {
     use Conditionable, Macroable,
         InteractWithUpdate,
@@ -196,6 +197,41 @@ class Request
         }
 
         return strtoupper(Type::findVerb($this->getUpdateType())?->value);
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function listenVerb(): string
+    {
+        return $this->method();
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function listenValue(string $verb): ?string
+    {
+        return match ($verb) {
+            'COMMAND' => ($t = text()) !== null ? Str::replaceFirst('/', '', $t) : null,
+            'REFERRAL' => ($t = text()) !== null ? Str::replaceFirst('/start ', '', $t) : null,
+            'CALLBACK_DATA' => callback_query()->data ?? null,
+            default => text()
+                ?? callback_query()->data
+                ?? inline_query()->query
+                ?? chosen_inline_result()->query
+                ?? null,
+        };
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function entities(): array
+    {
+        return $this->message?->entities
+            ?? $this->message?->caption_entities
+            ?? [];
     }
 
     /**

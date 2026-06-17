@@ -2,6 +2,8 @@
 
 namespace LaraGram\Listening;
 
+use LaraGram\Listening\Contracts\ProvidesListenContext;
+use LaraGram\Request\Request;
 use LaraGram\Support\Arr;
 use LaraGram\Support\Str;
 
@@ -61,6 +63,12 @@ class ListenParameterBinder
      */
     private function extractUpdate($request)
     {
+        if (! $request instanceof Request && $request instanceof ProvidesListenContext) {
+            $verb = $this->listen->methods()[0] ?? $request->listenVerb();
+
+            return $request->listenValue($verb);
+        }
+
         if (in_array('COMMAND', $this->listen->methods())) {
             $text = Str::replaceFirst('/', '', text());
         } elseif (in_array('REFERRAL', $this->listen->methods())) {

@@ -4,6 +4,7 @@ namespace LaraGram\Listening;
 
 use ArrayIterator;
 use Countable;
+use LaraGram\Listening\Contracts\ProvidesListenContext;
 use LaraGram\Listening\Exceptions\ListenNotFoundException;
 use LaraGram\Request\Request;
 use LaraGram\Support\Collection;
@@ -38,7 +39,7 @@ abstract class AbstractListenCollection implements Countable, IteratorAggregate,
         return in_array($currentConnection, $forConnections, true);
     }
 
-    protected function handleMatchedListen(Request $request, $listen)
+    protected function handleMatchedListen(ProvidesListenContext $request, $listen)
     {
         if (! is_null($listen)) {
             return $listen->bind($request);
@@ -55,11 +56,13 @@ abstract class AbstractListenCollection implements Countable, IteratorAggregate,
 
         throw new ListenNotFoundException(sprintf(
             'The listen %s could not be found.',
-            $request->message->text ??
-            $request->message->caption ??
-            $request->callback_query->data ??
-            $request->inline_query->query ??
-            '*',
+            $request instanceof Request
+                ? ($request->message->text ??
+                    $request->message->caption ??
+                    $request->callback_query->data ??
+                    $request->inline_query->query ??
+                    '*')
+                : ($request->listenValue($request->listenVerb()) ?? '*'),
         ));
     }
 

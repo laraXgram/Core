@@ -2,7 +2,7 @@
 
 namespace LaraGram\Listening;
 
-use LaraGram\Request\Request;
+use LaraGram\Listening\Contracts\ProvidesListenContext;
 
 interface ListenCollectionInterface
 {
@@ -35,10 +35,10 @@ interface ListenCollectionInterface
     /**
      * Find the first listen matching a given request.
      *
-     * @param  \LaraGram\Request\Request  $request
+     * @param  \LaraGram\Listening\Contracts\ProvidesListenContext  $request
      * @return \LaraGram\Listening\Listen
      */
-    public function match(Request $request);
+    public function match(ProvidesListenContext $request);
 
     /**
      * Get listens from the collection by method.

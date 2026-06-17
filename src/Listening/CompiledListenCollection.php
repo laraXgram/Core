@@ -3,6 +3,7 @@
 namespace LaraGram\Listening;
 
 use LaraGram\Container\Container;
+use LaraGram\Listening\Contracts\ProvidesListenContext;
 use LaraGram\Listening\Exceptions\MethodNotAllowedException;
 use LaraGram\Listening\Exceptions\ResourceNotFoundException;
 use LaraGram\Request\Request;
@@ -97,12 +98,12 @@ class CompiledListenCollection extends AbstractListenCollection
     /**
      * Find the first listen matching a given request.
      *
-     * @param  \LaraGram\Request\Request  $request
+     * @param  \LaraGram\Listening\Contracts\ProvidesListenContext  $request
      * @return \LaraGram\Listening\Listen
      *
      * @throws \Exception
      */
-    public function match(Request $request)
+    public function match(ProvidesListenContext $request)
     {
         $matcher = new CompiledPatternMatcher(
             $this->compiled, (new RequestContext)->fromRequest($request), $this->attributes
