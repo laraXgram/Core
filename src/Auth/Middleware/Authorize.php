@@ -54,7 +54,17 @@ class Authorize
      */
     public function handle($request, Closure $next, $ability, ...$models)
     {
-        $this->gate->authorize($ability, $this->getGateArguments($request, $models));
+        $arguments = $this->getGateArguments($request, $models);
+
+        $abilities = explode('|', (string) $ability);
+
+        if (count($abilities) > 1) {
+            if (! $this->gate->any($abilities, $arguments)) {
+                $this->gate->authorize($abilities[0], $arguments);
+            }
+        } else {
+            $this->gate->authorize($ability, $arguments);
+        }
 
         return $next($request);
     }
@@ -90,7 +100,7 @@ class Authorize
             return trim($model);
         }
 
-        return $request->route($model, null) ??
+        return $request->listen($model, null) ??
             ((preg_match("/^['\"](.*)['\"]$/", trim($model), $matches)) ? $matches[1] : null);
     }
 

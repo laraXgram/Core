@@ -2,13 +2,14 @@
 
 namespace LaraGram\Auth;
 
-use App\Models\User;
 use LaraGram\Auth\Access\Gate;
+use LaraGram\Auth\Status\StatusManager;
 use LaraGram\Contracts\Auth\Access\Gate as GateContract;
 use LaraGram\Contracts\Auth\Authenticatable as AuthenticatableContract;
+use LaraGram\Contracts\Auth\StatusProvider as StatusProviderContract;
+use LaraGram\Listening\Listen;
 use LaraGram\Request\Request;
 use LaraGram\Support\Facades\Bot;
-use LaraGram\Support\Facades\Schema;
 use LaraGram\Support\ServiceProvider;
 
 class AuthServiceProvider extends ServiceProvider
@@ -23,13 +24,26 @@ class AuthServiceProvider extends ServiceProvider
         $this->registerAuthenticator();
         $this->registerUserResolver();
         $this->registerAccessGate();
+        $this->registerStatusManager();
         $this->registerRequestRebindHandler();
 
-        if ($this->app['config']->get('auth.observe_users_status', false)){
+        if ($this->app['auth.status']->shouldObserve()) {
             $this->registerListens();
         }
+    }
 
-        $this->registerGates();
+    /**
+     * Register the chat-member status manager.
+     *
+     * @return void
+     */
+    protected function registerStatusManager()
+    {
+        $this->app->singleton('auth.status', fn ($app) => new StatusManager($app));
+
+        $this->app->alias('auth.status', StatusManager::class);
+
+        $this->app->bind(StatusProviderContract::class, fn ($app) => $app['auth.status']->driver());
     }
 
     /**
@@ -78,21 +92,15 @@ class AuthServiceProvider extends ServiceProvider
         });
     }
 
-    public function registerGates()
-    {
-        $statuses = ['creator', 'administrator', 'member', 'restricted', 'left', 'kicked'];
-
-        foreach ($statuses as $status) {
-            \LaraGram\Support\Facades\Gate::define($status, function (User $user) use ($status) {
-                return $user->status === $status;
-            });
-        }
-    }
-
+    /**
+     * Listen for chat-member changes and persist them through the status driver.
+     *
+     * @return void
+     */
     public function registerListens()
     {
         Bot::onChatMember(function (Request $request) {
-            $this->storeOrUpdateUser(
+            $this->storeStatus(
                 $request->chat_member->new_chat_member->user,
                 $request->chat_member->chat,
                 $request->chat_member->new_chat_member->status
@@ -100,7 +108,7 @@ class AuthServiceProvider extends ServiceProvider
         })->name('laragram-auth-chat-member');
 
         Bot::onMyChatMember(function (Request $request) {
-            $this->storeOrUpdateUser(
+            $this->storeStatus(
                 $request->my_chat_member->new_chat_member->user,
                 $request->my_chat_member->chat,
                 $request->my_chat_member->new_chat_member->status
@@ -108,30 +116,20 @@ class AuthServiceProvider extends ServiceProvider
         })->name('laragram-auth-my-chat-member');
     }
 
-    private function storeOrUpdateUser($user, $chat, $status)
+    /**
+     * Persist a chat-member status change through the status manager.
+     *
+     * @param  object  $user
+     * @param  object  $chat
+     * @param  string  $status
+     * @return void
+     */
+    private function storeStatus($user, $chat, $status)
     {
-        if (!Schema::hasTable('users')) {
-            return;
-        }
-
-        $existingUser = User::where('user_id', $user->id)
-            ->where('chat_id', $chat->id)
-            ->first();
-
-        if ($existingUser) {
-            $existingUser->update([
-                'first_name' => $user->first_name,
-                'last_name'  => $user->last_name ?? '',
-                'status'     => $status,
-            ]);
-        } else {
-            User::create([
-                'user_id'    => $user->id,
-                'chat_id'    => $chat->id,
-                'first_name' => $user->first_name,
-                'last_name'  => $user->last_name ?? '',
-                'status'     => $status,
-            ]);
-        }
+        $this->app['auth.status']->record($user->id, $chat->id, [
+            'first_name' => $user->first_name,
+            'last_name'  => $user->last_name ?? '',
+            'status'     => $status,
+        ]);
     }
 }
