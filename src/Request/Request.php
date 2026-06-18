@@ -8,15 +8,13 @@ use LaraGram\Laraquest\Methode as MethodeTrait;
 use LaraGram\Listening\Type;
 use LaraGram\Request\Files\FileBag;
 use LaraGram\Support\Collection;
-use LaraGram\Support\Facades\Log;
 use LaraGram\Support\Traits\Conditionable;
 use LaraGram\Support\Traits\Macroable;
 use RuntimeException;
 
 /**
- * @method array validate(array $rules, ...$params)
- * @method array validateWithBag(string $errorBag, array $rules, ...$params)
- * @method bool hasValidSignature(bool $absolute = true)
+ * @method \LaraGram\Request\ValidatedInput validate(array $rules, ...$params)
+ * @method \LaraGram\Request\ValidatedInput validateWithBag(string $errorBag, array $rules, ...$params)
  */
 class Request
 {
@@ -230,6 +228,7 @@ class Request
     /**
      * Get the match method.
      *
+     * @param  string  $method
      * @return string
      */
     public function isMethod($method)
@@ -296,6 +295,134 @@ class Request
     protected function getInputSource()
     {
         return $this->content;
+    }
+
+    /**
+     * Get the entire update as a nested associative array.
+     *
+     * @param  array|string|null  $keys
+     * @return array
+     */
+    public function all($keys = null)
+    {
+        $input = $this->toArray();
+
+        if (! $keys) {
+            return $input;
+        }
+
+        $results = [];
+
+        foreach (is_array($keys) ? $keys : func_get_args() as $key) {
+            data_set($results, $key, data_get($input, $key));
+        }
+
+        return $results;
+    }
+
+    /**
+     * Retrieve an input item from the update using "dot" notation.
+     *
+     * @param  string|null  $key
+     * @param  mixed  $default
+     * @return mixed
+     */
+    public function input($key = null, $default = null)
+    {
+        if (is_null($key)) {
+            return $this->all();
+        }
+
+        return data_get($this->toArray(), $key, $default);
+    }
+
+    /**
+     * Determine if the update contains a given input item key.
+     *
+     * @param  string|array  $key
+     * @return bool
+     */
+    public function has($key)
+    {
+        $keys = is_array($key) ? $key : func_get_args();
+
+        $input = $this->toArray();
+
+        foreach ($keys as $value) {
+            if (! data_get($input, $value)) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * Determine if the update is missing a given input item key.
+     *
+     * @param  string|array  $key
+     * @return bool
+     */
+    public function missing($key)
+    {
+        $keys = is_array($key) ? $key : func_get_args();
+
+        return ! $this->has($keys);
+    }
+
+    /**
+     * Get a subset containing the provided keys from the update.
+     *
+     * @param  array|mixed  $keys
+     * @return array
+     */
+    public function only($keys)
+    {
+        $keys = is_array($keys) ? $keys : func_get_args();
+
+        $results = [];
+        $input = $this->toArray();
+
+        foreach ($keys as $key) {
+            data_set($results, $key, data_get($input, $key));
+        }
+
+        return $results;
+    }
+
+    /**
+     * Get all of the update input except for a specified array of items.
+     *
+     * @param  array|mixed  $keys
+     * @return array
+     */
+    public function except($keys)
+    {
+        $keys = is_array($keys) ? $keys : func_get_args();
+
+        $results = $this->toArray();
+
+        foreach ($keys as $key) {
+            data_set($results, $key, null);
+        }
+
+        return $results;
+    }
+
+    /**
+     * Normalize the current update to a nested associative array.
+     *
+     * @return array
+     */
+    protected function toArray(): array
+    {
+        $source = $this->getInputSource();
+
+        if ($source === null) {
+            return [];
+        }
+
+        return json_decode(json_encode($source), true) ?? [];
     }
 
     /**
