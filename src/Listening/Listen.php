@@ -58,6 +58,20 @@ class Listen
     public $isFallback = false;
 
     /**
+     * Indicates whether the listen may run alongside other matching listens.
+     *
+     * @var bool
+     */
+    public bool $parallel = false;
+
+    /**
+     * Groups this parallel listen belongs to.
+     *
+     * @var string[]
+     */
+    public array $parallelGroups = [];
+
+    /**
      * The step name this listen is bound to.
      *
      * @var string|null
@@ -732,6 +746,20 @@ class Listen
     public function setFallback($isFallback)
     {
         $this->isFallback = $isFallback;
+
+        return $this;
+    }
+
+    /**
+     * Mark this listen as runnable in parallel with other matching listens.
+     *
+     * @param  string|string[]|null  $groups
+     * @return $this
+     */
+    public function parallel(string|array|null $groups = null)
+    {
+        $this->parallel = true;
+        $this->parallelGroups = $groups === null ? [] : array_values((array) $groups);
 
         return $this;
     }

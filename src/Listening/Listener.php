@@ -342,9 +342,26 @@ class Listener implements BindingRegistrar, RegistrarContract
             $this->mergeGroupAttributesIntoListen($listen);
         }
 
+        // A parallel group attribute marks every contained listen as parallel.
+        $action = $listen->getAction();
+        if (array_key_exists('parallel', $action)) {
+            $listen->parallel($action['parallel']);
+        }
+
         $this->addWhereClausesToListen($listen);
 
         return $listen;
+    }
+
+    /**
+     * Begin registering a group of listens that run in parallel.
+     *
+     * @param  string|string[]|null  $groups
+     * @return \LaraGram\Listening\ListenRegistrar
+     */
+    public function parallel(string|array|null $groups = null)
+    {
+        return (new ListenRegistrar($this))->parallel($groups);
     }
 
     /**
@@ -519,7 +536,32 @@ class Listener implements BindingRegistrar, RegistrarContract
      */
     public function dispatchToListen(Request $request)
     {
-        return $this->runListen($request, $this->findListen($request));
+        $listen = $this->findListen($request);
+
+        $response = $this->runListen($request, $listen);
+
+        $this->runParallelListens($request, $listen);
+
+        return $response;
+    }
+
+    /**
+     * Run any parallel-flagged listens that also match the request.
+     *
+     * @param  \LaraGram\Request\Request  $request
+     * @param  \LaraGram\Listening\Listen  $primary
+     * @return void
+     */
+    protected function runParallelListens(Request $request, Listen $primary)
+    {
+        foreach ($this->listens->matchParallel($request, $primary) as $listen) {
+            $listen->setContainer($this->container);
+            $listen->bind($request);
+
+            $this->events->dispatch(new ListenMatched($listen, $request));
+
+            $this->runListenWithinStack($listen, $request);
+        }
     }
 
     /**

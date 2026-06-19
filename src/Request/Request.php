@@ -193,7 +193,24 @@ class Request
             return $method;
         }
 
+        if (($method = $this->checkIfMethodIsPollUpdate())) {
+            return $method;
+        }
+
         return strtoupper(Type::findVerb($this->getUpdateType())?->value);
+    }
+
+    /**
+     * Check if the Update method is a top-level poll state update.
+     *
+     * @return false|string
+     */
+    protected function checkIfMethodIsPollUpdate()
+    {
+        if (isset($this->poll)) {
+            return 'UPDATE';
+        }
+        return false;
     }
 
     /**

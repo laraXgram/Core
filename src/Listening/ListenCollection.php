@@ -205,6 +205,59 @@ class ListenCollection extends AbstractListenCollection
     }
 
     /**
+     * Find parallel-flagged listens that should run alongside the primary.
+     *
+     * @param  \LaraGram\Request\Request  $request
+     * @param  \LaraGram\Listening\Listen  $primary
+     * @return \LaraGram\Listening\Listen[]
+     */
+    public function matchParallel(Request $request, Listen $primary)
+    {
+        $currentConnection = Request::getDefaultConnection();
+
+        $candidates = array_values(array_filter(
+            $this->get($request->method()),
+            fn ($l) => $l->parallel
+                && $l !== $primary
+                && ! $l->isStepListen()
+                && ! $l->isFallback
+                && $this->listenMatchesConnection($l, $currentConnection)
+                && $l->matches($request)
+        ));
+
+        $selected = [];
+
+        // Group-less parallel listens always co-run with the primary.
+        foreach ($candidates as $i => $l) {
+            if ($l->parallelGroups === []) {
+                $selected[] = $l;
+                unset($candidates[$i]);
+            }
+        }
+        $candidates = array_values($candidates);
+
+        // Seed the active group set from the primary, then grow transitively.
+        $activeGroups = $primary->parallel ? $primary->parallelGroups : [];
+
+        do {
+            $added = false;
+
+            foreach ($candidates as $i => $l) {
+                if (array_intersect($activeGroups, $l->parallelGroups)) {
+                    $selected[] = $l;
+                    $activeGroups = array_values(array_unique(
+                        array_merge($activeGroups, $l->parallelGroups)
+                    ));
+                    unset($candidates[$i]);
+                    $added = true;
+                }
+            }
+        } while ($added);
+
+        return $selected;
+    }
+
+    /**
      * Get listens from the collection by method.
      *
      * @param  string|null  $method
