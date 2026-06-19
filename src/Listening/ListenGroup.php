@@ -25,10 +25,11 @@ class ListenGroup
             'prefix' => static::formatPrefix($new, $old, $prependExistingPrefix),
             'where' => static::formatWhere($new, $old),
             'connection' => static::formatConnection($new, $old),
+            'for_connections' => static::formatForConnections($new, $old),
         ]);
 
         return array_merge_recursive(Arr::except(
-            $old, ['namespace', 'prefix', 'where', 'as', 'connection']
+            $old, ['namespace', 'prefix', 'where', 'as', 'connection', 'for_connections']
         ), $new);
     }
 
@@ -79,6 +80,18 @@ class ListenGroup
     protected static function formatConnection($new, $old)
     {
         return $new['connection'] ?? $old['connection'] ?? config('bot.default', 'bot');
+    }
+
+    /**
+     * Format the incoming bot connections filter for the new group attributes.
+     *
+     * @param  array  $new
+     * @param  array  $old
+     * @return array
+     */
+    protected static function formatForConnections($new, $old)
+    {
+        return $new['for_connections'] ?? $old['for_connections'] ?? ['*'];
     }
 
     /**

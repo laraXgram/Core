@@ -6,15 +6,15 @@ use Closure;
 use LaraGram\Laraquest\Updates as UpdatesTrait;
 use LaraGram\Laraquest\Methode as MethodeTrait;
 use LaraGram\Listening\Type;
+use LaraGram\Request\Files\FileBag;
 use LaraGram\Support\Collection;
 use LaraGram\Support\Traits\Conditionable;
 use LaraGram\Support\Traits\Macroable;
 use RuntimeException;
 
 /**
- * @method array validate(array $rules, ...$params)
- * @method array validateWithBag(string $errorBag, array $rules, ...$params)
- * @method bool hasValidSignature(bool $absolute = true)
+ * @method \LaraGram\Request\ValidatedInput validate(array $rules, ...$params)
+ * @method \LaraGram\Request\ValidatedInput validateWithBag(string $errorBag, array $rules, ...$params)
  */
 class Request
 {
@@ -64,6 +64,13 @@ class Request
 
     protected ?string $locale = null;
     protected string $defaultLocale = 'en';
+
+    /**
+     * Cached FileBag instance for the current update.
+     *
+     * @var FileBag|null
+     */
+    private ?FileBag $fileBag = null;
 
     public function __construct(array $request = [], array $server = [])
     {
@@ -186,7 +193,24 @@ class Request
             return $method;
         }
 
+        if (($method = $this->checkIfMethodIsPollUpdate())) {
+            return $method;
+        }
+
         return strtoupper(Type::findVerb($this->getUpdateType())?->value);
+    }
+
+    /**
+     * Check if the Update method is a top-level poll state update.
+     *
+     * @return false|string
+     */
+    protected function checkIfMethodIsPollUpdate()
+    {
+        if (isset($this->poll)) {
+            return 'UPDATE';
+        }
+        return false;
     }
 
     /**
@@ -221,6 +245,7 @@ class Request
     /**
      * Get the match method.
      *
+     * @param  string  $method
      * @return string
      */
     public function isMethod($method)
@@ -287,6 +312,134 @@ class Request
     protected function getInputSource()
     {
         return $this->content;
+    }
+
+    /**
+     * Get the entire update as a nested associative array.
+     *
+     * @param  array|string|null  $keys
+     * @return array
+     */
+    public function all($keys = null)
+    {
+        $input = $this->toArray();
+
+        if (! $keys) {
+            return $input;
+        }
+
+        $results = [];
+
+        foreach (is_array($keys) ? $keys : func_get_args() as $key) {
+            data_set($results, $key, data_get($input, $key));
+        }
+
+        return $results;
+    }
+
+    /**
+     * Retrieve an input item from the update using "dot" notation.
+     *
+     * @param  string|null  $key
+     * @param  mixed  $default
+     * @return mixed
+     */
+    public function input($key = null, $default = null)
+    {
+        if (is_null($key)) {
+            return $this->all();
+        }
+
+        return data_get($this->toArray(), $key, $default);
+    }
+
+    /**
+     * Determine if the update contains a given input item key.
+     *
+     * @param  string|array  $key
+     * @return bool
+     */
+    public function has($key)
+    {
+        $keys = is_array($key) ? $key : func_get_args();
+
+        $input = $this->toArray();
+
+        foreach ($keys as $value) {
+            if (! data_get($input, $value)) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * Determine if the update is missing a given input item key.
+     *
+     * @param  string|array  $key
+     * @return bool
+     */
+    public function missing($key)
+    {
+        $keys = is_array($key) ? $key : func_get_args();
+
+        return ! $this->has($keys);
+    }
+
+    /**
+     * Get a subset containing the provided keys from the update.
+     *
+     * @param  array|mixed  $keys
+     * @return array
+     */
+    public function only($keys)
+    {
+        $keys = is_array($keys) ? $keys : func_get_args();
+
+        $results = [];
+        $input = $this->toArray();
+
+        foreach ($keys as $key) {
+            data_set($results, $key, data_get($input, $key));
+        }
+
+        return $results;
+    }
+
+    /**
+     * Get all of the update input except for a specified array of items.
+     *
+     * @param  array|mixed  $keys
+     * @return array
+     */
+    public function except($keys)
+    {
+        $keys = is_array($keys) ? $keys : func_get_args();
+
+        $results = $this->toArray();
+
+        foreach ($keys as $key) {
+            data_set($results, $key, null);
+        }
+
+        return $results;
+    }
+
+    /**
+     * Normalize the current update to a nested associative array.
+     *
+     * @return array
+     */
+    protected function toArray(): array
+    {
+        $source = $this->getInputSource();
+
+        if ($source === null) {
+            return [];
+        }
+
+        return json_decode(json_encode($source), true) ?? [];
     }
 
     /**
@@ -373,6 +526,64 @@ class Request
             $listen->methods(),
             [$listen->pattern(), user()->id]
         )));
+    }
+
+    /**
+     * Determine whether the current update contains any media file.
+     *
+     * Checks for the presence of photo, video, document, sticker, audio,
+     * voice, video_note, animation, or live_photo in the message.
+     *
+     * @return bool
+     */
+    public function hasFile(): bool
+    {
+        $message = $this->message ?? null;
+
+        if ($message === null) {
+            return false;
+        }
+
+        return isset($message->photo)
+            || isset($message->video)
+            || isset($message->document)
+            || isset($message->sticker)
+            || isset($message->audio)
+            || isset($message->voice)
+            || isset($message->video_note)
+            || isset($message->animation)
+            || isset($message->live_photo)
+            || isset($message->paid_media);
+    }
+
+    /**
+     * Get the FileBag for the current update.
+     *
+     * @return FileBag|null
+     */
+    public function file(): ?FileBag
+    {
+        if ($this->fileBag !== null) {
+            return $this->fileBag;
+        }
+
+        $message = $this->message ?? null;
+
+        if ($message === null) {
+            return null;
+        }
+
+        $cfg = $this->resolveConfig();
+        $token = $this->resolveToken($this->resolveConnection());
+        $apiServer = $cfg['api_server'];
+
+        $bag = FileBag::fromMessage($message, $token, $apiServer);
+
+        if ($bag->isEmpty()) {
+            return null;
+        }
+
+        return $this->fileBag = $bag;
     }
 
     /**

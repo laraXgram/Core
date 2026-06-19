@@ -9,6 +9,7 @@ use LaraGram\Contracts\Events\Dispatcher;
 use LaraGram\Foundation\Exceptions\Renderer\Listener;
 use LaraGram\Queue\Events\JobAttempted;
 use LaraGram\Request\Request;
+use LaraGram\Request\ValidatedInput;
 use LaraGram\Support\AggregateServiceProvider;
 use LaraGram\Support\Defer\DeferredCallbackCollection;
 use LaraGram\Validation\ValidationException;
@@ -63,7 +64,9 @@ class FoundationServiceProvider extends AggregateServiceProvider
     public function registerRequestValidation()
     {
         Request::macro('validate', function (array $rules, ...$params) {
-            return validator($this->all(), $rules, ...$params)->validate();
+            return new ValidatedInput(
+                validator($this->all(), $rules, ...$params)->validate()
+            );
         });
 
         Request::macro('validateWithBag', function (string $errorBag, array $rules, ...$params) {

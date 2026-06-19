@@ -21,13 +21,17 @@ class Make
      *
      * @param string $text
      * @param string $url
+     * @param string $style Must be one of “danger” (red), “success” (green) or “primary” (blue). If omitted, then an app-specific style is used.
+     * @param int|string $icon_custom_emoji_id
      * @return array
      */
-    public static function url(string $text, string $url): array
+    public static function url(string $text, string $url, string $style = '', int|string $icon_custom_emoji_id = 0): array
     {
         return [
             'text' => $text,
-            'url' => $url
+            'url' => $url,
+            'style' => $style,
+            'icon_custom_emoji_id' => $icon_custom_emoji_id
         ];
     }
 
@@ -36,13 +40,17 @@ class Make
      *
      * @param string $text
      * @param string $callback_data
+     * @param string $style Must be one of “danger” (red), “success” (green) or “primary” (blue). If omitted, then an app-specific style is used.
+     * @param int|string $icon_custom_emoji_id
      * @return array
      */
-    public static function callbackData(string $text, string $callback_data): array
+    public static function callbackData(string $text, string $callback_data, string $style = '', int|string $icon_custom_emoji_id = 0): array
     {
         return [
             'text' => $text,
-            'callback_data' => $callback_data
+            'callback_data' => $callback_data,
+            'style' => $style,
+            'icon_custom_emoji_id' => $icon_custom_emoji_id
         ];
     }
 
@@ -54,9 +62,11 @@ class Make
      * @param string|null $forward_text
      * @param string|null $bot_username
      * @param bool|null $request_write_access
+     * @param string $style Must be one of “danger” (red), “success” (green) or “primary” (blue). If omitted, then an app-specific style is used.
+     * @param int|string $icon_custom_emoji_id
      * @return array
      */
-    public static function loginUrl(string $text, string $url, string $forward_text = null, string $bot_username = null, bool $request_write_access = null): array
+    public static function loginUrl(string $text, string $url, string $forward_text = null, string $bot_username = null, bool $request_write_access = null, string $style = '', int|string $icon_custom_emoji_id = 0): array
     {
         return [
             'text' => $text,
@@ -65,7 +75,9 @@ class Make
                 'forward_text' => $forward_text,
                 'bot_username' => $bot_username,
                 'request_write_access' => $request_write_access,
-            ]
+            ],
+            'style' => $style,
+            'icon_custom_emoji_id' => $icon_custom_emoji_id
         ];
     }
 
@@ -75,13 +87,17 @@ class Make
      *
      * @param string $text
      * @param string $switch_inline_query
+     * @param string $style Must be one of “danger” (red), “success” (green) or “primary” (blue). If omitted, then an app-specific style is used.
+     * @param int|string $icon_custom_emoji_id
      * @return array
      */
-    public static function switchInlineQuery(string $text, string $switch_inline_query): array
+    public static function switchInlineQuery(string $text, string $switch_inline_query, string $style = '', int|string $icon_custom_emoji_id = 0): array
     {
         return [
             'text' => $text,
-            'switch_inline_query' => $switch_inline_query
+            'switch_inline_query' => $switch_inline_query,
+            'style' => $style,
+            'icon_custom_emoji_id' => $icon_custom_emoji_id
         ];
     }
 
@@ -91,13 +107,17 @@ class Make
      *
      * @param string $text
      * @param string $switch_inline_query_current_chat
+     * @param string $style Must be one of “danger” (red), “success” (green) or “primary” (blue). If omitted, then an app-specific style is used.
+     * @param int|string $icon_custom_emoji_id
      * @return array
      */
-    public static function switchInlineQueryCurrentChat(string $text, string $switch_inline_query_current_chat): array
+    public static function switchInlineQueryCurrentChat(string $text, string $switch_inline_query_current_chat, string $style = '', int|string $icon_custom_emoji_id = 0): array
     {
         return [
             'text' => $text,
-            'switch_inline_query_current_chat' => $switch_inline_query_current_chat
+            'switch_inline_query_current_chat' => $switch_inline_query_current_chat,
+            'style' => $style,
+            'icon_custom_emoji_id' => $icon_custom_emoji_id
         ];
     }
 
@@ -110,16 +130,20 @@ class Make
      * @param array $options The options can be an array of
      *  `allow_user_chats` | `allow_bot_chats` | `allow_group_chats` | `allow_channel_chats`
      *  according to the <a href="https://core.telegram.org/bots/api#switchinlinequerychosenchat">documentation</a>.
+     * @param string $style Must be one of “danger” (red), “success” (green) or “primary” (blue). If omitted, then an app-specific style is used.
+     * @param int|string|null $icon_custom_emoji_id
      * @return array
      */
-    public static function switchInlineQueryChosenChat(string $text, string $query = '', array $options = []): array
+    public static function switchInlineQueryChosenChat(string $text, string $query = '', array $options = [], string $style = '', int|string $icon_custom_emoji_id = null): array
     {
         return [
             'text' => $text,
             'switch_inline_query_chosen_chat' => [
                 'query' => $query,
                 ...$options
-            ]
+            ],
+            'style' => $style,
+            'icon_custom_emoji_id' => $icon_custom_emoji_id
         ];
     }
 
@@ -128,15 +152,19 @@ class Make
      *
      * @param string $text
      * @param string $copy
+     * @param string $style Must be one of “danger” (red), “success” (green) or “primary” (blue). If omitted, then an app-specific style is used.
+     * @param int|string $icon_custom_emoji_id
      * @return array
      */
-    public static function copyText(string $text, string $copy): array
+    public static function copyText(string $text, string $copy, string $style = '', int|string $icon_custom_emoji_id = 0): array
     {
         return [
             'text' => $text,
             'copy_text' => [
                 'text' => $copy
-            ]
+            ],
+            'style' => $style,
+            'icon_custom_emoji_id' => $icon_custom_emoji_id
         ];
     }
 
@@ -146,12 +174,16 @@ class Make
      * Text of the button. If none of the optional fields are used, it will be sent as a message when the button is pressed.
      *
      * @param string $text
+     * @param string $style Must be one of “danger” (red), “success” (green) or “primary” (blue). If omitted, then an app-specific style is used.
+     * @param int|string $icon_custom_emoji_id
      * @return array
      */
-    public static function text(string $text): array
+    public static function text(string $text, string $style = '', int|string $icon_custom_emoji_id = 0): array
     {
         return [
-            'text' => $text
+            'text' => $text,
+            'style' => $style,
+            'icon_custom_emoji_id' => $icon_custom_emoji_id
         ];
     }
 
@@ -159,13 +191,17 @@ class Make
      * send a Pay button. Substrings “⭐” and “XTR” in the button's text will be replaced with a Telegram Star icon.
      *
      * @param string $text
+     * @param string $style Must be one of “danger” (red), “success” (green) or “primary” (blue). If omitted, then an app-specific style is used.
+     * @param int|string $icon_custom_emoji_id
      * @return array
      */
-    public static function pay(string $text): array
+    public static function pay(string $text, string $style = '', int|string $icon_custom_emoji_id = 0): array
     {
         return [
             'text' => $text,
-            'pay' => true
+            'pay' => true,
+            'style' => $style,
+            'icon_custom_emoji_id' => $icon_custom_emoji_id
         ];
     }
 
@@ -179,9 +215,11 @@ class Make
      * @param array $options The options can be an array of
      * `user_is_bot` | `user_is_premium` | `request_name` | `request_username` | `request_photo`
      * according to the <a href="https://core.telegram.org/bots/api#keyboardbuttonrequestusers">documentation</a>.
+     * @param string $style Must be one of “danger” (red), “success” (green) or “primary” (blue). If omitted, then an app-specific style is used.
+     * @param int|string $icon_custom_emoji_id
      * @return array
      */
-    public static function requestUsers(string $text, int $id = null, int $max_quantity = 1, array $options = []): array
+    public static function requestUsers(string $text, int $id = null, int $max_quantity = 1, array $options = [], string $style = '', int|string $icon_custom_emoji_id = 0): array
     {
         return [
             'text' => $text,
@@ -189,7 +227,9 @@ class Make
                 'request_id' => is_null($id) ? rand(1_000_000_000, 9_999_999_999) : $id,
                 'max_quantity' => $max_quantity,
                 ...$options
-            ]
+            ],
+            'style' => $style,
+            'icon_custom_emoji_id' => $icon_custom_emoji_id
         ];
     }
 
@@ -204,16 +244,20 @@ class Make
      * `chat_is_created` | `user_administrator_rights` | `bot_administrator_rights` |
      * `bot_is_member` | `request_title` | `request_username` | `request_photo`
      * according to the <a href="https://core.telegram.org/bots/api#keyboardbuttonrequestchat">documentation</a>.
+     * @param string $style Must be one of “danger” (red), “success” (green) or “primary” (blue). If omitted, then an app-specific style is used.
+     * @param int|string $icon_custom_emoji_id
      * @return array
      */
-    public static function requestChat(string $text, int $id = null, array $options = []): array
+    public static function requestChat(string $text, int $id = null, array $options = [], string $style = '', int|string $icon_custom_emoji_id = 0): array
     {
         return [
             'text' => $text,
             'request_chat' => [
                 'request_id' => is_null($id) ? rand(1_000_000_000, 9_999_999_999) : $id,
                 ...$options
-            ]
+            ],
+            'style' => $style,
+            'icon_custom_emoji_id' => $icon_custom_emoji_id
         ];
     }
 
@@ -222,13 +266,17 @@ class Make
      * Available in private chats only.
      *
      * @param string $text
+     * @param string $style Must be one of “danger” (red), “success” (green) or “primary” (blue). If omitted, then an app-specific style is used.
+     * @param int|string $icon_custom_emoji_id
      * @return array
      */
-    public static function requestContact(string $text): array
+    public static function requestContact(string $text, string $style = '', int|string $icon_custom_emoji_id = 0): array
     {
         return [
             'text' => $text,
-            'request_contact' => true
+            'request_contact' => true,
+            'style' => $style,
+            'icon_custom_emoji_id' => $icon_custom_emoji_id
         ];
     }
 
@@ -237,13 +285,17 @@ class Make
      * Available in private chats only.
      *
      * @param string $text
+     * @param string $style Must be one of “danger” (red), “success” (green) or “primary” (blue). If omitted, then an app-specific style is used.
+     * @param int|string $icon_custom_emoji_id
      * @return array
      */
-    public static function requestLocation(string $text): array
+    public static function requestLocation(string $text, string $style = '', int|string $icon_custom_emoji_id = 0): array
     {
         return [
             'text' => $text,
-            'request_location' => true
+            'request_location' => true,
+            'style' => $style,
+            'icon_custom_emoji_id' => $icon_custom_emoji_id
         ];
     }
 
@@ -253,15 +305,19 @@ class Make
      *
      * @param string $text
      * @param string $type Type can be `regular` or `quiz`, leave blank for both.
+     * @param string $style Must be one of “danger” (red), “success” (green) or “primary” (blue). If omitted, then an app-specific style is used.
+     * @param int|string $icon_custom_emoji_id
      * @return array
      */
-    public static function requestPoll(string $text, string $type = ''): array
+    public static function requestPoll(string $text, string $type = '', string $style = '', int|string $icon_custom_emoji_id = 0): array
     {
         return [
             'text' => $text,
             'request_poll' => [
                 'type' => $type
-            ]
+            ],
+            'style' => $style,
+            'icon_custom_emoji_id' => $icon_custom_emoji_id
         ];
     }
 
@@ -271,15 +327,19 @@ class Make
      *
      * @param string $text
      * @param string $url
+     * @param string $style Must be one of “danger” (red), “success” (green) or “primary” (blue). If omitted, then an app-specific style is used.
+     * @param int|string $icon_custom_emoji_id
      * @return array
      */
-    public static function webApp(string $text, string $url): array
+    public static function webApp(string $text, string $url, string $style = '', int|string $icon_custom_emoji_id = 0): array
     {
         return [
             'text' => $text,
             'web_app' => [
                 'url' => $url
-            ]
+            ],
+            'style' => $style,
+            'icon_custom_emoji_id' => $icon_custom_emoji_id
         ];
     }
 }

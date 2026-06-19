@@ -57,7 +57,7 @@ class ArrayStore extends TaggableStore implements LockProvider
 
         $expiresAt = $item['expiresAt'] ?? 0;
 
-        if ($expiresAt !== 0 && (round(microtime(true) * 1000)) >= $expiresAt) {
+        if ($expiresAt !== 0 && (round(microtime(true) * 1000) / 1000) >= $expiresAt) {
             $this->forget($key);
 
             return;

@@ -1,5 +1,7 @@
 <?php
 
+use LaraGram\Contracts\Support\DeferringDisplayableValue;
+use LaraGram\Contracts\Support\Htmlable;
 use LaraGram\Database\Eloquent\Model;
 use LaraGram\Support\Arr;
 use LaraGram\Support\Env;
@@ -111,6 +113,31 @@ if (! function_exists('class_uses_recursive')) {
         }
 
         return array_unique($results);
+    }
+}
+
+if (! function_exists('e')) {
+    /**
+     * Encode HTML special characters in a string.
+     *
+     * @param  \LaraGram\Contracts\Support\DeferringDisplayableValue|\LaraGram\Contracts\Support\Htmlable|\BackedEnum|string|int|float|null  $value
+     * @param  bool  $doubleEncode
+     */
+    function e($value, $doubleEncode = true): string
+    {
+        if ($value instanceof DeferringDisplayableValue) {
+            $value = $value->resolveDisplayableValue();
+        }
+
+        if ($value instanceof Htmlable) {
+            return $value->toHtml() ?? '';
+        }
+
+        if ($value instanceof BackedEnum) {
+            $value = $value->value;
+        }
+
+        return htmlspecialchars($value ?? '', ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8', $doubleEncode);
     }
 }
 

@@ -61,12 +61,16 @@ class ListenCollection extends AbstractListenCollection
     {
         $methods = $listen->methods();
         $pattern = $listen->pattern();
+        $connections = $listen->getForConnections();
+        $collectionKey = (count($connections) === 1 && $connections[0] === '*')
+            ? $pattern
+            : $pattern . '@' . implode(',', $connections);
 
         foreach ($methods as $method) {
-            $this->listens[$method][$pattern] = $listen;
+            $this->listens[$method][$collectionKey] = $listen;
         }
 
-        $this->allListens[implode('|', $methods).$pattern] = $listen;
+        $this->allListens[implode('|', $methods) . $collectionKey] = $listen;
     }
 
     /**
@@ -150,14 +154,107 @@ class ListenCollection extends AbstractListenCollection
      */
     public function match(Request $request)
     {
-        $listens = $this->get($request->method());
+        $currentConnection = Request::getDefaultConnection();
 
-        // First, we will see if we can find a matching listen for this current request
-        // method. If we can, great, we can just return it so that it can be called
-        // by the consumer. Otherwise we will check for listens with another verb.
-        $listen = $this->matchAgainstListens($listens, $request);
+        if (Listener::$enableStepListensPriorityRegister) {
+            // When enabled, step listens are matched in definition order
+            // mixed with normal listens - registration order wins.
+            $candidates = array_values(array_filter($this->getListens(), function ($l) use ($request, $currentConnection) {
+                return (in_array($request->method(), $l->methods()) || $l->isStepListen())
+                    && $this->listenMatchesConnection($l, $currentConnection);
+            }));
+
+            $listen = $this->matchAgainstListens($candidates, $request);
+
+            return $this->handleMatchedListen($request, $listen);
+        }
+
+        $methodListens = $this->get($request->method());
+
+        $normalListens = array_values(array_filter(
+            $methodListens,
+            fn ($l) => ! $l->isStepListen() && ! $l->isFallback
+                && $this->listenMatchesConnection($l, $currentConnection)
+        ));
+
+        $listen = $this->matchAgainstListens($normalListens, $request);
+
+        if (! is_null($listen)) {
+            return $this->handleMatchedListen($request, $listen);
+        }
+
+        $stepListens = array_values(array_filter(
+            $this->getListens(),
+            fn ($l) => $l->isStepListen() && $this->listenMatchesConnection($l, $currentConnection)
+        ));
+
+        $listen = $this->matchAgainstListens($stepListens, $request);
+
+        if (! is_null($listen)) {
+            return $this->handleMatchedListen($request, $listen);
+        }
+
+        $fallbackListens = array_values(array_filter(
+            $methodListens,
+            fn ($l) => $l->isFallback && $this->listenMatchesConnection($l, $currentConnection)
+        ));
+
+        $listen = $this->matchAgainstListens($fallbackListens, $request);
 
         return $this->handleMatchedListen($request, $listen);
+    }
+
+    /**
+     * Find overlap-flagged listens that should run alongside the primary.
+     *
+     * @param  \LaraGram\Request\Request  $request
+     * @param  \LaraGram\Listening\Listen  $primary
+     * @return \LaraGram\Listening\Listen[]
+     */
+    public function matchOverlap(Request $request, Listen $primary)
+    {
+        $currentConnection = Request::getDefaultConnection();
+
+        $candidates = array_values(array_filter(
+            $this->get($request->method()),
+            fn ($l) => $l->overlap
+                && $l !== $primary
+                && ! $l->isStepListen()
+                && ! $l->isFallback
+                && $this->listenMatchesConnection($l, $currentConnection)
+                && $l->matches($request)
+        ));
+
+        $selected = [];
+
+        // Group-less overlap listens always co-run with the primary.
+        foreach ($candidates as $i => $l) {
+            if ($l->overlapGroups === []) {
+                $selected[] = $l;
+                unset($candidates[$i]);
+            }
+        }
+        $candidates = array_values($candidates);
+
+        // Seed the active group set from the primary, then grow transitively.
+        $activeGroups = $primary->overlap ? $primary->overlapGroups : [];
+
+        do {
+            $added = false;
+
+            foreach ($candidates as $i => $l) {
+                if (array_intersect($activeGroups, $l->overlapGroups)) {
+                    $selected[] = $l;
+                    $activeGroups = array_values(array_unique(
+                        array_merge($activeGroups, $l->overlapGroups)
+                    ));
+                    unset($candidates[$i]);
+                    $added = true;
+                }
+            }
+        } while ($added);
+
+        return $selected;
     }
 
     /**

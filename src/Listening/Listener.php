@@ -138,6 +138,15 @@ class Listener implements BindingRegistrar, RegistrarContract
     ];
 
     /**
+     * When true, step listens are matched in definition order mixed with
+     * normal listens. When false (default), normal listens are matched
+     * first, then step listens, then fallbacks.
+     *
+     * @var bool
+     */
+    public static bool $enableStepListensPriorityRegister = false;
+
+    /**
      * Create a new Listener instance.
      *
      * @param  \LaraGram\Contracts\Events\Dispatcher  $events
@@ -333,9 +342,26 @@ class Listener implements BindingRegistrar, RegistrarContract
             $this->mergeGroupAttributesIntoListen($listen);
         }
 
+        // A overlap group attribute marks every contained listen as overlap.
+        $action = $listen->getAction();
+        if (array_key_exists('overlap', $action)) {
+            $listen->overlap($action['overlap']);
+        }
+
         $this->addWhereClausesToListen($listen);
 
         return $listen;
+    }
+
+    /**
+     * Begin registering a group of listens that run in overlap.
+     *
+     * @param  string|string[]|null  $groups
+     * @return \LaraGram\Listening\ListenRegistrar
+     */
+    public function overlap(string|array|null $groups = null)
+    {
+        return (new ListenRegistrar($this))->overlap($groups);
     }
 
     /**
@@ -510,7 +536,32 @@ class Listener implements BindingRegistrar, RegistrarContract
      */
     public function dispatchToListen(Request $request)
     {
-        return $this->runListen($request, $this->findListen($request));
+        $listen = $this->findListen($request);
+
+        $response = $this->runListen($request, $listen);
+
+        $this->runOverlapListens($request, $listen);
+
+        return $response;
+    }
+
+    /**
+     * Run any overlap-flagged listens that also match the request.
+     *
+     * @param  \LaraGram\Request\Request  $request
+     * @param  \LaraGram\Listening\Listen  $primary
+     * @return void
+     */
+    protected function runOverlapListens(Request $request, Listen $primary)
+    {
+        foreach ($this->listens->matchOverlap($request, $primary) as $listen) {
+            $listen->setContainer($this->container);
+            $listen->bind($request);
+
+            $this->events->dispatch(new ListenMatched($listen, $request));
+
+            $this->runListenWithinStack($listen, $request);
+        }
     }
 
     /**
@@ -1200,6 +1251,19 @@ class Listener implements BindingRegistrar, RegistrarContract
     public function setContainer(Container $container)
     {
         $this->container = $container;
+
+        return $this;
+    }
+
+    /**
+     * Enable or disable step listens priority registration.
+     *
+     * @param bool $enable
+     * @return $this
+     */
+    public function enableStepListensPriorityRegister(bool $enable = true)
+    {
+        self::$enableStepListensPriorityRegister = $enable;
 
         return $this;
     }

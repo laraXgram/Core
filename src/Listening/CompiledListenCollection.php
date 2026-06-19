@@ -3,8 +3,6 @@
 namespace LaraGram\Listening;
 
 use LaraGram\Container\Container;
-use LaraGram\Listening\Exceptions\MethodNotAllowedException;
-use LaraGram\Listening\Exceptions\ResourceNotFoundException;
 use LaraGram\Request\Request;
 use LaraGram\Support\Collection;
 
@@ -30,6 +28,13 @@ class CompiledListenCollection extends AbstractListenCollection
      * @var \LaraGram\Listening\ListenCollection|null
      */
     protected $listens;
+
+    /**
+     * Memoized full ListenCollection rehydrated from the cached attributes.
+     *
+     * @var \LaraGram\Listening\ListenCollection|null
+     */
+    protected $rehydrated = null;
 
     /**
      * The listener instance used by the listen.
@@ -67,6 +72,9 @@ class CompiledListenCollection extends AbstractListenCollection
      */
     public function add(Listen $listen)
     {
+        // Invalidate the memoized rehydration so the new listen is matched.
+        $this->rehydrated = null;
+
         return $this->listens->add($listen);
     }
 
@@ -104,37 +112,48 @@ class CompiledListenCollection extends AbstractListenCollection
      */
     public function match(Request $request)
     {
-        $matcher = new CompiledPatternMatcher(
-            $this->compiled, (new RequestContext)->fromRequest($request), $this->attributes
-        );
+        return $this->rehydrated()->match($request);
+    }
 
-        $listen = null;
+    /**
+     * Find overlap-flagged listens that should run alongside the primary.
+     *
+     * @param  \LaraGram\Request\Request  $request
+     * @param  \LaraGram\Listening\Listen  $primary
+     * @return \LaraGram\Listening\Listen[]
+     */
+    public function matchOverlap(Request $request, Listen $primary)
+    {
+        return $this->rehydrated()->matchOverlap($request, $primary);
+    }
 
-        try {
-            if ($result = $matcher->matchRequest($request)) {
-                $listen = $this->getByName($result['_listen']);
-            }
-        } catch (ResourceNotFoundException|MethodNotAllowedException) {
-            try {
-                return $this->listens->match($request);
-            } catch (\Exception) {
-                //
-            }
+    /**
+     * Build (once) a real ListenCollection from the cached attributes plus any
+     * listens added dynamically after the cache was loaded.
+     *
+     * Matching is delegated to this collection so cached and uncached dispatch
+     * behave identically – the cache only saves the cost of parsing the listen
+     * definition files, not the matching semantics (field/verb/tag/overlap).
+     *
+     * @return \LaraGram\Listening\ListenCollection
+     */
+    protected function rehydrated()
+    {
+        if ($this->rehydrated !== null) {
+            return $this->rehydrated;
         }
 
-        if ($listen && $listen->isFallback) {
-            try {
-                $dynamicListen = $this->listens->match($request);
+        $collection = new ListenCollection();
 
-                if (! $dynamicListen->isFallback) {
-                    $listen = $dynamicListen;
-                }
-            } catch (\Exception) {
-                //
-            }
+        foreach ($this->attributes as $attributes) {
+            $collection->add($this->newListen($attributes));
         }
 
-        return $this->handleMatchedListen($request, $listen);
+        foreach ($this->listens->getListens() as $listen) {
+            $collection->add($listen);
+        }
+
+        return $this->rehydrated = $collection;
     }
 
     /**
@@ -262,14 +281,21 @@ class CompiledListenCollection extends AbstractListenCollection
             $baseUri = ($prefix ?? '').$attributes['pattern'];
         }
 
-        return $this->listener->newListen($attributes['methods'], $baseUri, $attributes['action'])
+        $listen = $this->listener->newListen($attributes['methods'], $baseUri, $attributes['action'])
             ->setFallback($attributes['fallback'])
+            ->setStepName($attributes['stepName'] ?? null)
             ->setDefaults($attributes['defaults'])
             ->setWheres($attributes['wheres'])
             ->setBindingFields($attributes['bindingFields'])
             ->connection($attributes['action']['connection'])
             ->block($attributes['lockSeconds'] ?? null, $attributes['waitSeconds'] ?? null)
             ->withTrashed($attributes['withTrashed'] ?? false);
+
+        if (! empty($attributes['overlap'])) {
+            $listen->overlap($attributes['overlapGroups'] ?? []);
+        }
+
+        return $listen;
     }
 
     /**

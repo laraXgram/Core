@@ -3,14 +3,21 @@
 namespace LaraGram\Filesystem;
 
 use Closure;
+use LaraGram\Support\Arr;
 use LaraGram\Contracts\Filesystem\Factory as FactoryContract;
 use InvalidArgumentException;
+use LaraGram\Contracts\Filesystem\FilesystemAdapter as FilesystemAdapterContract;
+use LaraGram\Filesystem\UnixVisibility\PortableVisibilityConverter;
+use LaraGram\Support\RebindsCallbacksToSelf;
+use function LaraGram\Support\enum_value;
 
 /**
  * @mixin \LaraGram\Contracts\Filesystem\Filesystem
  */
 class FilesystemManager implements FactoryContract
 {
+    use RebindsCallbacksToSelf;
+
     /**
      * The application instance.
      *
@@ -57,12 +64,12 @@ class FilesystemManager implements FactoryContract
     /**
      * Get a filesystem instance.
      *
-     * @param  string|null  $name
+     * @param  \UnitEnum|string|null  $name
      * @return \LaraGram\Contracts\Filesystem\Filesystem
      */
     public function disk($name = null)
     {
-        $name = $name ?: $this->getDefaultDriver();
+        $name = enum_value($name) ?: $this->getDefaultDriver();
 
         return $this->disks[$name] = $this->get($name);
     }
@@ -136,10 +143,44 @@ class FilesystemManager implements FactoryContract
     }
 
     /**
+     * Create an instance of the local driver.
+     *
+     * @param  array  $config
+     * @param  string  $name
+     * @return LocalFilesystemAdapter
+     */
+    public function createLocalDriver(array $config, string $name = 'local')
+    {
+        $visibility = PortableVisibilityConverter::fromArray(
+            $config['permissions'] ?? [],
+            $config['directory_visibility'] ?? $config['visibility'] ?? Visibility::PRIVATE
+        );
+
+        $links = ($config['links'] ?? null) === 'skip'
+            ? FlysystemLocalFilesystemAdapter::SKIP_LINKS
+            : FlysystemLocalFilesystemAdapter::DISALLOW_LINKS;
+
+        $adapter = new FlysystemLocalFilesystemAdapter(
+            $config['root'], $visibility, $config['lock'] ?? LOCK_EX, $links
+        );
+
+        return (new LocalFilesystemAdapter(
+            $this->createFlysystem($adapter, $config), $adapter, $config
+        ))->diskName(
+            $name
+        )->shouldServeSignedUrls(
+            $config['serve'] ?? false,
+            fn () => $this->app['url'],
+        );
+    }
+
+    /**
      * Create a scoped driver.
      *
      * @param  array  $config
-     * @return \LaraGram\Contracts\Filesystem\Filesystem|\LaraGram\Support\HigherOrderTapProxy
+     * @return \LaraGram\Contracts\Filesystem\Filesystem
+     *
+     * @throws \InvalidArgumentException
      */
     public function createScopedDriver(array $config)
     {
@@ -152,13 +193,57 @@ class FilesystemManager implements FactoryContract
         return $this->build(tap(
             is_string($config['disk']) ? $this->getConfig($config['disk']) : $config['disk'],
             function (&$parent) use ($config) {
-                $parent['prefix'] = $config['prefix'];
+                if (empty($parent['prefix'])) {
+                    $parent['prefix'] = $config['prefix'];
+                } else {
+                    $separator = $parent['directory_separator'] ?? DIRECTORY_SEPARATOR;
+
+                    $parentPrefix = rtrim($parent['prefix'], $separator);
+                    $scopedPrefix = ltrim($config['prefix'], $separator);
+
+                    $parent['prefix'] = "{$parentPrefix}{$separator}{$scopedPrefix}";
+                }
 
                 if (isset($config['visibility'])) {
                     $parent['visibility'] = $config['visibility'];
                 }
+
+                if (isset($config['throw'])) {
+                    $parent['throw'] = $config['throw'];
+                }
             }
         ));
+    }
+
+    /**
+     * Create a Flysystem instance with the given adapter.
+     *
+     * @param  \LaraGram\Contracts\Filesystem\FilesystemAdapter  $adapter
+     * @param  array  $config
+     * @return \LaraGram\Contracts\Filesystem\FilesystemOperator
+     */
+    protected function createFlysystem(FilesystemAdapterContract $adapter, array $config)
+    {
+        if ($config['read-only'] ?? false) {
+            $adapter = new ReadOnlyFilesystemAdapter($adapter);
+        }
+
+        if (! empty($config['prefix'])) {
+            $adapter = new PathPrefixedAdapter($adapter, $config['prefix']);
+        }
+
+        if (str_contains($config['endpoint'] ?? '', 'r2.cloudflarestorage.com')) {
+            $config['retain_visibility'] = false;
+        }
+
+        return new Flysystem($adapter, Arr::only($config, [
+            'directory_visibility',
+            'disable_asserts',
+            'retain_visibility',
+            'temporary_url',
+            'url',
+            'visibility',
+        ]));
     }
 
     /**

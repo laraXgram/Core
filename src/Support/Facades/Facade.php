@@ -166,6 +166,7 @@ abstract class Facade
             'Schedule' => Schedule::class,
             'Schema' => Schema::class,
             'Step' => Step::class,
+            'Storage' => Storage::class,
             'Str' => Str::class,
             'Template' => Template::class,
             'Validator' => Validator::class,
