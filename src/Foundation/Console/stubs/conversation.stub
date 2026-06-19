@@ -1,0 +1,46 @@
+<?php
+
+use LaraGram\Conversation\Conversation as BaseConversation;
+use LaraGram\Conversation\Questioner;
+use LaraGram\Request\Request;
+use LaraGram\Support\Facades\Conversation;
+
+return new class extends BaseConversation
+{
+    /**
+     * Declare the conversation's questions.
+     */
+    public function start(): void
+    {
+        Conversation::create(function (Questioner $questioner) {
+            $questioner->ask('What is your name?')
+                ->name('name')
+                ->type('text')
+                ->validate('required|string|min:3');
+        });
+    }
+
+    /**
+     * Handle the conversation completing.
+     *
+     * @param  array<string, mixed>  $answers
+     */
+    public function onComplete(Request $request, array $answers): void
+    {
+        $request->sendMessage(
+            chat()?->id ?? user()->id,
+            'Thanks, '.$answers['name'].'!'
+        );
+    }
+
+    /**
+     * Handle the conversation being cancelled.
+     */
+    public function onCancel(Request $request, string $reason): void
+    {
+        $request->sendMessage(
+            chat()?->id ?? user()->id,
+            'Conversation cancelled ('.$reason.').'
+        );
+    }
+};

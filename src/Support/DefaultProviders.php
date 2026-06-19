@@ -24,6 +24,7 @@ class DefaultProviders
             \LaraGram\Cache\CacheServiceProvider::class,
             \LaraGram\Foundation\Providers\ConsoleSupportServiceProvider::class,
             \LaraGram\Concurrency\ConcurrencyServiceProvider::class,
+            \LaraGram\Conversation\ConversationServiceProvider::class,
             \LaraGram\Database\DatabaseServiceProvider::class,
             \LaraGram\Encryption\EncryptionServiceProvider::class,
             \LaraGram\Filesystem\FilesystemServiceProvider::class,
