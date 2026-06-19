@@ -116,15 +116,15 @@ class CompiledListenCollection extends AbstractListenCollection
     }
 
     /**
-     * Find parallel-flagged listens that should run alongside the primary.
+     * Find overlap-flagged listens that should run alongside the primary.
      *
      * @param  \LaraGram\Request\Request  $request
      * @param  \LaraGram\Listening\Listen  $primary
      * @return \LaraGram\Listening\Listen[]
      */
-    public function matchParallel(Request $request, Listen $primary)
+    public function matchOverlap(Request $request, Listen $primary)
     {
-        return $this->rehydrated()->matchParallel($request, $primary);
+        return $this->rehydrated()->matchOverlap($request, $primary);
     }
 
     /**
@@ -133,7 +133,7 @@ class CompiledListenCollection extends AbstractListenCollection
      *
      * Matching is delegated to this collection so cached and uncached dispatch
      * behave identically – the cache only saves the cost of parsing the listen
-     * definition files, not the matching semantics (field/verb/tag/parallel).
+     * definition files, not the matching semantics (field/verb/tag/overlap).
      *
      * @return \LaraGram\Listening\ListenCollection
      */
@@ -291,8 +291,8 @@ class CompiledListenCollection extends AbstractListenCollection
             ->block($attributes['lockSeconds'] ?? null, $attributes['waitSeconds'] ?? null)
             ->withTrashed($attributes['withTrashed'] ?? false);
 
-        if (! empty($attributes['parallel'])) {
-            $listen->parallel($attributes['parallelGroups'] ?? []);
+        if (! empty($attributes['overlap'])) {
+            $listen->overlap($attributes['overlapGroups'] ?? []);
         }
 
         return $listen;

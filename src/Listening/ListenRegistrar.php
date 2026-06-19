@@ -94,7 +94,7 @@ class ListenRegistrar
         'where',
         'withoutMiddleware',
         'withoutScopedBindings',
-        'parallel',
+        'overlap',
     ];
 
     /**
@@ -174,14 +174,14 @@ class ListenRegistrar
     }
 
     /**
-     * Mark every listen in this group as runnable in parallel.
+     * Mark every listen in this group as runnable in overlap.
      *
      * @param  string|string[]|null  $groups
      * @return $this
      */
-    public function parallel(string|array|null $groups = null)
+    public function overlap(string|array|null $groups = null)
     {
-        return $this->attribute('parallel', $groups === null ? [] : array_values((array) $groups));
+        return $this->attribute('overlap', $groups === null ? [] : array_values((array) $groups));
     }
 
     /**

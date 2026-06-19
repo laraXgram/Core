@@ -205,19 +205,19 @@ class ListenCollection extends AbstractListenCollection
     }
 
     /**
-     * Find parallel-flagged listens that should run alongside the primary.
+     * Find overlap-flagged listens that should run alongside the primary.
      *
      * @param  \LaraGram\Request\Request  $request
      * @param  \LaraGram\Listening\Listen  $primary
      * @return \LaraGram\Listening\Listen[]
      */
-    public function matchParallel(Request $request, Listen $primary)
+    public function matchOverlap(Request $request, Listen $primary)
     {
         $currentConnection = Request::getDefaultConnection();
 
         $candidates = array_values(array_filter(
             $this->get($request->method()),
-            fn ($l) => $l->parallel
+            fn ($l) => $l->overlap
                 && $l !== $primary
                 && ! $l->isStepListen()
                 && ! $l->isFallback
@@ -227,9 +227,9 @@ class ListenCollection extends AbstractListenCollection
 
         $selected = [];
 
-        // Group-less parallel listens always co-run with the primary.
+        // Group-less overlap listens always co-run with the primary.
         foreach ($candidates as $i => $l) {
-            if ($l->parallelGroups === []) {
+            if ($l->overlapGroups === []) {
                 $selected[] = $l;
                 unset($candidates[$i]);
             }
@@ -237,16 +237,16 @@ class ListenCollection extends AbstractListenCollection
         $candidates = array_values($candidates);
 
         // Seed the active group set from the primary, then grow transitively.
-        $activeGroups = $primary->parallel ? $primary->parallelGroups : [];
+        $activeGroups = $primary->overlap ? $primary->overlapGroups : [];
 
         do {
             $added = false;
 
             foreach ($candidates as $i => $l) {
-                if (array_intersect($activeGroups, $l->parallelGroups)) {
+                if (array_intersect($activeGroups, $l->overlapGroups)) {
                     $selected[] = $l;
                     $activeGroups = array_values(array_unique(
-                        array_merge($activeGroups, $l->parallelGroups)
+                        array_merge($activeGroups, $l->overlapGroups)
                     ));
                     unset($candidates[$i]);
                     $added = true;

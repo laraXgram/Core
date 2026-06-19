@@ -187,8 +187,8 @@ abstract class AbstractListenCollection implements Countable, IteratorAggregate,
                 'lockSeconds' => $listen->locksFor(),
                 'waitSeconds' => $listen->waitsFor(),
                 'withTrashed' => $listen->allowsTrashedBindings(),
-                'parallel' => $listen->parallel,
-                'parallelGroups' => $listen->parallelGroups,
+                'overlap' => $listen->overlap,
+                'overlapGroups' => $listen->overlapGroups,
             ];
         }
 

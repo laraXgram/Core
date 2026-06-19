@@ -342,10 +342,10 @@ class Listener implements BindingRegistrar, RegistrarContract
             $this->mergeGroupAttributesIntoListen($listen);
         }
 
-        // A parallel group attribute marks every contained listen as parallel.
+        // A overlap group attribute marks every contained listen as overlap.
         $action = $listen->getAction();
-        if (array_key_exists('parallel', $action)) {
-            $listen->parallel($action['parallel']);
+        if (array_key_exists('overlap', $action)) {
+            $listen->overlap($action['overlap']);
         }
 
         $this->addWhereClausesToListen($listen);
@@ -354,14 +354,14 @@ class Listener implements BindingRegistrar, RegistrarContract
     }
 
     /**
-     * Begin registering a group of listens that run in parallel.
+     * Begin registering a group of listens that run in overlap.
      *
      * @param  string|string[]|null  $groups
      * @return \LaraGram\Listening\ListenRegistrar
      */
-    public function parallel(string|array|null $groups = null)
+    public function overlap(string|array|null $groups = null)
     {
-        return (new ListenRegistrar($this))->parallel($groups);
+        return (new ListenRegistrar($this))->overlap($groups);
     }
 
     /**
@@ -540,21 +540,21 @@ class Listener implements BindingRegistrar, RegistrarContract
 
         $response = $this->runListen($request, $listen);
 
-        $this->runParallelListens($request, $listen);
+        $this->runOverlapListens($request, $listen);
 
         return $response;
     }
 
     /**
-     * Run any parallel-flagged listens that also match the request.
+     * Run any overlap-flagged listens that also match the request.
      *
      * @param  \LaraGram\Request\Request  $request
      * @param  \LaraGram\Listening\Listen  $primary
      * @return void
      */
-    protected function runParallelListens(Request $request, Listen $primary)
+    protected function runOverlapListens(Request $request, Listen $primary)
     {
-        foreach ($this->listens->matchParallel($request, $primary) as $listen) {
+        foreach ($this->listens->matchOverlap($request, $primary) as $listen) {
             $listen->setContainer($this->container);
             $listen->bind($request);
 

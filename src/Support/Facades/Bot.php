@@ -147,7 +147,7 @@ namespace LaraGram\Support\Facades;
  * @method static \LaraGram\Listening\Listen template(string $pattern, string $template, array $data = [])
  * @method static \LaraGram\Listening\Listen match(array|string $methods, string $uri, array|string|callable|null $action = null)
  * @method static \LaraGram\Listening\Listener group(array $attributes, \Closure|array|string $listens)
- * @method static \LaraGram\Listening\ListenRegistrar parallel(string|array|null $groups = null)
+ * @method static \LaraGram\Listening\ListenRegistrar overlap(string|array|null $groups = null)
  * @method static array getScopeAttribute()
  * @method static array getCanAttribute()
  * @method static bool getReplyAttribute()

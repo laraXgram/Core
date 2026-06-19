@@ -62,14 +62,14 @@ class Listen
      *
      * @var bool
      */
-    public bool $parallel = false;
+    public bool $overlap = false;
 
     /**
-     * Groups this parallel listen belongs to.
+     * Groups this overlap listen belongs to.
      *
      * @var string[]
      */
-    public array $parallelGroups = [];
+    public array $overlapGroups = [];
 
     /**
      * The step name this listen is bound to.
@@ -751,15 +751,15 @@ class Listen
     }
 
     /**
-     * Mark this listen as runnable in parallel with other matching listens.
+     * Mark this listen as runnable in overlap with other matching listens.
      *
      * @param  string|string[]|null  $groups
      * @return $this
      */
-    public function parallel(string|array|null $groups = null)
+    public function overlap(string|array|null $groups = null)
     {
-        $this->parallel = true;
-        $this->parallelGroups = $groups === null ? [] : array_values((array) $groups);
+        $this->overlap = true;
+        $this->overlapGroups = $groups === null ? [] : array_values((array) $groups);
 
         return $this;
     }
