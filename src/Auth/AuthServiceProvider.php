@@ -10,6 +10,7 @@ use LaraGram\Contracts\Auth\StatusProvider as StatusProviderContract;
 use LaraGram\Listening\Listen;
 use LaraGram\Request\Request;
 use LaraGram\Support\Facades\Bot;
+use LaraGram\Support\Facades\Gate as GateFacade;
 use LaraGram\Support\ServiceProvider;
 
 class AuthServiceProvider extends ServiceProvider
@@ -30,6 +31,8 @@ class AuthServiceProvider extends ServiceProvider
         if ($this->app['auth.status']->shouldObserve()) {
             $this->registerListens();
         }
+
+        $this->registerGates();
     }
 
     /**
@@ -93,6 +96,22 @@ class AuthServiceProvider extends ServiceProvider
     }
 
     /**
+     * Register a gate per Telegram chat-member status, backed by the status manager.
+     *
+     * The gates ignore the resolved user model and delegate to the configured
+     * status driver, so they work with the live, eloquent, database or cache
+     * driver alike and never couple the framework to the application's model.
+     *
+     * @return void
+     */
+    public function registerGates()
+    {
+        foreach (Listen::$allStatuses as $status) {
+            GateFacade::define($status, fn ($user = null) => $this->app['auth.status']->is($status));
+        }
+    }
+
+    /**
      * Listen for chat-member changes and persist them through the status driver.
      *
      * @return void
@@ -127,8 +146,6 @@ class AuthServiceProvider extends ServiceProvider
     private function storeStatus($user, $chat, $status)
     {
         $this->app['auth.status']->record($user->id, $chat->id, [
-            'first_name' => $user->first_name,
-            'last_name'  => $user->last_name ?? '',
             'status'     => $status,
         ]);
     }
