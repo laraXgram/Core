@@ -17,6 +17,7 @@ if (!function_exists('chat')) {
             $request->edited_channel_post != null => $request->edited_channel_post->chat,
             $request->business_message != null => $request->business_message->chat,
             $request->edited_business_message != null => $request->edited_business_message->chat,
+            $request->guest_message != null => $request->guest_message->chat,
             $request->deleted_business_messages != null => $request->deleted_business_messages->chat,
             $request->message_reaction != null => $request->message_reaction->chat,
             $request->message_reaction_count != null => $request->message_reaction_count->chat,
@@ -46,6 +47,7 @@ if (!function_exists('user')) {
             $request->business_connection != null => $request->business_connection->user,
             $request->business_message != null => $request->business_message->from,
             $request->edited_business_message != null => $request->edited_business_message->from,
+            $request->guest_message != null => $request->guest_message->from,
             $request->message_reaction != null => $request->message_reaction->user,
             $request->inline_query != null => $request->inline_query->from,
             $request->chosen_inline_result != null => $request->chosen_inline_result->from,
@@ -74,10 +76,11 @@ if (!function_exists('text')) {
         return match (true) {
             $request->message != null && isset($request->message->text) => $request->message->text,
             $request->edited_message != null => $request->edited_message->text,
-            $request->channel_post != null => $request->channel_post->text,
-            $request->edited_channel_post != null => $request->edited_channel_post->text,
+            $request->channel_post != null => $request->channel_post->caption,
+            $request->edited_channel_post != null => $request->edited_channel_post->caption,
             $request->business_message != null => $request->business_message->text,
             $request->edited_business_message != null => $request->edited_business_message->text,
+            $request->guest_message != null => $request->guest_message->text,
             default => null
         };
     }
@@ -108,6 +111,7 @@ if (!function_exists('message')) {
             $request->edited_channel_post != null => $request->edited_channel_post,
             $request->business_message != null => $request->business_message,
             $request->edited_business_message != null => $request->edited_business_message,
+            $request->guest_message != null => $request->guest_message,
             $request->callback_query != null => $request->callback_query->message,
             default => null
         };
@@ -306,6 +310,77 @@ if (!function_exists('removed_chat_boost')) {
     }
 }
 
+if (!function_exists('business_message')) {
+    function business_message(): object|null
+    {
+        /**
+         * @var Request $request ;
+         */
+        $request = app('request');
+        return $request->business_message;
+    }
+}
+
+if (!function_exists('edited_business_message')) {
+    function edited_business_message(): object|null
+    {
+        /**
+         * @var Request $request ;
+         */
+        $request = app('request');
+        return $request->edited_business_message;
+    }
+}
+
+if (!function_exists('guest_message')) {
+    function guest_message(): object|null
+    {
+        /**
+         * @var Request $request ;
+         */
+        $request = app('request');
+        return $request->guest_message;
+    }
+}
+
+if (!function_exists('purchased_paid_media')) {
+    function purchased_paid_media(): object|null
+    {
+        /**
+         * @var Request $request ;
+         */
+        $request = app('request');
+        return $request->purchased_paid_media;
+    }
+}
+
+if (!function_exists('managed_bot')) {
+    function managed_bot(): object|null
+    {
+        /**
+         * @var Request $request ;
+         */
+        $request = app('request');
+        return $request->managed_bot;
+    }
+}
+
+if (!function_exists('reaction')) {
+    /**
+     * Get the new reactions of a message_reaction update.
+     *
+     * @return array
+     */
+    function reaction(): array
+    {
+        /**
+         * @var Request $request ;
+         */
+        $request = app('request');
+        return $request->message_reaction->new_reaction ?? [];
+    }
+}
+
 if (!function_exists('inline_url')) {
     function inline_url($text, $url, $parse_mode = 'markdown'): false|string
     {
@@ -342,18 +417,11 @@ if (!function_exists('pre')) {
 }
 
 if (!function_exists('spoiler')) {
-    function spoiler($text): string
-    {
-        return "||{$text}||";
-    }
-}
-
-if (!function_exists('spoiler')) {
     function spoiler($text, $parse_mode = 'markdown'): false|string
     {
         return match (strtolower($parse_mode)){
-            'markdown' => "~~{$text}~~",
-            'html' => "<s>{$text}</s>",
+            'markdown' => "||{$text}||",
+            'html' => "<tg-spoiler>{$text}</tg-spoiler>",
             default => false
         };
     }
@@ -416,8 +484,11 @@ if (!function_exists('mentionSenderUser')) {
 }
 
 if (!function_exists('selfDelete')) {
-    function selfDelete(): void
+    function selfDelete($methods = ['*']): void
     {
-        app('request')->mode(LaraGram\Laraquest\Mode::NO_RESPONSE_CURL)->deleteMessage(chat()->id, message()->message_id);
+        $request = app('request');
+        if ($methods === ['*'] || in_array($request->method(), \LaraGram\Support\Arr::wrap($methods))) {
+            $request->mode(LaraGram\Laraquest\Mode::NO_RESPONSE_CURL)->deleteMessage(chat()->id, message()->message_id);
+        }
     }
 }

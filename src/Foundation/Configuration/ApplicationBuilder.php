@@ -148,9 +148,16 @@ class ApplicationBuilder
         return function () use ($bot, $client, $then) {
             if (is_string($bot) || is_array($bot)) {
                 if (is_array($bot)) {
-                    foreach ($bot as $botListen) {
-                        if (realpath($botListen) !== false) {
-                            Bot::middleware('bot')->group($botListen);
+                    foreach ($bot as $file => $connections) {
+                        if (is_int($file)) {
+                            $file = $connections;
+                            $connections = ['*'];
+                        } else {
+                            $connections = (array) $connections;
+                        }
+
+                        if (realpath($file) !== false) {
+                            Bot::middleware('bot')->forConnections($connections)->group($file);
                         }
                     }
                 } else {

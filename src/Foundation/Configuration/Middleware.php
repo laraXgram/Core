@@ -389,6 +389,7 @@ class Middleware
     public function getGlobalMiddleware()
     {
         $middleware = $this->global ?: array_values(array_filter([
+            \LaraGram\Foundation\Bot\Middleware\HandleMultiBotUpdate::class,
             \LaraGram\Foundation\Bot\Middleware\InvokeDeferredCallbacks::class,
         ]));
 

@@ -85,6 +85,34 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Step Manager Stores
+    |--------------------------------------------------------------------------
+    |
+    | The step manager keeps per-user conversation/flow state in the cache.
+    | Here you may define named "step stores", each pointing to one of the
+    | cache stores defined above. This lets the step manager live in a
+    | different driver than the rest of your cache (e.g. fast "redis" for
+    | steps while application data stays in "database").
+    |
+    | Switch at runtime with: Step::store('volatile')->set('name');
+    | Any name not listed here is treated as a cache store name directly.
+    |
+    */
+
+    'step' => [
+
+        'default' => env('STEP_STORE', 'database'),
+
+        'stores' => [
+            'database' => env('CACHE_STORE', 'database'),
+            'redis' => env('CACHE_STORE', 'redis'),
+            'volatile' => 'array',
+        ],
+
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Cache Key Prefix
     |--------------------------------------------------------------------------
     |

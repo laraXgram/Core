@@ -83,6 +83,7 @@ class ListenRegistrar
         'scope',
         'outOfScope',
         'connection',
+        'for_connections',
         'controller',
         'middleware',
         'missing',
@@ -93,6 +94,7 @@ class ListenRegistrar
         'where',
         'withoutMiddleware',
         'withoutScopedBindings',
+        'overlap',
     ];
 
     /**
@@ -158,6 +160,28 @@ class ListenRegistrar
         $this->attributes[$attributeKey] = $value;
 
         return $this;
+    }
+
+    /**
+     * Set the incoming bot connections this group applies to.
+     *
+     * @param  array|string  $connections
+     * @return $this
+     */
+    public function forConnections(array|string $connections)
+    {
+        return $this->attribute('for_connections', (array) $connections);
+    }
+
+    /**
+     * Mark every listen in this group as runnable in overlap.
+     *
+     * @param  string|string[]|null  $groups
+     * @return $this
+     */
+    public function overlap(string|array|null $groups = null)
+    {
+        return $this->attribute('overlap', $groups === null ? [] : array_values((array) $groups));
     }
 
     /**
