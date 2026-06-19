@@ -225,7 +225,8 @@ trait CompilesInputs
     protected function tryCompileAllowedDirective(array $match): ?string
     {
         $directive = $match[1];
-        $expression = $match[4] ?? null;
+
+        $expression = isset($match[3]) ? $this->stripParentheses($match[3]) : null;
 
         if (Str::startsWith($directive, 'end')) {
             $name = lcfirst(Str::after($directive, 'end'));
@@ -236,7 +237,7 @@ trait CompilesInputs
         }
 
         if (in_array($directive, $this->allowedInputsDirectives)) {
-            if ($expression !== null) {
+            if ($expression !== null && $expression !== '') {
                 return "<?php \$__t8__$directive = {$expression}; ?>";
             }
 
