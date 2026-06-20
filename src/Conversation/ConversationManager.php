@@ -159,10 +159,11 @@ class ConversationManager
             return false;
         }
 
-        $cancelCommand = $conversation->cancelCommand
-            ?? $this->config->get('conversation.cancel_command');
-        $cancelTimeout = $conversation->cancelTimeout
-            ?? $this->config->get('conversation.cancel_timeout');
+        $definition = QuestionAccessor::compile($question);
+        $key = $definition->key($state['index']);
+
+        $cancelCommand = $conversation->cancelCommand();
+        $cancelTimeout = $conversation->cancelTimeout();
 
         // Inactivity timeout: cancel and let the new update flow to listens.
         if ($cancelTimeout !== null) {
@@ -185,11 +186,11 @@ class ConversationManager
         }
 
         // Skip command for the current question.
-        if ($question->skipCommand !== null && $text !== null && $this->commandEquals($text, $question->skipCommand)) {
+        if ($definition->skipCommand !== null && $text !== null && $this->commandEquals($text, $definition->skipCommand)) {
             $conversation->onSkip($request, $question);
             $this->events->dispatch(new QuestionSkipped($state['name'], $question));
 
-            $state['answers'][$question->name] = null;
+            $state['answers'][$key] = null;
             $state['attempts'] = 0;
 
             $this->advance($conversation, $request, $questions, $state);
@@ -197,23 +198,23 @@ class ConversationManager
             return true;
         }
 
-        [$matched, $value] = TypeMatcher::extract($question->type);
+        [$matched, $value] = TypeMatcher::extract($definition->type);
 
-        $errors = $this->validateAnswer($question, $matched, $value);
+        $errors = $this->validateAnswer($definition, $matched, $value);
 
         if ($errors !== []) {
-            return $this->handleInvalid($conversation, $request, $question, $state, $errors);
+            return $this->handleInvalid($conversation, $request, $question, $definition, $state, $errors);
         }
 
         // Valid answer.
-        $state['answers'][$question->name] = $value;
+        $state['answers'][$key] = $value;
         $state['attempts'] = 0;
 
         $conversation->onAnswer($request, $question, $value);
         $this->events->dispatch(new AnswerReceived($state['name'], $question, $value));
 
-        if ($question->callback && ! $question->deferred) {
-            ($question->callback)($request, $value, $state['answers']);
+        if ($definition->callback && ! $definition->deferred) {
+            ($definition->callback)($request, $value, $state['answers']);
         }
 
         $this->advance($conversation, $request, $questions, $state);
@@ -276,21 +277,15 @@ class ConversationManager
         $this->finishCancel($conversation, $this->request(), $reason, $state['name']);
     }
 
-    /*
-    |--------------------------------------------------------------------------
-    | Internals
-    |--------------------------------------------------------------------------
-    */
-
     /**
      * Validate an extracted answer, returning a list of error messages.
      *
-     * @param  \LaraGram\Conversation\Question  $question
+     * @param  \LaraGram\Conversation\QuestionDefinition  $question
      * @param  bool  $matched
      * @param  mixed  $value
      * @return array<int, string>
      */
-    protected function validateAnswer(Question $question, bool $matched, mixed $value): array
+    protected function validateAnswer(QuestionDefinition $question, bool $matched, mixed $value): array
     {
         if (! $matched) {
             return ["The answer must be of type [{$question->type}]."];
@@ -320,12 +315,13 @@ class ConversationManager
         Conversation $conversation,
         Request $request,
         Question $question,
+        QuestionDefinition $definition,
         array $state,
         array $errors
     ): bool {
         $state['attempts'] = ($state['attempts'] ?? 0) + 1;
         $attempt = $state['attempts'];
-        $maxAttempts = $question->maxAttempts ?? $conversation->maxAttempts();
+        $maxAttempts = $definition->maxAttempts ?? $conversation->maxAttempts();
 
         $conversation->onInvalid($request, $question, $errors, $attempt);
         $this->events->dispatch(new AnswerInvalid($state['name'], $question, $errors, $attempt));
@@ -380,9 +376,15 @@ class ConversationManager
     ): void {
         $answers = $state['answers'] ?? [];
 
-        foreach ($questions->all() as $question) {
-            if ($question->callback && $question->deferred && array_key_exists($question->name, $answers)) {
-                ($question->callback)($request, $answers[$question->name], $answers);
+        foreach ($questions->all() as $index => $question) {
+            $definition = QuestionAccessor::compile($question);
+
+            if ($definition->callback && $definition->deferred) {
+                $key = $definition->key($index);
+
+                if (array_key_exists($key, $answers)) {
+                    ($definition->callback)($request, $answers[$key], $answers);
+                }
             }
         }
 
@@ -391,7 +393,7 @@ class ConversationManager
 
         $this->clearState();
 
-        if ($conversation->forgotAfterComplete) {
+        if ($conversation->forgetAfterComplete()) {
             $this->store()->forget($this->answersKey());
         } else {
             $this->store()->put($this->answersKey(), $answers, $this->lifetime());
@@ -424,26 +426,28 @@ class ConversationManager
     {
         $request = $this->request();
 
+        $definition = QuestionAccessor::compile($question);
+
         $conversation->onAsk($request, $question);
         $this->events->dispatch(new QuestionAsked($name, $question));
 
-        if ($question->sender) {
-            ($question->sender)($request, $question);
+        if ($definition->sender) {
+            ($definition->sender)($request, $question);
 
             return;
         }
 
-        if ($question->promptKind !== 'text' && $question->promptMedia !== null) {
-            $this->sendMedia($request, $question);
+        if ($definition->promptKind !== 'text' && $definition->promptMedia !== null) {
+            $this->sendMedia($request, $definition);
 
             return;
         }
 
         $request->sendMessage(
             $this->chatId(),
-            $question->prompt,
-            $question->parseMode,
-            $question->keyboard
+            $definition->prompt,
+            $definition->parseMode,
+            $definition->keyboard
         );
     }
 
@@ -472,7 +476,7 @@ class ConversationManager
      *
      * @return void
      */
-    protected function sendMedia(Request $request, Question $question): void
+    protected function sendMedia(Request $request, QuestionDefinition $question): void
     {
         $map = self::MEDIA_METHODS[$question->promptKind] ?? null;
 

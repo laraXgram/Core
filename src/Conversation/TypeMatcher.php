@@ -18,6 +18,9 @@ class TypeMatcher
     {
         $type = strtolower(trim($type));
 
+        // Convenience aliases mapping to real Telegram message field names.
+        $type = self::ALIASES[$type] ?? $type;
+
         return match ($type) {
             'any'  => self::extractAny(),
             'text' => self::extractText(),
@@ -26,6 +29,25 @@ class TypeMatcher
             default => self::extractField($type),
         };
     }
+
+    /**
+     * Convenience type aliases mapped to real Telegram message field names.
+     *
+     * @var array<string, string>
+     */
+    protected const ALIASES = [
+        'gif'           => 'animation',
+        'image'         => 'photo',
+        'img'           => 'photo',
+        'photos'        => 'photo',
+        'file'          => 'document',
+        'doc'           => 'document',
+        'videonote'     => 'video_note',
+        'video_message' => 'video_note',
+        'voice_message' => 'voice',
+        'gps'           => 'location',
+        'place'         => 'venue',
+    ];
 
     /**
      * Extract any meaningful value from the update.

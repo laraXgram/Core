@@ -11,37 +11,6 @@ use LaraGram\Request\Request;
 abstract class Conversation
 {
     /**
-     * The maximum number of invalid attempts allowed per question before the
-     * conversation is cancelled.
-     *
-     * @var int
-     */
-    public $maxAttempts = 3;
-
-    /**
-     * The number of seconds of inactivity after which the conversation is
-     * cancelled. Null disables the timeout.
-     *
-     * @var int|null
-     */
-    public $cancelTimeout = null;
-
-    /**
-     * The command/text that cancels the conversation at any point. Null
-     * disables command cancellation.
-     *
-     * @var string|null
-     */
-    public $cancelCommand = null;
-
-    /**
-     * Whether collected answers are forgotten once the conversation completes.
-     *
-     * @var bool
-     */
-    public $forgotAfterComplete = true;
-
-    /**
      * The questioner collecting this conversation's questions.
      *
      * @var \LaraGram\Conversation\Questioner|null
@@ -91,13 +60,45 @@ abstract class Conversation
     }
 
     /**
-     * Get the configured maximum attempts per question.
+     * Get the maximum invalid attempts allowed per question.
      *
      * @return int
      */
     public function maxAttempts(): int
     {
-        return $this->maxAttempts;
+        return (int) ($this->maxAttempts ?? config('conversation.max_attempts', 3));
+    }
+
+    /**
+     * Get the inactivity timeout in seconds (null disables it).
+     *
+     * @return int|null
+     */
+    public function cancelTimeout(): ?int
+    {
+        $timeout = $this->cancelTimeout ?? config('conversation.cancel_timeout');
+
+        return $timeout === null ? null : (int) $timeout;
+    }
+
+    /**
+     * Get the command/text that cancels the conversation (null disables it).
+     *
+     * @return string|null
+     */
+    public function cancelCommand(): ?string
+    {
+        return $this->cancelCommand ?? config('conversation.cancel_command');
+    }
+
+    /**
+     * Determine whether answers are forgotten once the conversation completes.
+     *
+     * @return bool
+     */
+    public function forgetAfterComplete(): bool
+    {
+        return (bool) ($this->forgotAfterComplete ?? config('conversation.forget_after_complete', true));
     }
 
     /**

@@ -45,17 +45,22 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Global Cancel Command & Timeout
+    | Conversation Defaults
     |--------------------------------------------------------------------------
     |
-    | Fallback values used when a conversation does not define its own
-    | $cancelCommand / $cancelTimeout. The timeout is the number of seconds of
-    | inactivity after which a conversation is cancelled. Null disables them.
+    | Fallback values used when a conversation does not declare the matching
+    | public property ($maxAttempts, $cancelCommand, $cancelTimeout,
+    | $forgotAfterComplete). The timeout is the number of seconds of inactivity
+    | after which a conversation is cancelled. Null disables a setting.
     |
     */
+
+    'max_attempts' => 3,
 
     'cancel_command' => null,
 
     'cancel_timeout' => null,
+
+    'forget_after_complete' => true,
 
 ];

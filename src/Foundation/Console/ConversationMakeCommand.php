@@ -79,6 +79,20 @@ class ConversationMakeCommand extends GeneratorCommand
     }
 
     /**
+     * Get the destination file path, honouring the configured conversations path.
+     *
+     * @param  string  $name
+     * @return string
+     */
+    protected function getPath($name)
+    {
+        $directory = $this->laragram['config']->get('conversation.path')
+            ?: app_path('Conversations');
+
+        return rtrim($directory, '/\\').'/'.str_replace('\\', '/', $this->getNameInput()).'.php';
+    }
+
+    /**
      * Get the default namespace for the class.
      *
      * @param  string  $rootNamespace

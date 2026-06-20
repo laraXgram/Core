@@ -14,84 +14,84 @@ class Question
      *
      * @var string
      */
-    public $prompt;
+    protected $prompt;
 
     /**
      * The key the answer is stored under.
      *
      * @var string
      */
-    public $name;
+    protected $name;
 
     /**
      * The expected answer content type (text, contact, photo, keyboard, ...).
      *
      * @var string
      */
-    public $type = 'text';
+    protected $type = 'text';
 
     /**
      * The validation rules applied to the extracted answer value.
      *
      * @var string|array|null
      */
-    public $rules = null;
+    protected $rules = null;
 
     /**
      * Custom validation messages.
      *
      * @var array
      */
-    public $messages = [];
+    protected $messages = [];
 
     /**
      * The command/text that skips this question, if any.
      *
      * @var string|null
      */
-    public $skipCommand = null;
+    protected $skipCommand = null;
 
     /**
      * The reply markup (keyboard) sent with the prompt.
      *
      * @var mixed
      */
-    public $keyboard = null;
+    protected $keyboard = null;
 
     /**
      * The Telegram parse mode for the prompt.
      *
      * @var string|null
      */
-    public $parseMode = null;
+    protected $parseMode = null;
 
     /**
      * A callback executed when this question is answered.
      *
      * @var \Closure|null
      */
-    public $callback = null;
+    protected $callback = null;
 
     /**
      * Whether the answer callback runs at completion instead of immediately.
      *
      * @var bool
      */
-    public $deferred = false;
+    protected $deferred = false;
 
     /**
      * A custom sender for delivering the prompt (overrides default sendMessage).
      *
      * @var \Closure|null
      */
-    public $sender = null;
+    protected $sender = null;
 
     /**
      * The maximum attempts allowed for this question (null = use conversation default).
      *
      * @var int|null
      */
-    public $maxAttempts = null;
+    protected $maxAttempts = null;
 
     /**
      * The prompt delivery kind: text, photo, video, audio, voice, document,
@@ -99,7 +99,7 @@ class Question
      *
      * @var string
      */
-    public $promptKind = 'text';
+    protected $promptKind = 'text';
 
     /**
      * The media to send as the prompt (file_id, URL, or InputFile). The prompt
@@ -107,7 +107,7 @@ class Question
      *
      * @var mixed
      */
-    public $promptMedia = null;
+    protected $promptMedia = null;
 
     /**
      * Create a new question.
@@ -118,7 +118,6 @@ class Question
     public function __construct(string $prompt)
     {
         $this->prompt = $prompt;
-        $this->name = $prompt;
     }
 
     /**
@@ -231,9 +230,6 @@ class Question
     /**
      * Deliver the prompt with a custom sender closure.
      *
-     * The closure receives the current request and this question instance and
-     * is responsible for sending the prompt itself.
-     *
      * @param  \Closure  $sender
      * @return $this
      */
@@ -273,7 +269,7 @@ class Question
     }
 
     /**
-     * Send the prompt as a photo (the prompt text becomes the caption).
+     * Send the prompt as a photo (prompt text becomes the caption).
      *
      * @param  mixed  $file
      * @return $this
@@ -284,7 +280,7 @@ class Question
     }
 
     /**
-     * Send the prompt as a video (the prompt text becomes the caption).
+     * Send the prompt as a video (prompt text becomes the caption).
      *
      * @param  mixed  $file
      * @return $this
@@ -295,7 +291,7 @@ class Question
     }
 
     /**
-     * Send the prompt as an audio file (the prompt text becomes the caption).
+     * Send the prompt as an audio file (prompt text becomes the caption).
      *
      * @param  mixed  $file
      * @return $this
@@ -306,7 +302,7 @@ class Question
     }
 
     /**
-     * Send the prompt as a voice message (the prompt text becomes the caption).
+     * Send the prompt as a voice message (prompt text becomes the caption).
      *
      * @param  mixed  $file
      * @return $this
@@ -317,7 +313,7 @@ class Question
     }
 
     /**
-     * Send the prompt as a document (the prompt text becomes the caption).
+     * Send the prompt as a document (prompt text becomes the caption).
      *
      * @param  mixed  $file
      * @return $this
@@ -328,7 +324,7 @@ class Question
     }
 
     /**
-     * Send the prompt as an animation/GIF (the prompt text becomes the caption).
+     * Send the prompt as an animation/GIF (prompt text becomes the caption).
      *
      * @param  mixed  $file
      * @return $this
@@ -339,7 +335,7 @@ class Question
     }
 
     /**
-     * Send the prompt as a video note (caption is not supported).
+     * Send the prompt as a video note (caption not supported).
      *
      * @param  mixed  $file
      * @return $this
@@ -350,7 +346,7 @@ class Question
     }
 
     /**
-     * Send the prompt as a sticker (caption is not supported).
+     * Send the prompt as a sticker (caption not supported).
      *
      * @param  mixed  $file
      * @return $this
