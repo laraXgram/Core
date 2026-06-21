@@ -25,7 +25,22 @@ class Request
         InteractWithUpdate::getUpdateMessageSubType insteadof UpdatesTrait;
         InteractWithUpdate::scope insteadof UpdatesTrait;
         InteractWithUpdate::isReply insteadof UpdatesTrait;
+        MethodeTrait::endpoint as protected rawEndpoint;
     }
+
+    /**
+     * Whether anti-flood throttling is bypassed for the next API call.
+     *
+     * @var bool
+     */
+    protected $bypassAntiFlood = false;
+
+    /**
+     * Specific named anti-flood scope(s).
+     *
+     * @var string|null
+     */
+    protected $antiFloodScopes = null;
 
     /**
      * The user resolver callback.
@@ -634,6 +649,99 @@ class Request
         $this->listenResolver = $callback;
 
         return $this;
+    }
+
+    /**
+     * Send the next API call without anti-flood throttling.
+     *
+     * @return $this
+     */
+    public function withoutAntiFlood(): static
+    {
+        $this->bypassAntiFlood = true;
+
+        return $this;
+    }
+
+    /**
+     * Apply specific named anti-flood scope(s) to the next API call instead of
+     * the automatic chat scope (the global scope still applies).
+     *
+     * @param  string  ...$scopes
+     * @return $this
+     */
+    public function antiFloodWith(string ...$scopes): static
+    {
+        $this->antiFloodScopes = $scopes;
+
+        return $this;
+    }
+
+    /**
+     * Intercept every Telegram API call to apply smart anti-flood throttling,
+     * then delegate to the original Laraquest endpoint implementation.
+     *
+     * @param  string  $method
+     * @param  array   $params
+     * @return mixed
+     */
+    protected function endpoint(string $method, array $params): mixed
+    {
+        $bypass = $this->bypassAntiFlood;
+        $this->bypassAntiFlood = false;
+
+        $scopes = $this->antiFloodScopes ?? [];
+        $this->antiFloodScopes = null;
+
+        $antiFlood = $bypass ? null : $this->antiFlood();
+        $connection = null;
+
+        if ($antiFlood !== null) {
+            try {
+                $connection = $this->getConnection();
+                $antiFlood->gate($connection, $method, $params, $scopes);
+            } catch (\Throwable) {
+                $antiFlood = null;
+            }
+        }
+
+        $response = $this->rawEndpoint($method, $params);
+
+        if ($antiFlood !== null) {
+            try {
+                $antiFlood->report($connection, $method, $params, $response, $scopes);
+            } catch (\Throwable) {
+                // Reporting must never affect the response returned to the caller.
+            }
+        }
+
+        return $response;
+    }
+
+    /**
+     * Resolve the active anti-flood engine, or null when it is unavailable.
+     *
+     * @return \LaraGram\Request\AntiFlood\AntiFlood|null
+     */
+    private function antiFlood()
+    {
+        if (! function_exists('app')) {
+            return null;
+        }
+
+        try {
+            $app = app();
+
+            if (! $app->bound('antiflood')) {
+                return null;
+            }
+
+            $engine = $app->make('antiflood');
+
+            return $engine->enabled() ? $engine : null;
+        } catch (\Throwable) {
+            return null;
+        }
     }
 
     /**
