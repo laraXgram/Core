@@ -28,6 +28,13 @@ class AntiFlood
     protected $store = null;
 
     /**
+     * In-process state for limits marked shared = false (current request only).
+     *
+     * @var array<string, array>
+     */
+    protected array $local = [];
+
+    /**
      * Create a new anti-flood engine.
      *
      * @param  \LaraGram\Contracts\Container\Container  $app
@@ -67,8 +74,8 @@ class AntiFlood
         $now = microtime(true);
         $delay = 0.0;
 
-        foreach ($this->limits($connection, $params, $extra) as [$key, $interval, $burst]) {
-            $delay = max($delay, $this->reserve($key, $interval, $burst, $now));
+        foreach ($this->limits($connection, $params, $extra) as $limit) {
+            $delay = max($delay, $this->reserve($limit, $now));
         }
 
         $this->sleep($delay);
@@ -76,9 +83,6 @@ class AntiFlood
 
     /**
      * React to a real 429 by pushing the relevant limits' next slot forward.
-     *
-     * Best-effort: in no-response transports there is nothing to inspect, so
-     * this does nothing and the proactive pacing remains the guarantee.
      *
      * @param  string  $connection
      * @param  string  $method
@@ -94,7 +98,7 @@ class AntiFlood
         }
 
         if (! is_array($response)) {
-            return; // no_response_curl / non-array transport — nothing to read.
+            return;
         }
 
         if (($response['ok'] ?? true) !== false || (int) ($response['error_code'] ?? 0) !== 429) {
@@ -105,11 +109,20 @@ class AntiFlood
         $retry += (float) $this->cfg('reactive.cooldown_margin', 0.5);
         $now = microtime(true);
 
-        foreach ($this->limits($connection, $params, $extra) as [$key, $interval, $burst]) {
-            $tau = ($burst - 1) * $interval;
-            $this->mutate($key, function (float $tat) use ($now, $retry, $tau) {
-                return max($tat, $now + $retry + $tau);
-            }, (int) ceil($retry + $tau) + 1);
+        foreach ($this->limits($connection, $params, $extra) as $limit) {
+            $tau = ($limit['burst'] - 1) * $limit['interval'];
+            $until = $now + $retry + $tau;
+            $per = $limit['per'];
+
+            $this->withState($limit['key'], $limit['shared'], function (array $s) use ($until, $per, $now) {
+                if ((float) ($s['tat'] ?? 0.0) < $until) {
+                    $s['tat'] = $until;
+                }
+
+                $ttl = (int) ceil(max($per, $until - $now)) + 1;
+
+                return [$s, 0.0, $ttl];
+            });
         }
     }
 
@@ -129,68 +142,90 @@ class AntiFlood
         }
 
         $connection ??= (string) $this->config->get('bot.default', '');
-        $tuple = $this->resolveLimit($this->prefix() . ':' . $connection, $limit, $chatId);
+        $spec = $this->resolveLimit($this->prefix() . ':' . $connection, $limit, $chatId);
 
-        if ($tuple === null) {
+        if ($spec === null) {
             return 0.0;
         }
 
-        [$key, $interval, $burst] = $tuple;
-        $tat = (float) $this->store()->get($key, 0.0);
+        $state = $spec['shared']
+            ? (array) $this->store()->get($spec['key'], [])
+            : ($this->local[$spec['key']] ?? []);
 
-        return max(0.0, ($tat - ($burst - 1) * $interval) - microtime(true));
+        $tat = (float) ($state['tat'] ?? 0.0);
+
+        return max(0.0, ($tat - ($spec['burst'] - 1) * $spec['interval']) - microtime(true));
     }
 
     /**
-     * Reserve the next slot for a limit (GCRA, under a lock) and return the
-     * delay needed before the call may proceed.
+     * Reserve the next slot for a limit (GCRA) and return the delay needed
+     * before the call may proceed.
      *
-     * @param  string  $key
-     * @param  float   $interval  Emission interval (per / rate).
-     * @param  float   $burst     Bucket capacity (calls allowed back-to-back).
-     * @param  float   $now
+     * @param  array  $limit  Spec from resolveLimit().
+     * @param  float  $now
      * @return float
      */
-    protected function reserve(string $key, float $interval, float $burst, float $now): float
+    protected function reserve(array $limit, float $now): float
     {
-        $tau = ($burst - 1) * $interval;
-        $ttl = (int) ceil($tau + $interval) + 1;
-        $delay = 0.0;
+        $interval = $limit['interval'];
+        $tau = ($limit['burst'] - 1) * $interval;
+        $every = $limit['every'];
+        $pause = $limit['pause'];
+        $per = $limit['per'];
 
-        $this->mutate($key, function (float $tat) use ($now, $interval, $tau, &$delay) {
+        return $this->withState($limit['key'], $limit['shared'], function (array $s) use ($now, $interval, $tau, $every, $pause, $per) {
+            $tat = (float) ($s['tat'] ?? 0.0);
+            $n = (int) ($s['n'] ?? 0);
+
             $delay = max(0.0, ($tat - $tau) - $now);
+            $newTat = max($now, $tat) + $interval;
+            $n++;
 
-            return max($now, $tat) + $interval;
-        }, $ttl);
+            if ($every > 0 && $pause > 0 && $n % $every === 0) {
+                $delay += $pause;
+                $newTat += $pause;
+            }
 
-        return $delay;
+            $ttl = (int) ceil(max($per, $newTat - $now)) + 1;
+
+            return [['tat' => $newTat, 'n' => $n], $delay, $ttl];
+        });
     }
 
     /**
-     * Atomically read-modify-write a TAT value under a per-key lock.
+     * Read-modify-write a limit's state and return the closure's result.
      *
-     * The lock makes the reservation correct across concurrent processes. It is
-     * held only for the read+write; failure to acquire never blocks the actual
-     * API call (anti-flood must never break sending).
+     * The closure returns [newState, result, ttlSeconds].
      *
      * @param  string    $key
-     * @param  \Closure  $mutator  fn(float $tat): float
-     * @param  int       $ttl
-     * @return void
+     * @param  bool      $shared
+     * @param  \Closure  $fn  fn(array $state): array{0: array, 1: float, 2: int}
+     * @return float
      */
-    protected function mutate(string $key, \Closure $mutator, int $ttl): void
+    protected function withState(string $key, bool $shared, \Closure $fn): float
     {
+        if (! $shared) {
+            $res = $fn($this->local[$key] ?? []);
+            $this->local[$key] = $res[0];
+
+            return (float) $res[1];
+        }
+
         $store = $this->store();
         $lock = $store->getStore()->lock($key . ':lock', 5);
+        $result = 0.0;
 
         try {
-            $lock->block(1, function () use ($store, $key, $mutator, $ttl) {
-                $tat = (float) $store->get($key, 0.0);
-                $store->put($key, $mutator($tat), $ttl);
+            $lock->block(1, function () use ($store, $key, $fn, &$result) {
+                $res = $fn((array) $store->get($key, []));
+                $store->put($key, $res[0], $res[2]);
+                $result = $res[1];
             });
         } catch (\Throwable) {
-            // Could not coordinate (lock timeout / store error) — skip silently.
+            //
         }
+
+        return (float) $result;
     }
 
     /**
@@ -226,12 +261,12 @@ class AntiFlood
     }
 
     /**
-     * Resolve a named limit to its [key, interval, burst] tuple, or null.
+     * Resolve a named limit to a spec, or null when it is not configured.
      *
      * @param  string       $base
      * @param  string       $name    global | private | group | <custom>
      * @param  string|null  $chatId
-     * @return array{0: string, 1: float, 2: float}|null
+     * @return array{key: string, interval: float, burst: float, every: int, pause: float, shared: bool}|null
      */
     protected function resolveLimit(string $base, string $name, ?string $chatId): ?array
     {
@@ -246,16 +281,22 @@ class AntiFlood
             $key = $base . ':custom:' . $name;
         }
 
-        $rate = (float) ($cfg['rate'] ?? 0);
+        $rate = (float) ($cfg['rate'] ?? 1);
         $per = (float) ($cfg['per'] ?? 1);
 
         if ($rate <= 0 || $per <= 0) {
             return null;
         }
 
-        $burst = max(1.0, (float) ($cfg['burst'] ?? ($rate * $per)));
-
-        return [$key, $per / $rate, $burst];
+        return [
+            'key' => $key,
+            'per' => $per,
+            'interval' => $per / $rate,
+            'burst' => max(1.0, (float) ($cfg['burst'] ?? 0)),
+            'every' => max(0, (int) ($cfg['every'] ?? 0)),
+            'pause' => max(0.0, (float) ($cfg['pause'] ?? 0)),
+            'shared' => (bool) ($cfg['shared'] ?? true),
+        ];
     }
 
     /**
@@ -284,7 +325,7 @@ class AntiFlood
     protected function chatType(string $chatId): string
     {
         if (! is_numeric($chatId)) {
-            return 'group'; // @username — channel or group
+            return 'group';
         }
 
         return ((int) $chatId) < 0 ? 'group' : 'private';

@@ -61,30 +61,30 @@ return [
         'global' => [
             'rate' => 30,
             'per' => 1,
-            'burst' => 30
+            'burst' => 30,
         ],
 
         'chat' => [
             'private' => [
                 'rate' => 1,
                 'per' => 1,
-                'burst' => 5
+                'burst' => 5,
             ],
             'group' => [
                 'rate' => 20,
                 'per' => 60,
-                'burst' => 5
+                'burst' => 5,
             ],
         ],
 
         'custom' => [
             'broadcast' => [
-                'rate' => 20,
+                'rate' => 4,
                 'per' => 1,
-                'burst' => 20
+                'every' => 100,
+                'pause' => 10,
+                'shared' => false
             ],
-
-            //
         ],
 
         'reactive' => [
