@@ -602,6 +602,22 @@ class Request
     }
 
     /**
+     * Build a FileBag from an arbitrary message-like object.
+     *
+     * @param  object  $message
+     * @return FileBag|null
+     */
+    public function fileFrom(object $message): ?FileBag
+    {
+        $cfg = $this->resolveConfig();
+        $token = $this->resolveToken($this->resolveConnection());
+
+        $bag = FileBag::fromMessage($message, $token, $cfg['api_server']);
+
+        return $bag->isEmpty() ? null : $bag;
+    }
+
+    /**
      * Get the user resolver callback.
      *
      * @return \Closure

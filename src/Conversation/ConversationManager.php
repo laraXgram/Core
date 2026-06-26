@@ -190,7 +190,7 @@ class ConversationManager
             $conversation->onSkip($request, $question);
             $this->events->dispatch(new QuestionSkipped($state['name'], $question));
 
-            $state['answers'][$key] = null;
+            $state['answers'][$key] = ['type' => 'none', 'value' => null];
             $state['attempts'] = 0;
 
             $this->advance($conversation, $request, $questions, $state);
@@ -198,7 +198,7 @@ class ConversationManager
             return true;
         }
 
-        [$matched, $value] = TypeMatcher::extract($definition->type);
+        [$matched, $value, $kind] = TypeMatcher::extract($definition->type);
 
         $errors = $this->validateAnswer($definition, $matched, $value);
 
@@ -207,14 +207,16 @@ class ConversationManager
         }
 
         // Valid answer.
-        $state['answers'][$key] = $value;
+        $state['answers'][$key] = ['type' => $kind, 'value' => $value];
         $state['attempts'] = 0;
 
-        $conversation->onAnswer($request, $question, $value);
-        $this->events->dispatch(new AnswerReceived($state['name'], $question, $value));
+        $answer = $this->makeAnswer($key, $state['answers'][$key]);
+
+        $conversation->onAnswer($request, $question, $answer);
+        $this->events->dispatch(new AnswerReceived($state['name'], $question, $answer));
 
         if ($definition->callback && ! $definition->deferred) {
-            ($definition->callback)($request, $value, $state['answers']);
+            ($definition->callback)($request, $answer, $this->makeBag($state['answers']));
         }
 
         $this->advance($conversation, $request, $questions, $state);
@@ -245,17 +247,46 @@ class ConversationManager
     /**
      * Get the answers collected so far (active or, when retained, completed).
      *
-     * @return array<string, mixed>
+     * @return \LaraGram\Conversation\AnswersBag
      */
-    public function answers(): array
+    public function answers(): AnswersBag
     {
         $state = $this->getState();
 
-        if ($state !== null) {
-            return $state['answers'] ?? [];
+        $stored = $state !== null
+            ? ($state['answers'] ?? [])
+            : $this->store()->get($this->answersKey(), []);
+
+        return $this->makeBag($stored);
+    }
+
+    /**
+     * Build an Answer from a stored state entry.
+     *
+     * @param  int|string  $key
+     * @param  array{type: string, value: mixed}  $entry
+     * @return \LaraGram\Conversation\Answer
+     */
+    protected function makeAnswer(int|string $key, array $entry): Answer
+    {
+        return new Answer($key, $entry['type'], $entry['value'], $this->request());
+    }
+
+    /**
+     * Build an AnswersBag from the stored answers map.
+     *
+     * @param  array<int|string, array{type: string, value: mixed}>  $stored
+     * @return \LaraGram\Conversation\AnswersBag
+     */
+    protected function makeBag(array $stored): AnswersBag
+    {
+        $answers = [];
+
+        foreach ($stored as $key => $entry) {
+            $answers[$key] = $this->makeAnswer($key, $entry);
         }
 
-        return $this->store()->get($this->answersKey(), []);
+        return new AnswersBag($answers);
     }
 
     /**
@@ -374,7 +405,8 @@ class ConversationManager
         Questioner $questions,
         array $state
     ): void {
-        $answers = $state['answers'] ?? [];
+        $stored = $state['answers'] ?? [];
+        $bag = $this->makeBag($stored);
 
         foreach ($questions->all() as $index => $question) {
             $definition = QuestionAccessor::compile($question);
@@ -382,21 +414,21 @@ class ConversationManager
             if ($definition->callback && $definition->deferred) {
                 $key = $definition->key($index);
 
-                if (array_key_exists($key, $answers)) {
-                    ($definition->callback)($request, $answers[$key], $answers);
+                if ($bag->has($key)) {
+                    ($definition->callback)($request, $bag->get($key), $bag);
                 }
             }
         }
 
-        $conversation->onComplete($request, $answers);
-        $this->events->dispatch(new ConversationCompleted($state['name'], $answers));
+        $conversation->onComplete($request, $bag);
+        $this->events->dispatch(new ConversationCompleted($state['name'], $bag));
 
         $this->clearState();
 
         if ($conversation->forgetAfterComplete()) {
             $this->store()->forget($this->answersKey());
         } else {
-            $this->store()->put($this->answersKey(), $answers, $this->lifetime());
+            $this->store()->put($this->answersKey(), $stored, $this->lifetime());
         }
     }
 

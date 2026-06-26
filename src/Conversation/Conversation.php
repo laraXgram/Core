@@ -118,7 +118,7 @@ abstract class Conversation
     /**
      * Called when a question receives a valid answer.
      */
-    public function onAnswer(Request $request, Question $question, mixed $answer): void
+    public function onAnswer(Request $request, Question $question, Answer $answer): void
     {
     }
 
@@ -148,9 +148,9 @@ abstract class Conversation
     /**
      * Called when all questions have been answered.
      *
-     * @param  array<string, mixed>  $answers
+     * @param  \LaraGram\Conversation\AnswersBag  $answers
      */
-    public function onComplete(Request $request, array $answers): void
+    public function onComplete(Request $request, AnswersBag $answers): void
     {
     }
 }

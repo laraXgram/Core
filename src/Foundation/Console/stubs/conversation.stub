@@ -1,5 +1,6 @@
 <?php
 
+use LaraGram\Conversation\AnswersBag;
 use LaraGram\Conversation\Conversation as BaseConversation;
 use LaraGram\Conversation\Questioner;
 use LaraGram\Request\Request;
@@ -22,14 +23,12 @@ return new class extends BaseConversation
 
     /**
      * Handle the conversation completing.
-     *
-     * @param  array<string, mixed>  $answers
      */
-    public function onComplete(Request $request, array $answers): void
+    public function onComplete(Request $request, AnswersBag $answers): void
     {
         $request->sendMessage(
-            chat()?->id ?? user()->id,
-            'Thanks, '.$answers['name'].'!'
+            user()->id,
+            'Thanks, '.$answers->get('name').'!'
         );
     }
 
@@ -39,7 +38,7 @@ return new class extends BaseConversation
     public function onCancel(Request $request, string $reason): void
     {
         $request->sendMessage(
-            chat()?->id ?? user()->id,
+            user()->id,
             'Conversation cancelled ('.$reason.').'
         );
     }

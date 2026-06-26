@@ -2,18 +2,20 @@
 
 namespace LaraGram\Conversation\Events;
 
+use LaraGram\Conversation\AnswersBag;
+
 class ConversationCompleted
 {
     /**
      * Create a new event instance.
      *
      * @param  string  $name
-     * @param  array<string, mixed>  $answers
+     * @param  \LaraGram\Conversation\AnswersBag  $answers
      * @return void
      */
     public function __construct(
         public string $name,
-        public array $answers,
+        public AnswersBag $answers,
     ) {
     }
 }

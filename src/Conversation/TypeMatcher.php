@@ -4,15 +4,19 @@ namespace LaraGram\Conversation;
 
 /**
  * Matches and extracts answer values from an incoming update by content type.
+ *
+ * Every result carries the resolved "kind" — text, callback, or a concrete
+ * Telegram message field (photo, document, ...) — so the engine can wrap the
+ * value in a type-aware {@see Answer}.
  */
 class TypeMatcher
 {
     /**
      * Determine whether the incoming update satisfies the given type and
-     * return the extracted answer value.
+     * return the extracted answer value plus its resolved kind.
      *
      * @param  string  $type
-     * @return array{0: bool, 1: mixed}  [matched, value]
+     * @return array{0: bool, 1: mixed, 2: string}  [matched, value, kind]
      */
     public static function extract(string $type): array
     {
@@ -52,61 +56,61 @@ class TypeMatcher
     /**
      * Extract any meaningful value from the update.
      *
-     * @return array{0: bool, 1: mixed}
+     * @return array{0: bool, 1: mixed, 2: string}
      */
     protected static function extractAny(): array
     {
         if (($text = text()) !== null && $text !== '') {
-            return [true, $text];
+            return [true, $text, 'text'];
         }
 
         if (($callback = callback_query()) !== null) {
-            return [true, $callback->data ?? null];
+            return [true, $callback->data ?? null, 'callback'];
         }
 
         $message = message();
 
-        return [$message !== null, $message];
+        return [$message !== null, $message, 'message'];
     }
 
     /**
      * Extract a non-empty text answer.
      *
-     * @return array{0: bool, 1: mixed}
+     * @return array{0: bool, 1: mixed, 2: string}
      */
     protected static function extractText(): array
     {
         $text = text();
 
-        return [$text !== null && $text !== '', $text];
+        return [$text !== null && $text !== '', $text, 'text'];
     }
 
     /**
      * Extract a callback query answer.
      *
-     * @return array{0: bool, 1: mixed}
+     * @return array{0: bool, 1: mixed, 2: string}
      */
     protected static function extractCallback(): array
     {
         $callback = callback_query();
 
-        return [$callback !== null, $callback->data ?? null];
+        return [$callback !== null, $callback->data ?? null, 'callback'];
     }
 
     /**
      * Extract a named field from the message (contact, photo, location, ...).
      *
      * @param  string  $field
-     * @return array{0: bool, 1: mixed}
+     * @return array{0: bool, 1: mixed, 2: string}
      */
     protected static function extractField(string $field): array
     {
         $message = message();
 
         if ($message === null || ! isset($message->{$field}) || $message->{$field} === null) {
-            return [false, null];
+            return [false, null, $field];
         }
 
-        return [true, $message->{$field}];
+        return [true, $message->{$field}, $field];
     }
 }
