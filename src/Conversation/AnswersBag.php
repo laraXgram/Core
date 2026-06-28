@@ -50,6 +50,20 @@ final class AnswersBag implements ArrayAccess, Countable, IteratorAggregate
     }
 
     /**
+     * Get the first answer (handy for single-question conversations).
+     *
+     * @return \LaraGram\Conversation\Answer|null
+     */
+    public function first(): ?Answer
+    {
+        foreach ($this->answers as $answer) {
+            return $answer;
+        }
+
+        return null;
+    }
+
+    /**
      * Get the answer keys.
      *
      * @return array<int, int|string>
