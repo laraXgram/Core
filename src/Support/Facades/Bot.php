@@ -145,6 +145,7 @@ namespace LaraGram\Support\Facades;
  * @method static \LaraGram\Listening\Listen fallback(array|string|callable|null $action)
  * @method static \LaraGram\Listening\Listen redirect(string $uri, string $destination)
  * @method static \LaraGram\Listening\Listen template(string $pattern, string $template, array $data = [])
+ * @method static \LaraGram\Listening\Listen conversation(string $pattern, string $conversation, string|array $updateVerbs = 'TEXT', array $parameters = [])
  * @method static \LaraGram\Listening\Listen match(array|string $methods, string $uri, array|string|callable|null $action = null)
  * @method static \LaraGram\Listening\Listener group(array $attributes, \Closure|array|string $listens)
  * @method static \LaraGram\Listening\ListenRegistrar overlap(string|array|null $groups = null)
