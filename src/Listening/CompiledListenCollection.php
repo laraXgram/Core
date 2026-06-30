@@ -111,7 +111,7 @@ class CompiledListenCollection extends AbstractListenCollection
 
         $listen = null;
 
-        $currentConnection = Request::getDefaultConnection();
+        $currentConnection = $request->listenScope();
 
         try {
             if ($result = $matcher->matchRequest($request)) {

@@ -235,6 +235,17 @@ class Request implements ProvidesListenContext
     }
 
     /**
+     * {@inheritdoc}
+     *
+     * For the Bot-API the scope is the current bot connection, preserved exactly
+     * as the engine read it before (the multi-bot middleware sets it per update).
+     */
+    public function listenScope(): ?string
+    {
+        return static::getDefaultConnection();
+    }
+
+    /**
      * Check if the Update method is COMMAND or REFERRAL
      *
      * @return false|string

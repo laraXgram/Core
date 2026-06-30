@@ -155,7 +155,7 @@ class ListenCollection extends AbstractListenCollection
      */
     public function match(ProvidesListenContext $request)
     {
-        $currentConnection = Request::getDefaultConnection();
+        $currentConnection = $request->listenScope();
 
         if (Listener::$enableStepListensPriorityRegister) {
             // When enabled, step listens are matched in definition order
