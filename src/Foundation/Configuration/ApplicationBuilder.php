@@ -137,11 +137,8 @@ class ApplicationBuilder
     /**
      * Create the listening callback for the application.
      *
-     * @param  array|string|null  $web
-     * @param  array|string|null  $api
-     * @param  string|null  $pages
-     * @param  string|null  $health
-     * @param  string  $apiPrefix
+     * @param  array|string|null  $bot
+     * @param  array|string|null  $client
      * @param  callable|null  $then
      * @return \Closure
      */
@@ -150,16 +147,34 @@ class ApplicationBuilder
         return function () use ($bot, $client, $then) {
             if (is_string($bot) || is_array($bot)) {
                 if (is_array($bot)) {
-                    foreach ($bot as $file => $connections) {
+                    $httpConnections = (array) ($this->app['config']['bot.connections'] ?? []);
+
+                    foreach ($bot as $file => $names) {
                         if (is_int($file)) {
-                            $file = $connections;
-                            $connections = ['*'];
+                            $file = $names;
+                            $names = ['*'];
                         } else {
-                            $connections = (array) $connections;
+                            $names = (array) $names;
                         }
 
-                        if (realpath($file) !== false) {
-                            Bot::middleware('bot')->forConnections($connections)->group($file);
+                        if (realpath($file) === false) {
+                            continue;
+                        }
+
+                        if ($names === ['*']) {
+                            Bot::middleware('bot')->forConnections(['*'])->group($file);
+                            continue;
+                        }
+
+                        $httpNames = array_values(array_filter($names, fn ($n) => isset($httpConnections[$n])));
+                        $mtNames   = array_values(array_filter($names, fn ($n) => !isset($httpConnections[$n])));
+
+                        if ($httpNames !== []) {
+                            Bot::middleware('bot')->forConnections($httpNames)->group($file);
+                        }
+
+                        if ($mtNames !== [] && $this->app->bound('client.listener')) {
+                            $this->app->make('client.listener')->middleware('client')->forSessions($mtNames)->group($file);
                         }
                     }
                 } else {
