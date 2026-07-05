@@ -37,6 +37,7 @@ use LaraGram\Foundation\Console\ConfigClearCommand;
 use LaraGram\Foundation\Console\ConfigPublishCommand;
 use LaraGram\Foundation\Console\ConfigShowCommand;
 use LaraGram\Foundation\Console\ConsoleMakeCommand;
+use LaraGram\Foundation\Console\ConversationMakeCommand;
 use LaraGram\Foundation\Console\EnumMakeCommand;
 use LaraGram\Foundation\Console\EnvironmentCommand;
 use LaraGram\Foundation\Console\EnvironmentDecryptCommand;
@@ -194,6 +195,7 @@ class CommanderServiceProvider extends ServiceProvider implements DeferrableProv
         QueuePruneFailedJobsCommand::class => [],
         QueueRestartCommand::class         => ['cache.store'],
         QueueWorkCommand::class            => ['queue.worker', 'cache.store'],
+        ConversationMakeCommand::class     => ['files'],
         JobMakeCommand::class              => ['files'],
         JobMiddlewareMakeCommand::class    => ['files'],
         ListenerMakeCommand::class         => ['files'],

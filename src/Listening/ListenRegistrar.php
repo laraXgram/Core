@@ -94,6 +94,7 @@ class ListenRegistrar
         'where',
         'withoutMiddleware',
         'withoutScopedBindings',
+        'overlap',
     ];
 
     /**
@@ -170,6 +171,17 @@ class ListenRegistrar
     public function forConnections(array|string $connections)
     {
         return $this->attribute('for_connections', (array) $connections);
+    }
+
+    /**
+     * Mark every listen in this group as runnable in overlap.
+     *
+     * @param  string|string[]|null  $groups
+     * @return $this
+     */
+    public function overlap(string|array|null $groups = null)
+    {
+        return $this->attribute('overlap', $groups === null ? [] : array_values((array) $groups));
     }
 
     /**

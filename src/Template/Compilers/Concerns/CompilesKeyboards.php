@@ -4,43 +4,78 @@ namespace LaraGram\Template\Compilers\Concerns;
 
 trait CompilesKeyboards
 {
+    /**
+     * Compile the @keyboard directive.
+     *
+     * @param  string|null  $expression
+     * @return string
+     */
     public function compileKeyboard($expression)
     {
-        $compiled = '<?php $__t8__reply_markup = ';
-        $expression = str_replace(['\'', '"'], '', $expression);
+        $type = strtolower(trim(str_replace(['(', ')', '\'', '"', ' '], '', (string) $expression)));
 
-        if ($expression == '(reply)') {
-            $compiled .= "replyKeyboardMarkup(";
-        } elseif ($expression == '(remove)') {
-            $compiled .= "replyKeyboardRemove(";
-        } elseif ($expression == '(force)') {
-            $compiled .= "forceReply(";
-        } elseif ($expression == '(copy)') {
-            $compiled .= "copyTextButton(";
-        } else {
-            $compiled .= "inlineKeyboardMarkup(";
-        }
+        $factory = match ($type) {
+            'reply'  => 'replyKeyboardMarkup()',
+            'remove' => 'replyKeyboardRemove()',
+            'force'  => 'forceReply()',
+            default  => 'inlineKeyboardMarkup()',
+        };
 
-        return $compiled;
+        return "<?php \$__t8__kb = {$factory}; \$__t8__row = []; ?>";
     }
 
+    /**
+     * Compile the @endkeyboard directive.
+     *
+     * @param  string|null  $expression
+     * @return string
+     */
     public function compileEndKeyboard($expression)
     {
-        return ")->get(); ?>";
+        return "<?php \$__t8__reply_markup = \$__t8__kb->get(); ?>";
     }
 
+    /**
+     * Compile the @keyboardOptions directive (resize_keyboard, one_time_keyboard, ...).
+     *
+     * @param  string  $expression
+     * @return string
+     */
+    public function compileKeyboardOptions($expression)
+    {
+        return "<?php \$__t8__kb->setOptions{$expression}; ?>";
+    }
+
+    /**
+     * Compile the @row directive.
+     *
+     * @param  string|null  $expression
+     * @return string
+     */
     public function compileRow($expression)
     {
-        return "row(";
+        return "<?php \$__t8__row = []; ?>";
     }
 
+    /**
+     * Compile the @endrow directive.
+     *
+     * @param  string|null  $expression
+     * @return string
+     */
     public function compileEndRow($expression)
     {
-        return "),";
+        return "<?php if (! empty(\$__t8__row)) { \$__t8__kb->appendRow(\$__t8__row); } \$__t8__row = []; ?>";
     }
 
+    /**
+     * Compile the @col directive.
+     *
+     * @param  string  $expression
+     * @return string
+     */
     public function compileCol($expression)
     {
-        return "col".$expression.",";
+        return "<?php \$__t8__row[] = col{$expression}; ?>";
     }
 }

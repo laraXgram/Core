@@ -206,6 +206,59 @@ class ListenCollection extends AbstractListenCollection
     }
 
     /**
+     * Find overlap-flagged listens that should run alongside the primary.
+     *
+     * @param  \LaraGram\Request\Request  $request
+     * @param  \LaraGram\Listening\Listen  $primary
+     * @return \LaraGram\Listening\Listen[]
+     */
+    public function matchOverlap(Request $request, Listen $primary)
+    {
+        $currentConnection = Request::getDefaultConnection();
+
+        $candidates = array_values(array_filter(
+            $this->get($request->method()),
+            fn ($l) => $l->overlap
+                && $l !== $primary
+                && ! $l->isStepListen()
+                && ! $l->isFallback
+                && $this->listenMatchesConnection($l, $currentConnection)
+                && $l->matches($request)
+        ));
+
+        $selected = [];
+
+        // Group-less overlap listens always co-run with the primary.
+        foreach ($candidates as $i => $l) {
+            if ($l->overlapGroups === []) {
+                $selected[] = $l;
+                unset($candidates[$i]);
+            }
+        }
+        $candidates = array_values($candidates);
+
+        // Seed the active group set from the primary, then grow transitively.
+        $activeGroups = $primary->overlap ? $primary->overlapGroups : [];
+
+        do {
+            $added = false;
+
+            foreach ($candidates as $i => $l) {
+                if (array_intersect($activeGroups, $l->overlapGroups)) {
+                    $selected[] = $l;
+                    $activeGroups = array_values(array_unique(
+                        array_merge($activeGroups, $l->overlapGroups)
+                    ));
+                    unset($candidates[$i]);
+                    $added = true;
+                }
+            }
+        } while ($added);
+
+        return $selected;
+    }
+
+    /**
      * Get listens from the collection by method.
      *
      * @param  string|null  $method

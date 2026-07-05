@@ -324,9 +324,6 @@ class MediaFile
     /**
      * Get the direct download URL for this file.
      *
-     * Note: The returned URL contains the bot token — never expose it publicly.
-     * Download links are guaranteed valid for at least one hour per Telegram's policy.
-     *
      * @return string
      *
      * @throws RuntimeException
@@ -335,7 +332,6 @@ class MediaFile
     {
         $filePath = $this->resolveFilePath();
 
-        // local server — file_path is an absolute path on disk, not a URL segment
         if ($this->isLocalServer()) {
             return 'file://' . $filePath;
         }

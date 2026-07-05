@@ -2,34 +2,37 @@
 
 namespace LaraGram\Cache;
 
-use LaraGram\Support\Collection;
+use LaraGram\Contracts\Cache\Repository;
 
 class Step
 {
     /**
-     * The cache store implementation.
+     * The cache store (repository) implementation.
      *
-     * @var \LaraGram\Cache\CacheManager
+     * @var \LaraGram\Contracts\Cache\Repository
      */
     protected $cache;
 
     /**
-     * The step key name
-     *
-     * @var string
-     */
-    protected $key;
-
-    /**
      * Create a new step manager instance.
      *
-     * @param  \LaraGram\Cache\CacheManager  $cache
+     * @param  \LaraGram\Contracts\Cache\Repository  $store
      * @return void
      */
-    public function __construct(CacheManager $cache)
+    public function __construct(Repository $store)
     {
-        $this->cache = $cache;
-        $this->key = user()->id.":step";
+        $this->cache = $store;
+    }
+
+    /**
+     * Get the cache key for the current user's step.
+     *
+     *
+     * @return string
+     */
+    protected function key(): string
+    {
+        return user()->id.':step';
     }
 
     /**
@@ -43,7 +46,7 @@ class Step
     {
         $this->forget();
 
-        return $this->cache->set($this->key, $step, $ttl);
+        return $this->cache->set($this->key(), $step, $ttl);
     }
 
     /**
@@ -53,7 +56,7 @@ class Step
      */
     public function get(): mixed
     {
-        return $this->cache->get($this->key);
+        return $this->cache->get($this->key());
     }
 
     /**
@@ -63,7 +66,7 @@ class Step
      */
     public function forget(): bool
     {
-        return $this->cache->forget($this->key);
+        return $this->cache->forget($this->key());
     }
 
     /**
@@ -73,7 +76,7 @@ class Step
      */
     public function hasStep(): bool
     {
-        return $this->cache->has($this->key);
+        return $this->cache->has($this->key());
     }
 
     /**
@@ -93,7 +96,7 @@ class Step
      */
     public function pull(): mixed
     {
-        return $this->cache->pull($this->key);
+        return $this->cache->pull($this->key());
     }
 
     /**

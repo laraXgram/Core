@@ -164,7 +164,9 @@ class FileBag
      */
     public function last(): ?MediaFile
     {
-        return !empty($this->files) ? end($this->files) : null;
+        $key = array_key_last($this->files);
+
+        return $key === null ? null : $this->files[$key];
     }
 
     /**
