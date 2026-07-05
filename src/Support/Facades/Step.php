@@ -19,7 +19,10 @@ namespace LaraGram\Support\Facades;
  * @method static string|null current()
  * @method static bool isFirst()
  * @method static bool isLast()
+ * @method static \LaraGram\Cache\Step store(string|null $name = null)
+ * @method static string getDefaultStore()
  *
+ * @see \LaraGram\Cache\StepManager
  * @see \LaraGram\Cache\Step
  */
 class Step extends Facade
@@ -31,6 +34,6 @@ class Step extends Facade
      */
     protected static function getFacadeAccessor()
     {
-        return \LaraGram\Cache\Step::class;
+        return 'step';
     }
 }

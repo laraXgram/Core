@@ -59,6 +59,20 @@ class Listen
     public $isFallback = false;
 
     /**
+     * Indicates whether the listen may run alongside other matching listens.
+     *
+     * @var bool
+     */
+    public bool $overlap = false;
+
+    /**
+     * Groups this overlap listen belongs to.
+     *
+     * @var string[]
+     */
+    public array $overlapGroups = [];
+
+    /**
      * The step name this listen is bound to.
      *
      * @var string|null
@@ -733,6 +747,20 @@ class Listen
     public function setFallback($isFallback)
     {
         $this->isFallback = $isFallback;
+
+        return $this;
+    }
+
+    /**
+     * Mark this listen as runnable in overlap with other matching listens.
+     *
+     * @param  string|string[]|null  $groups
+     * @return $this
+     */
+    public function overlap(string|array|null $groups = null)
+    {
+        $this->overlap = true;
+        $this->overlapGroups = $groups === null ? [] : array_values((array) $groups);
 
         return $this;
     }

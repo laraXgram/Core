@@ -31,6 +31,12 @@ class CacheServiceProvider extends ServiceProvider implements DeferrableProvider
                 $app['config']->get('cache.limiter')
             ));
         });
+
+        $this->app->singleton('step', function ($app) {
+            return new StepManager($app['cache'], $app['config']);
+        });
+
+        $this->app->alias('step', StepManager::class);
     }
 
     /**
@@ -42,6 +48,7 @@ class CacheServiceProvider extends ServiceProvider implements DeferrableProvider
     {
         return [
             'cache', 'cache.store', 'memcached.connector', RateLimiter::class,
+            'step', StepManager::class,
         ];
     }
 }

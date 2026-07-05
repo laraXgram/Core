@@ -281,6 +281,20 @@ class Middleware
     }
 
     /**
+     * Modify the middleware in the "client" group.
+     *
+     * @param  array|string  $append
+     * @param  array|string  $prepend
+     * @param  array|string  $remove
+     * @param  array  $replace
+     * @return $this
+     */
+    public function client(array|string $append = [], array|string $prepend = [], array|string $remove = [], array $replace = [])
+    {
+        return $this->modifyGroup('client', $append, $prepend, $remove, $replace);
+    }
+
+    /**
      * Modify the middleware in the given group.
      *
      * @param  string  $group
@@ -400,6 +414,9 @@ class Middleware
     {
         $middleware = [
             'bot' => array_values(array_filter([
+                \LaraGram\Listening\Middleware\SubstituteBindings::class,
+            ])),
+            'client' => array_values(array_filter([
                 \LaraGram\Listening\Middleware\SubstituteBindings::class,
             ])),
         ];
