@@ -212,9 +212,9 @@ class ListenCollection extends AbstractListenCollection
      * @param  \LaraGram\Listening\Listen  $primary
      * @return \LaraGram\Listening\Listen[]
      */
-    public function matchOverlap(Request $request, Listen $primary)
+    public function matchOverlap(ProvidesListenContext $request, Listen $primary)
     {
-        $currentConnection = Request::getDefaultConnection();
+        $currentConnection = $request->listenScope();
 
         $candidates = array_values(array_filter(
             $this->get($request->method()),

@@ -553,7 +553,7 @@ class Listener implements BindingRegistrar, RegistrarContract
      * @param  \LaraGram\Listening\Listen  $primary
      * @return void
      */
-    protected function runOverlapListens(Request $request, Listen $primary)
+    protected function runOverlapListens(ProvidesListenContext $request, Listen $primary)
     {
         foreach ($this->listens->matchOverlap($request, $primary) as $listen) {
             $listen->setContainer($this->container);
