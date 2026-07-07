@@ -124,7 +124,7 @@ trait ManagesComponents
             $this->componentData[count($this->componentStack)],
             ['slot' => $defaultSlot],
             $this->slots[count($this->componentStack)],
-            ['__laravel_slots' => $slots]
+            ['__laragram_slots' => $slots]
         );
     }
 
