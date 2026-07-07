@@ -3,7 +3,7 @@
 namespace LaraGram\Listening\Expression\Node;
 
 use LaraGram\Listening\Expression\SyntaxError;
-use Symfony\Component\ExpressionLanguage\Compiler;
+use LaraGram\Listening\Expression\Compiler;
 
 class BinaryNode extends Node
 {
