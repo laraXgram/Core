@@ -18,12 +18,29 @@ class ListeningServiceProvider extends ServiceProvider
      */
     public function register()
     {
+        $this->registerRequest();
         $this->registerListener();
         $this->registerPathGenerator();
         $this->registerRedirector();
         $this->registerResponseFactory();
         $this->registerCallableDispatcher();
         $this->registerControllerDispatcher();
+    }
+
+    /**
+     * Register a default bot request binding.
+     *
+     * Provides a resolvable 'request' fallback so the binding exists even when
+     * the HTTP kernel is the one handling the current process. The bot kernel
+     * overrides this with the captured request via instance().
+     *
+     * @return void
+     */
+    protected function registerRequest()
+    {
+        $this->app->singleton('request', function () {
+            return \LaraGram\Request\Request::capture();
+        });
     }
 
     /**

@@ -182,7 +182,7 @@ class Request implements ProvidesListenContext
     public static function capture()
     {
         global $argv;
-        return static::createFromBase($argv);
+        return static::createFromBase($argv ?? []);
     }
 
     /**
@@ -260,6 +260,19 @@ class Request implements ProvidesListenContext
         return $this->message?->entities
             ?? $this->message?->caption_entities
             ?? [];
+    }
+
+        /**
+     * Check if the Update method is a top-level poll state update.
+     *
+     * @return false|string
+     */
+    protected function checkIfMethodIsPollUpdate()
+    {
+        if (isset($this->poll)) {
+            return 'UPDATE';
+        }
+        return false;
     }
 
     /**
@@ -501,9 +514,9 @@ class Request implements ProvidesListenContext
     {
         $newRequest = new static($request);
 
-        $newRequest->server = collect(json_decode($request[2]));
+        $newRequest->server = collect(json_decode($request[2] ?? "{}"));
 
-        $newRequest->content = collect(json_decode($request[1]));
+        $newRequest->content = collect(json_decode($request[1] ?? "{}"));
 
         return $newRequest;
     }

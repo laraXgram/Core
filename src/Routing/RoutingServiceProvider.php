@@ -23,6 +23,7 @@ class RoutingServiceProvider extends ServiceProvider
      */
     public function register()
     {
+        $this->registerHttpRequest();
         $this->registerRouter();
         $this->registerUrlGenerator();
         $this->registerRedirector();
@@ -31,6 +32,22 @@ class RoutingServiceProvider extends ServiceProvider
         $this->registerResponseFactory();
         $this->registerCallableDispatcher();
         $this->registerControllerDispatcher();
+    }
+
+    /**
+     * Register a default HTTP request binding.
+     *
+     * Provides a resolvable 'http.request' fallback so the binding exists even
+     * when the bot kernel is the one handling the current process. The HTTP
+     * kernel overrides this with the captured request via instance().
+     *
+     * @return void
+     */
+    protected function registerHttpRequest()
+    {
+        $this->app->singleton('http.request', function () {
+            return \LaraGram\Http\Request::capture();
+        });
     }
 
     /**
