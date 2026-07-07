@@ -57,7 +57,7 @@ return [
     | Rehash On Login
     |--------------------------------------------------------------------------
     |
-    | Setting this option to true will tell Laravel to automatically rehash
+    | Setting this option to true will tell LaraGram to automatically rehash
     | the user's password during login if the configured work factor for
     | the algorithm has changed, allowing graceful upgrades of hashes.
     |
