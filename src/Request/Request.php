@@ -431,7 +431,7 @@ class Request
      *
      * @return array
      */
-    protected function toArray(): array
+    public function toArray(): array
     {
         $source = $this->getInputSource();
 
@@ -642,7 +642,7 @@ class Request
      * @param string $key
      * @return bool
      */
-    public function __isset($key)
+    public function __isset($key): bool
     {
         return !is_null($this->__get($key));
     }
