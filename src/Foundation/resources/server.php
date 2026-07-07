@@ -15,6 +15,6 @@ $app = require_once __DIR__.'/../../../bootstrap/app.php';
 
 if (isset($argv)) {
     $app->handleRequest(BotRequest::capture());
+} else {
+    $app->handleHttpRequest(HttpRequest::capture());
 }
-
-$app->handleHttpRequest(HttpRequest::capture());
