@@ -1,0 +1,146 @@
+<?php
+
+namespace LaraGram\Http;
+
+use LaraGram\Container\Container;
+use LaraGram\Contracts\Filesystem\Factory as FilesystemFactory;
+use LaraGram\Contracts\Filesystem\FileNotFoundException;
+use LaraGram\Support\Arr;
+use LaraGram\Support\Traits\Macroable;
+use LaraGram\Http\Files\UploadedFile as BaseUploadedFile;
+
+class UploadedFile extends BaseUploadedFile
+{
+    use FileHelpers, Macroable;
+
+    /**
+     * Store the uploaded file on a filesystem disk.
+     *
+     * @param  string  $path
+     * @param  array|string  $options
+     * @return string|false
+     */
+    public function store($path = '', $options = [])
+    {
+        return $this->storeAs($path, $this->hashName(), $this->parseOptions($options));
+    }
+
+    /**
+     * Store the uploaded file on a filesystem disk with public visibility.
+     *
+     * @param  string  $path
+     * @param  array|string  $options
+     * @return string|false
+     */
+    public function storePublicly($path = '', $options = [])
+    {
+        $options = $this->parseOptions($options);
+
+        $options['visibility'] = 'public';
+
+        return $this->storeAs($path, $this->hashName(), $options);
+    }
+
+    /**
+     * Store the uploaded file on a filesystem disk with public visibility.
+     *
+     * @param  string  $path
+     * @param  array|string|null  $name
+     * @param  array|string  $options
+     * @return string|false
+     */
+    public function storePubliclyAs($path, $name = null, $options = [])
+    {
+        if (is_null($name) || is_array($name)) {
+            [$path, $name, $options] = ['', $path, $name ?? []];
+        }
+
+        $options = $this->parseOptions($options);
+
+        $options['visibility'] = 'public';
+
+        return $this->storeAs($path, $name, $options);
+    }
+
+    /**
+     * Store the uploaded file on a filesystem disk.
+     *
+     * @param  string  $path
+     * @param  array|string|null  $name
+     * @param  array|string  $options
+     * @return string|false
+     */
+    public function storeAs($path, $name = null, $options = [])
+    {
+        if (is_null($name) || is_array($name)) {
+            [$path, $name, $options] = ['', $path, $name ?? []];
+        }
+
+        $options = $this->parseOptions($options);
+
+        $disk = Arr::pull($options, 'disk');
+
+        return Container::getInstance()->make(FilesystemFactory::class)->disk($disk)->putFileAs(
+            $path, $this, $name, $options
+        );
+    }
+
+    /**
+     * Get the contents of the uploaded file.
+     *
+     * @return false|string
+     *
+     * @throws \LaraGram\Contracts\Filesystem\FileNotFoundException
+     */
+    public function get()
+    {
+        if (! $this->isValid()) {
+            throw new FileNotFoundException("File does not exist at path {$this->getPathname()}.");
+        }
+
+        return file_get_contents($this->getPathname());
+    }
+
+    /**
+     * Get the file's extension supplied by the client.
+     *
+     * @return string
+     */
+    public function clientExtension()
+    {
+        return $this->guessClientExtension();
+    }
+
+    /**
+     * Create a new file instance from a base instance.
+     *
+     * @param  \LaraGram\Http\Files\UploadedFile  $file
+     * @param  bool  $test
+     * @return static
+     */
+    public static function createFromBase(BaseUploadedFile $file, $test = false)
+    {
+        return $file instanceof static ? $file : new static(
+            $file->getPathname(),
+            $file->getClientOriginalPath(),
+            $file->getClientMimeType(),
+            $file->getError(),
+            $test
+        );
+    }
+
+    /**
+     * Parse and format the given options.
+     *
+     * @param  array|string  $options
+     * @return array
+     */
+    protected function parseOptions($options)
+    {
+        if (is_string($options)) {
+            $options = ['disk' => $options];
+        }
+
+        return $options;
+    }
+}
