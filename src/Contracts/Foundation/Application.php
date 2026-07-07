@@ -14,7 +14,7 @@ interface Application extends Container
     public function version();
 
     /**
-     * Get the base path of the LaraGram installation.
+     * Get the base path of the Laravel installation.
      *
      * @param  string  $path
      * @return string
@@ -62,6 +62,14 @@ interface Application extends Container
     public function publicPath($path = '');
 
     /**
+     * Get the path to the resources directory.
+     *
+     * @param  string  $path
+     * @return string
+     */
+    public function resourcePath($path = '');
+
+    /**
      * Get the path to the storage directory.
      *
      * @param  string  $path
@@ -83,6 +91,27 @@ interface Application extends Container
      * @return bool
      */
     public function runningInConsole();
+
+    /**
+     * Determine if the application is running with debug mode enabled.
+     *
+     * @return bool
+     */
+    public function hasDebugModeEnabled();
+
+    /**
+     * Get an instance of the maintenance mode manager implementation.
+     *
+     * @return \LaraGram\Contracts\Foundation\MaintenanceMode
+     */
+    public function maintenanceMode();
+
+    /**
+     * Determine if the application is currently down for maintenance.
+     *
+     * @return bool
+     */
+    public function isDownForMaintenance();
 
     /**
      * Register all of the configured providers.

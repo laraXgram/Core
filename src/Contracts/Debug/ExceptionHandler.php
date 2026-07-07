@@ -25,6 +25,18 @@ interface ExceptionHandler
     public function shouldReport(Throwable $e);
 
     /**
+     * Render an exception into an HTTP response.
+     *
+     * @param  \LaraGram\Http\Request  $request
+     * @param  \Throwable  $e
+     * @return \LaraGram\Http\BaseResponse
+     *
+     * @throws \Throwable
+     */
+    public function render($request, Throwable $e);
+
+
+    /**
      * Render an exception to the console.
      *
      * @param  \LaraGram\Console\Output\OutputInterface  $output
