@@ -4,7 +4,7 @@ namespace LaraGram\Contracts\Container;
 
 use Closure;
 
-interface Container
+interface Container extends ContainerInterface
 {
     /**
      * {@inheritdoc}
@@ -39,7 +39,7 @@ interface Container
      * Assign a set of tags to a given binding.
      *
      * @param  array|string  $abstracts
-     * @param  array|mixed  ...$tags
+     * @param  mixed  ...$tags
      * @return void
      */
     public function tag($abstracts, $tags);
