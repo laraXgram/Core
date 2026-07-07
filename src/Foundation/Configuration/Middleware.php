@@ -2,7 +2,17 @@
 
 namespace LaraGram\Foundation\Configuration;
 
+use Closure;
+use LaraGram\Cookie\Middleware\EncryptCookies;
+use LaraGram\Foundation\Http\Middleware\ConvertEmptyStringsToNull;
+use LaraGram\Foundation\Http\Middleware\PreventRequestForgery;
+use LaraGram\Foundation\Http\Middleware\PreventRequestsDuringMaintenance;
+use LaraGram\Foundation\Http\Middleware\TrimStrings;
+use LaraGram\Http\Middleware\TrustHosts;
+use LaraGram\Http\Middleware\TrustProxies;
+use LaraGram\Routing\Middleware\ValidateSignature;
 use LaraGram\Support\Arr;
+use LaraGram\Support\Collection;
 
 class Middleware
 {
@@ -77,11 +87,39 @@ class Middleware
     protected $groupReplacements = [];
 
     /**
+     * Indicates if the "trust hosts" middleware is enabled.
+     *
+     * @var bool
+     */
+    protected $trustHosts = false;
+
+    /**
+     * Indicates if Sanctum's frontend state middleware is enabled.
+     *
+     * @var bool
+     */
+    protected $statefulApi = false;
+
+    /**
+     * Indicates the API middleware group's rate limiter.
+     *
+     * @var string
+     */
+    protected $apiLimiter;
+
+    /**
      * Indicates if Redis throttling should be applied.
      *
      * @var bool
      */
     protected $throttleWithRedis = false;
+
+    /**
+     * Indicates if sessions should be authenticated for the "web" middleware group.
+     *
+     * @var bool
+     */
+    protected $authenticatedSessions = false;
 
     /**
      * The custom middleware aliases.
@@ -281,6 +319,34 @@ class Middleware
     }
 
     /**
+     * Modify the middleware in the "web" group.
+     *
+     * @param  array|string  $append
+     * @param  array|string  $prepend
+     * @param  array|string  $remove
+     * @param  array  $replace
+     * @return $this
+     */
+    public function web(array|string $append = [], array|string $prepend = [], array|string $remove = [], array $replace = [])
+    {
+        return $this->modifyGroup('web', $append, $prepend, $remove, $replace);
+    }
+
+    /**
+     * Modify the middleware in the "api" group.
+     *
+     * @param  array|string  $append
+     * @param  array|string  $prepend
+     * @param  array|string  $remove
+     * @param  array  $replace
+     * @return $this
+     */
+    public function api(array|string $append = [], array|string $prepend = [], array|string $remove = [], array $replace = [])
+    {
+        return $this->modifyGroup('api', $append, $prepend, $remove, $replace);
+    }
+
+    /**
      * Modify the middleware in the given group.
      *
      * @param  string  $group
@@ -375,8 +441,7 @@ class Middleware
     public function getGlobalMiddleware()
     {
         $middleware = $this->global ?: array_values(array_filter([
-            \LaraGram\Foundation\Bot\Middleware\HandleMultiBotUpdate::class,
-            \LaraGram\Foundation\Bot\Middleware\InvokeDeferredCallbacks::class,
+
         ]));
 
         $middleware = array_map(function ($middleware) {
@@ -400,7 +465,34 @@ class Middleware
     {
         $middleware = [
             'bot' => array_values(array_filter([
+                \LaraGram\Foundation\Bot\Middleware\HandleMultiBotUpdate::class,
+                \LaraGram\Foundation\Bot\Middleware\InvokeDeferredCallbacks::class,
                 \LaraGram\Listening\Middleware\SubstituteBindings::class,
+            ])),
+
+            'web' => array_values(array_filter([
+                \LaraGram\Http\Middleware\ValidatePathEncoding::class,
+                \LaraGram\Foundation\Http\Middleware\InvokeDeferredCallbacks::class,
+                $this->trustHosts ? \LaraGram\Http\Middleware\TrustHosts::class : null,
+                \LaraGram\Http\Middleware\TrustProxies::class,
+                \LaraGram\Http\Middleware\HandleCors::class,
+                \LaraGram\Foundation\Http\Middleware\PreventRequestsDuringMaintenance::class,
+                \LaraGram\Http\Middleware\ValidatePostSize::class,
+                \LaraGram\Foundation\Http\Middleware\TrimStrings::class,
+                \LaraGram\Foundation\Http\Middleware\ConvertEmptyStringsToNull::class,
+
+                \LaraGram\Cookie\Middleware\EncryptCookies::class,
+                \LaraGram\Cookie\Middleware\AddQueuedCookiesToResponse::class,
+                \LaraGram\Session\Middleware\StartSession::class,
+                \LaraGram\View\Middleware\ShareErrorsFromSession::class,
+                \LaraGram\Foundation\Http\Middleware\PreventRequestForgery::class,
+                \LaraGram\Routing\Middleware\SubstituteBindings::class,
+                $this->authenticatedSessions ? 'auth.session' : null,
+            ])),
+
+            'api' => array_values(array_filter([
+                $this->apiLimiter ? 'throttle:'.$this->apiLimiter : null,
+                \LaraGram\Routing\Middleware\SubstituteBindings::class,
             ])),
         ];
 
@@ -436,6 +528,176 @@ class Middleware
     }
 
     /**
+     * Configure the cookie encryption middleware.
+     *
+     * @param  array<int, string>  $except
+     * @return $this
+     */
+    public function encryptCookies(array $except = [])
+    {
+        EncryptCookies::except($except);
+
+        return $this;
+    }
+
+    /**
+     * Configure the request forgery prevention middleware.
+     *
+     * @param  array  $except
+     * @param  bool  $originOnly
+     * @param  bool  $allowSameSite
+     * @return $this
+     */
+    public function preventRequestForgery(array $except = [], bool $originOnly = false, bool $allowSameSite = false)
+    {
+        if (! empty($except)) {
+            PreventRequestForgery::except($except);
+        }
+
+        PreventRequestForgery::useOriginOnly($originOnly);
+        PreventRequestForgery::allowSameSite($allowSameSite);
+
+        return $this;
+    }
+
+    /**
+     * Configure the CSRF token validation middleware.
+     *
+     * @deprecated Use preventRequestForgery() instead.
+     *
+     * @param  array  $except
+     * @return $this
+     */
+    public function validateCsrfTokens(array $except = [])
+    {
+        return $this->preventRequestForgery($except);
+    }
+
+    /**
+     * Configure the URL signature validation middleware.
+     *
+     * @param  array  $except
+     * @return $this
+     */
+    public function validateSignatures(array $except = [])
+    {
+        ValidateSignature::except($except);
+
+        return $this;
+    }
+
+    /**
+     * Configure the empty string conversion middleware.
+     *
+     * @param  array<int, (\Closure(\LaraGram\Http\Request): bool)>  $except
+     * @return $this
+     */
+    public function convertEmptyStringsToNull(array $except = [])
+    {
+        (new Collection($except))->each(fn (Closure $callback) => ConvertEmptyStringsToNull::skipWhen($callback));
+
+        return $this;
+    }
+
+    /**
+     * Configure the string trimming middleware.
+     *
+     * @param  array<int, (\Closure(\LaraGram\Http\Request): bool)|string>  $except
+     * @return $this
+     */
+    public function trimStrings(array $except = [])
+    {
+        [$skipWhen, $except] = (new Collection($except))->partition(fn ($value) => $value instanceof Closure);
+
+        $skipWhen->each(fn (Closure $callback) => TrimStrings::skipWhen($callback));
+
+        TrimStrings::except($except->all());
+
+        return $this;
+    }
+
+    /**
+     * Indicate that the trusted host middleware should be enabled.
+     *
+     * @param  array<int, string>|(callable(): array<int, string>)|null  $at
+     * @param  bool  $subdomains
+     * @return $this
+     */
+    public function trustHosts(array|callable|null $at = null, bool $subdomains = true)
+    {
+        $this->trustHosts = true;
+
+        if (! is_null($at)) {
+            TrustHosts::at($at, $subdomains);
+        }
+
+        return $this;
+    }
+
+    /**
+     * Configure the trusted proxies for the application.
+     *
+     * @param  array<int, string>|string|null  $at
+     * @param  int|null  $headers
+     * @return $this
+     */
+    public function trustProxies(array|string|null $at = null, ?int $headers = null)
+    {
+        if (! is_null($at)) {
+            TrustProxies::at($at);
+        }
+
+        if (! is_null($headers)) {
+            TrustProxies::withHeaders($headers);
+        }
+
+        return $this;
+    }
+
+    /**
+     * Configure the middleware that prevents requests during maintenance mode.
+     *
+     * @param  array<int, string>  $except
+     * @return $this
+     */
+    public function preventRequestsDuringMaintenance(array $except = [])
+    {
+        PreventRequestsDuringMaintenance::except($except);
+
+        return $this;
+    }
+
+    /**
+     * Indicate that Sanctum's frontend state middleware should be enabled.
+     *
+     * @return $this
+     */
+    public function statefulApi()
+    {
+        $this->statefulApi = true;
+
+        return $this;
+    }
+
+    /**
+     * Indicate that the API middleware group's throttling middleware should be enabled.
+     *
+     * @param  string  $limiter
+     * @param  bool  $redis
+     * @return $this
+     */
+    public function throttleApi($limiter = 'api', $redis = false)
+    {
+        $this->apiLimiter = $limiter;
+
+        if ($redis) {
+            $this->throttleWithRedis();
+        }
+
+        return $this;
+    }
+
+    /**
      * Indicate that LaraGram's throttling middleware should use Redis.
      *
      * @return $this
@@ -443,6 +705,18 @@ class Middleware
     public function throttleWithRedis()
     {
         $this->throttleWithRedis = true;
+
+        return $this;
+    }
+
+    /**
+     * Indicate that sessions should be authenticated for the "web" middleware group.
+     *
+     * @return $this
+     */
+    public function authenticateSessions()
+    {
+        $this->authenticatedSessions = true;
 
         return $this;
     }
@@ -465,6 +739,14 @@ class Middleware
     protected function defaultAliases()
     {
         $aliases = [
+            'auth.session' => \LaraGram\Session\Middleware\AuthenticateSession::class,
+            'cache.headers' => \LaraGram\Http\Middleware\SetCacheHeaders::class,
+            'precognitive' => \LaraGram\Foundation\Http\Middleware\HandlePrecognitiveRequests::class,
+            'signed' => \LaraGram\Routing\Middleware\ValidateSignature::class,
+            'route.throttle' => $this->throttleWithRedis
+                ? \LaraGram\Routing\Middleware\ThrottleRequestsWithRedis::class
+                : \LaraGram\Routing\Middleware\ThrottleRequests::class,
+
             'can' => \LaraGram\Auth\Middleware\Authorize::class,
             'reply' => \LaraGram\Listening\Middleware\Reply::class,
             'scope' => \LaraGram\Listening\Middleware\Scope::class,
@@ -472,6 +754,7 @@ class Middleware
             'throttle' => $this->throttleWithRedis
                 ? \LaraGram\Listening\Middleware\ThrottleRequestsWithRedis::class
                 : \LaraGram\Listening\Middleware\ThrottleRequests::class,
+
         ];
 
         return $aliases;

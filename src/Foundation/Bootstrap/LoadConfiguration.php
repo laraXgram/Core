@@ -2,31 +2,50 @@
 
 namespace LaraGram\Foundation\Bootstrap;
 
+use Closure;
 use LaraGram\Config\Repository;
 use LaraGram\Contracts\Config\Repository as RepositoryContract;
 use LaraGram\Contracts\Foundation\Application;
+use LaraGram\Support\Collection;
 use LaraGram\Support\Finder\Finder;
 use SplFileInfo;
 
 class LoadConfiguration
 {
+    /**
+     * The closure that resolves the permanent, static configuration if applicable.
+     *
+     * @var (Closure(\LaraGram\Contracts\Foundation\Application): array<array-key, mixed>)|null
+     */
+    protected static ?Closure $alwaysUseConfig = null;
+
     public function bootstrap(Application $app)
     {
         $items = [];
 
-        if (file_exists($cached = $app->getCachedConfigPath())) {
+        $loadedFromCache = false;
+
+        if (self::$alwaysUseConfig !== null) {
+            $items = $app->call(self::$alwaysUseConfig);
+
+            $loadedFromCache = true;
+        } elseif (file_exists($cached = $app->getCachedConfigPath())) {
             $items = require $cached;
 
-            $app->instance('config_loaded_from_cache', $loadedFromCache = true);
+            $loadedFromCache = true;
         }
+
+        $app->instance('config_loaded_from_cache', false);
 
         $app->instance('config', $config = new Repository($items));
 
-        if (! isset($loadedFromCache)) {
+        if (! $loadedFromCache) {
             $this->loadConfigurationFiles($app, $config);
         }
 
         $app->detectEnvironment(fn () => $config->get('app.env', 'production'));
+
+        $app->resolveEnvironmentUsing($app->environment(...));
 
         date_default_timezone_set($config->get('app.timezone', 'UTC'));
 
@@ -45,7 +64,7 @@ class LoadConfiguration
             ? $this->getBaseConfiguration()
             : [];
 
-        foreach (array_diff(array_keys($base), array_keys($files)) as $name => $config) {
+        foreach ((new Collection($base))->diffKeys($files) as $name => $config) {
             $repository->set($name, $config);
         }
 
@@ -81,6 +100,7 @@ class LoadConfiguration
     protected function mergeableOptions($name)
     {
         return [
+            'auth' => ['providers'],
             'cache' => ['stores'],
             'database' => ['connections'],
             'filesystems' => ['disks'],
@@ -130,5 +150,16 @@ class LoadConfiguration
         }
 
         return $config;
+    }
+
+    /**
+     * Set a callback to return the permanent, static configuration values.
+     *
+     * @param  (Closure(Application): array<array-key, mixed>)|null  $alwaysUseConfig
+     * @return void
+     */
+    public static function alwaysUse(?Closure $alwaysUseConfig): void
+    {
+        static::$alwaysUseConfig = $alwaysUseConfig;
     }
 }

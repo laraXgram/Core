@@ -62,7 +62,7 @@ class EnvironmentDecryptCommand extends Command
      */
     public function handle()
     {
-        $key = $this->option('key') ?: Env::get('LARAVEL_ENV_ENCRYPTION_KEY');
+        $key = $this->option('key') ?: Env::get('LARAGRAM_ENV_ENCRYPTION_KEY');
 
         if (! $key && $this->input->isInteractive()) {
             $key = password('What is the decryption key?');

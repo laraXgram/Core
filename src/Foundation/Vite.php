@@ -731,7 +731,7 @@ class Vite implements Htmlable
     /**
      * Generate an appropriate tag for the given URL in HMR mode.
      *
-     * @deprecated Will be removed in a future Laravel version.
+     * @deprecated Will be removed in a future LaraGram version.
      *
      * @param  string  $url
      * @return string
@@ -748,7 +748,7 @@ class Vite implements Htmlable
     /**
      * Generate a script tag for the given URL.
      *
-     * @deprecated Will be removed in a future Laravel version.
+     * @deprecated Will be removed in a future LaraGram version.
      *
      * @param  string  $url
      * @return string
@@ -761,7 +761,7 @@ class Vite implements Htmlable
     /**
      * Generate a stylesheet tag for the given URL in HMR mode.
      *
-     * @deprecated Will be removed in a future Laravel version.
+     * @deprecated Will be removed in a future LaraGram version.
      *
      * @param  string  $url
      * @return string

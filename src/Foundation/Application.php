@@ -7,11 +7,20 @@ use Composer\Autoload\ClassLoader;
 use LaraGram\Console\Input\InputInterface;
 use LaraGram\Console\Output\ConsoleOutput;
 use LaraGram\Container\Container;
+use LaraGram\Contracts\Foundation\CachesRoutes;
+use LaraGram\Contracts\Foundation\CachesListens;
+use LaraGram\Contracts\Foundation\MaintenanceMode as MaintenanceModeContract;
 use LaraGram\Contracts\Foundation\Application as ApplicationContract;
 use LaraGram\Contracts\Console\Kernel as ConsoleKernelContract;
 use LaraGram\Contracts\Bot\Kernel as BotKernelContract;
+use LaraGram\Contracts\Http\Kernel as HttpKernelContract;
+use LaraGram\Foundation\Http\HttpKernelInterface;
+use LaraGram\Foundation\Bot\BotKernelInterface;
 use LaraGram\Foundation\Bootstrap\LoadEnvironmentVariables;
+use LaraGram\Foundation\Http\Exceptions\HttpException;
+use LaraGram\Foundation\Http\Exceptions\NotFoundHttpException;
 use LaraGram\Request\Request;
+use LaraGram\Http\Request as HttpRequest;
 use LaraGram\Contracts\Foundation\CachesConfiguration;
 use LaraGram\Events\EventServiceProvider;
 use LaraGram\Filesystem\Filesystem;
@@ -19,6 +28,7 @@ use LaraGram\Foundation\Events\LocaleUpdated;
 use LaraGram\Log\Context\ContextServiceProvider;
 use LaraGram\Log\LogServiceProvider;
 use LaraGram\Listening\ListeningServiceProvider;
+use LaraGram\Routing\RoutingServiceProvider;
 use LaraGram\Support\Arr;
 use LaraGram\Support\Collection;
 use LaraGram\Support\Env;
@@ -27,7 +37,7 @@ use LaraGram\Support\Traits\Macroable;
 
 use function LaraGram\Filesystem\join_paths;
 
-class Application extends Container implements ApplicationContract, CachesConfiguration
+class Application extends Container implements ApplicationContract, CachesConfiguration, CachesListens, CachesRoutes, BotKernelInterface, HttpKernelInterface
 {
     use Macroable;
 
@@ -36,7 +46,7 @@ class Application extends Container implements ApplicationContract, CachesConfig
      *
      * @var string
      */
-    const VERSION = "3.0.0";
+    const VERSION = "4.0.0";
 
     /**
      * The base path for the LaraGram installation.
@@ -245,6 +255,7 @@ class Application extends Container implements ApplicationContract, CachesConfig
     {
         return match (true) {
             isset($_ENV['APP_BASE_PATH']) => $_ENV['APP_BASE_PATH'],
+            isset($_SERVER['APP_BASE_PATH']) => $_SERVER['APP_BASE_PATH'],
             default => dirname(array_values(array_filter(
                 array_keys(ClassLoader::getRegisteredLoaders()),
                 fn ($path) => ! str_starts_with($path, 'phar://'),
@@ -274,6 +285,7 @@ class Application extends Container implements ApplicationContract, CachesConfig
         $this->instance('app', $this);
 
         $this->instance(Container::class, $this);
+        $this->singleton(Mix::class);
 
         $this->singleton(PackageManifest::class, fn() => new PackageManifest(
             new Filesystem, $this->basePath(), $this->getCachedPackagesPath()
@@ -291,6 +303,7 @@ class Application extends Container implements ApplicationContract, CachesConfig
         $this->register(new LogServiceProvider($this));
         $this->register(new ContextServiceProvider($this));
         $this->register(new ListeningServiceProvider($this));
+        $this->register(new RoutingServiceProvider($this));
     }
 
     /**
@@ -386,6 +399,7 @@ class Application extends Container implements ApplicationContract, CachesConfig
         $this->instance('path.config', $this->configPath());
         $this->instance('path.database', $this->databasePath());
         $this->instance('path.public', $this->publicPath());
+        $this->instance('path.resources', $this->resourcePath());
         $this->instance('path.storage', $this->storagePath());
         $this->instance('path.laragram', dirname(__DIR__));
 
@@ -591,6 +605,10 @@ class Application extends Container implements ApplicationContract, CachesConfig
             return $this->joinPaths($this->storagePath ?: $_ENV['LARAGRAM_STORAGE_PATH'], $path);
         }
 
+        if (isset($_SERVER['LARAGRAM_STORAGE_PATH'])) {
+            return $this->joinPaths($this->storagePath ?: $_SERVER['LARAGRAM_STORAGE_PATH'], $path);
+        }
+
         return $this->joinPaths($this->storagePath ?: $this->basePath('storage'), $path);
     }
 
@@ -607,6 +625,32 @@ class Application extends Container implements ApplicationContract, CachesConfig
         $this->instance('path.storage', $path);
 
         return $this;
+    }
+
+    /**
+     * Get the path to the resources directory.
+     *
+     * @param  string  $path
+     * @return string
+     */
+    public function resourcePath($path = '')
+    {
+        return $this->joinPaths($this->basePath('resources'), $path);
+    }
+
+    /**
+     * Get the path to the views directory.
+     *
+     * This method returns the first configured path in the array of view paths.
+     *
+     * @param  string  $path
+     * @return string
+     */
+    public function viewPath($path = '')
+    {
+        $viewPath = rtrim($this['config']->get('view.paths')[0], DIRECTORY_SEPARATOR);
+
+        return $this->joinPaths($viewPath, $path);
     }
 
     /**
@@ -1119,6 +1163,26 @@ class Application extends Container implements ApplicationContract, CachesConfig
     }
 
     /**
+     * {@inheritdoc}
+     *
+     * @return \LaraGram\Request\Response
+     */
+    public function handleBot(Request $request, int $type = self::BOT_MAIN_REQUEST, bool $catch = true): \LaraGram\Request\Response
+    {
+        return $this[BotKernelContract::class]->handle(Request::createFromBase($request));
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @return \LaraGram\Http\BaseResponse
+     */
+    public function handleHttp(\LaraGram\Http\BaseRequest $request, int $type = self::HTTP_MAIN_REQUEST, bool $catch = true): \LaraGram\Http\BaseResponse
+    {
+        return $this[HttpKernelContract::class]->handle(Request::createFromBase($request));
+    }
+
+    /**
      * Handle the incoming Bot request and send the response to the client.
      *
      * @param  \LaraGram\Request\Request  $request
@@ -1127,6 +1191,21 @@ class Application extends Container implements ApplicationContract, CachesConfig
     public function handleRequest(Request $request)
     {
         $kernel = $this->make(BotKernelContract::class);
+
+        $response = $kernel->handle($request)->send();
+
+        $kernel->terminate($request, $response);
+    }
+
+    /**
+     * Handle the incoming HTTP request and send the response to the browser.
+     *
+     * @param  \LaraGram\Http\Request  $request
+     * @return void
+     */
+    public function handleHttpRequest(HttpRequest $request)
+    {
+        $kernel = $this->make(HttpKernelContract::class);
 
         $response = $kernel->handle($request)->send();
 
@@ -1211,9 +1290,13 @@ class Application extends Container implements ApplicationContract, CachesConfig
      *
      * @return bool
      */
-    public function configurationIsCached(): bool
+    public function configurationIsCached()
     {
-        return is_file($this->getCachedConfigPath());
+        if ($this->bound('config_loaded_from_cache')) {
+            return (bool) $this->make('config_loaded_from_cache');
+        }
+
+        return $this->instance('config_loaded_from_cache', is_file($this->getCachedConfigPath()));
     }
 
     /**
@@ -1224,6 +1307,30 @@ class Application extends Container implements ApplicationContract, CachesConfig
     public function getCachedConfigPath(): string
     {
         return $this->normalizeCachePath('APP_CONFIG_CACHE', 'cache/config.php');
+    }
+
+    /**
+     * Determine if the application routes are cached.
+     *
+     * @return bool
+     */
+    public function routesAreCached()
+    {
+        if ($this->bound('routes.cached')) {
+            return (bool) $this->make('routes.cached');
+        }
+
+        return $this->instance('routes.cached', $this['files']->exists($this->getCachedRoutesPath()));
+    }
+
+    /**
+     * Get the path to the routes cache file.
+     *
+     * @return string
+     */
+    public function getCachedRoutesPath()
+    {
+        return $this->normalizeCachePath('APP_ROUTES_CACHE', 'cache/routes.php');
     }
 
     /**
@@ -1295,6 +1402,46 @@ class Application extends Container implements ApplicationContract, CachesConfig
         $this->absoluteCachePathPrefixes[] = $prefix;
 
         return $this;
+    }
+
+    /**
+     * Get an instance of the maintenance mode manager implementation.
+     *
+     * @return \LaraGram\Contracts\Foundation\MaintenanceMode
+     */
+    public function maintenanceMode()
+    {
+        return $this->make(MaintenanceModeContract::class);
+    }
+
+    /**
+     * Determine if the application is currently down for maintenance.
+     *
+     * @return bool
+     */
+    public function isDownForMaintenance()
+    {
+        return $this->maintenanceMode()->active();
+    }
+
+    /**
+     * Throw an HttpException with the given data.
+     *
+     * @param  int  $code
+     * @param  string  $message
+     * @param  array  $headers
+     * @return never
+     *
+     * @throws \LaraGram\Foundation\Http\Exceptions\HttpException
+     * @throws \LaraGram\Foundation\Http\Exceptions\NotFoundHttpException
+     */
+    public function abort($code, $message = '', array $headers = [])
+    {
+        if ($code == 404) {
+            throw new NotFoundHttpException($message, null, 0, $headers);
+        }
+
+        throw new HttpException($code, $message, null, $headers);
     }
 
     /**
@@ -1452,11 +1599,13 @@ class Application extends Container implements ApplicationContract, CachesConfig
      */
     public function setLocale($locale)
     {
+        $previous = $this['config']->get('app.locale');
+
         $this['config']->set('app.locale', $locale);
 
         $this['translator']->setLocale($locale);
 
-        $this['events']->dispatch(new LocaleUpdated($locale));
+        $this['events']->dispatch(new LocaleUpdated($locale, $previous));
     }
 
     /**
@@ -1493,9 +1642,11 @@ class Application extends Container implements ApplicationContract, CachesConfig
         foreach ([
                      'app' => [self::class, \LaraGram\Contracts\Container\Container::class, \LaraGram\Contracts\Foundation\Application::class],
                      'auth' => [\LaraGram\Auth\AuthManager::class],
+                     'blade.compiler' => [\LaraGram\View\Compilers\BladeCompiler::class],
                      'cache' => [\LaraGram\Cache\CacheManager::class, \LaraGram\Contracts\Cache\Factory::class],
                      'cache.store' => [\LaraGram\Cache\Repository::class, \LaraGram\Contracts\Cache\Repository::class],
                      'config' => [\LaraGram\Config\Repository::class, \LaraGram\Contracts\Config\Repository::class],
+                     'cookie' => [\LaraGram\Cookie\CookieJar::class, \LaraGram\Contracts\Cookie\Factory::class, \LaraGram\Contracts\Cookie\QueueingFactory::class],
                      'db' => [\LaraGram\Database\DatabaseManager::class, \LaraGram\Database\ConnectionResolverInterface::class],
                      'db.connection' => [\LaraGram\Database\Connection::class, \LaraGram\Database\ConnectionInterface::class],
                      'db.schema' => [\LaraGram\Database\Schema\Builder::class],
@@ -1506,7 +1657,10 @@ class Application extends Container implements ApplicationContract, CachesConfig
                      'filesystem.disk' => [\LaraGram\Contracts\Filesystem\Filesystem::class],
                      'hash' => [\LaraGram\Hashing\HashManager::class],
                      'hash.driver' => [\LaraGram\Contracts\Hashing\Hasher::class],
-                     'translator' => [\LaraGram\Translation\Translator::class, \LaraGram\Contracts\Translation\Translator::class],
+                     'http.request' => [\LaraGram\Http\Request::class],
+                     'keyboard' => [\LaraGram\Keyboard\Keyboard::class],
+                     'listener' => [\LaraGram\Listening\Listener::class, \LaraGram\Contracts\Listening\Registrar::class, \LaraGram\Contracts\Listening\BindingRegistrar::class],
+                     'listener.path' => [\LaraGram\Listening\PathGenerator::class, \LaraGram\Contracts\Listening\PathGenerator::class],
                      'log' => [\LaraGram\Log\LogManager::class, \LaraGram\Log\LoggerInterface::class],
                      'queue' => [\LaraGram\Queue\QueueManager::class, \LaraGram\Contracts\Queue\Factory::class, \LaraGram\Contracts\Queue\Monitor::class],
                      'queue.connection' => [\LaraGram\Contracts\Queue\Queue::class],
@@ -1515,10 +1669,15 @@ class Application extends Container implements ApplicationContract, CachesConfig
                      'redis' => [\LaraGram\Redis\RedisManager::class, \LaraGram\Contracts\Redis\Factory::class],
                      'redis.connection' => [\LaraGram\Redis\Connections\Connection::class, \LaraGram\Contracts\Redis\Connection::class],
                      'request' => [\LaraGram\Request\Request::class],
-                     'listener' => [\LaraGram\Listening\Listener::class, \LaraGram\Contracts\Listening\Registrar::class, \LaraGram\Contracts\Listening\BindingRegistrar::class],
+                     'router' => [\LaraGram\Routing\Router::class, \LaraGram\Contracts\Routing\Registrar::class, \LaraGram\Contracts\Routing\BindingRegistrar::class],
+                     'session' => [\LaraGram\Session\SessionManager::class],
+                     'session.store' => [\LaraGram\Session\Store::class, \LaraGram\Contracts\Session\Session::class],
                      't8.compiler' => [\LaraGram\Template\Compilers\Temple8Compiler::class],
+                     'translator' => [\LaraGram\Translation\Translator::class, \LaraGram\Contracts\Translation\Translator::class],
                      'template' => [\LaraGram\Template\Factory::class, \LaraGram\Contracts\Template\Factory::class],
-                     'keyboard' => [\LaraGram\Keyboard\Keyboard::class],
+                     'url' => [\LaraGram\Routing\UrlGenerator::class, \LaraGram\Contracts\Routing\UrlGenerator::class],
+                     'validator' => [\LaraGram\Validation\Factory::class, \LaraGram\Contracts\Validation\Factory::class],
+                     'view' => [\LaraGram\View\Factory::class, \LaraGram\Contracts\View\Factory::class],
                  ] as $key => $aliases) {
             foreach ($aliases as $alias) {
                 $this->alias($key, $alias);

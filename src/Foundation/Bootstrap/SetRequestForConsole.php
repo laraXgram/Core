@@ -3,7 +3,8 @@
 namespace LaraGram\Foundation\Bootstrap;
 
 use LaraGram\Contracts\Foundation\Application;
-use LaraGram\Request\Request;
+use LaraGram\Request\Request as BotRequest;
+use LaraGram\Http\Request as HttpRequest;
 
 class SetRequestForConsole
 {
@@ -19,7 +20,7 @@ class SetRequestForConsole
 
         $components = parse_url($uri);
 
-        $server = $_SERVER;
+        $server = $_SERVER ?? $app->make('request')?->server()?->toArray() ?? [];
 
         if (isset($components['path'])) {
             $server = array_merge($server, [
@@ -28,8 +29,12 @@ class SetRequestForConsole
             ]);
         }
 
-        $app->instance('request', Request::create(
+        $app->instance('request', BotRequest::create(
             [], $server
+        ));
+
+        $app->instance('http.request', HttpRequest::create(
+            $uri, 'GET', [], [], [], $server
         ));
     }
 }
