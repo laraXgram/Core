@@ -209,6 +209,27 @@ class Listener implements BindingRegistrar, RegistrarContract
     }
 
     /**
+     * Register a listen that starts a conversation when it matches.
+     *
+     * @param  string  $pattern
+     * @param  string  $conversation
+     * @param  string|array  $updateVerbs
+     * @param  array  $parameters
+     * @return \LaraGram\Listening\Listen
+     */
+    public function conversation(string $pattern, string $conversation, string|array $updateVerbs = 'TEXT', array $parameters = [])
+    {
+        $verbs = array_map(
+            static fn ($verb) => strtoupper(trim((string) $verb)),
+            is_array($updateVerbs) ? $updateVerbs : [$updateVerbs]
+        );
+
+        return $this->addListen($verbs, $pattern, function () use ($conversation, $parameters) {
+            return app('conversation')->start($conversation, $parameters);
+        });
+    }
+
+    /**
      * Register a new listen with the given verbs.
      *
      * @param  array|string  $methods

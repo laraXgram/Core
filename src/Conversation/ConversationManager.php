@@ -82,31 +82,85 @@ class ConversationManager
      */
     public function start(string $name, array $parameters = []): void
     {
-        $conversation = $this->resolve($name);
+        $this->begin($this->resolve($name), [
+            'name'       => $name,
+            'parameters' => $parameters,
+        ]);
+    }
 
-        $questions = $this->buildQuestions($conversation);
+    /**
+     * Begin a one-off inline conversation defined by a fluent builder.
+     *
+     * @param  \Closure  $builder
+     * @return \LaraGram\Conversation\InlineConversationBuilder
+     */
+    public function inline(Closure $builder): InlineConversationBuilder
+    {
+        return new InlineConversationBuilder($this, $builder);
+    }
 
+    /**
+     * Begin a single-question inline conversation.
+     *
+     * @param  string  $prompt
+     * @param  string  $name
+     * @return \LaraGram\Conversation\InlineConversationBuilder
+     */
+    public function ask(string $prompt, string $name = 'answer'): InlineConversationBuilder
+    {
+        return $this->inline(function (Questioner $questioner) use ($prompt, $name) {
+            $questioner->ask($prompt)->name($name);
+        });
+    }
+
+    /**
+     * Start a prepared inline conversation payload (called by the builder).
+     *
+     * @param  array  $payload
+     * @param  array<string, mixed>  $parameters
+     * @return void
+     */
+    public function startInline(array $payload, array $parameters = []): void
+    {
+        $this->begin(InlineConversation::fromPayload($payload), [
+            'name'       => $payload['name'] ?? 'inline',
+            'inline'     => $payload,
+            'parameters' => $parameters,
+        ]);
+    }
+
+    /**
+     * Persist initial state and send the first question (or complete).
+     *
+     * @param  \LaraGram\Conversation\Conversation  $conversation
+     * @param  array<string, mixed>  $seed
+     * @return void
+     */
+    protected function begin(Conversation $conversation, array $seed): void
+    {
         $now = Tempora::now()->getTimestamp();
 
-        $state = [
-            'name'       => $name,
+        $state = array_merge([
+            'name'       => 'conversation',
             'index'      => 0,
             'answers'    => [],
             'attempts'   => 0,
-            'parameters' => $parameters,
+            'parameters' => [],
             'started_at' => $now,
             'updated_at' => $now,
-        ];
+        ], $seed);
 
         $this->putState($state);
 
         $request = $this->request();
 
         $conversation->onStart($request);
-        $this->events->dispatch(new ConversationStarted($name, $conversation));
+        $this->events->dispatch(new ConversationStarted($state['name'], $conversation));
+
+        $questions = $this->buildQuestions($conversation);
 
         if ($first = $questions->get(0)) {
-            $this->askQuestion($conversation, $first, $name);
+            $this->askQuestion($conversation, $first, $state['name']);
         } else {
             // A conversation with no questions completes immediately.
             $this->complete($conversation, $request, $questions, $state);
@@ -114,7 +168,7 @@ class ConversationManager
     }
 
     /**
-     * Declare questions through the facade form (Conversation::create(...)).
+     * Declare questions.
      *
      * @param  \Closure  $callback
      * @return void
@@ -134,7 +188,7 @@ class ConversationManager
      * Handle an incoming update against the active conversation, if any.
      *
      * @param  \LaraGram\Request\Request  $request
-     * @return bool  True if the update was consumed by a conversation.
+     * @return bool
      */
     public function handle(Request $request): bool
     {
@@ -149,7 +203,7 @@ class ConversationManager
             return false;
         }
 
-        $conversation = $this->resolve($state['name']);
+        $conversation = $this->resolveFromState($state);
         $questions = $this->buildQuestions($conversation);
         $question = $questions->get($state['index']);
 
@@ -303,9 +357,22 @@ class ConversationManager
             return;
         }
 
-        $conversation = $this->resolve($state['name']);
+        $conversation = $this->resolveFromState($state);
 
         $this->finishCancel($conversation, $this->request(), $reason, $state['name']);
+    }
+
+    /**
+     * Resolve the conversation instance backing the given state (file or inline).
+     *
+     * @param  array  $state
+     * @return \LaraGram\Conversation\Conversation
+     */
+    protected function resolveFromState(array $state): Conversation
+    {
+        return isset($state['inline'])
+            ? InlineConversation::fromPayload($state['inline'])
+            : $this->resolve($state['name']);
     }
 
     /**
