@@ -102,6 +102,18 @@ abstract class Conversation
     }
 
     /**
+     * Get the conversation-wide back control (applies to every question but the
+     * first). Override this to return Back::make(...) / Back::disabled(), or
+     * declare a public ?Back $back property.
+     *
+     * @return \LaraGram\Conversation\Back|null
+     */
+    public function back(): ?Back
+    {
+        return $this->back ?? null;
+    }
+
+    /**
      * Called once when the conversation begins.
      */
     public function onStart(Request $request): void
@@ -126,6 +138,15 @@ abstract class Conversation
      * Called when a question is skipped via its skip command.
      */
     public function onSkip(Request $request, Question $question): void
+    {
+    }
+
+    /**
+     * Called when the user goes back to the previous question.
+     *
+     * $question is the previous question being re-asked.
+     */
+    public function onBack(Request $request, Question $question): void
     {
     }
 

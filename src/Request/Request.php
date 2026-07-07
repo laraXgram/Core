@@ -253,6 +253,19 @@ class Request implements ProvidesListenContext
     }
 
     /**
+     * Check if the Update method is a top-level poll state update.
+     *
+     * @return false|string
+     */
+    protected function checkIfMethodIsPollUpdate()
+    {
+        if (isset($this->poll)) {
+            return 'UPDATE';
+        }
+        return false;
+    }
+
+    /**
      * Check if the Update method is COMMAND or REFERRAL
      *
      * @return false|string

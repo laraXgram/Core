@@ -98,9 +98,22 @@ class InlineConversation extends Conversation
             : parent::forgetAfterComplete();
     }
 
+    /**
+     * @return \LaraGram\Conversation\Back|null
+     */
+    public function back(): ?Back
+    {
+        return $this->settings['back'] ?? null;
+    }
+
     public function onStart(Request $request): void
     {
         $this->fire('onStart', $request);
+    }
+
+    public function onBack(Request $request, Question $question): void
+    {
+        $this->fire('onBack', $request, $question);
     }
 
     public function onAsk(Request $request, Question $question): void

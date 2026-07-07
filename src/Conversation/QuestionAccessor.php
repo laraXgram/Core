@@ -34,6 +34,7 @@ final class QuestionAccessor
                 'maxAttempts' => $this->maxAttempts,
                 'promptKind'  => $this->promptKind,
                 'promptMedia' => $this->promptMedia,
+                'back'        => $this->back,
             ];
         };
 
@@ -55,6 +56,7 @@ final class QuestionAccessor
             maxAttempts: $attributes['maxAttempts'],
             promptKind: $attributes['promptKind'],
             promptMedia: $attributes['promptMedia'],
+            back: $attributes['back'],
         );
     }
 }

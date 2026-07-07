@@ -110,6 +110,13 @@ class Question
     protected $promptMedia = null;
 
     /**
+     * Per-question back override (null = inherit).
+     *
+     * @var \LaraGram\Conversation\Back|null
+     */
+    protected ?Back $back = null;
+
+    /**
      * Create a new question.
      *
      * @param  string  $prompt
@@ -170,6 +177,38 @@ class Question
     public function skipCommand(string $command): static
     {
         $this->skipCommand = $command;
+
+        return $this;
+    }
+
+    /**
+     * Configure the back control for this question (overrides the global one).
+     *
+     * @param  string|null  $mode          reply | inline | command | text | none
+     * @param  string|null  $label         Button text / matched text.
+     * @param  string|null  $callbackData  Callback data for inline mode.
+     * @param  string|null  $command       Command that triggers back.
+     * @return $this
+     */
+    public function back(
+        ?string $mode = null,
+        ?string $label = null,
+        ?string $callbackData = null,
+        ?string $command = null,
+    ): static {
+        $this->back = Back::make($mode, $label, $callbackData, $command, enabled: true);
+
+        return $this;
+    }
+
+    /**
+     * Disable the back control for this question.
+     *
+     * @return $this
+     */
+    public function noBack(): static
+    {
+        $this->back = Back::disabled();
 
         return $this;
     }
