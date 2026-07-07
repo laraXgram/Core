@@ -5,22 +5,29 @@ namespace LaraGram\Support\Facades;
 use LaraGram\Bus\BatchRepository;
 use LaraGram\Contracts\Bus\Dispatcher as BusDispatcherContract;
 use LaraGram\Foundation\Bus\PendingChain;
+use LaraGram\Support\Testing\Fakes\BusFake;
 
 /**
  * @method static mixed dispatch(mixed $command)
  * @method static mixed dispatchSync(mixed $command, mixed $handler = null)
  * @method static mixed dispatchNow(mixed $command, mixed $handler = null)
+ * @method static void bulk(iterable $jobs)
  * @method static \LaraGram\Bus\Batch|null findBatch(string $batchId)
- * @method static \LaraGram\Bus\PendingBatch batch(\LaraGram\Support\Collection|array|mixed $jobs)
- * @method static \LaraGram\Foundation\Bus\PendingChain chain(\LaraGram\Support\Collection|array $jobs)
+ * @method static \LaraGram\Bus\PendingBatch batch(\LaraGram\Support\Collection|mixed $jobs)
+ * @method static \LaraGram\Foundation\Bus\PendingChain chain(\LaraGram\Support\Collection|array|null $jobs = null)
  * @method static bool hasCommandHandler(mixed $command)
- * @method static bool|mixed getCommandHandler(mixed $command)
+ * @method static mixed getCommandHandler(mixed $command)
  * @method static mixed dispatchToQueue(mixed $command)
  * @method static void dispatchAfterResponse(mixed $command, mixed $handler = null)
  * @method static \LaraGram\Bus\Dispatcher pipeThrough(array $pipes)
  * @method static \LaraGram\Bus\Dispatcher map(array $map)
+ * @method static \LaraGram\Bus\Dispatcher withDispatchingAfterResponses()
+ * @method static \LaraGram\Bus\Dispatcher withoutDispatchingAfterResponses()
+ * @method static string|null resolveConnectionFromQueueRoute(object $queueable)
+ * @method static string|null resolveQueueFromQueueRoute(object $queueable)
  * @method static \LaraGram\Support\Testing\Fakes\BusFake except(array|string $jobsToDispatch)
  * @method static void assertDispatched(string|\Closure $command, callable|int|null $callback = null)
+ * @method static void assertDispatchedOnce(string|\Closure $command)
  * @method static void assertDispatchedTimes(string|\Closure $command, int $times = 1)
  * @method static void assertNotDispatched(string|\Closure $command, callable|null $callback = null)
  * @method static void assertNothingDispatched()
@@ -34,7 +41,7 @@ use LaraGram\Foundation\Bus\PendingChain;
  * @method static void assertNothingChained()
  * @method static void assertDispatchedWithoutChain(string|\Closure $command, callable|null $callback = null)
  * @method static \LaraGram\Support\Testing\Fakes\ChainedBatchTruthTest chainedBatch(\Closure $callback)
- * @method static void assertBatched(callable $callback)
+ * @method static void assertBatched(array|callable $callback)
  * @method static void assertBatchCount(int $count)
  * @method static void assertNothingBatched()
  * @method static void assertNothingPlaced()
@@ -76,7 +83,7 @@ class Bus extends Facade
     /**
      * Dispatch the given chain of jobs.
      *
-     * @param  array|mixed  $jobs
+     * @param  mixed  $jobs
      * @return \LaraGram\Foundation\Bus\PendingDispatch
      */
     public static function dispatchChain($jobs)

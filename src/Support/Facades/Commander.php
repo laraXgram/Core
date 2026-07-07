@@ -21,6 +21,8 @@ use LaraGram\Contracts\Console\Kernel as ConsoleKernelContract;
  * @method static void setCommander(\LaraGram\Console\Application|null $commander)
  * @method static \LaraGram\Foundation\Console\Kernel addCommands(array $commands)
  * @method static \LaraGram\Foundation\Console\Kernel addCommandPaths(array $paths)
+ * @method static \LaraGram\Foundation\Console\Kernel addCommandRoutePaths(array $paths)
+ * @method static \LaraGram\Foundation\Console\Kernel addCommandListenPaths(array $paths)
  *
  * @see \LaraGram\Foundation\Console\Kernel
  */

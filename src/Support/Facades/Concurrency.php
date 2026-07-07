@@ -5,9 +5,9 @@ namespace LaraGram\Support\Facades;
 use LaraGram\Concurrency\ConcurrencyManager;
 
 /**
- * @method static mixed driver(string|null $name = null)
- * @method static \LaraGram\Concurrency\ProcessDriver createProcessDriver(array $config)
- * @method static \LaraGram\Concurrency\SyncDriver createSyncDriver(array $config)
+ * @method static mixed driver(\UnitEnum|string|null $name = null)
+ * @method static \LaraGram\Concurrency\ProcessDriver createProcessDriver()
+ * @method static \LaraGram\Concurrency\SyncDriver createSyncDriver()
  * @method static string getDefaultInstance()
  * @method static void setDefaultInstance(string $name)
  * @method static array getInstanceConfig(string $name)
@@ -16,7 +16,7 @@ use LaraGram\Concurrency\ConcurrencyManager;
  * @method static void purge(string|null $name = null)
  * @method static \LaraGram\Concurrency\ConcurrencyManager extend(string $name, \Closure $callback)
  * @method static \LaraGram\Concurrency\ConcurrencyManager setApplication(\LaraGram\Contracts\Foundation\Application $app)
- * @method static array run(\Closure|array $tasks)
+ * @method static array run(\Closure|array $tasks, \LaraGram\Tempora\TemporaInterval|int|null $timeout = null)
  * @method static \LaraGram\Support\Defer\DeferredCallback defer(\Closure|array $tasks)
  *
  * @see \LaraGram\Concurrency\ConcurrencyManager

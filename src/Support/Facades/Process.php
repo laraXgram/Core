@@ -8,8 +8,8 @@ use LaraGram\Process\Factory;
 /**
  * @method static \LaraGram\Process\PendingProcess command(array|string $command)
  * @method static \LaraGram\Process\PendingProcess path(string $path)
- * @method static \LaraGram\Process\PendingProcess timeout(int $timeout)
- * @method static \LaraGram\Process\PendingProcess idleTimeout(int $timeout)
+ * @method static \LaraGram\Process\PendingProcess timeout(\LaraGram\Tempora\TemporaInterval|int $timeout)
+ * @method static \LaraGram\Process\PendingProcess idleTimeout(\LaraGram\Tempora\TemporaInterval|int $timeout)
  * @method static \LaraGram\Process\PendingProcess forever()
  * @method static \LaraGram\Process\PendingProcess env(array $environment)
  * @method static \LaraGram\Process\PendingProcess input(\Traversable|resource|string|int|float|bool|null $input)
@@ -18,6 +18,7 @@ use LaraGram\Process\Factory;
  * @method static \LaraGram\Process\PendingProcess options(array $options)
  * @method static \LaraGram\Contracts\Process\ProcessResult run(array|string|null $command = null, callable|null $output = null)
  * @method static \LaraGram\Process\InvokedProcess start(array|string|null $command = null, callable|null $output = null)
+ * @method static bool supportsTty()
  * @method static \LaraGram\Process\PendingProcess withFakeHandlers(array $fakeHandlers)
  * @method static \LaraGram\Process\PendingProcess|mixed when(\Closure|mixed|null $value = null, callable|null $callback = null, callable|null $default = null)
  * @method static \LaraGram\Process\PendingProcess|mixed unless(\Closure|mixed|null $value = null, callable|null $callback = null, callable|null $default = null)
@@ -57,18 +58,5 @@ class Process extends Facade
     protected static function getFacadeAccessor()
     {
         return Factory::class;
-    }
-
-    /**
-     * Indicate that the process factory should fake processes.
-     *
-     * @param  \Closure|array|null  $callback
-     * @return \LaraGram\Process\Factory
-     */
-    public static function fake(Closure|array|null $callback = null)
-    {
-        return tap(static::getFacadeRoot(), function ($fake) use ($callback) {
-            static::swap($fake->fake($callback));
-        });
     }
 }

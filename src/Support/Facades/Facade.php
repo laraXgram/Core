@@ -3,10 +3,14 @@
 namespace LaraGram\Support\Facades;
 
 use Closure;
+use LaraGram\Database\Eloquent\Model;
 use LaraGram\Support\Arr;
+use LaraGram\Support\Benchmark;
 use LaraGram\Support\Collection;
+use LaraGram\Support\Js;
 use LaraGram\Support\Number;
 use LaraGram\Support\Str;
+use LaraGram\Support\Uri;
 
 abstract class Facade
 {
@@ -84,7 +88,7 @@ abstract class Facade
      */
     protected static function getFacadeAccessor()
     {
-        throw new RuntimeException('Facade does not implement getFacadeAccessor method.');
+        throw new \RuntimeException('Facade does not implement getFacadeAccessor method.');
     }
 
     /**
@@ -140,6 +144,8 @@ abstract class Facade
             'App' => App::class,
             'Arr' => Arr::class,
             'Auth' => Auth::class,
+            'Benchmark' => Benchmark::class,
+            'Blade' => Blade::class,
             'Bot' => Bot::class,
             'Bus' => Bus::class,
             'Cache' => Cache::class,
@@ -147,13 +153,18 @@ abstract class Facade
             'Concurrency' => Concurrency::class,
             'Config' => Config::class,
             'Context' => Context::class,
+            'Cookie' => Cookie::class,
             'Crypt' => Crypt::class,
             'Date' => Date::class,
             'DB' => DB::class,
+            'Eloquent' => Model::class,
             'Event' => Event::class,
             'File' => File::class,
             'Gate' => Gate::class,
             'Hash' => Hash::class,
+            'Http' => Http::class,
+            'HttpRequest' => HttpRequest::class,
+            'Js' => Js::class,
             'Lang' => Lang::class,
             'Log' => Log::class,
             'Number' => Number::class,
@@ -162,13 +173,20 @@ abstract class Facade
             'RateLimiter' => RateLimiter::class,
             'Redirect' => Redirect::class,
             'Request' => Request::class,
+            'Response' => Response::class,
+            'Route' => Route::class,
             'Schedule' => Schedule::class,
             'Schema' => Schema::class,
+            'Session' => Session::class,
             'Step' => Step::class,
             'Storage' => Storage::class,
             'Str' => Str::class,
+            'Uri' => Uri::class,
+            'URL' => URL::class,
             'Template' => Template::class,
             'Validator' => Validator::class,
+            'View' => View::class,
+            'Vite' => Vite::class,
         ]);
     }
 
@@ -207,7 +225,7 @@ abstract class Facade
         $instance = static::getFacadeRoot();
 
         if (! $instance) {
-            throw new RuntimeException('A facade root has not been set.');
+            throw new \RuntimeException('A facade root has not been set.');
         }
 
         return $instance->$method(...$args);
