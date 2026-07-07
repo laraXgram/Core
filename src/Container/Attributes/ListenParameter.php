@@ -5,27 +5,27 @@ namespace LaraGram\Container\Attributes;
 use Attribute;
 use LaraGram\Contracts\Container\Container;
 use LaraGram\Contracts\Container\ContextualAttribute;
-use UnitEnum;
+use ReflectionParameter;
 
 #[Attribute(Attribute::TARGET_PARAMETER)]
-class Storage implements ContextualAttribute
+class ListenParameter implements ContextualAttribute
 {
     /**
      * Create a new class instance.
      */
-    public function __construct(public UnitEnum|string|null $disk = null)
+    public function __construct(public ?string $parameter = null)
     {
     }
 
     /**
-     * Resolve the storage disk.
+     * Resolve the route parameter.
      *
      * @param  self  $attribute
      * @param  \LaraGram\Contracts\Container\Container  $container
-     * @return \LaraGram\Contracts\Filesystem\Filesystem
+     * @return mixed
      */
-    public static function resolve(self $attribute, Container $container)
+    public static function resolve(self $attribute, Container $container, ReflectionParameter $parameter)
     {
-        return $container->make('filesystem')->disk($attribute->disk);
+        return $container->make('request')->route($attribute->parameter ?? $parameter->getName());
     }
 }

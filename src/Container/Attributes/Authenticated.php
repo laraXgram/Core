@@ -8,24 +8,24 @@ use LaraGram\Contracts\Container\ContextualAttribute;
 use UnitEnum;
 
 #[Attribute(Attribute::TARGET_PARAMETER)]
-class Storage implements ContextualAttribute
+class Authenticated implements ContextualAttribute
 {
     /**
      * Create a new class instance.
      */
-    public function __construct(public UnitEnum|string|null $disk = null)
+    public function __construct(public UnitEnum|string|null $guard = null)
     {
     }
 
     /**
-     * Resolve the storage disk.
+     * Resolve the currently authenticated user.
      *
      * @param  self  $attribute
      * @param  \LaraGram\Contracts\Container\Container  $container
-     * @return \LaraGram\Contracts\Filesystem\Filesystem
+     * @return \LaraGram\Contracts\Auth\Authenticatable|null
      */
     public static function resolve(self $attribute, Container $container)
     {
-        return $container->make('filesystem')->disk($attribute->disk);
+        return call_user_func($container->make('auth')->userResolver(), $attribute->guard);
     }
 }

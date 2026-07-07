@@ -5,6 +5,7 @@ namespace LaraGram\Container\Attributes;
 use Attribute;
 use LaraGram\Contracts\Container\Container;
 use LaraGram\Contracts\Container\ContextualAttribute;
+use UnitEnum;
 
 #[Attribute(Attribute::TARGET_PARAMETER)]
 class Database implements ContextualAttribute
@@ -12,7 +13,7 @@ class Database implements ContextualAttribute
     /**
      * Create a new class instance.
      */
-    public function __construct(public ?string $connection = null)
+    public function __construct(public UnitEnum|string|null $connection = null)
     {
     }
 
