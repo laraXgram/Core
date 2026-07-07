@@ -22,7 +22,8 @@
         "ext-intl": "*",
         "ext-mbstring": "*",
         "laraxgram/laraquest": "^1",
-        "laraxgram/tempora": "^1"
+        "laraxgram/tempora": "^1",
+        "laraxgram/watchdog": "^1"
     },
     "replace": {
         "laraxgram/auth": "self.version",
@@ -35,26 +36,32 @@
         "laraxgram/console": "self.version",
         "laraxgram/container": "self.version",
         "laraxgram/contracts": "self.version",
-        "laraxgram/conecrsation": "self.version",
+        "laraxgram/conversation": "self.version",
+        "laraxgram/coockie": "self.version",
         "laraxgram/database": "self.version",
         "laraxgram/encryption": "self.version",
         "laraxgram/events": "self.version",
         "laraxgram/filesystem": "self.version",
         "laraxgram/hashing": "self.version",
-        "laraxgram/jdb": "self.version",
+        "laraxgram/http": "self.version",
+        "laraxgram/jsonschema": "self.version",
         "laraxgram/keyboard": "self.version",
         "laraxgram/listening": "self.version",
         "laraxgram/log": "self.version",
         "laraxgram/macroable": "self.version",
+        "laraxgram/pagination": "self.version",
         "laraxgram/pipeline": "self.version",
         "laraxgram/process": "self.version",
         "laraxgram/queue": "self.version",
         "laraxgram/redis": "self.version",
         "laraxgram/request": "self.version",
+        "laraxgram/routing": "self.version",
+        "laraxgram/session": "self.version",
         "laraxgram/support": "self.version",
         "laraxgram/template": "self.version",
         "laraxgram/translation": "self.version",
-        "laraxgram/validation": "self.version"
+        "laraxgram/validation": "self.version",
+        "laraxgram/view": "self.version"
     },
     "autoload": {
         "files": [
@@ -69,7 +76,8 @@
             "src/Keyboard/helpers.php",
             "src/Request/helpers.php",
             "src/Console/Prompts/helpers.php",
-            "src/Console/Prompts/Convertor/Functions.php"
+            "src/Console/Prompts/Convertor/Functions.php",
+            "src/Http/VarDumper/functions.php"
         ],
         "psr-4": {
             "LaraGram\\": "src/",
