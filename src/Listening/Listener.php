@@ -13,6 +13,7 @@ use LaraGram\Contracts\Support\Jsonable;
 use LaraGram\Contracts\Support\Responsable;
 use LaraGram\Database\Eloquent\Model;
 use LaraGram\Request\JsonResponse;
+use LaraGram\Listening\Contracts\ProvidesListenContext;
 use LaraGram\Request\Request;
 use LaraGram\Request\Response;
 use LaraGram\Listening\Events\PreparingResponse;
@@ -542,7 +543,7 @@ class Listener implements BindingRegistrar, RegistrarContract
      * @param  \LaraGram\Request\Request  $request
      * @return \LaraGram\Request\Response
      */
-    public function dispatch(Request $request)
+    public function dispatch(ProvidesListenContext $request)
     {
         $this->currentRequest = $request;
 
@@ -555,7 +556,7 @@ class Listener implements BindingRegistrar, RegistrarContract
      * @param  \LaraGram\Request\Request  $request
      * @return \LaraGram\Request\Response
      */
-    public function dispatchToListen(Request $request)
+    public function dispatchToListen(ProvidesListenContext $request)
     {
         $listen = $this->findListen($request);
 
@@ -611,7 +612,7 @@ class Listener implements BindingRegistrar, RegistrarContract
      * @param  \LaraGram\Listening\Listen  $listen
      * @return \LaraGram\Request\Response
      */
-    protected function runListen(Request $request, Listen $listen)
+    protected function runListen(ProvidesListenContext $request, Listen $listen)
     {
         $request->setListenResolver(fn () => $listen);
 
@@ -629,7 +630,7 @@ class Listener implements BindingRegistrar, RegistrarContract
      * @param  \LaraGram\Request\Request  $request
      * @return mixed
      */
-    protected function runListenWithinStack(Listen $listen, Request $request)
+    protected function runListenWithinStack(Listen $listen, ProvidesListenContext $request)
     {
         $shouldSkipMiddleware = $this->container->bound('middleware.disable') &&
             $this->container->make('middleware.disable') === true;
