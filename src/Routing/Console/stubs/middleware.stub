@@ -1,0 +1,20 @@
+<?php
+
+namespace {{ namespace }};
+
+use Closure;
+use LaraGram\Http\Request;
+use LaraGram\Http\BaseResponse as Response;
+
+class {{ class }}
+{
+    /**
+     * Handle an incoming request.
+     *
+     * @param  Closure(Request): (Response)  $next
+     */
+    public function handle(Request $request, Closure $next): Response
+    {
+        return $next($request);
+    }
+}
