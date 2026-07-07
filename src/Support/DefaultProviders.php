@@ -24,6 +24,7 @@ class DefaultProviders
             \LaraGram\Cache\CacheServiceProvider::class,
             \LaraGram\Foundation\Providers\ConsoleSupportServiceProvider::class,
             \LaraGram\Concurrency\ConcurrencyServiceProvider::class,
+            \LaraGram\Cookie\CookieServiceProvider::class,
             \LaraGram\Database\DatabaseServiceProvider::class,
             \LaraGram\Encryption\EncryptionServiceProvider::class,
             \LaraGram\Filesystem\FilesystemServiceProvider::class,
@@ -33,9 +34,11 @@ class DefaultProviders
             \LaraGram\Pipeline\PipelineServiceProvider::class,
             \LaraGram\Queue\QueueServiceProvider::class,
             \LaraGram\Redis\RedisServiceProvider::class,
+            \LaraGram\Session\SessionServiceProvider::class,
             \LaraGram\Template\TemplateServiceProvider::class,
             \LaraGram\Translation\TranslationServiceProvider::class,
             \LaraGram\Validation\ValidationServiceProvider::class,
+            \LaraGram\View\ViewServiceProvider::class,
         ];
     }
 
