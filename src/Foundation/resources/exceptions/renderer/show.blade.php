@@ -35,9 +35,4 @@
 
     <x-laragram-exceptions-renderer::separator />
 
-    @if (! app()->runningInConsole())
-        <x-laragram-exceptions-renderer::section-container class="pb-0 sm:pb-0">
-            <x-laragram-exceptions-renderer::laragram-ascii-spotlight />
-        </x-laragram-exceptions-renderer::section-container>
-    @endif
 </x-laragram-exceptions-renderer::layout>
