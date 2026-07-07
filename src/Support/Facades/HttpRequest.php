@@ -40,7 +40,7 @@ namespace LaraGram\Support\Facades;
  * @method static bool hasSession(bool $skipIfUninitialized = false)
  * @method static \LaraGram\Contracts\Session\SessionInterface getSession()
  * @method static \LaraGram\Contracts\Session\Session session()
- * @method static void setLaravelSession(\LaraGram\Contracts\Session\Session $session)
+ * @method static void setLaraGramSession(\LaraGram\Contracts\Session\Session $session)
  * @method static void setRequestLocale(string $locale)
  * @method static void setDefaultRequestLocale(string $locale)
  * @method static mixed user(string|null $guard = null)

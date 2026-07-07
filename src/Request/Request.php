@@ -138,6 +138,16 @@ class Request
     }
 
     /**
+     * Get the server from the request.
+     *
+     * @return Collection
+     */
+    public function server()
+    {
+        return $this->server;
+    }
+
+    /**
      * Get the secret token from the request headers.
      *
      * @return string|null

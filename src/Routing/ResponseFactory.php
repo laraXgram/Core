@@ -198,7 +198,7 @@ class ResponseFactory implements FactoryContract
     public function stream($callback, $status = 200, array $headers = [])
     {
         if (! is_null($callback) && (new ReflectionFunction($callback))->isGenerator()) {
-            if (isset($_SERVER['LARAVEL_OCTANE'])) {
+            if (isset($_SERVER['LARAGRAM_SURGE'])) {
                 return (new StreamedResponse(
                     null, $status, array_merge($headers, ['X-Accel-Buffering' => 'no'])
                 ))->setCallback($callback);

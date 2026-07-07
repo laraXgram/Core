@@ -339,7 +339,7 @@ abstract class ServiceProvider
     /**
      * Register Eloquent model factory paths.
      *
-     * @deprecated Will be removed in a future Laravel version.
+     * @deprecated Will be removed in a future LaraGram version.
      *
      * @param  array|string  $paths
      * @return void
@@ -621,7 +621,7 @@ abstract class ServiceProvider
     }
 
     /**
-     * Get the default providers for a Laravel application.
+     * Get the default providers for a LaraGram application.
      *
      * @return \LaraGram\Support\DefaultProviders
      */

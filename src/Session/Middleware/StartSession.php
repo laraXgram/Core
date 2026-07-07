@@ -109,9 +109,9 @@ class StartSession
     protected function handleStatefulRequest(Request $request, $session, Closure $next)
     {
         // If a session driver has been configured, we will need to start the session here
-        // so that the data is ready for an application. Note that the Laravel sessions
+        // so that the data is ready for an application. Note that the LaraGram sessions
         // do not make use of PHP "native" sessions in any way since they are crappy.
-        $request->setLaravelSession(
+        $request->setLaraGramSession(
             $this->startSession($request, $session)
         );
 
