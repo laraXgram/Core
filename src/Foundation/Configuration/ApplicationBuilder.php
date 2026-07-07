@@ -7,6 +7,7 @@ use LaraGram\Console\Application as Commander;
 use LaraGram\Console\Scheduling\Schedule;
 use LaraGram\Foundation\Application;
 use LaraGram\Foundation\Bootstrap\RegisterProviders;
+use LaraGram\Foundation\Events\DiagnosingHealth;
 use LaraGram\Foundation\Http\Middleware\PreventRequestsDuringMaintenance;
 use LaraGram\Foundation\Support\Providers\EventServiceProvider as AppEventServiceProvider;
 use LaraGram\Foundation\Support\Providers\ListenServiceProvider as AppListenServiceProvider;
