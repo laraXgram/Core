@@ -27,7 +27,7 @@ class RedirectController extends Controller
         $parameters->forget('status')->forget('destination');
 
         $route = (new Route('GET', $destination, [
-            'as' => 'laravel_route_redirect_destination',
+            'as' => 'laragram_route_redirect_destination',
         ]))->bind($request);
 
         $parameters = $parameters->only(
