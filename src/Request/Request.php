@@ -5,9 +5,11 @@ namespace LaraGram\Request;
 use Closure;
 use LaraGram\Laraquest\Updates as UpdatesTrait;
 use LaraGram\Laraquest\Methode as MethodeTrait;
+use LaraGram\Listening\Contracts\ProvidesListenContext;
 use LaraGram\Listening\Type;
 use LaraGram\Request\Files\FileBag;
 use LaraGram\Support\Collection;
+use LaraGram\Support\Str;
 use LaraGram\Support\Traits\Conditionable;
 use LaraGram\Support\Traits\Macroable;
 use RuntimeException;
@@ -16,7 +18,7 @@ use RuntimeException;
  * @method \LaraGram\Request\ValidatedInput validate(array $rules, ...$params)
  * @method \LaraGram\Request\ValidatedInput validateWithBag(string $errorBag, array $rules, ...$params)
  */
-class Request
+class Request implements ProvidesListenContext
 {
     use Conditionable, Macroable,
         InteractWithUpdate,
@@ -25,7 +27,22 @@ class Request
         InteractWithUpdate::getUpdateMessageSubType insteadof UpdatesTrait;
         InteractWithUpdate::scope insteadof UpdatesTrait;
         InteractWithUpdate::isReply insteadof UpdatesTrait;
+        MethodeTrait::endpoint as protected rawEndpoint;
     }
+
+    /**
+     * Whether anti-flood throttling is bypassed for the next API call.
+     *
+     * @var bool
+     */
+    protected $bypassAntiFlood = false;
+
+    /**
+     * Specific named anti-flood scope(s).
+     *
+     * @var string|null
+     */
+    protected $antiFloodScopes = null;
 
     /**
      * The user resolver callback.
@@ -211,16 +228,38 @@ class Request
     }
 
     /**
-     * Check if the Update method is a top-level poll state update.
-     *
-     * @return false|string
+     * {@inheritdoc}
      */
-    protected function checkIfMethodIsPollUpdate()
+    public function listenVerb(): string
     {
-        if (isset($this->poll)) {
-            return 'UPDATE';
-        }
-        return false;
+        return $this->method();
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function listenValue(string $verb): ?string
+    {
+        return match ($verb) {
+            'COMMAND' => ($t = text()) !== null ? Str::replaceFirst('/', '', $t) : null,
+            'REFERRAL' => ($t = text()) !== null ? Str::replaceFirst('/start ', '', $t) : null,
+            'CALLBACK_DATA' => callback_query()->data ?? null,
+            default => text()
+                ?? callback_query()->data
+                ?? inline_query()->query
+                ?? chosen_inline_result()->query
+                ?? null,
+        };
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function entities(): array
+    {
+        return $this->message?->entities
+            ?? $this->message?->caption_entities
+            ?? [];
     }
 
     /**
@@ -597,6 +636,22 @@ class Request
     }
 
     /**
+     * Build a FileBag from an arbitrary message-like object.
+     *
+     * @param  object  $message
+     * @return FileBag|null
+     */
+    public function fileFrom(object $message): ?FileBag
+    {
+        $cfg = $this->resolveConfig();
+        $token = $this->resolveToken($this->resolveConnection());
+
+        $bag = FileBag::fromMessage($message, $token, $cfg['api_server']);
+
+        return $bag->isEmpty() ? null : $bag;
+    }
+
+    /**
      * Get the user resolver callback.
      *
      * @return \Closure
@@ -644,6 +699,99 @@ class Request
         $this->listenResolver = $callback;
 
         return $this;
+    }
+
+    /**
+     * Send the next API call without anti-flood throttling.
+     *
+     * @return $this
+     */
+    public function withoutAntiFlood(): static
+    {
+        $this->bypassAntiFlood = true;
+
+        return $this;
+    }
+
+    /**
+     * Apply specific named anti-flood scope(s) to the next API call instead of
+     * the automatic chat scope (the global scope still applies).
+     *
+     * @param  string  ...$scopes
+     * @return $this
+     */
+    public function antiFloodWith(string ...$scopes): static
+    {
+        $this->antiFloodScopes = $scopes;
+
+        return $this;
+    }
+
+    /**
+     * Intercept every Telegram API call to apply smart anti-flood throttling,
+     * then delegate to the original Laraquest endpoint implementation.
+     *
+     * @param  string  $method
+     * @param  array   $params
+     * @return mixed
+     */
+    protected function endpoint(string $method, array $params): mixed
+    {
+        $bypass = $this->bypassAntiFlood;
+        $this->bypassAntiFlood = false;
+
+        $scopes = $this->antiFloodScopes ?? [];
+        $this->antiFloodScopes = null;
+
+        $antiFlood = $bypass ? null : $this->antiFlood();
+        $connection = null;
+
+        if ($antiFlood !== null) {
+            try {
+                $connection = $this->getConnection();
+                $antiFlood->gate($connection, $method, $params, $scopes);
+            } catch (\Throwable) {
+                $antiFlood = null;
+            }
+        }
+
+        $response = $this->rawEndpoint($method, $params);
+
+        if ($antiFlood !== null) {
+            try {
+                $antiFlood->report($connection, $method, $params, $response, $scopes);
+            } catch (\Throwable) {
+                // Reporting must never affect the response returned to the caller.
+            }
+        }
+
+        return $response;
+    }
+
+    /**
+     * Resolve the active anti-flood engine, or null when it is unavailable.
+     *
+     * @return \LaraGram\Request\AntiFlood\AntiFlood|null
+     */
+    private function antiFlood()
+    {
+        if (! function_exists('app')) {
+            return null;
+        }
+
+        try {
+            $app = app();
+
+            if (! $app->bound('antiflood')) {
+                return null;
+            }
+
+            $engine = $app->make('antiflood');
+
+            return $engine->enabled() ? $engine : null;
+        } catch (\Throwable) {
+            return null;
+        }
     }
 
     /**

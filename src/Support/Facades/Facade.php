@@ -153,6 +153,7 @@ abstract class Facade
             'Concurrency' => Concurrency::class,
             'Config' => Config::class,
             'Context' => Context::class,
+            'Conversation' => Conversation::class,
             'Cookie' => Cookie::class,
             'Crypt' => Crypt::class,
             'Date' => Date::class,

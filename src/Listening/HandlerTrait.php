@@ -280,7 +280,7 @@ trait HandlerTrait
         return $this->addListen('UPDATE', 'chat_join_request', $action);
     }
 
-    public function onCallbackQueryData(array|string $pattern, Closure|array|string $action)
+    public function onCallbackQueryData(string $pattern, Closure|array|string $action)
     {
         return $this->addListen('CALLBACK_DATA', $pattern, $action);
     }

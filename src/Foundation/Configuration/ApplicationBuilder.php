@@ -259,10 +259,11 @@ class ApplicationBuilder
     public function withListener(?Closure $using = null,
                                 array|string|null $bot = null,
                                 ?string $commands = null,
+                                array|string|null $client = null,
                                 ?callable $then = null)
     {
-        if (is_null($using) && (is_string($bot) || is_array($bot) || is_callable($then))) {
-            $using = $this->buildListeningCallback($bot, $then);
+        if (is_null($using) && (is_string($bot) || is_array($bot) || is_string($client) || is_array($client) || is_callable($then))) {
+            $using = $this->buildListeningCallback($bot, $client, $then);
         }
 
         AppListenServiceProvider::loadListensUsing($using);
@@ -281,17 +282,14 @@ class ApplicationBuilder
     /**
      * Create the listening callback for the application.
      *
-     * @param  array|string|null  $web
-     * @param  array|string|null  $api
-     * @param  string|null  $pages
-     * @param  string|null  $health
-     * @param  string  $apiPrefix
-     * @param  callable|null  $then
+     * @param array|string|null $bot
+     * @param array|string|null $client
+     * @param callable|null $then
      * @return \Closure
      */
-    protected function buildListeningCallback(array|string|null $bot, ?callable $then)
+    protected function buildListeningCallback(array|string|null $bot, array|string|null $client, ?callable $then)
     {
-        return function () use ($bot, $then) {
+        return function () use ($bot, $client, $then) {
             if (is_string($bot) || is_array($bot)) {
                 if (is_array($bot)) {
                     foreach ($bot as $file => $connections) {
@@ -308,6 +306,21 @@ class ApplicationBuilder
                     }
                 } else {
                     Bot::middleware('bot')->group($bot);
+                }
+            }
+
+            if ((is_string($client) || is_array($client)) && $this->app->bound('client.listener')) {
+                $clientListener = $this->app->make('client.listener');
+                if (is_array($client)) {
+                    foreach ($client as $clientListen) {
+                        if (realpath($clientListen) !== false) {
+                            $clientListener->group(['middleware' => ['client']], $clientListen);
+                        }
+                    }
+                } else {
+                    if (realpath($client) !== false) {
+                        $clientListener->group(['middleware' => ['client']], $client);
+                    }
                 }
             }
 
