@@ -189,6 +189,16 @@ class CompiledListenCollection extends AbstractListenCollection
      */
     public function getByName($name)
     {
+        $currentConnection = Request::getDefaultConnection();
+
+        if ($currentConnection !== null) {
+            $connectionKey = $name . '@' . $currentConnection;
+
+            if (isset($this->attributes[$connectionKey])) {
+                return $this->newListen($this->attributes[$connectionKey]);
+            }
+        }
+
         if (isset($this->attributes[$name])) {
             return $this->newListen($this->attributes[$name]);
         }

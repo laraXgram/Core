@@ -80,13 +80,26 @@ class ListenCollection extends AbstractListenCollection
      * @param  \LaraGram\Listening\Listen  $listen
      * @return void
      */
+    protected function nameListKey(string $name, Listen $listen): array
+    {
+        $connections = $listen->getForConnections();
+
+        if (count($connections) === 1 && $connections[0] === '*') {
+            return [$name];
+        }
+
+        return array_map(fn($c) => $name . '@' . $c, $connections);
+    }
+
     protected function addLookups($listen)
     {
         // If the listen has a name, we will add it to the name look-up table, so that we
         // will quickly be able to find the listen associated with a name and not have
         // to iterate through every listen every time we need to find a named listen.
         if ($name = $listen->getName()) {
-            $this->nameList[$name] = $listen;
+            foreach ($this->nameListKey($name, $listen) as $key) {
+                $this->nameList[$key] = $listen;
+            }
         }
 
         // When the listen is listening to a controller we will also store the action that
@@ -123,8 +136,10 @@ class ListenCollection extends AbstractListenCollection
         $this->nameList = [];
 
         foreach ($this->allListens as $listen) {
-            if ($listen->getName()) {
-                $this->nameList[$listen->getName()] = $listen;
+            if ($name = $listen->getName()) {
+                foreach ($this->nameListKey($name, $listen) as $key) {
+                    $this->nameList[$key] = $listen;
+                }
             }
         }
     }
@@ -288,6 +303,16 @@ class ListenCollection extends AbstractListenCollection
      */
     public function getByName($name)
     {
+        $currentConnection = \LaraGram\Request\Request::getDefaultConnection();
+
+        if ($currentConnection !== null) {
+            $connectionKey = $name . '@' . $currentConnection;
+
+            if (isset($this->nameList[$connectionKey])) {
+                return $this->nameList[$connectionKey];
+            }
+        }
+
         return $this->nameList[$name] ?? null;
     }
 
