@@ -29,6 +29,7 @@ final class QuestionDefinition
         public readonly string $promptKind,
         public readonly mixed $promptMedia,
         public readonly ?Back $back = null,
+        public readonly ?Priority $priority = null,
     ) {
     }
 

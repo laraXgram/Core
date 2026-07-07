@@ -106,6 +106,14 @@ class InlineConversation extends Conversation
         return $this->settings['back'] ?? null;
     }
 
+    /**
+     * @return \LaraGram\Conversation\Priority|null
+     */
+    public function priority(): ?Priority
+    {
+        return $this->settings['priority'] ?? null;
+    }
+
     public function onStart(Request $request): void
     {
         $this->fire('onStart', $request);

@@ -299,6 +299,40 @@ class ConversationManager
     }
 
     /**
+     * Determine whether the active conversation's current question should handle
+     * the update BEFORE regular/step listens (Priority::Conversation). Otherwise
+     * the conversation is a fallback that runs only when no listen matches.
+     *
+     * @param  \LaraGram\Request\Request  $request
+     * @return bool
+     */
+    public function prefersConversation(Request $request): bool
+    {
+        if (user() === null) {
+            return false;
+        }
+
+        $state = $this->getState();
+
+        if (! $state) {
+            return false;
+        }
+
+        $conversation = $this->resolveFromState($state);
+        $question = $this->buildQuestions($conversation)->get($state['index']);
+
+        if ($question === null) {
+            return false;
+        }
+
+        $priority = QuestionAccessor::compile($question)->priority
+            ?? $conversation->priority()
+            ?? Priority::Listen;
+
+        return $priority === Priority::Conversation;
+    }
+
+    /**
      * Get the raw state of the active conversation, if any.
      *
      * @return array|null

@@ -117,6 +117,13 @@ class Question
     protected ?Back $back = null;
 
     /**
+     * Per-question priority override (null = inherit).
+     *
+     * @var \LaraGram\Conversation\Priority|null
+     */
+    protected ?Priority $priority = null;
+
+    /**
      * Create a new question.
      *
      * @param  string  $prompt
@@ -209,6 +216,20 @@ class Question
     public function noBack(): static
     {
         $this->back = Back::disabled();
+
+        return $this;
+    }
+
+    /**
+     * Set who handles the update on this question: regular/step listens first
+     * (Priority::Listen, the default) or this question first (Priority::Conversation).
+     *
+     * @param  \LaraGram\Conversation\Priority  $priority
+     * @return $this
+     */
+    public function priority(Priority $priority): static
+    {
+        $this->priority = $priority;
 
         return $this;
     }

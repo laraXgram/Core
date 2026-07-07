@@ -114,6 +114,19 @@ abstract class Conversation
     }
 
     /**
+     * Get the conversation-wide priority: whether regular/step listens handle an
+     * update first (Priority::Listen, the default) or the conversation does
+     * (Priority::Conversation). Override this or declare a public ?Priority
+     * $priority property.
+     *
+     * @return \LaraGram\Conversation\Priority|null
+     */
+    public function priority(): ?Priority
+    {
+        return $this->priority ?? null;
+    }
+
+    /**
      * Called once when the conversation begins.
      */
     public function onStart(Request $request): void

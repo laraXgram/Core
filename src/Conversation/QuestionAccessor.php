@@ -35,6 +35,7 @@ final class QuestionAccessor
                 'promptKind'  => $this->promptKind,
                 'promptMedia' => $this->promptMedia,
                 'back'        => $this->back,
+                'priority'    => $this->priority,
             ];
         };
 
@@ -57,6 +58,7 @@ final class QuestionAccessor
             promptKind: $attributes['promptKind'],
             promptMedia: $attributes['promptMedia'],
             back: $attributes['back'],
+            priority: $attributes['priority'],
         );
     }
 }

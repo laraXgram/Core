@@ -4,6 +4,7 @@ namespace LaraGram\Conversation\Middleware;
 
 use Closure;
 use LaraGram\Conversation\ConversationManager;
+use LaraGram\Listening\Exceptions\ListenNotFoundException;
 use LaraGram\Request\Response;
 
 /**
@@ -38,10 +39,18 @@ class HandleConversation
      */
     public function handle($request, Closure $next)
     {
-        if ($this->manager->handle($request)) {
+        if ($this->manager->prefersConversation($request) && $this->manager->handle($request)) {
             return new Response('');
         }
 
-        return $next($request);
+        try {
+            return $next($request);
+        } catch (ListenNotFoundException $e) {
+            if ($this->manager->handle($request)) {
+                return new Response('');
+            }
+
+            throw $e;
+        }
     }
 }

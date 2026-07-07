@@ -102,6 +102,20 @@ class InlineConversationBuilder
         return $this;
     }
 
+    /**
+     * Set the conversation-wide priority (listens-first by default, or make the
+     * conversation handle updates before listens).
+     *
+     * @param  \LaraGram\Conversation\Priority  $priority
+     * @return $this
+     */
+    public function priority(Priority $priority): static
+    {
+        $this->settings['priority'] = $priority;
+
+        return $this;
+    }
+
     public function onInvalid(Closure $callback): static
     {
         return $this->hook('onInvalid', $callback);
