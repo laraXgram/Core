@@ -173,7 +173,7 @@ abstract class Conversation
     /**
      * Called when the conversation is cancelled.
      *
-     * Reasons: "command", "timeout", "max_attempts", "manual".
+     * Reasons: "command", "timeout", "max_attempts", "interrupted", "manual".
      */
     public function onCancel(Request $request, string $reason): void
     {
