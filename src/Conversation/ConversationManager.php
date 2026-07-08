@@ -333,6 +333,40 @@ class ConversationManager
     }
 
     /**
+     * Determine whether the conversation should handle the update as the
+     * fallback - active, and no regular/step listen matches (so it runs before
+     * the application's own fallback listens).
+     *
+     * @param  \LaraGram\Request\Request  $request
+     * @return bool
+     */
+    public function handlesUpdateAsFallback(Request $request): bool
+    {
+        if (! $this->active()) {
+            return false;
+        }
+
+        return ! $this->container->make('listener')->matchesNonFallback($request);
+    }
+
+    /**
+     * Stop and forget the active conversation because another listen is taking
+     * over the update. Reached only when a regular/step listen matched while a
+     * conversation was active (and it was not given conversation priority).
+     *
+     * @param  \LaraGram\Request\Request  $request
+     * @return void
+     */
+    public function interruptIfActive(Request $request): void
+    {
+        if (user() === null || ! $this->active()) {
+            return;
+        }
+
+        $this->cancel('interrupted');
+    }
+
+    /**
      * Get the raw state of the active conversation, if any.
      *
      * @return array|null

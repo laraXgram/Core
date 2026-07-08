@@ -587,6 +587,19 @@ class Listener implements BindingRegistrar, RegistrarContract
     }
 
     /**
+     * Determine whether a non-fallback listen (normal or step) matches the
+     * request. Used to decide whether a conversation should handle an update
+     * before the application's fallback listens run.
+     *
+     * @param  \LaraGram\Request\Request  $request
+     * @return bool
+     */
+    public function matchesNonFallback($request)
+    {
+        return $this->listens->matchesNonFallback($request);
+    }
+
+    /**
      * Find the listen matching a given request.
      *
      * @param  \LaraGram\Request\Request  $request

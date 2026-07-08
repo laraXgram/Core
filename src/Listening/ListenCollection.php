@@ -221,6 +221,46 @@ class ListenCollection extends AbstractListenCollection
     }
 
     /**
+     * Determine whether a non-fallback listen (normal or step) matches the request.
+     *
+     * @param  \LaraGram\Listening\Contracts\ProvidesListenContext  $request
+     * @return bool
+     */
+    public function matchesNonFallback(ProvidesListenContext $request): bool
+    {
+        $currentConnection = Request::getDefaultConnection();
+
+        if (Listener::$enableStepListensPriorityRegister) {
+            $candidates = array_values(array_filter($this->getListens(), function ($l) use ($request, $currentConnection) {
+                return (in_array($request->listenVerb(), $l->methods()) || $l->isStepListen())
+                    && ! $l->isFallback
+                    && $this->listenMatchesConnection($l, $currentConnection);
+            }));
+
+            return $this->matchAgainstListens($candidates, $request) !== null;
+        }
+
+        $methodListens = $this->get($request->listenVerb());
+
+        $normalListens = array_values(array_filter(
+            $methodListens,
+            fn ($l) => ! $l->isStepListen() && ! $l->isFallback
+                && $this->listenMatchesConnection($l, $currentConnection)
+        ));
+
+        if ($this->matchAgainstListens($normalListens, $request) !== null) {
+            return true;
+        }
+
+        $stepListens = array_values(array_filter(
+            $this->getListens(),
+            fn ($l) => $l->isStepListen() && $this->listenMatchesConnection($l, $currentConnection)
+        ));
+
+        return $this->matchAgainstListens($stepListens, $request) !== null;
+    }
+
+    /**
      * Find overlap-flagged listens that should run alongside the primary.
      *
      * @param  \LaraGram\Request\Request  $request
