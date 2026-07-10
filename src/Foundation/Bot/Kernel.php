@@ -162,7 +162,11 @@ class Kernel implements KernelContract
 
         $this->bootstrap();
 
-        $this->app->instance('request', $request);
+        if ($this->app->bound('auth')) {
+            $this->app['auth']->shouldUse('bot');
+        }
+
+        $this->app->forgetInstance('redirect');
 
         return (new Pipeline($this->app))
             ->send($request)

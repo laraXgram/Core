@@ -28,7 +28,7 @@ class PipelineServiceProvider extends ServiceProvider implements DeferrableProvi
      *
      * @return array
      */
-    public function provides(): array
+    public function provides()
     {
         return [
             PipelineHubContract::class,

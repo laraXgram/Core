@@ -32,7 +32,7 @@ class ExceptionMakeCommand extends GeneratorCommand
      *
      * @var string
      */
-    protected $type = 'Exception';
+    protected $type = 'Exceptions';
 
     /**
      * Get the stub file for the generator.

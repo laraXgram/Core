@@ -4,6 +4,7 @@ namespace LaraGram\Database\Console\Migrations;
 
 use LaraGram\Contracts\Console\PromptsForMissingInput;
 use LaraGram\Database\Migrations\MigrationCreator;
+use LaraGram\Support\Composer;
 use LaraGram\Support\Str;
 use LaraGram\Console\Attribute\AsCommand;
 
@@ -37,16 +38,26 @@ class MigrateMakeCommand extends BaseCommand implements PromptsForMissingInput
     protected $creator;
 
     /**
+     * The Composer instance.
+     *
+     * @var \LaraGram\Support\Composer
+     *
+     * @deprecated Will be removed in a future LaraGram version.
+     */
+    protected $composer;
+
+    /**
      * Create a new migration install command instance.
      *
      * @param  \LaraGram\Database\Migrations\MigrationCreator  $creator
-     * @return void
+     * @param  \LaraGram\Support\Composer  $composer
      */
-    public function __construct(MigrationCreator $creator)
+    public function __construct(MigrationCreator $creator, Composer $composer)
     {
         parent::__construct();
 
         $this->creator = $creator;
+        $this->composer = $composer;
     }
 
     /**
@@ -59,7 +70,7 @@ class MigrateMakeCommand extends BaseCommand implements PromptsForMissingInput
         // It's possible for the developer to specify the tables to modify in this
         // schema operation. The developer may also specify if this table needs
         // to be freshly created so we can create the appropriate migrations.
-        $name = Str::snake(value: trim($this->input->getArgument('name')));
+        $name = Str::snake(trim($this->input->getArgument('name')));
 
         $table = $this->input->getOption('table');
 
@@ -101,6 +112,10 @@ class MigrateMakeCommand extends BaseCommand implements PromptsForMissingInput
             $name, $this->getMigrationPath(), $table, $create
         );
 
+        if (windows_os()) {
+            $file = str_replace('/', '\\', $file);
+        }
+
         $this->components->info(sprintf('Migration [%s] created successfully.', $file));
     }
 
@@ -113,8 +128,8 @@ class MigrateMakeCommand extends BaseCommand implements PromptsForMissingInput
     {
         if (! is_null($targetPath = $this->input->getOption('path'))) {
             return ! $this->usingRealPath()
-                            ? $this->laragram->basePath().'/'.$targetPath
-                            : $targetPath;
+                ? $this->laragram->basePath().'/'.$targetPath
+                : $targetPath;
         }
 
         return parent::getMigrationPath();

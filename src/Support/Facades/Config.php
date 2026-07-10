@@ -11,6 +11,7 @@ namespace LaraGram\Support\Facades;
  * @method static float float(string $key, \Closure|float|null $default = null)
  * @method static bool boolean(string $key, \Closure|bool|null $default = null)
  * @method static array array(string $key, \Closure|array|null $default = null)
+ * @method static \LaraGram\Support\Collection collection(string $key, \Closure|array|null $default = null)
  * @method static void set(array|string $key, mixed $value = null)
  * @method static void prepend(string $key, mixed $value)
  * @method static void push(string $key, mixed $value)
@@ -29,7 +30,7 @@ class Config extends Facade
      *
      * @return string
      */
-    protected static function getFacadeAccessor(): string
+    protected static function getFacadeAccessor()
     {
         return 'config';
     }

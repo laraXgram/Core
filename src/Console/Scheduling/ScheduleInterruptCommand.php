@@ -2,9 +2,9 @@
 
 namespace LaraGram\Console\Scheduling;
 
-use DateTime;
 use LaraGram\Console\Command;
 use LaraGram\Contracts\Cache\Repository as Cache;
+use LaraGram\Support\Facades\Date;
 use LaraGram\Console\Attribute\AsCommand;
 
 #[AsCommand(name: 'schedule:interrupt')]
@@ -35,7 +35,6 @@ class ScheduleInterruptCommand extends Command
      * Create a new schedule interrupt command.
      *
      * @param  \LaraGram\Contracts\Cache\Repository  $cache
-     * @return void
      */
     public function __construct(Cache $cache)
     {
@@ -51,7 +50,7 @@ class ScheduleInterruptCommand extends Command
      */
     public function handle()
     {
-        $this->cache->put('LaraGram:schedule:interrupt', true, (new DateTime())->modify('last minute of this hour'));
+        $this->cache->put('illuminate:schedule:interrupt', true, Date::now()->endOfMinute());
 
         $this->components->info('Broadcasting schedule interrupt signal.');
     }

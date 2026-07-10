@@ -2,6 +2,8 @@
 
 namespace LaraGram\Database\Eloquent\Concerns;
 
+use LaraGram\Support\Str;
+
 trait HasUlids
 {
     use HasUniqueStringIds;
@@ -13,13 +15,7 @@ trait HasUlids
      */
     public function newUniqueId()
     {
-        $randomBytes = random_bytes(10);
-        $time = (int)(microtime(true) * 1000);
-        $ulid = sprintf('%08x-%06x-%06x-%06x-%06x',
-            $time,
-            unpack('N', $randomBytes)[1],
-            unpack('N', $randomBytes)[1] & 0xFFFFFFF);
-        return strtolower($ulid);
+        return strtolower((string) Str::ulid());
     }
 
     /**
@@ -30,6 +26,6 @@ trait HasUlids
      */
     protected function isValidUniqueId($value): bool
     {
-        return preg_match('/^[0-9A-HJKMNP-TV-Z]{26}$/', $value) === 1;
+        return Str::isUlid($value);
     }
 }

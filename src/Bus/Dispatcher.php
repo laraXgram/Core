@@ -9,13 +9,20 @@ use LaraGram\Contracts\Queue\Queue;
 use LaraGram\Contracts\Queue\ShouldQueue;
 use LaraGram\Foundation\Bus\PendingChain;
 use LaraGram\Pipeline\Pipeline;
+use LaraGram\Queue\Attributes\Connection;
+use LaraGram\Queue\Attributes\Delay;
+use LaraGram\Queue\Attributes\Queue as QueueAttribute;
+use LaraGram\Queue\Attributes\ReadsQueueAttributes;
 use LaraGram\Queue\InteractsWithQueue;
 use LaraGram\Queue\Jobs\SyncJob;
 use LaraGram\Support\Collection;
+use LaraGram\Support\Queue\Concerns\ResolvesQueueRoutes;
 use RuntimeException;
 
 class Dispatcher implements QueueingDispatcher
 {
+    use ReadsQueueAttributes, ResolvesQueueRoutes;
+
     /**
      * The container implementation.
      *
@@ -52,11 +59,14 @@ class Dispatcher implements QueueingDispatcher
     protected $queueResolver;
 
     /**
-     * Create a new command dispatcher instance.
+     * Indicates if dispatching after response is disabled.
      *
-     * @param  \LaraGram\Contracts\Container\Container  $container
-     * @param  \Closure|null  $queueResolver
-     * @return void
+     * @var bool
+     */
+    protected $allowsDispatchingAfterResponses = true;
+
+    /**
+     * Create a new command dispatcher instance.
      */
     public function __construct(Container $container, ?Closure $queueResolver = null)
     {
@@ -74,8 +84,8 @@ class Dispatcher implements QueueingDispatcher
     public function dispatch($command)
     {
         return $this->queueResolver && $this->commandShouldBeQueued($command)
-                        ? $this->dispatchToQueue($command)
-                        : $this->dispatchNow($command);
+            ? $this->dispatchToQueue($command)
+            : $this->dispatchNow($command);
     }
 
     /**
@@ -131,9 +141,45 @@ class Dispatcher implements QueueingDispatcher
     }
 
     /**
+     * Dispatch multiple commands in bulk to their appropriate handlers on the queue.
+     *
+     * @param  iterable  $jobs
+     * @return void
+     */
+    public function bulk($jobs)
+    {
+        $groups = [];
+
+        foreach ($jobs as $job) {
+            if (! $this->queueResolver || ! $this->commandShouldBeQueued($job)) {
+                $this->dispatchNow($job);
+
+                continue;
+            }
+
+            $connection = $this->getAttributeValue($job, Connection::class, 'connection')
+                ?? $this->resolveConnectionFromQueueRoute($job)
+                ?? null;
+
+            $queue = $this->getAttributeValue($job, QueueAttribute::class, 'queue')
+                ?? $this->resolveQueueFromQueueRoute($job)
+                ?? null;
+
+            $groups[$connection.':'.$queue]['connection'] = $connection;
+            $groups[$connection.':'.$queue]['queue'] = $queue;
+            $groups[$connection.':'.$queue]['jobs'][] = $job;
+        }
+
+        foreach ($groups as $group) {
+            ($this->queueResolver)($group['connection'])->bulk(
+                $group['jobs'], '', $group['queue']
+            );
+        }
+    }
+
+    /**
      * Attempt to find the batch with the given ID.
      *
-     * @param  string  $batchId
      * @return \LaraGram\Bus\Batch|null
      */
     public function findBatch(string $batchId)
@@ -144,21 +190,21 @@ class Dispatcher implements QueueingDispatcher
     /**
      * Create a new batch of queueable jobs.
      *
-     * @param  \LaraGram\Support\Collection|array|mixed  $jobs
+     * @param  \LaraGram\Support\Collection|mixed  $jobs
      * @return \LaraGram\Bus\PendingBatch
      */
     public function batch($jobs)
     {
-        return new PendingBatch($this->container, is_array($jobs) ? $jobs : ($jobs === null ? [] : [$jobs]));
+        return new PendingBatch($this->container, Collection::wrap($jobs));
     }
 
     /**
      * Create a new chain of queueable jobs.
      *
-     * @param  \LaraGram\Support\Collection|array  $jobs
+     * @param  \LaraGram\Support\Collection|array|null  $jobs
      * @return \LaraGram\Foundation\Bus\PendingChain
      */
-    public function chain($jobs)
+    public function chain($jobs = null)
     {
         $jobs = Collection::wrap($jobs);
         $jobs = ChainedBatch::prepareNestedBatches($jobs);
@@ -181,7 +227,7 @@ class Dispatcher implements QueueingDispatcher
      * Retrieve the handler for a command.
      *
      * @param  mixed  $command
-     * @return bool|mixed
+     * @return mixed
      */
     public function getCommandHandler($command)
     {
@@ -213,7 +259,9 @@ class Dispatcher implements QueueingDispatcher
      */
     public function dispatchToQueue($command)
     {
-        $connection = $command->connection ?? null;
+        $connection = $this->getAttributeValue($command, Connection::class, 'connection')
+            ?? $this->resolveConnectionFromQueueRoute($command)
+            ?? null;
 
         $queue = ($this->queueResolver)($connection);
 
@@ -237,11 +285,17 @@ class Dispatcher implements QueueingDispatcher
      */
     protected function pushCommandToQueue($queue, $command)
     {
-        if (isset($command->delay)) {
-            return $queue->later($command->delay, $command, queue: $command->queue ?? null);
+        $queueName = $this->getAttributeValue($command, QueueAttribute::class, 'queue')
+            ?? $this->resolveQueueFromQueueRoute($command)
+            ?? null;
+
+        $delay = $this->getAttributeValue($command, Delay::class, 'delay');
+
+        if (isset($delay)) {
+            return $queue->later($delay, $command, queue: $queueName);
         }
 
-        return $queue->push($command, queue: $command->queue ?? null);
+        return $queue->push($command, queue: $queueName);
     }
 
     /**
@@ -253,6 +307,12 @@ class Dispatcher implements QueueingDispatcher
      */
     public function dispatchAfterResponse($command, $handler = null)
     {
+        if (! $this->allowsDispatchingAfterResponses) {
+            $this->dispatchSync($command);
+
+            return;
+        }
+
         $this->container->terminating(function () use ($command, $handler) {
             $this->dispatchSync($command, $handler);
         });
@@ -261,7 +321,6 @@ class Dispatcher implements QueueingDispatcher
     /**
      * Set the pipes through which commands should be piped before dispatching.
      *
-     * @param  array  $pipes
      * @return $this
      */
     public function pipeThrough(array $pipes)
@@ -274,12 +333,35 @@ class Dispatcher implements QueueingDispatcher
     /**
      * Map a command to a handler.
      *
-     * @param  array  $map
      * @return $this
      */
     public function map(array $map)
     {
         $this->handlers = array_merge($this->handlers, $map);
+
+        return $this;
+    }
+
+    /**
+     * Allow dispatching after responses.
+     *
+     * @return $this
+     */
+    public function withDispatchingAfterResponses()
+    {
+        $this->allowsDispatchingAfterResponses = true;
+
+        return $this;
+    }
+
+    /**
+     * Disable dispatching after responses.
+     *
+     * @return $this
+     */
+    public function withoutDispatchingAfterResponses()
+    {
+        $this->allowsDispatchingAfterResponses = false;
 
         return $this;
     }

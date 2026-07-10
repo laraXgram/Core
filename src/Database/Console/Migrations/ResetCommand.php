@@ -39,7 +39,6 @@ class ResetCommand extends BaseCommand
      * Create a new migration rollback command instance.
      *
      * @param  \LaraGram\Database\Migrations\Migrator  $migrator
-     * @return void
      */
     public function __construct(Migrator $migrator)
     {

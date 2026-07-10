@@ -5,6 +5,7 @@ namespace LaraGram\Queue\Failed;
 use Closure;
 use DateTimeInterface;
 use LaraGram\Support\Collection;
+use LaraGram\Support\Facades\Date;
 
 class FileFailedJobProvider implements CountableFailedJobProvider, FailedJobProviderInterface, PrunableFailedJobProvider
 {
@@ -35,7 +36,6 @@ class FileFailedJobProvider implements CountableFailedJobProvider, FailedJobProv
      * @param  string  $path
      * @param  int  $limit
      * @param  \Closure|null  $lockProviderResolver
-     * @return void
      */
     public function __construct($path, $limit = 100, ?Closure $lockProviderResolver = null)
     {
@@ -60,7 +60,7 @@ class FileFailedJobProvider implements CountableFailedJobProvider, FailedJobProv
 
             $jobs = $this->read();
 
-            $failedAt = new \DateTime();
+            $failedAt = Date::now();
 
             array_unshift($jobs, [
                 'id' => $id,
@@ -140,7 +140,7 @@ class FileFailedJobProvider implements CountableFailedJobProvider, FailedJobProv
      */
     public function flush($hours = null)
     {
-        $this->prune((new \DateTime())->modify('-' . ($hours ?: 0) . ' hours'));
+        $this->prune(Date::now()->subHours($hours ?: 0));
     }
 
     /**
@@ -154,9 +154,11 @@ class FileFailedJobProvider implements CountableFailedJobProvider, FailedJobProv
         return $this->lock(function () use ($before) {
             $jobs = $this->read();
 
-            $this->write($prunedJobs = (new Collection($jobs))->reject(function ($job) use ($before) {
-                return $job->failed_at_timestamp <= $before->getTimestamp();
-            })->values()->all());
+            $this->write($prunedJobs = (new Collection($jobs))
+                ->reject(fn ($job) => $job->failed_at_timestamp <= $before->getTimestamp())
+                ->values()
+                ->all()
+            );
 
             return count($jobs) - count($prunedJobs);
         });
@@ -165,8 +167,10 @@ class FileFailedJobProvider implements CountableFailedJobProvider, FailedJobProv
     /**
      * Execute the given callback while holding a lock.
      *
-     * @param  \Closure  $callback
-     * @return mixed
+     * @template TReturn
+     *
+     * @param  (\Closure(): TReturn)  $callback
+     * @return TReturn
      */
     protected function lock(Closure $callback)
     {

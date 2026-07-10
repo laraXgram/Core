@@ -5,10 +5,16 @@ namespace LaraGram\Support;
 use Closure;
 use LaraGram\Contracts\Foundation\CachesConfiguration;
 use LaraGram\Contracts\Foundation\CachesListens;
+use LaraGram\Contracts\Foundation\CachesRoutes;
 use LaraGram\Contracts\Support\DeferrableProvider;
 use LaraGram\Console\Application as Commander;
 use LaraGram\Template\Compilers\Temple8Compiler;
+use LaraGram\View\Compilers\BladeCompiler;
 
+/**
+ * @property array<string, string> $bindings All of the container bindings that should be registered.
+ * @property array<array-key, string> $singletons All of the singletons that should be registered.
+ */
 abstract class ServiceProvider
 {
     /**
@@ -66,6 +72,13 @@ abstract class ServiceProvider
      * @var array<string, string>
      */
     public static array $optimizeClearCommands = [];
+
+    /**
+     * Commands that should be run during the "reload" command.
+     *
+     * @var array<string, string>
+     */
+    public static array $reloadCommands = [];
 
     /**
      * Create a new service provider instance.
@@ -178,6 +191,58 @@ abstract class ServiceProvider
     }
 
     /**
+     * Load the given routes file if routes are not already cached.
+     *
+     * @param  string  $path
+     * @return void
+     */
+    protected function loadRoutesFrom($path)
+    {
+        if (! ($this->app instanceof CachesRoutes && $this->app->routesAreCached())) {
+            require $path;
+        }
+    }
+
+    /**
+     * Register a view file namespace.
+     *
+     * @param  string|array  $path
+     * @param  string  $namespace
+     * @return void
+     */
+    protected function loadViewsFrom($path, $namespace)
+    {
+        $this->callAfterResolving('view', function ($view) use ($path, $namespace) {
+            if (isset($this->app->config['view']['paths']) &&
+                is_array($this->app->config['view']['paths'])) {
+                foreach ($this->app->config['view']['paths'] as $viewPath) {
+                    if (is_dir($appPath = $viewPath.'/vendor/'.$namespace)) {
+                        $view->addNamespace($namespace, $appPath);
+                    }
+                }
+            }
+
+            $view->addNamespace($namespace, $path);
+        });
+    }
+
+    /**
+     * Register the given view components with a custom prefix.
+     *
+     * @param  string  $prefix
+     * @param  array  $components
+     * @return void
+     */
+    protected function loadViewComponentsAs($prefix, array $components)
+    {
+        $this->callAfterResolving(BladeCompiler::class, function ($blade) use ($prefix, $components) {
+            foreach ($components as $alias => $component) {
+                $blade->component($component, is_string($alias) ? $alias : null, $prefix);
+            }
+        });
+    }
+
+    /**
      * Load the given listens file if listens are not already cached.
      *
      * @param  string  $path
@@ -274,7 +339,7 @@ abstract class ServiceProvider
     /**
      * Register Eloquent model factory paths.
      *
-     * @deprecated Will be removed in a future Laravel version.
+     * @deprecated Will be removed in a future LaraGram version.
      *
      * @param  array|string  $paths
      * @return void
@@ -478,6 +543,39 @@ abstract class ServiceProvider
      */
     protected function optimizes(?string $optimize = null, ?string $clear = null, ?string $key = null)
     {
+        $key = $this->getProviderKey($key);
+
+        if ($optimize) {
+            static::$optimizeCommands[$key] = $optimize;
+        }
+
+        if ($clear) {
+            static::$optimizeClearCommands[$key] = $clear;
+        }
+    }
+
+    /**
+     * Register commands that should run on "reload".
+     *
+     * @param  string|null  $reload
+     * @param  string|null  $key
+     * @return void
+     */
+    protected function reloads(string $reload, ?string $key = null)
+    {
+        $key = $this->getProviderKey($key);
+
+        static::$reloadCommands[$key] = $reload;
+    }
+
+    /**
+     * Get a short descriptive key for the current service provider.
+     *
+     * @param  string|null  $key
+     * @return string
+     */
+    protected function getProviderKey(?string $key = null): string
+    {
         $key ??= (string) Str::of(get_class($this))
             ->classBasename()
             ->before('ServiceProvider')
@@ -489,13 +587,7 @@ abstract class ServiceProvider
             $key = class_basename(get_class($this));
         }
 
-        if ($optimize) {
-            static::$optimizeCommands[$key] = $optimize;
-        }
-
-        if ($clear) {
-            static::$optimizeClearCommands[$key] = $clear;
-        }
+        return $key;
     }
 
     /**
@@ -529,7 +621,7 @@ abstract class ServiceProvider
     }
 
     /**
-     * Get the default providers for a Laravel application.
+     * Get the default providers for a LaraGram application.
      *
      * @return \LaraGram\Support\DefaultProviders
      */
@@ -562,6 +654,51 @@ abstract class ServiceProvider
             ->unique()
             ->sort()
             ->values()
+            ->map(fn ($p) => '    '.$p.'::class,')
+            ->implode(PHP_EOL);
+
+        $content = '<?php
+
+return [
+'.$providers.'
+];';
+
+        file_put_contents($path, $content.PHP_EOL);
+
+        return true;
+    }
+
+    /**
+     * Remove a provider from the application's provider bootstrap file.
+     *
+     * @param  string|array  $providersToRemove
+     * @param  string|null  $path
+     * @param  bool  $strict
+     * @return bool
+     */
+    public static function removeProviderFromBootstrapFile(string|array $providersToRemove, ?string $path = null, bool $strict = false)
+    {
+        $path ??= app()->getBootstrapProvidersPath();
+
+        if (! file_exists($path)) {
+            return false;
+        }
+
+        if (function_exists('opcache_invalidate')) {
+            opcache_invalidate($path, true);
+        }
+
+        $providersToRemove = Arr::wrap($providersToRemove);
+
+        $providers = (new Collection(require $path))
+            ->unique()
+            ->sort()
+            ->values()
+            ->when(
+                $strict,
+                static fn (Collection $providerCollection) => $providerCollection->reject(fn (string $p) => in_array($p, $providersToRemove, true)),
+                static fn (Collection $providerCollection) => $providerCollection->reject(fn (string $p) => Str::contains($p, $providersToRemove))
+            )
             ->map(fn ($p) => '    '.$p.'::class,')
             ->implode(PHP_EOL);
 

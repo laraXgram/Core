@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace LaraGram\Support\Number\Exception;
 
-use Brick\Math\BigInteger;
+use LaraGram\Support\Number\BigInteger;
 
 /**
  * Exception thrown when an integer overflow occurs.

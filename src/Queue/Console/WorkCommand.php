@@ -2,7 +2,6 @@
 
 namespace LaraGram\Queue\Console;
 
-use DateTime;
 use LaraGram\Console\Command;
 use LaraGram\Contracts\Cache\Repository as Cache;
 use LaraGram\Contracts\Queue\Job;
@@ -12,6 +11,7 @@ use LaraGram\Queue\Events\JobProcessing;
 use LaraGram\Queue\Events\JobReleasedAfterException;
 use LaraGram\Queue\Worker;
 use LaraGram\Queue\WorkerOptions;
+use LaraGram\Support\Tempora;
 use LaraGram\Support\InteractsWithTime;
 use LaraGram\Support\Stringable;
 use LaraGram\Console\Attribute\AsCommand;
@@ -37,16 +37,17 @@ class WorkCommand extends Command
                             {--daemon : Run the worker in daemon mode (Deprecated)}
                             {--once : Only process the next job on the queue}
                             {--stop-when-empty : Stop when the queue is empty}
+                            {--stop-when-empty-for=0 : Stop when no jobs have been processed for the given number of seconds}
                             {--delay=0 : The number of seconds to delay failed jobs (Deprecated)}
                             {--backoff=0 : The number of seconds to wait before retrying a job that encountered an uncaught exception}
                             {--max-jobs=0 : The number of jobs to process before stopping}
                             {--max-time=0 : The maximum number of seconds the worker should run}
                             {--force : Force the worker to run even in maintenance mode}
                             {--memory=128 : The memory limit in megabytes}
-                            {--sleep=3 : Number of seconds to sleep when no job is available}
-                            {--rest=0 : Number of seconds to rest between jobs}
+                            {--sleep=3 : The number of seconds to sleep when no job is available}
+                            {--rest=0 : The number of seconds to rest between jobs}
                             {--timeout=60 : The number of seconds a child process can run}
-                            {--tries=1 : Number of times to attempt a job before logging it failed}
+                            {--tries=1 : The number of times to attempt a job before logging it failed}
                             {--json : Output the queue worker information as JSON}';
 
     /**
@@ -89,7 +90,6 @@ class WorkCommand extends Command
      *
      * @param  \LaraGram\Queue\Worker  $worker
      * @param  \LaraGram\Contracts\Cache\Repository  $cache
-     * @return void
      */
     public function __construct(Worker $worker, Cache $cache)
     {
@@ -106,7 +106,7 @@ class WorkCommand extends Command
      */
     public function handle()
     {
-        if ($this->option('once')) {
+        if ($this->downForMaintenance() && $this->option('once')) {
             return $this->worker->sleep($this->option('sleep'));
         }
 
@@ -116,7 +116,7 @@ class WorkCommand extends Command
         $this->listenForEvents();
 
         $connection = $this->argument('connection')
-                        ?: $this->laragram['config']['queue.default'];
+            ?: $this->laragram['config']['queue.default'];
 
         // We need to get the right queue for the connection which is set in the queue
         // configuration file for the application. We will pull it based on the set
@@ -169,7 +169,8 @@ class WorkCommand extends Command
             $this->option('stop-when-empty'),
             $this->option('max-jobs'),
             $this->option('max-time'),
-            $this->option('rest')
+            $this->option('rest'),
+            $this->option('stop-when-empty-for'),
         );
     }
 
@@ -210,11 +211,15 @@ class WorkCommand extends Command
      *
      * @param  Job  $job
      * @param  string  $status
-     * @param  Throwable|null  $exception
+     * @param  \Throwable|null  $exception
      * @return void
      */
     protected function writeOutput(Job $job, $status, ?Throwable $exception = null)
     {
+        if ($this->output->isQuiet() || $this->output->isSilent()) {
+            return;
+        }
+
         $this->outputUsingJson()
             ? $this->writeOutputAsJson($job, $status, $exception)
             : $this->writeOutputForCli($job, $status);
@@ -229,20 +234,22 @@ class WorkCommand extends Command
      */
     protected function writeOutputForCli(Job $job, $status)
     {
-        $this->output->write(sprintf(
-            '  <fg=gray>%s</> %s%s',
+        $isVerbose = $this->output->isVerbose();
+
+        $this->output->write(rtrim(sprintf(
+            '  <fg=gray>%s</> %s %s',
             $this->now()->format('Y-m-d H:i:s'),
             $job->resolveName(),
-            $this->output->isVerbose()
-                ? sprintf(' <fg=gray>%s</>', $job->getJobId())
+            $isVerbose
+                ? sprintf('<fg=gray>%s</> <fg=blue>%s</> <fg=blue>%s</>', $job->getJobId(), $job->getConnectionName(), $job->getQueue())
                 : ''
-        ));
+        )));
 
         if ($status == 'starting') {
             $this->latestStartedAt = microtime(true);
 
             $dots = max(terminal()->width() - mb_strlen($job->resolveName()) - (
-                $this->output->isVerbose() ? (mb_strlen($job->getJobId()) + 1) : 0
+                $isVerbose ? mb_strlen($job->getJobId()) + mb_strlen($job->getConnectionName()) + mb_strlen($job->getQueue()) + 2 : 0
             ) - 33, 0);
 
             $this->output->write(' '.str_repeat('<fg=gray>.</>', $dots));
@@ -251,13 +258,14 @@ class WorkCommand extends Command
         }
 
         $runTime = $this->runTimeForHumans($this->latestStartedAt);
+        $memory = $isVerbose ? round(memory_get_usage(true) / 1024 / 1024, 1).'MB' : '';
 
         $dots = max(terminal()->width() - mb_strlen($job->resolveName()) - (
-            $this->output->isVerbose() ? (mb_strlen($job->getJobId()) + 1) : 0
+            $isVerbose ? mb_strlen($job->getJobId()) + mb_strlen($job->getConnectionName()) + mb_strlen($job->getQueue()) + mb_strlen($memory) + 3 : 0
         ) - mb_strlen($runTime) - 31, 0);
 
         $this->output->write(' '.str_repeat('<fg=gray>.</>', $dots));
-        $this->output->write(" <fg=gray>$runTime</>");
+        $this->output->write(" <fg=gray>{$runTime}".($memory ? " {$memory}" : '').'</>');
 
         $this->output->writeln(match ($status) {
             'success' => ' <fg=green;options=bold>DONE</>',
@@ -271,7 +279,7 @@ class WorkCommand extends Command
      *
      * @param  \LaraGram\Contracts\Queue\Job  $job
      * @param  string  $status
-     * @param  Throwable|null  $exception
+     * @param  \Throwable|null  $exception
      * @return void
      */
     protected function writeOutputAsJson(Job $job, $status, ?Throwable $exception = null)
@@ -308,19 +316,18 @@ class WorkCommand extends Command
     /**
      * Get the current date / time.
      *
-     * @return DateTime
-     * @throws \Exception
+     * @return \LaraGram\Support\Tempora
      */
     protected function now()
     {
         $queueTimezone = $this->laragram['config']->get('queue.output_timezone');
-        $defaultTimezone = $this->laragram['config']->get('app.timezone');
 
-        if ($queueTimezone && $queueTimezone !== $defaultTimezone) {
-            return new DateTime(null, new \DateTimeZone($queueTimezone));
+        if ($queueTimezone &&
+            $queueTimezone !== $this->laragram['config']->get('app.timezone')) {
+            return Tempora::now()->setTimezone($queueTimezone);
         }
 
-        return new DateTime();
+        return Tempora::now();
     }
 
     /**
@@ -350,6 +357,16 @@ class WorkCommand extends Command
         return $this->option('queue') ?: $this->laragram['config']->get(
             "queue.connections.{$connection}.queue", 'default'
         );
+    }
+
+    /**
+     * Determine if the worker should run in maintenance mode.
+     *
+     * @return bool
+     */
+    protected function downForMaintenance()
+    {
+        return $this->option('force') ? false : $this->laragram->isDownForMaintenance();
     }
 
     /**

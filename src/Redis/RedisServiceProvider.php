@@ -31,7 +31,7 @@ class RedisServiceProvider extends ServiceProvider implements DeferrableProvider
      *
      * @return array
      */
-    public function provides(): array
+    public function provides()
     {
         return ['redis', 'redis.connection'];
     }

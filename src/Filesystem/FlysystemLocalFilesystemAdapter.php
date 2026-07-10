@@ -4,11 +4,13 @@ declare(strict_types=1);
 
 namespace LaraGram\Filesystem;
 
+use const DIRECTORY_SEPARATOR;
+use const LOCK_EX;
 use DirectoryIterator;
 use FilesystemIterator;
 use Generator;
 use LaraGram\Contracts\Filesystem\ChecksumProvider;
-use LaraGram\Contracts\Filesystem\FilesystemAdapter as FilesystemAdapterContract;
+use LaraGram\Contracts\Filesystem\FilesystemAdapter;
 use LaraGram\Filesystem\Exception\SymbolicLinkEncountered;
 use LaraGram\Filesystem\Exception\UnableToCopyFile;
 use LaraGram\Filesystem\Exception\UnableToCreateDirectory;
@@ -20,10 +22,10 @@ use LaraGram\Filesystem\Exception\UnableToReadFile;
 use LaraGram\Filesystem\Exception\UnableToRetrieveMetadata;
 use LaraGram\Filesystem\Exception\UnableToSetVisibility;
 use LaraGram\Filesystem\Exception\UnableToWriteFile;
-use LaraGram\Filesystem\Mime\FallbackMimeTypeDetector;
-use LaraGram\Filesystem\Mime\FinfoMimeTypeDetector;
 use LaraGram\Filesystem\UnixVisibility\PortableVisibilityConverter;
 use LaraGram\Filesystem\UnixVisibility\VisibilityConverter;
+use LaraGram\Filesystem\Mime\FallbackMimeTypeDetector;
+use LaraGram\Filesystem\Mime\FinfoMimeTypeDetector;
 use LaraGram\Filesystem\Mime\MimeTypeDetector;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
@@ -41,10 +43,8 @@ use function is_dir;
 use function is_file;
 use function mkdir;
 use function rename;
-use const DIRECTORY_SEPARATOR;
-use const LOCK_EX;
 
-class FlysystemLocalFilesystemAdapter implements FilesystemAdapterContract, ChecksumProvider
+class FlysystemLocalFilesystemAdapter implements FilesystemAdapter, ChecksumProvider
 {
     /**
      * @var int
@@ -146,9 +146,9 @@ class FlysystemLocalFilesystemAdapter implements FilesystemAdapterContract, Chec
         }
     }
 
-    public function deleteDirectory(string $path): void
+    public function deleteDirectory(string $prefix): void
     {
-        $location = $this->prefixer->prefixPath($path);
+        $location = $this->prefixer->prefixPath($prefix);
 
         if ( ! is_dir($location)) {
             return;
@@ -159,14 +159,14 @@ class FlysystemLocalFilesystemAdapter implements FilesystemAdapterContract, Chec
         /** @var SplFileInfo $file */
         foreach ($contents as $file) {
             if ( ! $this->deleteFileInfoObject($file)) {
-                throw UnableToDeleteDirectory::atLocation($path, "Unable to delete file at " . $file->getPathname());
+                throw UnableToDeleteDirectory::atLocation($prefix, "Unable to delete file at " . $file->getPathname());
             }
         }
 
         unset($contents);
 
         if ( ! @rmdir($location)) {
-            throw UnableToDeleteDirectory::atLocation($path, error_get_last()['message'] ?? '');
+            throw UnableToDeleteDirectory::atLocation($prefix, error_get_last()['message'] ?? '');
         }
     }
 
@@ -333,18 +333,18 @@ class FlysystemLocalFilesystemAdapter implements FilesystemAdapterContract, Chec
         }
     }
 
-    public function fileExists(string $path): bool
+    public function fileExists(string $location): bool
     {
-        $path = $this->prefixer->prefixPath($path);
+        $location = $this->prefixer->prefixPath($location);
         clearstatcache();
-        return is_file($path);
+        return is_file($location);
     }
 
-    public function directoryExists(string $path): bool
+    public function directoryExists(string $location): bool
     {
-        $path = $this->prefixer->prefixPath($path);
+        $location = $this->prefixer->prefixPath($location);
         clearstatcache();
-        return is_dir($path);
+        return is_dir($location);
     }
 
     public function createDirectory(string $path, Config $config): void

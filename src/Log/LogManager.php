@@ -3,8 +3,9 @@
 namespace LaraGram\Log;
 
 use Closure;
-use LaraGram\Log\Context\Repository as ContextRepository;
+use LaraGram\Contracts\Log\ContextLogProcessor;
 use LaraGram\Support\Collection;
+use LaraGram\Support\RebindsCallbacksToSelf;
 use LaraGram\Support\Str;
 use InvalidArgumentException;
 use LaraGram\Log\Logger\Formatter\LineFormatter;
@@ -17,18 +18,21 @@ use LaraGram\Log\Logger\Handler\SlackWebhookHandler;
 use LaraGram\Log\Logger\Handler\StreamHandler;
 use LaraGram\Log\Logger\Handler\SyslogHandler;
 use LaraGram\Log\Logger\Handler\WhatFailureGroupHandler;
-use LaraGram\Log\Logger\Logger as LaraGramLogger;
+use LaraGram\Log\Logger\Logger as Monolog;
 use LaraGram\Log\Logger\Processor\ProcessorInterface;
 use LaraGram\Log\Logger\Processor\PsrLogMessageProcessor;
-
+use ReflectionException;
+use RuntimeException;
 use Throwable;
+
+use function LaraGram\Support\enum_value;
 
 /**
  * @mixin \LaraGram\Log\Logger
  */
 class LogManager implements LoggerInterface
 {
-    use ParsesLogConfiguration;
+    use ParsesLogConfiguration, RebindsCallbacksToSelf;
 
     /**
      * The application instance.
@@ -69,7 +73,6 @@ class LogManager implements LoggerInterface
      * Create a new Log manager instance.
      *
      * @param  \LaraGram\Contracts\Foundation\Application  $app
-     * @return void
      */
     public function __construct($app)
     {
@@ -80,7 +83,7 @@ class LogManager implements LoggerInterface
      * Build an on-demand log channel.
      *
      * @param  array  $config
-     * @return LoggerInterface
+     * @return \LaraGram\Log\LoggerInterface
      */
     public function build(array $config)
     {
@@ -94,12 +97,12 @@ class LogManager implements LoggerInterface
      *
      * @param  array  $channels
      * @param  string|null  $channel
-     * @return LoggerInterface
+     * @return \LaraGram\Log\LoggerInterface
      */
     public function stack(array $channels, $channel = null)
     {
         return (new Logger(
-            $this->createStackDriver(compact('channels', 'channel')),
+            $this->createStackDriver(['channels' => $channels, 'name' => $channel]),
             $this->app['events']
         ))->withContext($this->sharedContext);
     }
@@ -107,8 +110,8 @@ class LogManager implements LoggerInterface
     /**
      * Get a log channel instance.
      *
-     * @param  string|null  $channel
-     * @return LoggerInterface
+     * @param  \UnitEnum|string|null  $channel
+     * @return \LaraGram\Log\LoggerInterface
      */
     public function channel($channel = null)
     {
@@ -118,12 +121,12 @@ class LogManager implements LoggerInterface
     /**
      * Get a log driver instance.
      *
-     * @param  string|null  $driver
-     * @return LoggerInterface
+     * @param  \UnitEnum|string|null  $driver
+     * @return \LaraGram\Log\LoggerInterface
      */
     public function driver($driver = null)
     {
-        return $this->get($this->parseDriver($driver));
+        return $this->get($this->parseDriver(enum_value($driver)));
     }
 
     /**
@@ -131,7 +134,7 @@ class LogManager implements LoggerInterface
      *
      * @param  string  $name
      * @param  array|null  $config
-     * @return LoggerInterface
+     * @return \LaraGram\Log\LoggerInterface
      */
     protected function get($name, ?array $config = null)
     {
@@ -143,16 +146,7 @@ class LogManager implements LoggerInterface
                 )->withContext($this->sharedContext);
 
                 if (method_exists($loggerWithContext->getLogger(), 'pushProcessor')) {
-                    $loggerWithContext->pushProcessor(function ($record) {
-                        if (! $this->app->bound(ContextRepository::class)) {
-                            return $record;
-                        }
-
-                        return $record->with(extra: [
-                            ...$record->extra,
-                            ...$this->app[ContextRepository::class]->all(),
-                        ]);
-                    });
+                    $loggerWithContext->pushProcessor($this->app->make(ContextLogProcessor::class));
                 }
 
                 return $this->channels[$name] = $loggerWithContext;
@@ -198,7 +192,7 @@ class LogManager implements LoggerInterface
     /**
      * Create an emergency log handler to avoid white screens of death.
      *
-     * @return LoggerInterface
+     * @return \LaraGram\Log\LoggerInterface
      */
     protected function createEmergencyLogger()
     {
@@ -210,7 +204,7 @@ class LogManager implements LoggerInterface
         );
 
         return new Logger(
-            new LaraGramLogger('laragram', $this->prepareHandlers([$handler])),
+            new Monolog('laragram', $this->prepareHandlers([$handler])),
             $this->app['events']
         );
     }
@@ -220,7 +214,7 @@ class LogManager implements LoggerInterface
      *
      * @param  string  $name
      * @param  array|null  $config
-     * @return LoggerInterface
+     * @return \LaraGram\Log\LoggerInterface
      *
      * @throws \InvalidArgumentException
      */
@@ -260,7 +254,7 @@ class LogManager implements LoggerInterface
      * Create a custom log driver instance.
      *
      * @param  array  $config
-     * @return LoggerInterface
+     * @return \LaraGram\Log\LoggerInterface
      */
     protected function createCustomDriver(array $config)
     {
@@ -273,7 +267,7 @@ class LogManager implements LoggerInterface
      * Create an aggregate log driver instance.
      *
      * @param  array  $config
-     * @return LoggerInterface
+     * @return \LaraGram\Log\LoggerInterface
      */
     protected function createStackDriver(array $config)
     {
@@ -281,34 +275,38 @@ class LogManager implements LoggerInterface
             $config['channels'] = explode(',', $config['channels']);
         }
 
-        $handlers = (new Collection($config['channels']))->flatMap(function ($channel) {
-            return $channel instanceof LoggerInterface
-                ? $channel->getHandlers()
-                : $this->channel($channel)->getHandlers();
-        })->all();
+        $handlers = (new Collection($config['channels']))
+            ->flatMap(function ($channel) {
+                return $channel instanceof LoggerInterface
+                    ? $channel->getHandlers()
+                    : $this->channel($channel)->getHandlers();
+            })
+            ->all();
 
-        $processors = (new Collection($config['channels']))->flatMap(function ($channel) {
-            return $channel instanceof LoggerInterface
-                ? $channel->getProcessors()
-                : $this->channel($channel)->getProcessors();
-        })->all();
+        $processors = (new Collection($config['channels']))
+            ->flatMap(function ($channel) {
+                return $channel instanceof LoggerInterface
+                    ? $channel->getProcessors()
+                    : $this->channel($channel)->getProcessors();
+            })
+            ->all();
 
         if ($config['ignore_exceptions'] ?? false) {
             $handlers = [new WhatFailureGroupHandler($handlers)];
         }
 
-        return new LaraGramLogger($this->parseChannel($config), $handlers, $processors);
+        return new Monolog($this->parseChannel($config), $handlers, $processors);
     }
 
     /**
      * Create an instance of the single file log driver.
      *
      * @param  array  $config
-     * @return LoggerInterface
+     * @return \LaraGram\Log\LoggerInterface
      */
     protected function createSingleDriver(array $config)
     {
-        return new LaraGramLogger($this->parseChannel($config), [
+        return new Monolog($this->parseChannel($config), [
             $this->prepareHandler(
                 new StreamHandler(
                     $config['path'], $this->level($config),
@@ -322,11 +320,11 @@ class LogManager implements LoggerInterface
      * Create an instance of the daily file log driver.
      *
      * @param  array  $config
-     * @return LoggerInterface
+     * @return \LaraGram\Log\LoggerInterface
      */
     protected function createDailyDriver(array $config)
     {
-        return new LaraGramLogger($this->parseChannel($config), [
+        return new Monolog($this->parseChannel($config), [
             $this->prepareHandler(new RotatingFileHandler(
                 $config['path'], $config['days'] ?? 7, $this->level($config),
                 $config['bubble'] ?? true, $config['permission'] ?? null, $config['locking'] ?? false
@@ -338,15 +336,15 @@ class LogManager implements LoggerInterface
      * Create an instance of the Slack log driver.
      *
      * @param  array  $config
-     * @return LoggerInterface
+     * @return \LaraGram\Log\LoggerInterface
      */
     protected function createSlackDriver(array $config)
     {
-        return new LaraGramLogger($this->parseChannel($config), [
+        return new Monolog($this->parseChannel($config), [
             $this->prepareHandler(new SlackWebhookHandler(
                 $config['url'],
                 $config['channel'] ?? null,
-                $config['username'] ?? 'laragram',
+                $config['username'] ?? 'LaraGram',
                 $config['attachment'] ?? true,
                 $config['emoji'] ?? ':boom:',
                 $config['short'] ?? false,
@@ -362,11 +360,11 @@ class LogManager implements LoggerInterface
      * Create an instance of the syslog log driver.
      *
      * @param  array  $config
-     * @return LoggerInterface
+     * @return \LaraGram\Log\LoggerInterface
      */
     protected function createSyslogDriver(array $config)
     {
-        return new LaraGramLogger($this->parseChannel($config), [
+        return new Monolog($this->parseChannel($config), [
             $this->prepareHandler(new SyslogHandler(
                 Str::snake($this->app['config']['app.name'], '-'),
                 $config['facility'] ?? LOG_USER, $this->level($config)
@@ -378,11 +376,11 @@ class LogManager implements LoggerInterface
      * Create an instance of the "error log" log driver.
      *
      * @param  array  $config
-     * @return LoggerInterface
+     * @return \LaraGram\Log\LoggerInterface
      */
     protected function createErrorlogDriver(array $config)
     {
-        return new LaraGramLogger($this->parseChannel($config), [
+        return new Monolog($this->parseChannel($config), [
             $this->prepareHandler(new ErrorLogHandler(
                 $config['type'] ?? ErrorLogHandler::OPERATING_SYSTEM, $this->level($config)
             )),
@@ -390,15 +388,15 @@ class LogManager implements LoggerInterface
     }
 
     /**
-     * Create an instance of any handler available in LaraGram Logger.
+     * Create an instance of any handler available in Monolog.
      *
      * @param  array  $config
-     * @return LoggerInterface
+     * @return \LaraGram\Log\LoggerInterface
      *
      * @throws \InvalidArgumentException
      * @throws \LaraGram\Contracts\Container\BindingResolutionException
      */
-    protected function createLaraGramDriver(array $config)
+    protected function createMonologDriver(array $config)
     {
         if (! is_a($config['handler'], HandlerInterface::class, true)) {
             throw new InvalidArgumentException(
@@ -430,7 +428,7 @@ class LogManager implements LoggerInterface
             ->map(fn ($processor) => $this->app->make($processor['processor'] ?? $processor, $processor['with'] ?? []))
             ->toArray();
 
-        return new LaraGramLogger(
+        return new Monolog(
             $this->parseChannel($config),
             [$handler],
             $processors,
@@ -438,7 +436,7 @@ class LogManager implements LoggerInterface
     }
 
     /**
-     * Prepare the handlers for usage by LaraGram Logger.
+     * Prepare the handlers for usage by Monolog.
      *
      * @param  array  $handlers
      * @return array
@@ -453,7 +451,7 @@ class LogManager implements LoggerInterface
     }
 
     /**
-     * Prepare the handler for usage by LaraGram Logger.
+     * Prepare the handler for usage by Monolog.
      *
      * @param  \LaraGram\Log\Logger\Handler\HandlerInterface  $handler
      * @param  array  $config
@@ -485,7 +483,7 @@ class LogManager implements LoggerInterface
     }
 
     /**
-     * Get a LaraGram Logger formatter instance.
+     * Get a Monolog formatter instance.
      *
      * @return \LaraGram\Log\Logger\Formatter\FormatterInterface
      */
@@ -524,13 +522,14 @@ class LogManager implements LoggerInterface
     /**
      * Flush the log context on all currently resolved channels.
      *
+     * @param  string[]|null  $keys
      * @return $this
      */
-    public function withoutContext()
+    public function withoutContext(?array $keys = null)
     {
         foreach ($this->channels as $channel) {
             if (method_exists($channel, 'withoutContext')) {
-                $channel->withoutContext();
+                $channel->withoutContext($keys);
             }
         }
 
@@ -563,7 +562,7 @@ class LogManager implements LoggerInterface
      * Get the log connection configuration.
      *
      * @param  string  $name
-     * @return array
+     * @return array|null
      */
     protected function configurationFor($name)
     {
@@ -583,12 +582,12 @@ class LogManager implements LoggerInterface
     /**
      * Set the default log driver name.
      *
-     * @param  string  $name
+     * @param  \UnitEnum|string  $name
      * @return void
      */
     public function setDefaultDriver($name)
     {
-        $this->app['config']['logging.default'] = $name;
+        $this->app['config']['logging.default'] = enum_value($name);
     }
 
     /**
@@ -596,11 +595,20 @@ class LogManager implements LoggerInterface
      *
      * @param  string  $driver
      * @param  \Closure  $callback
+     *
+     * @param-closure-this  $this  $callback
+     *
      * @return $this
      */
     public function extend($driver, Closure $callback)
     {
-        $this->customCreators[$driver] = $callback->bindTo($this, $this);
+        try {
+            $callback = $this->bindCallbackToSelf($callback) ?? throw new RuntimeException('Unable to bind custom driver callback');
+        } catch (ReflectionException $e) {
+            throw new RuntimeException('Unable to bind custom driver callback', previous: $e);
+        }
+
+        $this->customCreators[$driver] = $callback;
 
         return $this;
     }
@@ -629,6 +637,10 @@ class LogManager implements LoggerInterface
     protected function parseDriver($driver)
     {
         $driver ??= $this->getDefaultDriver();
+
+        if ($driver === null) {
+            return null;
+        }
 
         return trim($driver);
     }

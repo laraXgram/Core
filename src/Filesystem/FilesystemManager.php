@@ -2,17 +2,30 @@
 
 namespace LaraGram\Filesystem;
 
+use Aws\S3\S3Client;
+use League\Flysystem\PhpseclibV3\SftpAdapter;
+use League\Flysystem\PhpseclibV3\SftpConnectionProvider;
+
 use Closure;
-use LaraGram\Support\Arr;
 use LaraGram\Contracts\Filesystem\Factory as FactoryContract;
-use InvalidArgumentException;
-use LaraGram\Contracts\Filesystem\FilesystemAdapter as FilesystemAdapterContract;
-use LaraGram\Filesystem\UnixVisibility\PortableVisibilityConverter;
+use LaraGram\Support\Arr;
 use LaraGram\Support\RebindsCallbacksToSelf;
+use InvalidArgumentException;
+use LaraGram\Filesystem\Connections\Aws\AwsS3V3Adapter as S3Adapter;
+use LaraGram\Filesystem\Connections\Aws\PortableVisibilityConverter as AwsS3PortableVisibilityConverter;
+use LaraGram\Contracts\Filesystem\FilesystemAdapter as FlysystemAdapter;
+use LaraGram\Filesystem\Connections\Ftp\FtpAdapter;
+use LaraGram\Filesystem\Connections\Ftp\FtpConnectionOptions;
+use LaraGram\Filesystem\FlysystemLocalFilesystemAdapter as LocalAdapter;
+use LaraGram\Filesystem\UnixVisibility\PortableVisibilityConverter;
+use ReflectionException;
+use RuntimeException;
+
 use function LaraGram\Support\enum_value;
 
 /**
  * @mixin \LaraGram\Contracts\Filesystem\Filesystem
+ * @mixin \LaraGram\Filesystem\FilesystemAdapter
  */
 class FilesystemManager implements FactoryContract
 {
@@ -43,7 +56,6 @@ class FilesystemManager implements FactoryContract
      * Create a new filesystem manager instance.
      *
      * @param  \LaraGram\Contracts\Foundation\Application  $app
-     * @return void
      */
     public function __construct($app)
     {
@@ -53,7 +65,7 @@ class FilesystemManager implements FactoryContract
     /**
      * Get a filesystem instance.
      *
-     * @param  string|null  $name
+     * @param  \UnitEnum|string|null  $name
      * @return \LaraGram\Contracts\Filesystem\Filesystem
      */
     public function drive($name = null)
@@ -70,6 +82,18 @@ class FilesystemManager implements FactoryContract
     public function disk($name = null)
     {
         $name = enum_value($name) ?: $this->getDefaultDriver();
+
+        return $this->disks[$name] = $this->get($name);
+    }
+
+    /**
+     * Get a default cloud filesystem instance.
+     *
+     * @return \LaraGram\Contracts\Filesystem\Cloud
+     */
+    public function cloud()
+    {
+        $name = $this->getDefaultCloudDriver();
 
         return $this->disks[$name] = $this->get($name);
     }
@@ -147,7 +171,7 @@ class FilesystemManager implements FactoryContract
      *
      * @param  array  $config
      * @param  string  $name
-     * @return LocalFilesystemAdapter
+     * @return \LaraGram\Contracts\Filesystem\Filesystem
      */
     public function createLocalDriver(array $config, string $name = 'local')
     {
@@ -157,10 +181,10 @@ class FilesystemManager implements FactoryContract
         );
 
         $links = ($config['links'] ?? null) === 'skip'
-            ? FlysystemLocalFilesystemAdapter::SKIP_LINKS
-            : FlysystemLocalFilesystemAdapter::DISALLOW_LINKS;
+            ? LocalAdapter::SKIP_LINKS
+            : LocalAdapter::DISALLOW_LINKS;
 
-        $adapter = new FlysystemLocalFilesystemAdapter(
+        $adapter = new LocalAdapter(
             $config['root'], $visibility, $config['lock'] ?? LOCK_EX, $links
         );
 
@@ -172,6 +196,100 @@ class FilesystemManager implements FactoryContract
             $config['serve'] ?? false,
             fn () => $this->app['url'],
         );
+    }
+
+    /**
+     * Create an instance of the ftp driver.
+     *
+     * @param  array  $config
+     * @return \LaraGram\Contracts\Filesystem\Filesystem
+     */
+    public function createFtpDriver(array $config)
+    {
+        if (! isset($config['root'])) {
+            $config['root'] = '';
+        }
+
+        $adapter = new FtpAdapter(FtpConnectionOptions::fromArray($config));
+
+        return new FilesystemAdapter($this->createFlysystem($adapter, $config), $adapter, $config);
+    }
+
+    /**
+     * Create an instance of the sftp driver.
+     *
+     * @param  array  $config
+     * @return \LaraGram\Contracts\Filesystem\Filesystem
+     */
+    public function createSftpDriver(array $config)
+    {
+        if (! class_exists(SftpConnectionProvider::class)) {
+            throw new InvalidArgumentException('SftpConnectionProvider is not available. Please install league/flysystem-php-v3');
+        }
+
+        $provider = SftpConnectionProvider::fromArray($config);
+
+        $root = $config['root'] ?? '';
+
+        $visibility = PortableVisibilityConverter::fromArray(
+            $config['permissions'] ?? []
+        );
+
+        $adapter = new SftpAdapter($provider, $root, $visibility);
+
+        return new FilesystemAdapter($this->createFlysystem($adapter, $config), $adapter, $config);
+    }
+
+    /**
+     * Create an instance of the Amazon S3 driver.
+     *
+     * @param  array  $config
+     * @return \LaraGram\Contracts\Filesystem\Cloud
+     */
+    public function createS3Driver(array $config)
+    {
+        if (! class_exists(S3Client::class)) {
+            throw new InvalidArgumentException('S3Client is not available. Please install aws/aws-sdk-php.');
+        }
+
+        $s3Config = $this->formatS3Config($config);
+
+        $root = (string) ($s3Config['root'] ?? '');
+
+        $visibility = new AwsS3PortableVisibilityConverter(
+            $config['visibility'] ?? Visibility::PUBLIC
+        );
+
+        $streamReads = $s3Config['stream_reads'] ?? false;
+
+        $client = new S3Client($s3Config);
+
+        $adapter = new S3Adapter($client, $s3Config['bucket'], $root, $visibility, null, $config['options'] ?? [], $streamReads);
+
+        return new AwsS3V3Adapter(
+            $this->createFlysystem($adapter, $config), $adapter, $s3Config, $client
+        );
+    }
+
+    /**
+     * Format the given S3 configuration with the default options.
+     *
+     * @param  array  $config
+     * @return array
+     */
+    protected function formatS3Config(array $config)
+    {
+        $config += ['version' => 'latest'];
+
+        if (! empty($config['key']) && ! empty($config['secret'])) {
+            $config['credentials'] = Arr::only($config, ['key', 'secret']);
+
+            if (! empty($config['token'])) {
+                $config['credentials']['token'] = $config['token'];
+            }
+        }
+
+        return Arr::except($config, ['token']);
     }
 
     /**
@@ -222,7 +340,7 @@ class FilesystemManager implements FactoryContract
      * @param  array  $config
      * @return \LaraGram\Contracts\Filesystem\FilesystemOperator
      */
-    protected function createFlysystem(FilesystemAdapterContract $adapter, array $config)
+    protected function createFlysystem(FlysystemAdapter $adapter, array $config)
     {
         if ($config['read-only'] ?? false) {
             $adapter = new ReadOnlyFilesystemAdapter($adapter);
@@ -282,6 +400,16 @@ class FilesystemManager implements FactoryContract
     }
 
     /**
+     * Get the default cloud driver name.
+     *
+     * @return string
+     */
+    public function getDefaultCloudDriver()
+    {
+        return $this->app['config']['filesystems.cloud'] ?? 's3';
+    }
+
+    /**
      * Unset the given disk instances.
      *
      * @param  array|string  $disk
@@ -314,10 +442,19 @@ class FilesystemManager implements FactoryContract
      *
      * @param  string  $driver
      * @param  \Closure  $callback
+     *
+     * @param-closure-this  $this  $callback
+     *
      * @return $this
      */
     public function extend($driver, Closure $callback)
     {
+        try {
+            $callback = $this->bindCallbackToSelf($callback) ?? throw new RuntimeException('Unable to bind custom driver callback');
+        } catch (ReflectionException $e) {
+            throw new RuntimeException('Unable to bind custom driver callback', previous: $e);
+        }
+
         $this->customCreators[$driver] = $callback;
 
         return $this;

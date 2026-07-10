@@ -5,9 +5,14 @@ namespace LaraGram\Cache;
 use ArrayAccess;
 use BadMethodCallException;
 use Closure;
-use DateTime;
 use DateTimeInterface;
+use LaraGram\Cache\Events\CacheFlushed;
+use LaraGram\Cache\Events\CacheFlushFailed;
+use LaraGram\Cache\Events\CacheFlushing;
 use LaraGram\Cache\Events\CacheHit;
+use LaraGram\Cache\Events\CacheLocksFlushed;
+use LaraGram\Cache\Events\CacheLocksFlushFailed;
+use LaraGram\Cache\Events\CacheLocksFlushing;
 use LaraGram\Cache\Events\CacheMissed;
 use LaraGram\Cache\Events\ForgettingKey;
 use LaraGram\Cache\Events\KeyForgetFailed;
@@ -18,14 +23,20 @@ use LaraGram\Cache\Events\RetrievingKey;
 use LaraGram\Cache\Events\RetrievingManyKeys;
 use LaraGram\Cache\Events\WritingKey;
 use LaraGram\Cache\Events\WritingManyKeys;
+use LaraGram\Cache\Limiters\ConcurrencyLimiterBuilder;
+use LaraGram\Contracts\Cache\CanFlushLocks;
+use LaraGram\Contracts\Cache\LockProvider;
 use LaraGram\Contracts\Cache\Repository as CacheContract;
 use LaraGram\Contracts\Cache\Store;
 use LaraGram\Contracts\Events\Dispatcher;
+use LaraGram\Support\Tempora;
 use LaraGram\Support\Collection;
 use LaraGram\Support\InteractsWithTime;
 use LaraGram\Support\Traits\Macroable;
+use InvalidArgumentException;
 
 use function LaraGram\Support\defer;
+use function LaraGram\Support\enum_value;
 
 /**
  * @mixin \LaraGram\Contracts\Cache\Store
@@ -35,6 +46,13 @@ class Repository implements ArrayAccess, CacheContract
     use InteractsWithTime, Macroable {
         __call as macroCall;
     }
+
+    /**
+     * The cache key prefix used to track when a flexible cache value was last refreshed.
+     *
+     * @var string
+     */
+    const FLEXIBLE_CREATED_KEY_PREFIX = 'illuminate:cache:flexible:created:';
 
     /**
      * The cache store implementation.
@@ -65,11 +83,14 @@ class Repository implements ArrayAccess, CacheContract
     protected $config = [];
 
     /**
-     * Create a new cache repository instance.
+     * The callback to invoke when an unserializable class is encountered.
      *
-     * @param  \LaraGram\Contracts\Cache\Store  $store
-     * @param  array  $config
-     * @return void
+     * @var callable|null
+     */
+    protected static $unserializableClassHandler;
+
+    /**
+     * Create a new cache repository instance.
      */
     public function __construct(Store $store, array $config = [])
     {
@@ -80,8 +101,7 @@ class Repository implements ArrayAccess, CacheContract
     /**
      * Determine if an item exists in the cache.
      *
-     * @param  array|string  $key
-     * @return bool
+     * @param  \UnitEnum|array|string  $key
      */
     public function has($key): bool
     {
@@ -91,7 +111,7 @@ class Repository implements ArrayAccess, CacheContract
     /**
      * Determine if an item doesn't exist in the cache.
      *
-     * @param  string  $key
+     * @param  \UnitEnum|string  $key
      * @return bool
      */
     public function missing($key)
@@ -102,15 +122,16 @@ class Repository implements ArrayAccess, CacheContract
     /**
      * Retrieve an item from the cache by key.
      *
-     * @param  array|string  $key
+     * @param  \UnitEnum|array|string  $key
      * @param  mixed  $default
-     * @return mixed
      */
     public function get($key, $default = null): mixed
     {
         if (is_array($key)) {
             return $this->many($key);
         }
+
+        $key = enum_value($key);
 
         $this->event(new RetrievingKey($this->getName(), $key));
 
@@ -124,6 +145,8 @@ class Repository implements ArrayAccess, CacheContract
 
             $value = value($default);
         } else {
+            $value = $this->handleIncompleteClass($key, $value);
+
             $this->event(new CacheHit($this->getName(), $key, $value));
         }
 
@@ -135,16 +158,17 @@ class Repository implements ArrayAccess, CacheContract
      *
      * Items not found in the cache will have a null value.
      *
-     * @param  array  $keys
      * @return array
      */
     public function many(array $keys)
     {
         $this->event(new RetrievingManyKeys($this->getName(), $keys));
 
-        $values = $this->store->many((new Collection($keys))->map(function ($value, $key) {
-            return is_string($key) ? $key : $value;
-        })->values()->all());
+        $values = $this->store->many((new Collection($keys))
+            ->map(fn ($value, $key) => is_string($key) ? $key : enum_value($value))
+            ->values()
+            ->all()
+        );
 
         return (new Collection($values))
             ->map(fn ($value, $key) => $this->handleManyResult($keys, $key, $value))
@@ -153,15 +177,13 @@ class Repository implements ArrayAccess, CacheContract
 
     /**
      * {@inheritdoc}
-     *
-     * @return iterable
      */
     public function getMultiple($keys, $default = null): iterable
     {
         $defaults = [];
 
         foreach ($keys as $key) {
-            $defaults[$key] = $default;
+            $defaults[enum_value($key)] = $default;
         }
 
         return $this->many($defaults);
@@ -189,6 +211,8 @@ class Repository implements ArrayAccess, CacheContract
         // If we found a valid value we will fire the "hit" event and return the value
         // back from this function. The "hit" event gives developers an opportunity
         // to listen for every possible cache "hit" throughout this applications.
+        $value = $this->handleIncompleteClass($key, $value);
+
         $this->event(new CacheHit($this->getName(), $key, $value));
 
         return $value;
@@ -197,7 +221,7 @@ class Repository implements ArrayAccess, CacheContract
     /**
      * Retrieve an item from the cache and delete it.
      *
-     * @param  array|string  $key
+     * @param  \UnitEnum|array|string  $key
      * @param  mixed  $default
      * @return mixed
      */
@@ -209,9 +233,123 @@ class Repository implements ArrayAccess, CacheContract
     }
 
     /**
+     * Retrieve a string item from the cache.
+     *
+     * @param  \UnitEnum|string  $key
+     * @param  (\Closure():(string|null))|string|null  $default
+     *
+     * @throws \InvalidArgumentException
+     */
+    public function string($key, $default = null): string
+    {
+        $value = $this->get($key, $default);
+
+        if (! is_string($value)) {
+            throw new InvalidArgumentException(
+                sprintf('Cache value for key [%s] must be a string, %s given.', $key, gettype($value))
+            );
+        }
+
+        return $value;
+    }
+
+    /**
+     * Retrieve an integer item from the cache.
+     *
+     * @param  \UnitEnum|string  $key
+     * @param  (\Closure():(int|null))|int|null  $default
+     *
+     * @throws \InvalidArgumentException
+     */
+    public function integer($key, $default = null): int
+    {
+        $value = $this->get($key, $default);
+
+        if (is_int($value)) {
+            return $value;
+        }
+
+        if (filter_var($value, FILTER_VALIDATE_INT) !== false) {
+            return (int) $value;
+        }
+
+        throw new InvalidArgumentException(
+            sprintf('Cache value for key [%s] must be an integer, %s given.', $key, gettype($value))
+        );
+    }
+
+    /**
+     * Retrieve a float item from the cache.
+     *
+     * @param  \UnitEnum|string  $key
+     * @param  (\Closure():(float|null))|float|null  $default
+     *
+     * @throws \InvalidArgumentException
+     */
+    public function float($key, $default = null): float
+    {
+        $value = $this->get($key, $default);
+
+        if (is_float($value)) {
+            return $value;
+        }
+
+        if (filter_var($value, FILTER_VALIDATE_FLOAT) !== false) {
+            return (float) $value;
+        }
+
+        throw new InvalidArgumentException(
+            sprintf('Cache value for key [%s] must be a float, %s given.', $key, gettype($value))
+        );
+    }
+
+    /**
+     * Retrieve a boolean item from the cache.
+     *
+     * @param  \UnitEnum|string  $key
+     * @param  (\Closure():(bool|null))|bool|null  $default
+     *
+     * @throws \InvalidArgumentException
+     */
+    public function boolean($key, $default = null): bool
+    {
+        $value = $this->get($key, $default);
+
+        if (! is_bool($value)) {
+            throw new InvalidArgumentException(
+                sprintf('Cache value for key [%s] must be a boolean, %s given.', $key, gettype($value))
+            );
+        }
+
+        return $value;
+    }
+
+    /**
+     * Retrieve an array item from the cache.
+     *
+     * @param  \UnitEnum|string  $key
+     * @param  (\Closure():(array<array-key, mixed>|null))|array<array-key, mixed>|null  $default
+     * @return array<array-key, mixed>
+     *
+     * @throws \InvalidArgumentException
+     */
+    public function array($key, $default = null): array
+    {
+        $value = $this->get($key, $default);
+
+        if (! is_array($value)) {
+            throw new InvalidArgumentException(
+                sprintf('Cache value for key [%s] must be an array, %s given.', $key, gettype($value))
+            );
+        }
+
+        return $value;
+    }
+
+    /**
      * Store an item in the cache.
      *
-     * @param  array|string  $key
+     * @param  \UnitEnum|array|string  $key
      * @param  mixed  $value
      * @param  \DateTimeInterface|\DateInterval|int|null  $ttl
      * @return bool
@@ -221,6 +359,8 @@ class Repository implements ArrayAccess, CacheContract
         if (is_array($key)) {
             return $this->putMany($key, $value);
         }
+
+        $key = enum_value($key);
 
         if ($ttl === null) {
             return $this->forever($key, $value);
@@ -246,9 +386,11 @@ class Repository implements ArrayAccess, CacheContract
     }
 
     /**
-     * {@inheritdoc}
+     * Store an item in the cache.
      *
-     * @return bool
+     * @param  \UnitEnum|array|string  $key
+     * @param  mixed  $value
+     * @param  \DateTimeInterface|\DateInterval|int|null  $ttl
      */
     public function set($key, $value, $ttl = null): bool
     {
@@ -258,7 +400,6 @@ class Repository implements ArrayAccess, CacheContract
     /**
      * Store multiple items in the cache for a given number of seconds.
      *
-     * @param  array  $values
      * @param  \DateTimeInterface|\DateInterval|int|null  $ttl
      * @return bool
      */
@@ -292,7 +433,6 @@ class Repository implements ArrayAccess, CacheContract
     /**
      * Store multiple items in the cache indefinitely.
      *
-     * @param  array  $values
      * @return bool
      */
     protected function putManyForever(array $values)
@@ -310,8 +450,6 @@ class Repository implements ArrayAccess, CacheContract
 
     /**
      * {@inheritdoc}
-     *
-     * @return bool
      */
     public function setMultiple($values, $ttl = null): bool
     {
@@ -321,13 +459,15 @@ class Repository implements ArrayAccess, CacheContract
     /**
      * Store an item in the cache if the key does not exist.
      *
-     * @param  string  $key
+     * @param  \UnitEnum|array|string  $key
      * @param  mixed  $value
      * @param  \DateTimeInterface|\DateInterval|int|null  $ttl
      * @return bool
      */
     public function add($key, $value, $ttl = null)
     {
+        $key = enum_value($key);
+
         $seconds = null;
 
         if ($ttl !== null) {
@@ -360,36 +500,38 @@ class Repository implements ArrayAccess, CacheContract
     /**
      * Increment the value of an item in the cache.
      *
-     * @param  string  $key
+     * @param  \UnitEnum|string  $key
      * @param  mixed  $value
      * @return int|bool
      */
     public function increment($key, $value = 1)
     {
-        return $this->store->increment($key, $value);
+        return $this->store->increment(enum_value($key), $value);
     }
 
     /**
      * Decrement the value of an item in the cache.
      *
-     * @param  string  $key
+     * @param  \UnitEnum|string  $key
      * @param  mixed  $value
      * @return int|bool
      */
     public function decrement($key, $value = 1)
     {
-        return $this->store->decrement($key, $value);
+        return $this->store->decrement(enum_value($key), $value);
     }
 
     /**
      * Store an item in the cache indefinitely.
      *
-     * @param  string  $key
+     * @param  \UnitEnum|string  $key
      * @param  mixed  $value
      * @return bool
      */
     public function forever($key, $value)
     {
+        $key = enum_value($key);
+
         $this->event(new WritingKey($this->getName(), $key, $value));
 
         $result = $this->store->forever($this->itemKey($key), $value);
@@ -408,12 +550,27 @@ class Repository implements ArrayAccess, CacheContract
      *
      * @template TCacheValue
      *
-     * @param  string  $key
+     * @param  \UnitEnum|string  $key
      * @param  \Closure|\DateTimeInterface|\DateInterval|int|null  $ttl
      * @param  \Closure(): TCacheValue  $callback
      * @return TCacheValue
      */
     public function remember($key, $ttl, Closure $callback)
+    {
+        return $this->rememberWithWarmth($key, $ttl, $callback)[0];
+    }
+
+    /**
+     * Get an item from the cache, or execute the given Closure and store the result.
+     *
+     * @template TCacheValue
+     *
+     * @param  \UnitEnum|string  $key
+     * @param  \Closure|\DateTimeInterface|\DateInterval|int|null  $ttl
+     * @param  \Closure(): TCacheValue  $callback
+     * @return array{TCacheValue, bool} The cached value and whether it was warm.
+     */
+    public function rememberWithWarmth($key, $ttl, Closure $callback): array
     {
         $value = $this->get($key);
 
@@ -421,14 +578,14 @@ class Repository implements ArrayAccess, CacheContract
         // not we will execute the given Closure and cache the result of that for a
         // given number of seconds so it's available for all subsequent requests.
         if (! is_null($value)) {
-            return $value;
+            return [$value, true];
         }
 
         $value = $callback();
 
         $this->put($key, $value, value($ttl, $value));
 
-        return $value;
+        return [$value, false];
     }
 
     /**
@@ -436,7 +593,7 @@ class Repository implements ArrayAccess, CacheContract
      *
      * @template TCacheValue
      *
-     * @param  string  $key
+     * @param  \UnitEnum|string  $key
      * @param  \Closure(): TCacheValue  $callback
      * @return TCacheValue
      */
@@ -450,7 +607,7 @@ class Repository implements ArrayAccess, CacheContract
      *
      * @template TCacheValue
      *
-     * @param  string  $key
+     * @param  \UnitEnum|string  $key
      * @param  \Closure(): TCacheValue  $callback
      * @return TCacheValue
      */
@@ -475,60 +632,113 @@ class Repository implements ArrayAccess, CacheContract
      *
      * @template TCacheValue
      *
-     * @param  string  $key
+     * @param  \UnitEnum|string  $key
      * @param  array{ 0: \DateTimeInterface|\DateInterval|int, 1: \DateTimeInterface|\DateInterval|int }  $ttl
      * @param  (callable(): TCacheValue)  $callback
      * @param  array{ seconds?: int, owner?: string }|null  $lock
+     * @param  bool  $alwaysDefer
      * @return TCacheValue
      */
-    public function flexible($key, $ttl, $callback, $lock = null)
+    public function flexible($key, $ttl, $callback, $lock = null, $alwaysDefer = false)
     {
+        $key = enum_value($key);
+
         [
             $key => $value,
-            "LaraGram:cache:flexible:created:{$key}" => $created,
-        ] = $this->many([$key, "LaraGram:cache:flexible:created:{$key}"]);
+            self::FLEXIBLE_CREATED_KEY_PREFIX.$key => $created,
+        ] = $this->many([$key, self::FLEXIBLE_CREATED_KEY_PREFIX.$key]);
 
         if (in_array(null, [$value, $created], true)) {
             return tap(value($callback), fn ($value) => $this->putMany([
                 $key => $value,
-                "LaraGram:cache:flexible:created:{$key}" => (new DateTime())->getTimestamp(),
+                self::FLEXIBLE_CREATED_KEY_PREFIX.$key => Tempora::now()->getTimestamp(),
             ], $ttl[1]));
         }
 
-        if (($created + $this->getSeconds($ttl[0])) > (new DateTime())->getTimestamp()) {
+        if (($created + $this->getSeconds($ttl[0])) > Tempora::now()->getTimestamp()) {
             return $value;
         }
 
         $refresh = function () use ($key, $ttl, $callback, $lock, $created) {
             $this->store->lock(
-                "LaraGram:cache:flexible:lock:{$key}",
+                "illuminate:cache:flexible:lock:{$this->itemKey($key)}",
                 $lock['seconds'] ?? 0,
                 $lock['owner'] ?? null,
             )->get(function () use ($key, $callback, $created, $ttl) {
-                if ($created !== $this->get("LaraGram:cache:flexible:created:{$key}")) {
+                if ($created !== $this->get(self::FLEXIBLE_CREATED_KEY_PREFIX.$key)) {
                     return;
                 }
 
                 $this->putMany([
                     $key => value($callback),
-                    "LaraGram:cache:flexible:created:{$key}" => (new DateTime())->getTimestamp(),
+                    self::FLEXIBLE_CREATED_KEY_PREFIX.$key => Tempora::now()->getTimestamp(),
                 ], $ttl[1]);
             });
         };
 
-        defer($refresh, "LaraGram:cache:flexible:{$key}");
+        defer($refresh, "illuminate:cache:flexible:{$this->itemKey($key)}", $alwaysDefer);
 
         return $value;
     }
 
     /**
+     * Set the expiration of a cached item.
+     *
+     * @param  \UnitEnum|string  $key
+     * @param  \DateTimeInterface|\DateInterval|int  $ttl
+     * @return bool
+     */
+    public function touch($key, $ttl)
+    {
+        $key = enum_value($key);
+
+        return $this->store->touch($this->itemKey($key), $this->getSeconds($ttl));
+    }
+
+    /**
+     * Execute a callback while holding an atomic lock on a cache mutex to prevent overlapping calls.
+     *
+     * @template TReturn
+     *
+     * @param  \UnitEnum|string  $key
+     * @param  callable(): TReturn  $callback
+     * @param  int  $lockFor
+     * @param  int  $waitFor
+     * @param  string|null  $owner
+     * @return TReturn
+     *
+     * @throws \LaraGram\Contracts\Cache\LockTimeoutException
+     */
+    public function withoutOverlapping($key, callable $callback, $lockFor = 0, $waitFor = 10, $owner = null)
+    {
+        return $this->store->lock(enum_value($key), $lockFor, $owner)->block($waitFor, $callback);
+    }
+
+    /**
+     * Funnel a callback for a maximum number of simultaneous executions.
+     *
+     * @param  \UnitEnum|string  $name
+     * @return \LaraGram\Cache\Limiters\ConcurrencyLimiterBuilder
+     */
+    public function funnel($name)
+    {
+        if (! $this->store instanceof LockProvider) {
+            throw new BadMethodCallException('This cache store does not support locks.');
+        }
+
+        return new ConcurrencyLimiterBuilder($this, enum_value($name));
+    }
+
+    /**
      * Remove an item from the cache.
      *
-     * @param  string  $key
+     * @param  \UnitEnum|array|string  $key
      * @return bool
      */
     public function forget($key)
     {
+        $key = enum_value($key);
+
         $this->event(new ForgettingKey($this->getName(), $key));
 
         return tap($this->store->forget($this->itemKey($key)), function ($result) use ($key) {
@@ -541,9 +751,9 @@ class Repository implements ArrayAccess, CacheContract
     }
 
     /**
-     * {@inheritdoc}
+     * Remove an item from the cache.
      *
-     * @return bool
+     * @param  \UnitEnum|array|string  $key
      */
     public function delete($key): bool
     {
@@ -552,8 +762,6 @@ class Repository implements ArrayAccess, CacheContract
 
     /**
      * {@inheritdoc}
-     *
-     * @return bool
      */
     public function deleteMultiple($keys): bool
     {
@@ -570,18 +778,53 @@ class Repository implements ArrayAccess, CacheContract
 
     /**
      * {@inheritdoc}
-     *
-     * @return bool
      */
     public function clear(): bool
     {
-        return $this->store->flush();
+        $this->event(new CacheFlushing($this->getName()));
+
+        $result = $this->store->flush();
+
+        if ($result) {
+            $this->event(new CacheFlushed($this->getName()));
+        } else {
+            $this->event(new CacheFlushFailed($this->getName()));
+        }
+
+        return $result;
+    }
+
+    /**
+     * Flush all locks from the cache store.
+     *
+     *
+     * @throws \BadMethodCallException
+     */
+    public function flushLocks(): bool
+    {
+        $store = $this->getStore();
+
+        if (! $this->supportsFlushingLocks()) {
+            throw new BadMethodCallException('This cache store does not support flushing locks.');
+        }
+
+        $this->event(new CacheLocksFlushing($this->getName()));
+
+        $result = $store->flushLocks();
+
+        if ($result) {
+            $this->event(new CacheLocksFlushed($this->getName()));
+        } else {
+            $this->event(new CacheLocksFlushFailed($this->getName()));
+        }
+
+        return $result;
     }
 
     /**
      * Begin executing a new tags operation if the store supports it.
      *
-     * @param  array|mixed  $names
+     * @param  mixed  $names
      * @return \LaraGram\Cache\TaggedCache
      *
      * @throws \BadMethodCallException
@@ -615,6 +858,28 @@ class Repository implements ArrayAccess, CacheContract
     }
 
     /**
+     * Handle a cache value that contains an incomplete class.
+     *
+     * @param  string  $key
+     * @param  mixed  $value
+     * @return mixed
+     */
+    protected function handleIncompleteClass(string $key, mixed $value): mixed
+    {
+        if (! ($value instanceof \__PHP_Incomplete_Class)) {
+            return $value;
+        }
+
+        $class = ((array) $value)['__PHP_Incomplete_Class_Name'] ?? null;
+
+        if (isset(static::$unserializableClassHandler)) {
+            (static::$unserializableClassHandler)($key, $class);
+        }
+
+        return $value;
+    }
+
+    /**
      * Calculate the number of seconds for the given TTL.
      *
      * @param  \DateTimeInterface|\DateInterval|int  $ttl
@@ -626,7 +891,7 @@ class Repository implements ArrayAccess, CacheContract
 
         if ($duration instanceof DateTimeInterface) {
             $duration = (int) ceil(
-                ((new DateTime())->getTimestamp() - (new DateTime('@' . $duration))->getTimestamp()) / 1000
+                Tempora::now()->diffInMilliseconds($duration, false) / 1000
             );
         }
 
@@ -638,7 +903,7 @@ class Repository implements ArrayAccess, CacheContract
      *
      * @return string|null
      */
-    protected function getName()
+    public function getName()
     {
         return $this->config['store'] ?? null;
     }
@@ -651,6 +916,14 @@ class Repository implements ArrayAccess, CacheContract
     public function supportsTags()
     {
         return method_exists($this->store, 'tags');
+    }
+
+    /**
+     * Determine if the current store supports flushing locks.
+     */
+    public function supportsFlushingLocks(): bool
+    {
+        return $this->store instanceof CanFlushLocks;
     }
 
     /**
@@ -690,7 +963,7 @@ class Repository implements ArrayAccess, CacheContract
      * Set the cache store implementation.
      *
      * @param  \LaraGram\Contracts\Cache\Store  $store
-     * @return static
+     * @return $this
      */
     public function setStore($store)
     {
@@ -723,7 +996,6 @@ class Repository implements ArrayAccess, CacheContract
     /**
      * Set the event dispatcher instance.
      *
-     * @param  \LaraGram\Contracts\Events\Dispatcher  $events
      * @return void
      */
     public function setEventDispatcher(Dispatcher $events)
@@ -732,10 +1004,20 @@ class Repository implements ArrayAccess, CacheContract
     }
 
     /**
+     * Register a callback to be invoked when an unserializable class is encountered.
+     *
+     * @param  callable|null  $callback
+     * @return void
+     */
+    public static function handleUnserializableClassUsing(?callable $callback): void
+    {
+        static::$unserializableClassHandler = $callback;
+    }
+
+    /**
      * Determine if a cached value exists.
      *
-     * @param  string  $offset
-     * @return bool
+     * @param  \UnitEnum|string  $offset
      */
     public function offsetExists($offset): bool
     {
@@ -745,8 +1027,7 @@ class Repository implements ArrayAccess, CacheContract
     /**
      * Retrieve an item from the cache by key.
      *
-     * @param  string  $offset
-     * @return mixed
+     * @param  \UnitEnum|string  $offset
      */
     public function offsetGet($offset): mixed
     {
@@ -756,9 +1037,8 @@ class Repository implements ArrayAccess, CacheContract
     /**
      * Store an item in the cache for the default time.
      *
-     * @param  string  $offset
+     * @param  \UnitEnum|string  $offset
      * @param  mixed  $value
-     * @return void
      */
     public function offsetSet($offset, $value): void
     {
@@ -768,8 +1048,7 @@ class Repository implements ArrayAccess, CacheContract
     /**
      * Remove an item from the cache.
      *
-     * @param  string  $offset
-     * @return void
+     * @param  \UnitEnum|string  $offset
      */
     public function offsetUnset($offset): void
     {

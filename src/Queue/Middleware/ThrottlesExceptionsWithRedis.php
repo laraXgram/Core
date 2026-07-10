@@ -3,6 +3,7 @@
 namespace LaraGram\Queue\Middleware;
 
 use LaraGram\Container\Container;
+use LaraGram\Contracts\Redis\Connection;
 use LaraGram\Contracts\Redis\Factory as Redis;
 use LaraGram\Redis\Limiters\DurationLimiter;
 use LaraGram\Support\InteractsWithTime;
@@ -13,11 +14,18 @@ class ThrottlesExceptionsWithRedis extends ThrottlesExceptions
     use InteractsWithTime;
 
     /**
-     * The Redis factory implementation.
+     * The Redis connection instance.
      *
-     * @var \LaraGram\Contracts\Redis\Factory
+     * @var \LaraGram\Contracts\Redis\Connection
      */
     protected $redis;
+
+    /**
+     * The Redis connection that should be used.
+     *
+     * @var string|null
+     */
+    protected $connectionName = null;
 
     /**
      * The rate limiter instance.
@@ -32,10 +40,14 @@ class ThrottlesExceptionsWithRedis extends ThrottlesExceptions
      * @param  mixed  $job
      * @param  callable  $next
      * @return mixed
+     *
+     * @throws \Throwable
      */
     public function handle($job, $next)
     {
-        $this->redis = Container::getInstance()->make(Redis::class);
+        $this->redis = Container::getInstance()
+            ->make(Redis::class)
+            ->connection($this->connectionName);
 
         $this->limiter = new DurationLimiter(
             $this->redis, $this->getKey($job), $this->maxAttempts, $this->decaySeconds
@@ -50,17 +62,38 @@ class ThrottlesExceptionsWithRedis extends ThrottlesExceptions
 
             $this->limiter->clear();
         } catch (Throwable $throwable) {
-            if ($this->whenCallback && ! call_user_func($this->whenCallback, $throwable)) {
+            if ($this->whenCallback && ! call_user_func($this->whenCallback, $throwable, $this->limiter)) {
                 throw $throwable;
             }
 
-            if ($this->reportCallback && call_user_func($this->reportCallback, $throwable)) {
+            if ($this->reportCallback && call_user_func($this->reportCallback, $throwable, $this->limiter)) {
                 report($throwable);
+            }
+
+            if ($this->shouldDelete($throwable)) {
+                return $job->delete();
+            }
+
+            if ($this->shouldFail($throwable)) {
+                return $job->fail($throwable);
             }
 
             $this->limiter->acquire();
 
-            return $job->release($this->retryAfterMinutes * 60);
+            return $job->release($this->getTimeUntilNextRetryAfterException($throwable));
         }
+    }
+
+    /**
+     * Specify the Redis connection that should be used.
+     *
+     * @param  string  $name
+     * @return $this
+     */
+    public function connection(string $name)
+    {
+        $this->connectionName = $name;
+
+        return $this;
     }
 }

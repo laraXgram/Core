@@ -2,7 +2,7 @@
 
 namespace LaraGram\Bus;
 
-use DateTimeImmutable;
+use LaraGram\Tempora\TemporaImmutable;
 use LaraGram\Contracts\Queue\Factory as QueueFactory;
 
 class BatchFactory
@@ -18,7 +18,6 @@ class BatchFactory
      * Create a new batch factory instance.
      *
      * @param  \LaraGram\Contracts\Queue\Factory  $queue
-     * @return void
      */
     public function __construct(QueueFactory $queue)
     {
@@ -36,9 +35,9 @@ class BatchFactory
      * @param  int  $failedJobs
      * @param  array  $failedJobIds
      * @param  array  $options
-     * @param  DateTimeImmutable  $createdAt
-     * @param  DateTimeImmutable|null  $cancelledAt
-     * @param  DateTimeImmutable|null  $finishedAt
+     * @param  \LaraGram\Tempora\TemporaImmutable  $createdAt
+     * @param  \LaraGram\Tempora\TemporaImmutable|null  $cancelledAt
+     * @param  \LaraGram\Tempora\TemporaImmutable|null  $finishedAt
      * @return \LaraGram\Bus\Batch
      */
     public function make(BatchRepository $repository,
@@ -49,9 +48,9 @@ class BatchFactory
                          int $failedJobs,
                          array $failedJobIds,
                          array $options,
-                         DateTimeImmutable $createdAt,
-                         ?DateTimeImmutable $cancelledAt,
-                         ?DateTimeImmutable $finishedAt)
+                         TemporaImmutable $createdAt,
+                         ?TemporaImmutable $cancelledAt,
+                         ?TemporaImmutable $finishedAt)
     {
         return new Batch($this->queue, $repository, $id, $name, $totalJobs, $pendingJobs, $failedJobs, $failedJobIds, $options, $createdAt, $cancelledAt, $finishedAt);
     }

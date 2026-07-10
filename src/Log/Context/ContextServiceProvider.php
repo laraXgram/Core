@@ -2,8 +2,10 @@
 
 namespace LaraGram\Log\Context;
 
+use LaraGram\Contracts\Log\ContextLogProcessor as ContextLogProcessorContract;
 use LaraGram\Queue\Events\JobProcessing;
 use LaraGram\Queue\Queue;
+use LaraGram\Support\Env;
 use LaraGram\Support\Facades\Context;
 use LaraGram\Support\ServiceProvider;
 
@@ -17,6 +19,18 @@ class ContextServiceProvider extends ServiceProvider
     public function register()
     {
         $this->app->scoped(Repository::class);
+
+        if ($this->app->runningInConsole()) {
+            $this->app->resolving(Repository::class, function (Repository $repository) {
+                $context = Env::get('__LARAGRAM_CONTEXT');
+
+                if ($context && $context = json_decode($context, associative: true)) {
+                    $repository->hydrate($context);
+                }
+            });
+        }
+
+        $this->app->bind(ContextLogProcessorContract::class, fn () => new ContextLogProcessor());
     }
 
     /**
@@ -32,13 +46,13 @@ class ContextServiceProvider extends ServiceProvider
 
             return $context === null ? $payload : [
                 ...$payload,
-                'LaraGram:log:context' => $context,
+                'laragram:log:context' => $context,
             ];
         });
 
         $this->app['events']->listen(function (JobProcessing $event) {
             /** @phpstan-ignore staticMethod.notFound */
-            Context::hydrate($event->job->payload()['LaraGram:log:context'] ?? null);
+            Context::hydrate($event->job->payload()['laragram:log:context'] ?? null);
         });
     }
 }

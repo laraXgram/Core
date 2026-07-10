@@ -22,7 +22,6 @@ class Authorize
      * Create a new middleware instance.
      *
      * @param  \LaraGram\Contracts\Auth\Access\Gate  $gate
-     * @return void
      */
     public function __construct(Gate $gate)
     {
@@ -50,21 +49,12 @@ class Authorize
      * @param  array|null  ...$models
      * @return mixed
      *
+     * @throws \LaraGram\Auth\AuthenticationException
      * @throws \LaraGram\Auth\Access\AuthorizationException
      */
     public function handle($request, Closure $next, $ability, ...$models)
     {
-        $arguments = $this->getGateArguments($request, $models);
-
-        $abilities = explode('|', (string) $ability);
-
-        if (count($abilities) > 1) {
-            if (! $this->gate->any($abilities, $arguments)) {
-                $this->gate->authorize($abilities[0], $arguments);
-            }
-        } else {
-            $this->gate->authorize($ability, $arguments);
-        }
+        $this->gate->authorize($ability, $this->getGateArguments($request, $models));
 
         return $next($request);
     }
@@ -100,12 +90,16 @@ class Authorize
             return trim($model);
         }
 
-        return $request->listen($model, null) ??
+        $bound = method_exists($request, 'route')
+            ? $request->route($model, null)
+            : $request->listen($model, null);
+
+        return $bound ??
             ((preg_match("/^['\"](.*)['\"]$/", trim($model), $matches)) ? $matches[1] : null);
     }
 
     /**
-     * Checks if the given string looks like a fully qualified class name.
+     * Checks if the given string looks like a fully-qualified class name.
      *
      * @param  string  $value
      * @return bool

@@ -2,7 +2,7 @@
 
 namespace LaraGram\Cache;
 
-use DateTime;
+use LaraGram\Support\Tempora;
 
 class ArrayLock extends Lock
 {
@@ -20,7 +20,6 @@ class ArrayLock extends Lock
      * @param  string  $name
      * @param  int  $seconds
      * @param  string|null  $owner
-     * @return void
      */
     public function __construct($store, $name, $seconds, $owner = null)
     {
@@ -36,16 +35,15 @@ class ArrayLock extends Lock
      */
     public function acquire()
     {
-        $expiration = $this->store->locks[$this->name]['expiresAt'] ?? (new DateTime())->modify('+1 second');
+        $expiration = $this->store->locks[$this->name]['expiresAt'] ?? Tempora::now()->addSecond();
 
-        if ($this->exists() && $expiration > new DateTime()) {
+        if ($this->exists() && $expiration->isFuture()) {
             return false;
         }
 
-        $expiresAt = $this->seconds === 0 ? null : (new DateTime())->modify('+' . $this->seconds . ' seconds');
         $this->store->locks[$this->name] = [
             'owner' => $this->owner,
-            'expiresAt' => $expiresAt,
+            'expiresAt' => $this->seconds === 0 ? null : Tempora::now()->addSeconds($this->seconds),
         ];
 
         return true;
@@ -59,6 +57,31 @@ class ArrayLock extends Lock
     protected function exists()
     {
         return isset($this->store->locks[$this->name]);
+    }
+
+    /**
+     * Attempt to refresh the lock for the given number of seconds.
+     *
+     * @param  int|null  $seconds
+     * @return bool
+     */
+    public function refresh($seconds = null)
+    {
+        if (! $this->isOwnedByCurrentProcess()) {
+            return false;
+        }
+
+        $expiresAt = $this->store->locks[$this->name]['expiresAt'];
+
+        if ($expiresAt && ! $expiresAt->isFuture()) {
+            return false;
+        }
+
+        $seconds ??= $this->seconds;
+
+        $this->store->locks[$this->name]['expiresAt'] = $seconds === 0 ? null : Tempora::now()->addSeconds($seconds);
+
+        return true;
     }
 
     /**
@@ -84,7 +107,7 @@ class ArrayLock extends Lock
     /**
      * Returns the owner value written into the driver for this lock.
      *
-     * @return string
+     * @return string|null
      */
     protected function getCurrentOwner()
     {
@@ -96,7 +119,7 @@ class ArrayLock extends Lock
     }
 
     /**
-     * Releases this lock in disregard of ownership.
+     * Releases this lock regardless of ownership.
      *
      * @return void
      */

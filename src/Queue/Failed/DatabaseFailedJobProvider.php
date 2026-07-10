@@ -2,9 +2,9 @@
 
 namespace LaraGram\Queue\Failed;
 
-use DateTime;
 use DateTimeInterface;
 use LaraGram\Database\ConnectionResolverInterface;
+use LaraGram\Support\Facades\Date;
 
 class DatabaseFailedJobProvider implements CountableFailedJobProvider, FailedJobProviderInterface, PrunableFailedJobProvider
 {
@@ -35,7 +35,6 @@ class DatabaseFailedJobProvider implements CountableFailedJobProvider, FailedJob
      * @param  \LaraGram\Database\ConnectionResolverInterface  $resolver
      * @param  string  $database
      * @param  string  $table
-     * @return void
      */
     public function __construct(ConnectionResolverInterface $resolver, $database, $table)
     {
@@ -55,13 +54,13 @@ class DatabaseFailedJobProvider implements CountableFailedJobProvider, FailedJob
      */
     public function log($connection, $queue, $payload, $exception)
     {
-        $failed_at = new DateTime();
+        $failed_at = Date::now();
 
         $exception = (string) mb_convert_encoding($exception, 'UTF-8');
 
-        return $this->getTable()->insertGetId(compact(
-            'connection', 'queue', 'payload', 'exception', 'failed_at'
-        ));
+        return $this->getTable()->insertGetId([
+            'connection' => $connection, 'queue' => $queue, 'payload' => $payload, 'exception' => $exception, 'failed_at' => $failed_at,
+        ]);
     }
 
     /**
@@ -120,9 +119,7 @@ class DatabaseFailedJobProvider implements CountableFailedJobProvider, FailedJob
     public function flush($hours = null)
     {
         $this->getTable()->when($hours, function ($query, $hours) {
-            $dateTime = new DateTime();
-            $dateTime->modify('-' . $hours . ' hours');
-            $query->where('failed_at', '<=', $dateTime);
+            $query->where('failed_at', '<=', Date::now()->subHours($hours));
         })->delete();
     }
 
@@ -139,7 +136,7 @@ class DatabaseFailedJobProvider implements CountableFailedJobProvider, FailedJob
         $totalDeleted = 0;
 
         do {
-            $deleted = $query->take(1000)->delete();
+            $deleted = $query->limit(1000)->delete();
 
             $totalDeleted += $deleted;
         } while ($deleted !== 0);
@@ -167,7 +164,7 @@ class DatabaseFailedJobProvider implements CountableFailedJobProvider, FailedJob
      *
      * @return \LaraGram\Database\Query\Builder
      */
-    protected function getTable()
+    public function getTable()
     {
         return $this->resolver->connection($this->database)->table($this->table);
     }

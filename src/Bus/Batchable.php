@@ -3,21 +3,20 @@
 namespace LaraGram\Bus;
 
 use LaraGram\Container\Container;
-use LaraGram\Support\Testing\Fakes\BatchFake;
 
 trait Batchable
 {
     /**
      * The batch ID (if applicable).
      *
-     * @var string
+     * @var string|null
      */
     public $batchId;
 
     /**
      * The fake batch, if applicable.
      *
-     * @var BatchFake
+     * @var \LaraGram\Support\Testing\Fakes\BatchFake
      */
     private $fakeBatch;
 
@@ -46,13 +45,13 @@ trait Batchable
     {
         $batch = $this->batch();
 
-        return $batch && !$batch->cancelled();
+        return $batch && ! $batch->finished() && ! $batch->cancelled();
     }
 
     /**
      * Set the batch ID on the job.
      *
-     * @param string $batchId
+     * @param  string  $batchId
      * @return $this
      */
     public function withBatchId(string $batchId)
@@ -60,40 +59,5 @@ trait Batchable
         $this->batchId = $batchId;
 
         return $this;
-    }
-
-    public function withFakeBatch(string  $id = '',
-                                  string  $name = '',
-                                  int     $totalJobs = 0,
-                                  int     $pendingJobs = 0,
-                                  int     $failedJobs = 0,
-                                  array   $failedJobIds = [],
-                                  array   $options = [],
-                                  ?string $createdAt = null,
-                                  ?string $cancelledAt = null,
-                                  ?string $finishedAt = null)
-    {
-        $this->fakeBatch = new BatchFake(
-            empty($id) ? $this->generateUuid() : $id,
-            $name,
-            $totalJobs,
-            $pendingJobs,
-            $failedJobs,
-            $failedJobIds,
-            $options,
-            $createdAt ?? date('Y-m-d H:i:s'),
-            $cancelledAt,
-            $finishedAt,
-        );
-
-        return [$this, $this->fakeBatch];
-    }
-
-    private function generateUuid()
-    {
-        $data = random_bytes(16);
-        $data[6] = chr(ord($data[6]) & 0x0f | 0x40);
-        $data[8] = chr(ord($data[8]) & 0x3f | 0x80);
-        return vsprintf('(%s-%s-%s-%s-%s)', str_split(bin2hex($data), 4));
     }
 }

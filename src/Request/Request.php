@@ -155,6 +155,16 @@ class Request implements ProvidesListenContext
     }
 
     /**
+     * Get the server from the request.
+     *
+     * @return Collection
+     */
+    public function server()
+    {
+        return $this->server;
+    }
+
+    /**
      * Get the secret token from the request headers.
      *
      * @return string|null
@@ -172,7 +182,7 @@ class Request implements ProvidesListenContext
     public static function capture()
     {
         global $argv;
-        return static::createFromBase($argv);
+        return static::createFromBase($argv ?? []);
     }
 
     /**
@@ -214,7 +224,32 @@ class Request implements ProvidesListenContext
             return $method;
         }
 
-        return strtoupper(Type::findVerb($this->getUpdateType())?->value);
+        return strtoupper(Type::findVerb($this->getUpdateType())?->value ?? '');
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function listenVerb(): string
+    {
+        return $this->method();
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function listenValue(string $verb): ?string
+    {
+        return match ($verb) {
+            'COMMAND' => ($t = text()) !== null ? Str::replaceFirst('/', '', $t) : null,
+            'REFERRAL' => ($t = text()) !== null ? Str::replaceFirst('/start ', '', $t) : null,
+            'CALLBACK_DATA' => callback_query()->data ?? null,
+            default => text()
+                ?? callback_query()->data
+                ?? inline_query()->query
+                ?? chosen_inline_result()->query
+                ?? null,
+        };
     }
 
     /**
@@ -504,9 +539,9 @@ class Request implements ProvidesListenContext
     {
         $newRequest = new static($request);
 
-        $newRequest->server = collect(json_decode($request[2]));
+        $newRequest->server = collect(json_decode($request[2] ?? "{}"));
 
-        $newRequest->content = collect(json_decode($request[1]));
+        $newRequest->content = collect(json_decode($request[1] ?? "{}"));
 
         return $newRequest;
     }

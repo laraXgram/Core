@@ -3,6 +3,7 @@
 namespace LaraGram\Console;
 
 use LaraGram\Console\View\Components\TwoColumnDetail;
+use LaraGram\Support\Stringable;
 use LaraGram\Console\Formatter\OutputFormatter;
 use LaraGram\Console\Helper\LaraGramQuestionHelper;
 use LaraGram\Console\Output\OutputInterface;
@@ -61,8 +62,7 @@ class QuestionHelper extends LaraGramQuestionHelper
 
         if ($question instanceof ChoiceQuestion) {
             foreach ($question->getChoices() as $key => $value) {
-                $twoColumnDetail = new TwoColumnDetail($output);
-                $twoColumnDetail->render($value, $key);
+                (new TwoColumnDetail($output))->render($value, $key);
             }
         }
 
@@ -77,7 +77,7 @@ class QuestionHelper extends LaraGramQuestionHelper
      */
     protected function ensureEndsWithPunctuation($string)
     {
-        if (!in_array(substr($string, -1), ['?', ':', '!', '.'])) {
+        if (! (new Stringable($string))->endsWith(['?', ':', '!', '.'])) {
             return "$string:";
         }
 

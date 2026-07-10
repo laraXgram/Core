@@ -3,16 +3,21 @@
 namespace LaraGram\Console\Scheduling;
 
 use Closure;
-use DateTime;
-use DateTimeZone;
+use LaraGram\Console\Helper\Cron\CronExpression;
+use LaraGram\Http\Client\Core\Client as HttpClient;
+use LaraGram\Http\Client\Core\ClientInterface as HttpClientInterface;
+use LaraGram\Http\Client\Core\Exceptions\TransferException;
 use LaraGram\Console\Application;
 use LaraGram\Contracts\Container\Container;
 use LaraGram\Contracts\Debug\ExceptionHandler;
+use LaraGram\Log\Context\Repository;
 use LaraGram\Support\Arr;
+use LaraGram\Support\Facades\Date;
 use LaraGram\Support\Stringable;
 use LaraGram\Support\Traits\Macroable;
 use LaraGram\Support\Traits\ReflectsClosures;
 use LaraGram\Support\Traits\Tappable;
+use LaraGram\Http\Factory\ClientExceptionInterface;
 use LaraGram\Console\Process\Process;
 use Throwable;
 
@@ -74,7 +79,7 @@ class Event
      *
      * Utilized by sub-minute repeated events.
      *
-     * @var \DateTimeInterface|null
+     * @var \LaraGram\Support\Tempora|null
      */
     protected $lastChecked;
 
@@ -86,12 +91,18 @@ class Event
     public $exitCode;
 
     /**
+     * Indicates whether the execution was skipped due to the mutex already being reserved.
+     *
+     * @var bool
+     */
+    public $skippedBecauseOverlapping = false;
+
+    /**
      * Create a new event instance.
      *
      * @param  \LaraGram\Console\Scheduling\EventMutex  $mutex
      * @param  string  $command
      * @param  \DateTimeZone|string|null  $timezone
-     * @return void
      */
     public function __construct(EventMutex $mutex, $command, $timezone = null)
     {
@@ -122,9 +133,15 @@ class Event
      */
     public function run(Container $container)
     {
+        $this->skippedBecauseOverlapping = false;
+
         if ($this->shouldSkipDueToOverlapping()) {
+            $this->skippedBecauseOverlapping = true;
+
             return;
         }
+
+        $this->ensureMutexIsReleasedOnSignal();
 
         $exitCode = $this->start($container);
 
@@ -161,8 +178,7 @@ class Event
     public function shouldRepeatNow()
     {
         return $this->isRepeatable()
-            && $this->lastChecked !== null
-            && (time() - strtotime($this->lastChecked)) >= $this->repeatSeconds;
+            && $this->lastChecked?->diffInSeconds() >= $this->repeatSeconds;
     }
 
     /**
@@ -194,8 +210,10 @@ class Event
      */
     protected function execute($container)
     {
+        $context = json_encode($container[Repository::class]->dehydrate());
+
         return Process::fromShellCommandline(
-            $this->buildCommand(), app()->basePath(), null, null, null
+            $this->buildCommand(), base_path(), ['__LARAGRAM_CONTEXT' => $context], null, null
         )->run(fn () => true);
     }
 
@@ -226,7 +244,7 @@ class Event
     public function callBeforeCallbacks(Container $container)
     {
         foreach ($this->beforeCallbacks as $callback) {
-            $container->call($callback);
+            $this->callEventCallback($container, $callback);
         }
     }
 
@@ -239,7 +257,7 @@ class Event
     public function callAfterCallbacks(Container $container)
     {
         foreach ($this->afterCallbacks as $callback) {
-            $container->call($callback);
+            $this->callEventCallback($container, $callback);
         }
     }
 
@@ -261,7 +279,32 @@ class Event
      */
     public function isDue($app)
     {
-        return $this->expressionPasses();
+        if (! $this->runsInMaintenanceMode() && $app->isDownForMaintenance()) {
+            return false;
+        }
+
+        return $this->expressionPasses() &&
+               $this->runsInEnvironment($app->environment());
+    }
+
+    /**
+     * Determine if the event runs in maintenance mode.
+     *
+     * @return bool
+     */
+    public function runsInMaintenanceMode()
+    {
+        return $this->evenInMaintenanceMode;
+    }
+
+    /**
+     * Determine if the event runs when the scheduler is paused.
+     *
+     * @return bool
+     */
+    public function runsWhenPaused()
+    {
+        return $this->evenWhenPaused;
     }
 
     /**
@@ -269,64 +312,15 @@ class Event
      *
      * @return bool
      */
-    public function expressionPasses()
+    protected function expressionPasses()
     {
-        $date = new DateTime();
+        $date = Date::now();
 
         if ($this->timezone) {
-            $timezone = new DateTimeZone($this->timezone);
-            $date->setTimezone($timezone);
+            $date = $date->setTimezone($this->timezone);
         }
 
-        return $this->checkCronExpression($this->expression, $date);
-    }
-
-    protected function checkCronExpression($expression, $date)
-    {
-        list($minute, $hour, $day, $month, $weekday) = explode(' ', $expression);
-
-        if (!$this->matchCronField($minute, $date->format('i'))) {
-            return false;
-        }
-
-        if (!$this->matchCronField($hour, $date->format('H'))) {
-            return false;
-        }
-
-        if (!$this->matchCronField($day, $date->format('d'))) {
-            return false;
-        }
-
-        if (!$this->matchCronField($month, $date->format('m'))) {
-            return false;
-        }
-
-        if (!$this->matchCronField($weekday, $date->format('w'))) {
-            return false;
-        }
-
-        return true;
-    }
-
-    protected function matchCronField($field, $value)
-    {
-        if ($field === '*' || $field == $value) {
-            return true;
-        }
-
-        $ranges = explode(',', $field);
-        foreach ($ranges as $range) {
-            if (strpos($range, '-') !== false) {
-                list($start, $end) = explode('-', $range);
-                if ($value >= $start && $value <= $end) {
-                    return true;
-                }
-            } elseif ($range == $value) {
-                return true;
-            }
-        }
-
-        return false;
+        return (new CronExpression($this->expression))->isDue($date->toDateTimeString());
     }
 
     /**
@@ -348,16 +342,16 @@ class Event
      */
     public function filtersPass($app)
     {
-        $this->lastChecked = new DateTime();
+        $this->lastChecked = Date::now();
 
         foreach ($this->filters as $callback) {
-            if (! $app->call($callback)) {
+            if (! $this->callEventCallback($app, $callback)) {
                 return false;
             }
         }
 
         foreach ($this->rejects as $callback) {
-            if ($app->call($callback)) {
+            if ($this->callEventCallback($app, $callback)) {
                 return false;
             }
         }
@@ -402,6 +396,18 @@ class Event
     public function appendOutputTo($location)
     {
         return $this->sendOutputTo($location, true);
+    }
+
+    /**
+     * Ensure that the command output is being captured.
+     *
+     * @return void
+     */
+    protected function ensureOutputIsBeingCaptured()
+    {
+        if (is_null($this->output) || $this->output == $this->getDefaultOutput()) {
+            $this->sendOutputTo(storage_path('logs/schedule-'.sha1($this->mutexName()).'.log'));
+        }
     }
 
     /**
@@ -507,10 +513,28 @@ class Event
         return function (Container $container) use ($url) {
             try {
                 $this->getHttpClient($container)->request('GET', $url);
-            } catch (\Exception $e) {
+            } catch (ClientExceptionInterface|TransferException $e) {
                 $container->make(ExceptionHandler::class)->report($e);
-
             }
+        };
+    }
+
+    /**
+     * Get the Guzzle HTTP client to use to send pings.
+     *
+     * @param  \LaraGram\Contracts\Container\Container  $container
+     * @return \LaraGram\Http\Client\Core\ClientInterface
+     */
+    protected function getHttpClient(Container $container)
+    {
+        return match (true) {
+            $container->bound(HttpClientInterface::class) => $container->make(HttpClientInterface::class),
+            $container->bound(HttpClient::class) => $container->make(HttpClient::class),
+            default => new HttpClient([
+                'connect_timeout' => 10,
+                'crypto_method' => STREAM_CRYPTO_METHOD_TLSv1_2_CLIENT,
+                'timeout' => 30,
+            ]),
         };
     }
 
@@ -587,7 +611,7 @@ class Event
 
         return $this->then(function (Container $container) use ($callback) {
             if ($this->exitCode === 0) {
-                $container->call($callback);
+                $this->callEventCallback($container, $callback);
             }
         });
     }
@@ -622,7 +646,7 @@ class Event
 
         return $this->then(function (Container $container) use ($callback) {
             if ($this->exitCode !== 0) {
-                $container->call($callback);
+                $this->callEventCallback($container, $callback);
             }
         });
     }
@@ -654,9 +678,47 @@ class Event
             $output = $this->output && is_file($this->output) ? file_get_contents($this->output) : '';
 
             return $onlyIfOutputExists && empty($output)
-                            ? null
-                            : $container->call($callback, ['output' => new Stringable($output)]);
+                ? null
+                : $this->callEventCallback($container, $callback, ['output' => new Stringable($output)]);
         };
+    }
+
+    /**
+     * Call the given event callback.
+     *
+     * @param  \LaraGram\Contracts\Container\Container  $container
+     * @param  callable  $callback
+     * @param  array<string, mixed>  $parameters
+     * @return mixed
+     */
+    protected function callEventCallback(Container $container, callable $callback, array $parameters = [])
+    {
+        $eventParameters = $callback instanceof Closure
+            ? $this->eventParametersForCallback($callback)
+            : [];
+
+        return $container->call($callback, array_merge(
+            $eventParameters, $parameters
+        ));
+    }
+
+    /**
+     * Get the event parameters for the given callback.
+     *
+     * @param  \Closure  $callback
+     * @return array
+     */
+    protected function eventParametersForCallback(Closure $callback)
+    {
+        $parameters = $this->closureParameterTypes($callback);
+
+        foreach ($parameters as $name => $type) {
+            if ($type !== null && is_a($this, $type)) {
+                return [$name => $this];
+            }
+        }
+
+        return [];
     }
 
     /**
@@ -679,47 +741,13 @@ class Event
      * @param  \DateTimeInterface|string  $currentTime
      * @param  int  $nth
      * @param  bool  $allowCurrentDate
-     * @return DateTime
+     * @return \LaraGram\Support\Tempora
      */
     public function nextRunDate($currentTime = 'now', $nth = 0, $allowCurrentDate = false)
     {
-        $currentDate = new DateTime($currentTime);
-
-        $expression = $this->getExpression();
-
-        $parts = explode(' ', $expression);
-
-        $minute = $parts[0];
-        $hour = $parts[1];
-        $day = $parts[2];
-        $month = $parts[3];
-        $weekday = $parts[4];
-
-        $nextRunDate = clone $currentDate;
-
-        if ($minute !== '*' && $minute >= 0 && $minute < 60) {
-            $nextRunDate->setTime($hour, $minute);
-        }
-
-        if ($day !== '*' && $day >= 1 && $day <= 31) {
-            $nextRunDate->setDate($nextRunDate->format('Y'), $nextRunDate->format('m'), $day);
-        }
-
-        if ($month !== '*' && $month >= 1 && $month <= 12) {
-            $nextRunDate->setDate($nextRunDate->format('Y'), $month, $nextRunDate->format('d'));
-        }
-
-        if ($weekday !== '*' && $weekday >= 0 && $weekday <= 6) {
-            $nextRunDate->modify('next Sunday');
-        }
-
-        if ($allowCurrentDate && $nextRunDate <= $currentDate) {
-            return $currentDate;
-        }
-
-        return $nextRunDate;
+        return Date::instance((new CronExpression($this->getExpression()))
+            ->getNextRunDate($currentTime, $nth, $allowCurrentDate, $this->timezone));
     }
-
 
     /**
      * Get the Cron expression for the event.
@@ -758,7 +786,7 @@ class Event
         }
 
         return 'framework'.DIRECTORY_SEPARATOR.'schedule-'.
-            sha1($this->expression.$this->normalizeCommand($this->command ?? ''));
+            sha1($this->expression.self::normalizeCommand($this->command ?? ''));
     }
 
     /**
@@ -772,6 +800,30 @@ class Event
         $this->mutexNameResolver = is_string($mutexName) ? fn () => $mutexName : $mutexName;
 
         return $this;
+    }
+
+    /**
+     * Ensure the mutex is released if the process receives a termination signal.
+     *
+     * @return void
+     */
+    protected function ensureMutexIsReleasedOnSignal()
+    {
+        if (! $this->releaseOnTerminationSignals ||
+            $this->runInBackground ||
+            ! extension_loaded('pcntl')) {
+            return;
+        }
+
+        pcntl_async_signals(true);
+
+        foreach ([SIGTERM, SIGINT, SIGQUIT] as $signal) {
+            pcntl_signal($signal, function () {
+                $this->removeMutex();
+
+                exit(1);
+            });
+        }
     }
 
     /**

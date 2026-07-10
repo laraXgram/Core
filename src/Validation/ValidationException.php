@@ -18,7 +18,7 @@ class ValidationException extends Exception
     /**
      * The recommended response to send to the client.
      *
-     * @var \LaraGram\Request\Response|null
+     * @var \LaraGram\Http\BaseResponse|\LaraGram\Request\Response|null
      */
     public $response;
 
@@ -39,7 +39,7 @@ class ValidationException extends Exception
     /**
      * The path the client should be redirected to.
      *
-     * @var string
+     * @var string|null
      */
     public $redirectTo;
 
@@ -47,9 +47,8 @@ class ValidationException extends Exception
      * Create a new exception instance.
      *
      * @param  \LaraGram\Contracts\Validation\Validator  $validator
-     * @param  \LaraGram\Request\Response|null  $response
+     * @param  \LaraGram\Http\BaseResponse|\LaraGram\Request\Response|null  $response
      * @param  string  $errorBag
-     * @return void
      */
     public function __construct($validator, $response = null, $errorBag = 'default')
     {
@@ -96,7 +95,7 @@ class ValidationException extends Exception
         if ($count = count($messages)) {
             $pluralized = $count === 1 ? 'error' : 'errors';
 
-            $message .= ' '.$validator->getTranslator()->choice("(and :count more $pluralized)", $count, compact('count'));
+            $message .= ' '.$validator->getTranslator()->choice("(and :count more $pluralized)", $count, ['count' => $count]);
         }
 
         return $message;
@@ -154,7 +153,7 @@ class ValidationException extends Exception
     /**
      * Get the underlying response instance.
      *
-     * @return \LaraGram\Request\Response|null
+     * @return \LaraGram\Http\BaseResponse|\LaraGram\Request\Response|null
      */
     public function getResponse()
     {

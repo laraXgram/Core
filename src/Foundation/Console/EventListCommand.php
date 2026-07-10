@@ -4,7 +4,6 @@ namespace LaraGram\Foundation\Console;
 
 use Closure;
 use LaraGram\Console\Command;
-//use LaraGram\Contracts\Broadcasting\ShouldBroadcast;
 use LaraGram\Contracts\Queue\ShouldQueue;
 use LaraGram\Support\Collection;
 use ReflectionFunction;
@@ -114,12 +113,6 @@ class EventListCommand extends Command
         if (! class_exists($event)) {
             return $event;
         }
-
-        $interfaces = class_implements($event);
-
-//        if (in_array(ShouldBroadcast::class, $interfaces)) {
-//            $event .= ' <fg=bright-blue>(ShouldBroadcast)</>';
-//        }
 
         return $event;
     }

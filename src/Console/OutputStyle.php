@@ -40,7 +40,6 @@ class OutputStyle extends Style implements NewLineAware
      *
      * @param  \LaraGram\Console\Input\InputInterface  $input
      * @param  \LaraGram\Console\Output\OutputInterface  $output
-     * @return void
      */
     public function __construct(InputInterface $input, OutputInterface $output)
     {
@@ -126,10 +125,10 @@ class OutputStyle extends Style implements NewLineAware
         return $this->newLineWritten;
     }
 
-    /*
+    /**
      * Count the number of trailing new lines in a string.
      *
-     * @param  string|iterable  $messages
+     * @param  string|iterable<string>  $messages
      * @return int
      */
     protected function trailingNewLineCount($messages)

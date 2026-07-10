@@ -2,6 +2,7 @@
 
 namespace LaraGram\Foundation\Providers;
 
+use LaraGram\Session\Console\SessionTableCommand;
 use LaraGram\Cache\Console\CacheTableCommand;
 use LaraGram\Cache\Console\ClearCommand as CacheClearCommand;
 use LaraGram\Cache\Console\ForgetCommand as CacheForgetCommand;
@@ -203,6 +204,7 @@ class CommanderServiceProvider extends ServiceProvider implements DeferrableProv
         ListenClearCommand::class          => ['files'],
         PolicyMakeCommand::class           => ['files'],
         RuleMakeCommand::class             => ['files'],
+        SessionTableCommand::class         => ['files'],
     ];
 
     /**

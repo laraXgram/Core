@@ -2,10 +2,24 @@
 
 namespace LaraGram\Filesystem;
 
+use LaraGram\Contracts\Foundation\CachesRoutes;
+use LaraGram\Http\Request;
+use LaraGram\Support\Facades\Route;
 use LaraGram\Support\ServiceProvider;
+use InvalidArgumentException;
 
 class FilesystemServiceProvider extends ServiceProvider
 {
+    /**
+     * Bootstrap the filesystem.
+     *
+     * @return void
+     */
+    public function boot()
+    {
+        $this->serveFiles();
+    }
+
     /**
      * Register the service provider.
      *
@@ -41,6 +55,10 @@ class FilesystemServiceProvider extends ServiceProvider
         $this->app->singleton('filesystem.disk', function ($app) {
             return $app['filesystem']->disk($this->getDefaultDriver());
         });
+
+        $this->app->singleton('filesystem.cloud', function ($app) {
+            return $app['filesystem']->disk($this->getCloudDriver());
+        });
     }
 
     /**
@@ -56,6 +74,71 @@ class FilesystemServiceProvider extends ServiceProvider
     }
 
     /**
+     * Register protected file serving.
+     *
+     * @return void
+     *
+     * @throws \InvalidArgumentException
+     */
+    protected function serveFiles()
+    {
+        if ($this->app instanceof CachesRoutes && $this->app->routesAreCached()) {
+            return;
+        }
+
+        $served = [];
+
+        foreach ($this->app['config']['filesystems.disks'] ?? [] as $disk => $config) {
+            if (! $this->shouldServeFiles($config)) {
+                continue;
+            }
+
+            $this->app->booted(function ($app) use ($disk, $config, &$served) {
+                $uri = isset($config['url'])
+                    ? rtrim(parse_url($config['url'])['path'], '/')
+                    : '/storage';
+
+                if (isset($served[$uri])) {
+                    throw new InvalidArgumentException(
+                        "The [{$disk}] disk conflicts with the [{$served[$uri]}] disk at [{$uri}]. Each served disk must have a unique URL."
+                    );
+                }
+
+                $served[$uri] = $disk;
+
+                $isProduction = $app->isProduction();
+
+                Route::get($uri.'/{path}', function (Request $request, string $path) use ($disk, $config, $isProduction) {
+                    return (new ServeFile(
+                        $disk,
+                        $config,
+                        $isProduction
+                    ))($request, $path);
+                })->where('path', '.*')->name('storage.'.$disk);
+
+                Route::put($uri.'/{path}', function (Request $request, string $path) use ($disk, $config, $isProduction) {
+                    return (new ReceiveFile(
+                        $disk,
+                        $config,
+                        $isProduction
+                    ))($request, $path);
+                })->where('path', '.*')->name('storage.'.$disk.'.upload');
+            });
+        }
+    }
+
+    /**
+     * Determine if the disk is serveable.
+     *
+     * @param  array  $config
+     * @return bool
+     */
+    protected function shouldServeFiles(array $config)
+    {
+        return $config['driver'] === 'local' && ($config['serve'] ?? false);
+    }
+
+    /**
      * Get the default file driver.
      *
      * @return string
@@ -63,5 +146,15 @@ class FilesystemServiceProvider extends ServiceProvider
     protected function getDefaultDriver()
     {
         return $this->app['config']['filesystems.default'];
+    }
+
+    /**
+     * Get the default cloud based file driver.
+     *
+     * @return string
+     */
+    protected function getCloudDriver()
+    {
+        return $this->app['config']['filesystems.cloud'];
     }
 }

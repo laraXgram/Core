@@ -3,7 +3,9 @@
 namespace LaraGram\Validation;
 
 use LaraGram\Contracts\Support\Arrayable;
+use LaraGram\Support\Arr;
 use LaraGram\Support\Traits\Macroable;
+use LaraGram\Validation\Rules\AnyOf;
 use LaraGram\Validation\Rules\ArrayRule;
 use LaraGram\Validation\Rules\Can;
 use LaraGram\Validation\Rules\Date;
@@ -11,6 +13,7 @@ use LaraGram\Validation\Rules\Dimensions;
 use LaraGram\Validation\Rules\Email;
 use LaraGram\Validation\Rules\Enum;
 use LaraGram\Validation\Rules\ExcludeIf;
+use LaraGram\Validation\Rules\ExcludeUnless;
 use LaraGram\Validation\Rules\Exists;
 use LaraGram\Validation\Rules\File;
 use LaraGram\Validation\Rules\ImageFile;
@@ -18,7 +21,10 @@ use LaraGram\Validation\Rules\In;
 use LaraGram\Validation\Rules\NotIn;
 use LaraGram\Validation\Rules\Numeric;
 use LaraGram\Validation\Rules\ProhibitedIf;
+use LaraGram\Validation\Rules\ProhibitedUnless;
 use LaraGram\Validation\Rules\RequiredIf;
+use LaraGram\Validation\Rules\RequiredUnless;
+use LaraGram\Validation\Rules\StringRule;
 use LaraGram\Validation\Rules\Unique;
 
 class Rule
@@ -112,7 +118,7 @@ class Rule
     /**
      * Get an in rule builder instance.
      *
-     * @param  \LaraGram\Contracts\Support\Arrayable|\BackedEnum|\UnitEnum|array|string  $values
+     * @param  \LaraGram\Contracts\Support\Arrayable|\UnitEnum|array|string  $values
      * @return \LaraGram\Validation\Rules\In
      */
     public static function in($values)
@@ -127,7 +133,7 @@ class Rule
     /**
      * Get a not_in rule builder instance.
      *
-     * @param  \LaraGram\Contracts\Support\Arrayable|\BackedEnum|\UnitEnum|array|string  $values
+     * @param  \LaraGram\Contracts\Support\Arrayable|\UnitEnum|array|string  $values
      * @return \LaraGram\Validation\Rules\NotIn
      */
     public static function notIn($values)
@@ -142,7 +148,7 @@ class Rule
     /**
      * Get a required_if rule builder instance.
      *
-     * @param  callable|bool  $callback
+     * @param  (\Closure(): bool)|bool  $callback
      * @return \LaraGram\Validation\Rules\RequiredIf
      */
     public static function requiredIf($callback)
@@ -151,9 +157,20 @@ class Rule
     }
 
     /**
-     * Get a exclude_if rule builder instance.
+     * Get a required_unless rule builder instance.
      *
-     * @param  callable|bool  $callback
+     * @param  (\Closure(): bool)|bool|null  $callback
+     * @return \LaraGram\Validation\Rules\RequiredUnless
+     */
+    public static function requiredUnless($callback)
+    {
+        return new RequiredUnless($callback);
+    }
+
+    /**
+     * Get an exclude_if rule builder instance.
+     *
+     * @param  (\Closure(): bool)|bool  $callback
      * @return \LaraGram\Validation\Rules\ExcludeIf
      */
     public static function excludeIf($callback)
@@ -162,14 +179,36 @@ class Rule
     }
 
     /**
+     * Get an exclude_unless rule builder instance.
+     *
+     * @param  (\Closure(): bool)|bool  $callback
+     * @return \LaraGram\Validation\Rules\ExcludeUnless
+     */
+    public static function excludeUnless($callback)
+    {
+        return new ExcludeUnless($callback);
+    }
+
+    /**
      * Get a prohibited_if rule builder instance.
      *
-     * @param  callable|bool  $callback
+     * @param  (\Closure(): bool)|bool  $callback
      * @return \LaraGram\Validation\Rules\ProhibitedIf
      */
     public static function prohibitedIf($callback)
     {
         return new ProhibitedIf($callback);
+    }
+
+    /**
+     * Get a prohibited_unless rule builder instance.
+     *
+     * @param  (\Closure(): bool)|bool  $callback
+     * @return \LaraGram\Validation\Rules\ProhibitedUnless
+     */
+    public static function prohibitedUnless($callback)
+    {
+        return new ProhibitedUnless($callback);
     }
 
     /**
@@ -180,6 +219,14 @@ class Rule
     public static function date()
     {
         return new Date;
+    }
+
+    /**
+     * Get a datetime rule builder instance.
+     */
+    public static function dateTime(): Date
+    {
+        return (new Date)->format('Y-m-d H:i:s');
     }
 
     /**
@@ -216,11 +263,12 @@ class Rule
     /**
      * Get an image file rule builder instance.
      *
+     * @param  bool  $allowSvg
      * @return \LaraGram\Validation\Rules\ImageFile
      */
-    public static function imageFile()
+    public static function imageFile($allowSvg = false)
     {
-        return new ImageFile;
+        return new ImageFile($allowSvg);
     }
 
     /**
@@ -235,6 +283,16 @@ class Rule
     }
 
     /**
+     * Get a string rule builder instance.
+     *
+     * @return \LaraGram\Validation\Rules\StringRule
+     */
+    public static function string()
+    {
+        return new StringRule;
+    }
+
+    /**
      * Get a numeric rule builder instance.
      *
      * @return \LaraGram\Validation\Rules\Numeric
@@ -242,5 +300,77 @@ class Rule
     public static function numeric()
     {
         return new Numeric;
+    }
+
+    /**
+     * Get an "any of" rule builder instance.
+     *
+     * @param  array  $rules
+     * @return \LaraGram\Validation\Rules\AnyOf
+     *
+     * @throws \InvalidArgumentException
+     */
+    public static function anyOf($rules)
+    {
+        return new AnyOf($rules);
+    }
+
+    /**
+     * Get a contains rule builder instance.
+     *
+     * @param  \LaraGram\Contracts\Support\Arrayable|\UnitEnum|array|string  $values
+     * @return \LaraGram\Validation\Rules\Contains
+     */
+    public static function contains($values)
+    {
+        if ($values instanceof Arrayable) {
+            $values = $values->toArray();
+        }
+
+        return new Rules\Contains(is_array($values) ? $values : func_get_args());
+    }
+
+    /**
+     * Get a "does not contain" rule builder instance.
+     *
+     * @param  \LaraGram\Contracts\Support\Arrayable|\UnitEnum|array|string  $values
+     * @return \LaraGram\Validation\Rules\DoesntContain
+     */
+    public static function doesntContain($values)
+    {
+        if ($values instanceof Arrayable) {
+            $values = $values->toArray();
+        }
+
+        return new Rules\DoesntContain(is_array($values) ? $values : func_get_args());
+    }
+
+    /**
+     * Compile a set of rules for an attribute.
+     *
+     * @param  string  $attribute
+     * @param  array  $rules
+     * @param  array|null  $data
+     * @return object|\stdClass
+     */
+    public static function compile($attribute, $rules, $data = null)
+    {
+        $parser = new ValidationRuleParser(
+            Arr::undot(Arr::wrap($data))
+        );
+
+        if (is_array($rules) && ! array_is_list($rules)) {
+            $nested = [];
+
+            foreach ($rules as $key => $rule) {
+                $nested[$attribute.'.'.$key] = $rule;
+            }
+
+            $rules = $nested;
+        } else {
+            $rules = [$attribute => $rules];
+        }
+
+        return $parser->explode(ValidationRuleParser::filterConditionalRules($rules, $data));
     }
 }

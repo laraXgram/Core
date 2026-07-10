@@ -33,7 +33,6 @@ class BelongsToRelationship
      *
      * @param  \LaraGram\Database\Eloquent\Factories\Factory|\LaraGram\Database\Eloquent\Model  $factory
      * @param  string  $relationship
-     * @return void
      */
     public function __construct($factory, $relationship)
     {

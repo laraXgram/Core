@@ -29,7 +29,7 @@ use LaraGram\Support\Traits\Tappable;
 use JsonSerializable;
 use ReflectionClass;
 use stdClass;
-use LaraGram\Request\Response as SymfonyResponse;
+use LaraGram\Request\Response as LaraGramResponse;
 
 /**
  * @mixin \LaraGram\Listening\ListenRegistrar
@@ -755,7 +755,7 @@ class Listener implements BindingRegistrar, RegistrarContract
             $response = new JsonResponse($response, 201);
         } elseif ($response instanceof Stringable) {
             $response = new Response($response->__toString());
-        } elseif (! $response instanceof SymfonyResponse &&
+        } elseif (! $response instanceof LaraGramResponse &&
             ($response instanceof Arrayable ||
                 $response instanceof Jsonable ||
                 $response instanceof ArrayObject ||
@@ -763,7 +763,7 @@ class Listener implements BindingRegistrar, RegistrarContract
                 $response instanceof stdClass ||
                 is_array($response))) {
             $response = new JsonResponse($response);
-        } elseif (! $response instanceof SymfonyResponse) {
+        } elseif (! $response instanceof LaraGramResponse) {
             $response = new Response(json_encode($response));
         }
 

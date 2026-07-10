@@ -5,7 +5,7 @@ namespace LaraGram\Contracts\Console;
 interface Kernel
 {
     /**
-     * Bootstrap the application for Commander commands.
+     * Bootstrap the application for commander commands.
      *
      * @return void
      */
@@ -29,6 +29,15 @@ interface Kernel
      * @return int
      */
     public function call($command, array $parameters = [], $outputBuffer = null);
+
+    /**
+     * Queue an Commander console command by name.
+     *
+     * @param  string  $command
+     * @param  array  $parameters
+     * @return \LaraGram\Foundation\Bus\PendingDispatch
+     */
+    public function queue($command, array $parameters = []);
 
     /**
      * Get all of the commands registered with the console.

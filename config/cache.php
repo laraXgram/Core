@@ -38,6 +38,11 @@ return [
             'serialize' => false,
         ],
 
+        'session' => [
+            'driver' => 'session',
+            'key' => env('SESSION_CACHE_KEY', '_cache'),
+        ],
+
         'database' => [
             'driver' => 'database',
             'connection' => env('DB_CACHE_CONNECTION'),
@@ -50,6 +55,12 @@ return [
             'driver' => 'file',
             'path' => storage_path('framework/cache/data'),
             'lock_path' => storage_path('framework/cache/data'),
+        ],
+
+        'storage' => [
+            'driver' => 'storage',
+            'disk' => env('CACHE_STORAGE_DISK'),
+            'path' => env('CACHE_STORAGE_PATH', 'framework/cache/data'),
         ],
 
         'memcached' => [
@@ -77,8 +88,16 @@ return [
             'lock_connection' => env('REDIS_CACHE_LOCK_CONNECTION', 'default'),
         ],
 
-        'octane' => [
-            'driver' => 'octane',
+        'surge' => [
+            'driver' => 'surge',
+        ],
+
+        'failover' => [
+            'driver' => 'failover',
+            'stores' => [
+                'database',
+                'array',
+            ],
         ],
 
     ],
@@ -104,8 +123,8 @@ return [
         'default' => env('STEP_STORE', 'database'),
 
         'stores' => [
-            'database' => env('CACHE_STORE', 'database'),
-            'redis' => env('CACHE_STORE', 'redis'),
+            'database' => 'database',
+            'redis' => 'redis',
             'volatile' => 'array',
         ],
 

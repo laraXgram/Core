@@ -4,6 +4,7 @@ namespace LaraGram\Queue\Console;
 
 use LaraGram\Console\Command;
 use LaraGram\Console\ConfirmableTrait;
+use LaraGram\Console\Prohibitable;
 use LaraGram\Contracts\Queue\ClearableQueue;
 use LaraGram\Support\Str;
 use ReflectionClass;
@@ -14,7 +15,7 @@ use LaraGram\Console\Input\InputOption;
 #[AsCommand(name: 'queue:clear')]
 class ClearCommand extends Command
 {
-    use ConfirmableTrait;
+    use ConfirmableTrait, Prohibitable;
 
     /**
      * The console command name.
@@ -37,12 +38,13 @@ class ClearCommand extends Command
      */
     public function handle()
     {
-        if (! $this->confirmToProceed()) {
+        if ($this->isProhibited() ||
+            ! $this->confirmToProceed()) {
             return 1;
         }
 
         $connection = $this->argument('connection')
-                        ?: $this->laragram['config']['queue.default'];
+            ?: $this->laragram['config']['queue.default'];
 
         // We need to get the right queue for the connection which is set in the queue
         // configuration file for the application. We will pull it based on the set

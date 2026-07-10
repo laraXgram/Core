@@ -44,8 +44,7 @@ class ScheduleTestCommand extends Command
         }
 
         if (empty($commandNames)) {
-            $this->components->info('No scheduled commands have been defined.');
-            return;
+            return $this->components->info('No scheduled commands have been defined.');
         }
 
         if (! empty($name = $this->option('name'))) {
@@ -77,8 +76,10 @@ class ScheduleTestCommand extends Command
         $description = sprintf(
             'Running [%s]%s',
             $command,
-            $event->runInBackground ? ' in background' : '',
+            $event->runInBackground ? ' normally in background' : '',
         );
+
+        $event->runInBackground = false;
 
         $this->components->task($description, fn () => $event->run($this->laragram));
 

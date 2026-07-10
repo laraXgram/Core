@@ -20,7 +20,6 @@ class ProcessTimedOutException extends RuntimeException
      *
      * @param  \LaraGram\Console\Process\Exception\ProcessTimedOutException  $original
      * @param  \LaraGram\Contracts\Process\ProcessResult  $result
-     * @return void
      */
     public function __construct(LaraGramTimeoutException $original, ProcessResult $result)
     {

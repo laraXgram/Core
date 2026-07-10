@@ -2,8 +2,8 @@
 
 namespace LaraGram\Cache;
 
-use DateTime;
 use LaraGram\Redis\Connections\PhpRedisConnection;
+use LaraGram\Support\Tempora;
 use LaraGram\Support\LazyCollection;
 
 class RedisTagSet extends TagSet
@@ -13,12 +13,12 @@ class RedisTagSet extends TagSet
      *
      * @param  string  $key
      * @param  int|null  $ttl
-     * @param  string  $updateWhen
+     * @param  string|null  $updateWhen
      * @return void
      */
     public function addEntry(string $key, ?int $ttl = null, $updateWhen = null)
     {
-        $ttl = is_null($ttl) ? -1 : (new DateTime())->modify('+' . $ttl . ' seconds')->getTimestamp();
+        $ttl = is_null($ttl) ? -1 : Tempora::now()->addSeconds($ttl)->getTimestamp();
 
         foreach ($this->tagIds() as $tagKey) {
             if ($updateWhen) {
@@ -43,16 +43,22 @@ class RedisTagSet extends TagSet
             default => '0',
         };
 
-        return LazyCollection::make(function () use ($connection, $defaultCursorValue) {
+        return new LazyCollection(function () use ($connection, $defaultCursorValue) {
             foreach ($this->tagIds() as $tagKey) {
                 $cursor = $defaultCursorValue;
 
                 do {
-                    [$cursor, $entries] = $connection->zscan(
+                    $results = $connection->zscan(
                         $this->store->getPrefix().$tagKey,
                         $cursor,
                         ['match' => '*', 'count' => 1000]
                     );
+
+                    if (! is_array($results)) {
+                        break;
+                    }
+
+                    [$cursor, $entries] = $results;
 
                     if (! is_array($entries)) {
                         break;
@@ -60,7 +66,7 @@ class RedisTagSet extends TagSet
 
                     $entries = array_unique(array_keys($entries));
 
-                    if (count($entries) === 0) {
+                    if ($entries === []) {
                         continue;
                     }
 
@@ -79,17 +85,26 @@ class RedisTagSet extends TagSet
      */
     public function flushStaleEntries()
     {
-        $this->store->connection()->pipeline(function ($pipe) {
+        $flushStaleEntries = function ($pipe) {
             foreach ($this->tagIds() as $tagKey) {
-                $pipe->zremrangebyscore($this->store->getPrefix().$tagKey, 0, (new DateTime())->getTimestamp());
+                $pipe->zremrangebyscore($this->store->getPrefix().$tagKey, 0, Tempora::now()->getTimestamp());
             }
-        });
+        };
+
+        $connection = $this->store->connection();
+
+        if ($connection instanceof PhpRedisConnection) {
+            $flushStaleEntries($connection);
+        } else {
+            $connection->pipeline($flushStaleEntries);
+        }
     }
 
     /**
      * Flush the tag from the cache.
      *
      * @param  string  $name
+     * @return string
      */
     public function flushTag($name)
     {

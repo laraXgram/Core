@@ -2,6 +2,7 @@
 
 namespace LaraGram\Cache;
 
+use LaraGram\Contracts\Cache\CanFlushLocks;
 use LaraGram\Contracts\Cache\LockProvider;
 use LaraGram\Contracts\Redis\Factory as Redis;
 use LaraGram\Redis\Connections\PhpRedisClusterConnection;
@@ -10,10 +11,12 @@ use LaraGram\Redis\Connections\PredisClusterConnection;
 use LaraGram\Redis\Connections\PredisConnection;
 use LaraGram\Support\LazyCollection;
 use LaraGram\Support\Str;
+use RuntimeException;
 
-class RedisStore extends TaggableStore implements LockProvider
+class RedisStore extends TaggableStore implements CanFlushLocks, LockProvider
 {
     use RetrievesMultipleKeys {
+        many as private manyAlias;
         putMany as private putManyAlias;
     }
 
@@ -46,18 +49,26 @@ class RedisStore extends TaggableStore implements LockProvider
     protected $lockConnection;
 
     /**
+     * The classes that should be allowed during unserialization.
+     *
+     * @var array|bool|null
+     */
+    protected $serializableClasses;
+
+    /**
      * Create a new Redis store.
      *
      * @param  \LaraGram\Contracts\Redis\Factory  $redis
      * @param  string  $prefix
      * @param  string  $connection
-     * @return void
+     * @param  array|bool|null  $serializableClasses
      */
-    public function __construct(Redis $redis, $prefix = '', $connection = 'default')
+    public function __construct(Redis $redis, $prefix = '', $connection = 'default', $serializableClasses = null)
     {
         $this->redis = $redis;
         $this->setPrefix($prefix);
         $this->setConnection($connection);
+        $this->serializableClasses = $serializableClasses;
     }
 
     /**
@@ -68,9 +79,11 @@ class RedisStore extends TaggableStore implements LockProvider
      */
     public function get($key)
     {
-        $value = $this->connection()->get($this->prefix.$key);
+        $connection = $this->connection();
 
-        return ! is_null($value) ? $this->unserialize($value) : null;
+        $value = $connection->get($this->prefix.$key);
+
+        return ! is_null($value) ? $this->connectionAwareUnserialize($value, $connection) : null;
     }
 
     /**
@@ -83,18 +96,25 @@ class RedisStore extends TaggableStore implements LockProvider
      */
     public function many(array $keys)
     {
-        if (count($keys) === 0) {
+        if ($keys === []) {
             return [];
         }
 
         $results = [];
 
-        $values = $this->connection()->mget(array_map(function ($key) {
+        $connection = $this->connection();
+
+        // PredisClusterConnection does not support reading multiple values if the keys hash differently...
+        if ($connection instanceof PredisClusterConnection) {
+            return $this->manyAlias($keys);
+        }
+
+        $values = $connection->mget(array_map(function ($key) {
             return $this->prefix.$key;
         }, $keys));
 
         foreach ($values as $index => $value) {
-            $results[$keys[$index]] = ! is_null($value) ? $this->unserialize($value) : null;
+            $results[$keys[$index]] = ! is_null($value) ? $this->connectionAwareUnserialize($value, $connection) : null;
         }
 
         return $results;
@@ -110,8 +130,10 @@ class RedisStore extends TaggableStore implements LockProvider
      */
     public function put($key, $value, $seconds)
     {
-        return (bool) $this->connection()->setex(
-            $this->prefix.$key, (int) max(1, $seconds), $this->serialize($value)
+        $connection = $this->connection();
+
+        return (bool) $connection->setex(
+            $this->prefix.$key, (int) max(1, $seconds), $this->connectionAwareSerialize($value, $connection)
         );
     }
 
@@ -135,7 +157,7 @@ class RedisStore extends TaggableStore implements LockProvider
         $serializedValues = [];
 
         foreach ($values as $key => $value) {
-            $serializedValues[$this->prefix.$key] = $this->serialize($value);
+            $serializedValues[$this->prefix.$key] = $this->connectionAwareSerialize($value, $connection);
         }
 
         $connection->multi();
@@ -165,10 +187,10 @@ class RedisStore extends TaggableStore implements LockProvider
      */
     public function add($key, $value, $seconds)
     {
-        $lua = "return redis.call('exists',KEYS[1])<1 and redis.call('setex',KEYS[1],ARGV[2],ARGV[1])";
+        $connection = $this->connection();
 
-        return (bool) $this->connection()->eval(
-            $lua, 1, $this->prefix.$key, $this->serialize($value), (int) max(1, $seconds)
+        return (bool) $connection->eval(
+            LuaScripts::add(), 1, $this->prefix.$key, $this->pack($value, $connection), (int) max(1, $seconds)
         );
     }
 
@@ -205,7 +227,9 @@ class RedisStore extends TaggableStore implements LockProvider
      */
     public function forever($key, $value)
     {
-        return (bool) $this->connection()->set($this->prefix.$key, $this->serialize($value));
+        $connection = $this->connection();
+
+        return (bool) $connection->set($this->prefix.$key, $this->connectionAwareSerialize($value, $connection));
     }
 
     /**
@@ -242,6 +266,18 @@ class RedisStore extends TaggableStore implements LockProvider
     }
 
     /**
+     * Adjust the expiration time of a cached item.
+     *
+     * @param  string  $key
+     * @param  int  $seconds
+     * @return bool
+     */
+    public function touch($key, $seconds)
+    {
+        return (bool) $this->connection()->expire($this->getPrefix().$key, (int) max(1, $seconds));
+    }
+
+    /**
      * Remove an item from the cache.
      *
      * @param  string  $key
@@ -265,6 +301,24 @@ class RedisStore extends TaggableStore implements LockProvider
     }
 
     /**
+     * Remove all locks from the store.
+     *
+     * @return bool
+     *
+     * @throws \RuntimeException
+     */
+    public function flushLocks(): bool
+    {
+        if (! $this->hasSeparateLockStore()) {
+            throw new RuntimeException('Flushing locks is only supported when the lock store is separate from the cache store.');
+        }
+
+        $this->lockConnection()->flushdb();
+
+        return true;
+    }
+
+    /**
      * Remove all expired tag set entries.
      *
      * @return void
@@ -279,7 +333,7 @@ class RedisStore extends TaggableStore implements LockProvider
     /**
      * Begin executing a new tags operation.
      *
-     * @param  array|mixed  $names
+     * @param  mixed  $names
      * @return \LaraGram\Cache\RedisTaggedCache
      */
     public function tags($names)
@@ -313,14 +367,20 @@ class RedisStore extends TaggableStore implements LockProvider
 
         $prefix = $connectionPrefix.$this->getPrefix();
 
-        return LazyCollection::make(function () use ($connection, $chunkSize, $prefix, $defaultCursorValue) {
+        return (new LazyCollection(function () use ($connection, $chunkSize, $prefix, $defaultCursorValue) {
             $cursor = $defaultCursorValue;
 
             do {
-                [$cursor, $tagsChunk] = $connection->scan(
+                $scanResult = $connection->scan(
                     $cursor,
                     ['match' => $prefix.'tag:*:entries', 'count' => $chunkSize]
                 );
+
+                if (! is_array($scanResult)) {
+                    break;
+                }
+
+                [$cursor, $tagsChunk] = $scanResult;
 
                 if (! is_array($tagsChunk)) {
                     break;
@@ -336,7 +396,7 @@ class RedisStore extends TaggableStore implements LockProvider
                     yield $tag;
                 }
             } while (((string) $cursor) !== $defaultCursorValue);
-        })->map(fn (string $tagKey) => Str::match('/^'.preg_quote($prefix, '/').'tag:(.*):entries$/', $tagKey));
+        }))->map(fn (string $tagKey) => Str::match('/^'.preg_quote($prefix, '/').'tag:(.*):entries$/', $tagKey));
     }
 
     /**
@@ -415,6 +475,28 @@ class RedisStore extends TaggableStore implements LockProvider
     }
 
     /**
+     * Prepare a value to be used with the Redis cache store when used by eval scripts.
+     *
+     * @param  mixed  $value
+     * @param  \LaraGram\Redis\Connections\Connection  $connection
+     * @return mixed
+     */
+    protected function pack($value, $connection)
+    {
+        if ($connection instanceof PhpRedisConnection) {
+            if ($connection->serialized()) {
+                return $connection->pack([$value])[0];
+            }
+
+            if ($connection->compressed()) {
+                return $connection->pack([$this->serialize($value)])[0];
+            }
+        }
+
+        return $this->serialize($value);
+    }
+
+    /**
      * Serialize the value.
      *
      * @param  mixed  $value
@@ -422,7 +504,18 @@ class RedisStore extends TaggableStore implements LockProvider
      */
     protected function serialize($value)
     {
-        return is_numeric($value) && ! in_array($value, [INF, -INF]) && ! is_nan($value) ? $value : serialize($value);
+        return $this->shouldBeStoredWithoutSerialization($value) ? $value : serialize($value);
+    }
+
+    /**
+     * Determine if the given value should be stored as plain value.
+     *
+     * @param  mixed  $value
+     * @return bool
+     */
+    protected function shouldBeStoredWithoutSerialization($value): bool
+    {
+        return is_numeric($value) && is_finite($value);
     }
 
     /**
@@ -433,6 +526,56 @@ class RedisStore extends TaggableStore implements LockProvider
      */
     protected function unserialize($value)
     {
-        return is_numeric($value) ? $value : unserialize($value);
+        if (is_numeric($value)) {
+            return $value;
+        }
+
+        if ($this->serializableClasses !== null) {
+            return unserialize($value, ['allowed_classes' => $this->serializableClasses]);
+        }
+
+        return unserialize($value);
+    }
+
+    /**
+     * Handle connection specific considerations when a value needs to be serialized.
+     *
+     * @param  mixed  $value
+     * @param  \LaraGram\Redis\Connections\Connection  $connection
+     * @return mixed
+     */
+    protected function connectionAwareSerialize($value, $connection)
+    {
+        if ($connection instanceof PhpRedisConnection && $connection->serialized()) {
+            return $value;
+        }
+
+        return $this->serialize($value);
+    }
+
+    /**
+     * Handle connection specific considerations when a value needs to be unserialized.
+     *
+     * @param  mixed  $value
+     * @param  \LaraGram\Redis\Connections\Connection  $connection
+     * @return mixed
+     */
+    protected function connectionAwareUnserialize($value, $connection)
+    {
+        if ($connection instanceof PhpRedisConnection && $connection->serialized()) {
+            return $value;
+        }
+
+        return $this->unserialize($value);
+    }
+
+    /**
+     * Determine if the lock store is separate from the cache store.
+     *
+     * @return bool
+     */
+    public function hasSeparateLockStore(): bool
+    {
+        return $this->lockConnection !== $this->connection;
     }
 }

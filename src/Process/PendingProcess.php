@@ -2,6 +2,7 @@
 
 namespace LaraGram\Process;
 
+use LaraGram\Tempora\TemporaInterval;
 use Closure;
 use LaraGram\Process\Exceptions\ProcessTimedOutException;
 use LaraGram\Support\Collection;
@@ -97,7 +98,6 @@ class PendingProcess
      * Create a new pending process instance.
      *
      * @param  \LaraGram\Process\Factory  $factory
-     * @return void
      */
     public function __construct(Factory $factory)
     {
@@ -133,12 +133,12 @@ class PendingProcess
     /**
      * Specify the maximum number of seconds the process may run.
      *
-     * @param  int  $timeout
+     * @param  TemporaInterval|int  $timeout
      * @return $this
      */
-    public function timeout(int $timeout)
+    public function timeout(TemporaInterval|int $timeout)
     {
-        $this->timeout = $timeout;
+        $this->timeout = $timeout instanceof TemporaInterval ? (int) $timeout->totalSeconds : $timeout;
 
         return $this;
     }
@@ -146,12 +146,12 @@ class PendingProcess
     /**
      * Specify the maximum number of seconds a process may go without returning output.
      *
-     * @param  int  $timeout
+     * @param  TemporaInterval|int  $timeout
      * @return $this
      */
-    public function idleTimeout(int $timeout)
+    public function idleTimeout(TemporaInterval|int $timeout)
     {
-        $this->idleTimeout = $timeout;
+        $this->idleTimeout = $timeout instanceof TemporaInterval ? (int) $timeout->totalSeconds : $timeout;
 
         return $this;
     }
@@ -246,9 +246,9 @@ class PendingProcess
     {
         $this->command = $command ?: $this->command;
 
-        try {
-            $process = $this->toLaraGramProcess($command);
+        $process = $this->toLaraGramProcess($command);
 
+        try {
             if ($fake = $this->fakeFor($command = $process->getCommandline())) {
                 return tap($this->resolveSynchronousFake($command, $fake), function ($result) {
                     $this->factory->recordIfRecording($this, $result);
@@ -297,11 +297,11 @@ class PendingProcess
      */
     protected function toLaraGramProcess(array|string|null $command)
     {
-        $command = $command ?? $this->command;
+        $command ??= $this->command;
 
         $process = is_iterable($command)
-                ? new Process($command, null, $this->environment)
-                : Process::fromShellCommandline((string) $command, null, $this->environment);
+            ? new Process($command, null, $this->environment)
+            : Process::fromShellCommandline((string) $command, null, $this->environment);
 
         $process->setWorkingDirectory((string) ($this->path ?? getcwd()));
         $process->setTimeout($this->timeout);
@@ -339,7 +339,6 @@ class PendingProcess
         return Process::isTtySupported();
     }
 
-
     /**
      * Specify the fake process result handlers for the pending process.
      *
@@ -362,7 +361,7 @@ class PendingProcess
     protected function fakeFor(string $command)
     {
         return (new Collection($this->fakeHandlers))
-                ->first(fn ($handler, $pattern) => $pattern === '*' || Str::is($pattern, $command));
+            ->first(fn ($handler, $pattern) => $pattern === '*' || Str::is($pattern, $command));
     }
 
     /**
@@ -371,6 +370,9 @@ class PendingProcess
      * @param  string  $command
      * @param  \Closure  $fake
      * @return mixed
+     *
+     * @throws \LogicException
+     * @throws \Throwable
      */
     protected function resolveSynchronousFake(string $command, Closure $fake)
     {
@@ -402,7 +404,7 @@ class PendingProcess
      * @param  \Closure  $fake
      * @return \LaraGram\Process\FakeInvokedProcess
      *
-     * @throw \LogicException
+     * @throws \LogicException
      */
     protected function resolveAsynchronousFake(string $command, ?callable $output, Closure $fake)
     {

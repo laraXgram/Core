@@ -18,12 +18,29 @@ class ListeningServiceProvider extends ServiceProvider
      */
     public function register()
     {
+        $this->registerRequest();
         $this->registerListener();
         $this->registerPathGenerator();
         $this->registerRedirector();
         $this->registerResponseFactory();
         $this->registerCallableDispatcher();
         $this->registerControllerDispatcher();
+    }
+
+    /**
+     * Register a default bot request binding.
+     *
+     * Provides a resolvable 'request' fallback so the binding exists even when
+     * the HTTP kernel is the one handling the current process. The bot kernel
+     * overrides this with the captured request via instance().
+     *
+     * @return void
+     */
+    protected function registerRequest()
+    {
+        $this->app->singleton('request', function () {
+            return \LaraGram\Request\Request::capture();
+        });
     }
 
     /**
@@ -45,7 +62,7 @@ class ListeningServiceProvider extends ServiceProvider
      */
     protected function registerPathGenerator()
     {
-        $this->app->singleton('url', function ($app) {
+        $this->app->singleton('listener.path', function ($app) {
             $listens = $app['listener']->getListens();
 
             $app->instance('listens', $listens);
@@ -57,22 +74,22 @@ class ListeningServiceProvider extends ServiceProvider
             );
         });
 
-        $this->app->extend('url', function (PathGeneratorContract $url, $app) {
-            $url->setCacheResolver(function () {
+        $this->app->extend('listener.path', function (PathGeneratorContract $path, $app) {
+            $path->setCacheResolver(function () {
                 return $this->app['cache'] ?? null;
             });
 
-            $url->setKeyResolver(function () {
+            $path->setKeyResolver(function () {
                 $config = $this->app->make('config');
 
                 return [$config->get('app.key'), ...($config->get('app.previous_keys') ?? [])];
             });
 
             $app->rebinding('listens', function ($app, $listens) {
-                $app['url']->setListens($listens);
+                $app['listener.path']->setListens($listens);
             });
 
-            return $url;
+            return $path;
         });
     }
 
@@ -84,7 +101,7 @@ class ListeningServiceProvider extends ServiceProvider
     protected function requestRebinder()
     {
         return function ($app, $request) {
-            $app['url']->setRequest($request);
+            $app['listener.path']->setRequest($request);
         };
     }
 
@@ -96,7 +113,7 @@ class ListeningServiceProvider extends ServiceProvider
     protected function registerRedirector()
     {
         $this->app->singleton('redirect', function ($app) {
-            $redirector = new Redirector($app['url']);
+            $redirector = new Redirector($app['listener.path']);
 
             if (isset($app['cache'])) {
                 $redirector->setCache($app['cache']);

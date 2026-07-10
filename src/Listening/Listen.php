@@ -390,7 +390,7 @@ class Listen
     }
 
     /**
-     * Compile the listen into a Symfony CompiledListen instance.
+     * Compile the listen into a LaraGram CompiledListen instance.
      *
      * @return \LaraGram\Listening\CompiledListen
      */
@@ -1439,7 +1439,7 @@ class Listen
     }
 
     /**
-     * Convert the listen to a Symfony listen.
+     * Convert the listen to a LaraGram listen.
      *
      * @return \LaraGram\Listening\BaseListen
      */

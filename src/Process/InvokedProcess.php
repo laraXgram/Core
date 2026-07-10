@@ -4,11 +4,14 @@ namespace LaraGram\Process;
 
 use LaraGram\Contracts\Process\InvokedProcess as InvokedProcessContract;
 use LaraGram\Process\Exceptions\ProcessTimedOutException;
+use LaraGram\Support\Traits\Macroable;
 use LaraGram\Console\Process\Exception\ProcessTimedOutException as LaraGramTimeoutException;
 use LaraGram\Console\Process\Process;
 
 class InvokedProcess implements InvokedProcessContract
 {
+    use Macroable;
+
     /**
      * The underlying process instance.
      *
@@ -20,7 +23,6 @@ class InvokedProcess implements InvokedProcessContract
      * Create a new invoked process instance.
      *
      * @param  \LaraGram\Console\Process\Process  $process
-     * @return void
      */
     public function __construct(Process $process)
     {
@@ -35,6 +37,16 @@ class InvokedProcess implements InvokedProcessContract
     public function id()
     {
         return $this->process->getPid();
+    }
+
+    /**
+     * Get the command line for the process.
+     *
+     * @return string
+     */
+    public function command()
+    {
+        return $this->process->getCommandLine();
     }
 
     /**
@@ -110,6 +122,22 @@ class InvokedProcess implements InvokedProcessContract
     public function latestErrorOutput()
     {
         return $this->process->getIncrementalErrorOutput();
+    }
+
+    /**
+     * Ensure that the process has not timed out.
+     *
+     * @return void
+     *
+     * @throws \LaraGram\Process\Exceptions\ProcessTimedOutException
+     */
+    public function ensureNotTimedOut()
+    {
+        try {
+            $this->process->checkTimeout();
+        } catch (LaraGramTimeoutException $e) {
+            throw new ProcessTimedOutException($e, new ProcessResult($this->process));
+        }
     }
 
     /**

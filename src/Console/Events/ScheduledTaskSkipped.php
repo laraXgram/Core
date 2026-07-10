@@ -7,20 +7,12 @@ use LaraGram\Console\Scheduling\Event;
 class ScheduledTaskSkipped
 {
     /**
-     * The scheduled event being run.
-     *
-     * @var \LaraGram\Console\Scheduling\Event
-     */
-    public $task;
-
-    /**
      * Create a new event instance.
      *
-     * @param  \LaraGram\Console\Scheduling\Event  $task
-     * @return void
+     * @param  \LaraGram\Console\Scheduling\Event  $task  The scheduled event being run.
      */
-    public function __construct(Event $task)
-    {
-        $this->task = $task;
+    public function __construct(
+        public Event $task,
+    ) {
     }
 }

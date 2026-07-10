@@ -15,7 +15,7 @@ use InvalidArgumentException;
  * @method void success(string $string, int $verbosity = \LaraGram\Console\Output\OutputInterface::VERBOSITY_NORMAL)
  * @method void error(string $string, int $verbosity = \LaraGram\Console\Output\OutputInterface::VERBOSITY_NORMAL)
  * @method void line(string $style, string $string, int $verbosity = \LaraGram\Console\Output\OutputInterface::VERBOSITY_NORMAL)
- * @method mixed|void secret(string $question, bool $fallback = true)
+ * @method void secret(string $question, bool $fallback = true)
  * @method void task(string $description, ?callable $task = null, int $verbosity = \LaraGram\Console\Output\OutputInterface::VERBOSITY_NORMAL)
  * @method void twoColumnDetail(string $first, ?string $second = null, int $verbosity = \LaraGram\Console\Output\OutputInterface::VERBOSITY_NORMAL)
  * @method void warn(string $string, int $verbosity = \LaraGram\Console\Output\OutputInterface::VERBOSITY_NORMAL)
@@ -33,7 +33,6 @@ class Factory
      * Creates a new factory instance.
      *
      * @param  \LaraGram\Console\OutputStyle  $output
-     * @return void
      */
     public function __construct($output)
     {
@@ -53,13 +52,10 @@ class Factory
     {
         $component = '\LaraGram\Console\View\Components\\'.ucfirst($method);
 
-        if (!class_exists($component)) {
-            throw new InvalidArgumentException(sprintf(
-                'Commander component [%s] not found.', $method
-            ));
-        }
+        throw_unless(class_exists($component), new InvalidArgumentException(sprintf(
+            'Console component [%s] not found.', $method
+        )));
 
-        $instance = new $component($this->output);
-        return $instance->render(...$parameters);
+        return (new $component($this->output))->render(...$parameters);
     }
 }

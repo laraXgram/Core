@@ -1,5 +1,6 @@
 <?php
 
+use LaraGram\Tempora\TemporaInterval;
 use LaraGram\Contracts\Support\DeferringDisplayableValue;
 use LaraGram\Contracts\Support\Htmlable;
 use LaraGram\Database\Eloquent\Model;
@@ -19,9 +20,8 @@ if (! function_exists('append_config')) {
      * Assign high numeric IDs to a config item to force appending.
      *
      * @param  array  $array
-     * @return array
      */
-    function append_config(array $array)
+    function append_config(array $array): array
     {
         $start = 9999;
 
@@ -46,9 +46,8 @@ if (! function_exists('blank')) {
      * @phpstan-assert-if-true !=numeric|bool $value
      *
      * @param  mixed  $value
-     * @return bool
      */
-    function blank($value)
+    function blank($value): bool
     {
         if (is_null($value)) {
             return true;
@@ -83,9 +82,8 @@ if (! function_exists('class_basename')) {
      * Get the class "basename" of the given object / class.
      *
      * @param  string|object  $class
-     * @return string
      */
-    function class_basename($class)
+    function class_basename($class): string
     {
         $class = is_object($class) ? get_class($class) : $class;
 
@@ -98,9 +96,9 @@ if (! function_exists('class_uses_recursive')) {
      * Returns all traits used by a class, its parent classes and trait of their traits.
      *
      * @param  object|string  $class
-     * @return array
+     * @return array<string, string>
      */
-    function class_uses_recursive($class)
+    function class_uses_recursive($class): array
     {
         if (is_object($class)) {
             $class = get_class($class);
@@ -164,9 +162,8 @@ if (! function_exists('filled')) {
      * @phpstan-assert-if-false !=numeric|bool $value
      *
      * @param  mixed  $value
-     * @return bool
      */
-    function filled($value)
+    function filled($value): bool
     {
         return ! blank($value);
     }
@@ -176,12 +173,11 @@ if (! function_exists('fluent')) {
     /**
      * Create a Fluent object from the given value.
      *
-     * @param  object|array  $value
-     * @return \LaraGram\Support\Fluent
+     * @param  iterable|object|null  $value
      */
-    function fluent($value)
+    function fluent($value = null): Fluent
     {
-        return new Fluent($value);
+        return new Fluent($value ?? []);
     }
 }
 
@@ -189,7 +185,7 @@ if (! function_exists('literal')) {
     /**
      * Return a new literal or anonymous object using named arguments.
      *
-     * @return \stdClass
+     * @return mixed
      */
     function literal(...$arguments)
     {
@@ -273,19 +269,16 @@ if (! function_exists('optional')) {
 
 if (! function_exists('preg_replace_array')) {
     /**
-     * Replace a given pattern with each value in the array in sequentially.
+     * Replace a given pattern with each value in the array sequentially.
      *
      * @param  string  $pattern
      * @param  array  $replacements
      * @param  string  $subject
-     * @return string
      */
-    function preg_replace_array($pattern, array $replacements, $subject)
+    function preg_replace_array($pattern, array $replacements, $subject): string
     {
         return preg_replace_callback($pattern, function () use (&$replacements) {
-            foreach ($replacements as $value) {
-                return array_shift($replacements);
-            }
+            return array_shift($replacements);
         }, $subject);
     }
 }
@@ -298,7 +291,7 @@ if (! function_exists('retry')) {
      *
      * @param  int|array<int, int>  $times
      * @param  callable(int): TValue  $callback
-     * @param  int|\Closure(int, \Throwable): int  $sleepMilliseconds
+     * @param  TemporaInterval|int|\Closure(int, \Throwable): TemporaInterval|int  $sleepMilliseconds
      * @param  (callable(\Throwable): bool)|null  $when
      * @return TValue
      *
@@ -330,7 +323,11 @@ if (! function_exists('retry')) {
             $sleepMilliseconds = $backoff[$attempts - 1] ?? $sleepMilliseconds;
 
             if ($sleepMilliseconds) {
-                Sleep::usleep(value($sleepMilliseconds, $attempts, $e) * 1000);
+                $duration = value($sleepMilliseconds, $attempts, $e);
+
+                $duration instanceof TemporaInterval
+                    ? Sleep::usleep($duration->totalMicroseconds)
+                    : Sleep::usleep($duration * 1000);
             }
 
             goto beginning;
@@ -393,11 +390,13 @@ if (! function_exists('throw_if')) {
      * Throw the given exception if the given condition is true.
      *
      * @template TValue
+     * @template TParams of mixed
      * @template TException of \Throwable
+     * @template TExceptionValue of TException|class-string<TException>|string
      *
      * @param  TValue  $condition
-     * @param  TException|class-string<TException>|string  $exception
-     * @param  mixed  ...$parameters
+     * @param  Closure(TParams): TExceptionValue|TExceptionValue  $exception
+     * @param  TParams  ...$parameters
      * @return ($condition is true ? never : ($condition is non-empty-mixed ? never : TValue))
      *
      * @throws TException
@@ -405,6 +404,10 @@ if (! function_exists('throw_if')) {
     function throw_if($condition, $exception = 'RuntimeException', ...$parameters)
     {
         if ($condition) {
+            if ($exception instanceof Closure) {
+                $exception = $exception(...$parameters);
+            }
+
             if (is_string($exception) && class_exists($exception)) {
                 $exception = new $exception(...$parameters);
             }
@@ -421,11 +424,13 @@ if (! function_exists('throw_unless')) {
      * Throw the given exception unless the given condition is true.
      *
      * @template TValue
+     * @template TParams of mixed
      * @template TException of \Throwable
+     * @template TExceptionValue of TException|class-string<TException>|string
      *
      * @param  TValue  $condition
-     * @param  TException|class-string<TException>|string  $exception
-     * @param  mixed  ...$parameters
+     * @param  Closure(TParams): TExceptionValue|TExceptionValue  $exception
+     * @param  TParams  ...$parameters
      * @return ($condition is false ? never : ($condition is non-empty-mixed ? TValue : never))
      *
      * @throws TException
@@ -443,9 +448,9 @@ if (! function_exists('trait_uses_recursive')) {
      * Returns all traits used by a trait and its traits.
      *
      * @param  object|string  $trait
-     * @return array
+     * @return array<string, string>
      */
-    function trait_uses_recursive($trait)
+    function trait_uses_recursive($trait): array
     {
         $traits = class_uses($trait) ?: [];
 
@@ -487,10 +492,8 @@ if (! function_exists('transform')) {
 if (! function_exists('windows_os')) {
     /**
      * Determine whether the current environment is Windows based.
-     *
-     * @return bool
      */
-    function windows_os()
+    function windows_os(): bool
     {
         return PHP_OS_FAMILY === 'Windows';
     }

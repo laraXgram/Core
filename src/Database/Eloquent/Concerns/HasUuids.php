@@ -2,6 +2,8 @@
 
 namespace LaraGram\Database\Eloquent\Concerns;
 
+use LaraGram\Support\Str;
+
 trait HasUuids
 {
     use HasUniqueStringIds;
@@ -13,20 +15,7 @@ trait HasUuids
      */
     public function newUniqueId()
     {
-        $time = microtime(true);
-        $timeParts = explode('.', $time);
-
-        $randomBytes = bin2hex(random_bytes(6));
-
-        $uuid = strtoupper(sprintf('%08x-%04x-%04x-%04x-%012s',
-            $timeParts[0],           // Time in seconds
-            $timeParts[1],           // Microseconds
-            mt_rand(0, 65535),       // Random part
-            mt_rand(0, 65535),       // Random part
-            $randomBytes
-        ));
-
-        return $uuid;
+        return (string) Str::uuid7();
     }
 
     /**
@@ -37,6 +26,6 @@ trait HasUuids
      */
     protected function isValidUniqueId($value): bool
     {
-        return preg_match('/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/', $value) === 1;
+        return Str::isUuid($value);
     }
 }

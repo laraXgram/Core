@@ -1,6 +1,8 @@
 /vendor
+/node_modules
 composer.phar
 composer.lock
+package-lock.json
 .DS_Store
 Thumbs.db
 /.idea

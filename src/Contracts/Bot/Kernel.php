@@ -29,7 +29,7 @@ interface Kernel
     public function terminate($request, $response);
 
     /**
-     * Get the Laravel application instance.
+     * Get the LaraGram application instance.
      *
      * @return \LaraGram\Contracts\Foundation\Application
      */

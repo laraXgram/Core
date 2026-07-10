@@ -2,6 +2,7 @@
 
 namespace LaraGram\Console;
 
+use LaraGram\Contracts\Container\ContainerInterface;
 use LaraGram\Console\Command\Command;
 use LaraGram\Console\CommandLoader\CommandLoaderInterface;
 use LaraGram\Console\Exception\CommandNotFoundException;
@@ -10,24 +11,25 @@ class ContainerCommandLoader implements CommandLoaderInterface
 {
     /**
      * The container instance.
+     *
+     * @var \LaraGram\Contracts\Container\ContainerInterface
      */
     protected $container;
 
     /**
      * A map of command names to classes.
      *
-     * @var array
+     * @var array<string, \LaraGram\Console\Command|string>
      */
     protected $commandMap;
 
     /**
      * Create a new command loader instance.
      *
-     * @param         $container
-     * @param  array  $commandMap
-     * @return void
+     * @param  \LaraGram\Contracts\Container\ContainerInterface  $container
+     * @param  array<string, \LaraGram\Console\Command|string>  $commandMap
      */
-    public function __construct($container, array $commandMap)
+    public function __construct(ContainerInterface $container, array $commandMap)
     {
         $this->container = $container;
         $this->commandMap = $commandMap;

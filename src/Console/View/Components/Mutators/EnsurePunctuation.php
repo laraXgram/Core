@@ -2,6 +2,8 @@
 
 namespace LaraGram\Console\View\Components\Mutators;
 
+use LaraGram\Support\Stringable;
+
 class EnsurePunctuation
 {
     /**
@@ -12,10 +14,9 @@ class EnsurePunctuation
      */
     public function __invoke($string)
     {
-        if (!in_array(substr($string, -1), ['.', '?', '!', ':'])) {
+        if (! (new Stringable($string))->endsWith(['.', '?', '!', ':'])) {
             return "$string.";
         }
-
 
         return $string;
     }

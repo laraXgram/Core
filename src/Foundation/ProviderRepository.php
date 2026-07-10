@@ -35,7 +35,6 @@ class ProviderRepository
      * @param  \LaraGram\Contracts\Foundation\Application  $app
      * @param  \LaraGram\Filesystem\Filesystem  $files
      * @param  string  $manifestPath
-     * @return void
      */
     public function __construct(ApplicationContract $app, Filesystem $files, $manifestPath)
     {

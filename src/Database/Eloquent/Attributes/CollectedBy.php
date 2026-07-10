@@ -10,8 +10,7 @@ class CollectedBy
     /**
      * Create a new attribute instance.
      *
-     * @param  class-string<\LaraGram\Database\Eloquent\Collection< $collectionClass *, *>>  $collectionClass
-     * @return void
+     * @param  class-string<\LaraGram\Database\Eloquent\Collection<*, *>>  $collectionClass
      */
     public function __construct(public string $collectionClass)
     {

@@ -2,6 +2,7 @@
 
 namespace LaraGram\Concurrency;
 
+use LaraGram\Tempora\TemporaInterval;
 use Closure;
 use LaraGram\Contracts\Concurrency\Driver;
 use LaraGram\Support\Collection;
@@ -14,7 +15,7 @@ class SyncDriver implements Driver
     /**
      * Run the given tasks concurrently and return an array containing the results.
      */
-    public function run(Closure|array $tasks): array
+    public function run(Closure|array $tasks, TemporaInterval|int|null $timeout = null): array
     {
         return Collection::wrap($tasks)->map(
             fn ($task) => $task()

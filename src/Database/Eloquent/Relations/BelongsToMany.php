@@ -13,15 +13,21 @@ use LaraGram\Database\Eloquent\Relations\Concerns\InteractsWithDictionary;
 use LaraGram\Database\Eloquent\Relations\Concerns\InteractsWithPivotTable;
 use LaraGram\Database\Query\Grammars\MySqlGrammar;
 use LaraGram\Database\UniqueConstraintViolationException;
+use LaraGram\Support\Arr;
 use LaraGram\Support\Collection as BaseCollection;
 use LaraGram\Support\Str;
 use InvalidArgumentException;
+use LaraGram\Support\SortDirection;
 
 /**
  * @template TRelatedModel of \LaraGram\Database\Eloquent\Model
  * @template TDeclaringModel of \LaraGram\Database\Eloquent\Model
+ * @template TPivotModel of \LaraGram\Database\Eloquent\Relations\Pivot = \LaraGram\Database\Eloquent\Relations\Pivot
+ * @template TAccessor of string = 'pivot'
  *
- * @extends \LaraGram\Database\Eloquent\Relations\Relation<TRelatedModel, TDeclaringModel, \LaraGram\Database\Eloquent\Collection<int, TRelatedModel>>
+ * @extends \LaraGram\Database\Eloquent\Relations\Relation<TRelatedModel, TDeclaringModel, \LaraGram\Database\Eloquent\Collection<int, TRelatedModel&object{pivot: TPivotModel}>>
+ *
+ * @todo use TAccessor when PHPStan bug is fixed: https://github.com/phpstan/phpstan/issues/12756
  */
 class BelongsToMany extends Relation
 {
@@ -128,14 +134,14 @@ class BelongsToMany extends Relation
     /**
      * The class name of the custom pivot model to use for the relationship.
      *
-     * @var string
+     * @var class-string<TPivotModel>
      */
     protected $using;
 
     /**
      * The name of the accessor to use for the "pivot" relationship.
      *
-     * @var string
+     * @var TAccessor
      */
     protected $accessor = 'pivot';
 
@@ -150,7 +156,6 @@ class BelongsToMany extends Relation
      * @param  string  $parentKey
      * @param  string  $relatedKey
      * @param  string|null  $relationName
-     * @return void
      */
     public function __construct(
         Builder $query,
@@ -190,7 +195,7 @@ class BelongsToMany extends Relation
             return $table;
         }
 
-        if (in_array(AsPivot::class, class_uses_recursive($model))) {
+        if (isset(class_uses_recursive($model)[AsPivot::class])) {
             $this->using($table);
         }
 
@@ -281,7 +286,7 @@ class BelongsToMany extends Relation
         foreach ($models as $model) {
             $key = $this->getDictionaryKey($model->{$this->parentKey});
 
-            if (isset($dictionary[$key])) {
+            if ($key !== null && isset($dictionary[$key])) {
                 $model->setRelation(
                     $relation, $this->related->newCollection($dictionary[$key])
                 );
@@ -295,7 +300,7 @@ class BelongsToMany extends Relation
      * Build model dictionary keyed by the relation's foreign key.
      *
      * @param  \LaraGram\Database\Eloquent\Collection<int, TRelatedModel>  $results
-     * @return array<array<string, TRelatedModel>>
+     * @return array<array<array-key, TRelatedModel>>
      */
     protected function buildDictionary(EloquentCollection $results)
     {
@@ -304,10 +309,20 @@ class BelongsToMany extends Relation
         // parents without having a possibly slow inner loop for every model.
         $dictionary = [];
 
-        foreach ($results as $result) {
+        $isAssociative = Arr::isAssoc($results->all());
+
+        foreach ($results as $key => $result) {
             $value = $this->getDictionaryKey($result->{$this->accessor}->{$this->foreignPivotKey});
 
-            $dictionary[$value][] = $result;
+            if ($value === null) {
+                continue;
+            }
+
+            if ($isAssociative) {
+                $dictionary[$value][$key] = $result;
+            } else {
+                $dictionary[$value][] = $result;
+            }
         }
 
         return $dictionary;
@@ -316,7 +331,7 @@ class BelongsToMany extends Relation
     /**
      * Get the class being used for pivot models.
      *
-     * @return string
+     * @return class-string<TPivotModel>
      */
     public function getPivotClass()
     {
@@ -326,8 +341,12 @@ class BelongsToMany extends Relation
     /**
      * Specify the custom pivot model to use for the relationship.
      *
-     * @param  string  $class
+     * @template TNewPivotModel of \LaraGram\Database\Eloquent\Relations\Pivot
+     *
+     * @param  class-string<TNewPivotModel>  $class
      * @return $this
+     *
+     * @phpstan-this-out static<TRelatedModel, TDeclaringModel, TNewPivotModel, TAccessor>
      */
     public function using($class)
     {
@@ -339,8 +358,12 @@ class BelongsToMany extends Relation
     /**
      * Specify the custom pivot accessor to use for the relationship.
      *
-     * @param  string  $accessor
+     * @template TNewAccessor of string
+     *
+     * @param  TNewAccessor  $accessor
      * @return $this
+     *
+     * @phpstan-this-out static<TRelatedModel, TDeclaringModel, TPivotModel, TNewAccessor>
      */
     public function as($accessor)
     {
@@ -470,7 +493,7 @@ class BelongsToMany extends Relation
             throw new InvalidArgumentException('The provided value may not be null.');
         }
 
-        $this->pivotValues[] = compact('column', 'value');
+        $this->pivotValues[] = ['column' => $column, 'value' => $value];
 
         return $this->wherePivot($column, '=', $value);
     }
@@ -566,12 +589,23 @@ class BelongsToMany extends Relation
      * Add an "order by" clause for a pivot table column.
      *
      * @param  string|\LaraGram\Contracts\Database\Query\Expression  $column
-     * @param  string  $direction
+     * @param  SortDirection|'asc'|'desc'  $direction
      * @return $this
      */
-    public function orderByPivot($column, $direction = 'asc')
+    public function orderByPivot($column, $direction = SortDirection::Ascending)
     {
         return $this->orderBy($this->qualifyPivotColumn($column), $direction);
+    }
+
+    /**
+     * Add an "order by desc" clause for a pivot table column.
+     *
+     * @param  string|\LaraGram\Contracts\Database\Query\Expression  $column
+     * @return $this
+     */
+    public function orderByPivotDesc($column)
+    {
+        return $this->orderBy($this->qualifyPivotColumn($column), SortDirection::Descending);
     }
 
     /**
@@ -579,7 +613,11 @@ class BelongsToMany extends Relation
      *
      * @param  mixed  $id
      * @param  array  $columns
-     * @return ($id is (\LaraGram\Contracts\Support\Arrayable<array-key, mixed>|array<mixed>) ? \LaraGram\Database\Eloquent\Collection<int, TRelatedModel> : TRelatedModel)
+     * @return (
+     *     $id is (\LaraGram\Contracts\Support\Arrayable<array-key, mixed>|array<mixed>)
+     *     ? \LaraGram\Database\Eloquent\Collection<int, TRelatedModel&object{pivot: TPivotModel}>
+     *     : TRelatedModel&object{pivot: TPivotModel}
+     * )
      */
     public function findOrNew($id, $columns = ['*'])
     {
@@ -594,13 +632,13 @@ class BelongsToMany extends Relation
      * Get the first related model record matching the attributes or instantiate it.
      *
      * @param  array  $attributes
-     * @param  array  $values
-     * @return TRelatedModel
+     * @param  (\Closure(): array)|array  $values
+     * @return TRelatedModel&object{pivot: TPivotModel}
      */
-    public function firstOrNew(array $attributes = [], array $values = [])
+    public function firstOrNew(array $attributes = [], Closure|array $values = [])
     {
         if (is_null($instance = $this->related->where($attributes)->first())) {
-            $instance = $this->related->newInstance(array_merge($attributes, $values));
+            $instance = $this->related->newInstance(array_merge($attributes, value($values)));
         }
 
         return $instance;
@@ -610,12 +648,12 @@ class BelongsToMany extends Relation
      * Get the first record matching the attributes. If the record is not found, create it.
      *
      * @param  array  $attributes
-     * @param  array  $values
+     * @param  (\Closure(): array)|array  $values
      * @param  array  $joining
      * @param  bool  $touch
-     * @return TRelatedModel
+     * @return TRelatedModel&object{pivot: TPivotModel}
      */
-    public function firstOrCreate(array $attributes = [], array $values = [], array $joining = [], $touch = true)
+    public function firstOrCreate(array $attributes = [], Closure|array $values = [], array $joining = [], $touch = true)
     {
         if (is_null($instance = (clone $this)->where($attributes)->first())) {
             if (is_null($instance = $this->related->where($attributes)->first())) {
@@ -636,15 +674,17 @@ class BelongsToMany extends Relation
      * Attempt to create the record. If a unique constraint violation occurs, attempt to find the matching record.
      *
      * @param  array  $attributes
-     * @param  array  $values
+     * @param  (\Closure(): array)|array  $values
      * @param  array  $joining
      * @param  bool  $touch
-     * @return TRelatedModel
+     * @return TRelatedModel&object{pivot: TPivotModel}
+     *
+     * @throws \LaraGram\Database\UniqueConstraintViolationException
      */
-    public function createOrFirst(array $attributes = [], array $values = [], array $joining = [], $touch = true)
+    public function createOrFirst(array $attributes = [], Closure|array $values = [], array $joining = [], $touch = true)
     {
         try {
-            return $this->getQuery()->withSavePointIfNeeded(fn () => $this->create(array_merge($attributes, $values), $joining, $touch));
+            return $this->getQuery()->withSavepointIfNeeded(fn () => $this->create(array_merge($attributes, value($values)), $joining, $touch));
         } catch (UniqueConstraintViolationException $e) {
             // ...
         }
@@ -662,16 +702,16 @@ class BelongsToMany extends Relation
      * Create or update a related record matching the attributes, and fill it with values.
      *
      * @param  array  $attributes
-     * @param  array  $values
+     * @param  (\Closure(): array)|array  $values
      * @param  array  $joining
      * @param  bool  $touch
-     * @return TRelatedModel
+     * @return TRelatedModel&object{pivot: TPivotModel}
      */
-    public function updateOrCreate(array $attributes, array $values = [], array $joining = [], $touch = true)
+    public function updateOrCreate(array $attributes, Closure|array $values = [], array $joining = [], $touch = true)
     {
         return tap($this->firstOrCreate($attributes, $values, $joining, $touch), function ($instance) use ($values) {
             if (! $instance->wasRecentlyCreated) {
-                $instance->fill($values);
+                $instance->fill(value($values));
 
                 $instance->save(['touch' => false]);
             }
@@ -683,7 +723,11 @@ class BelongsToMany extends Relation
      *
      * @param  mixed  $id
      * @param  array  $columns
-     * @return ($id is (\LaraGram\Contracts\Support\Arrayable<array-key, mixed>|array<mixed>) ? \LaraGram\Database\Eloquent\Collection<int, TRelatedModel> : TRelatedModel|null)
+     * @return (
+     *     $id is (\LaraGram\Contracts\Support\Arrayable<array-key, mixed>|array<mixed>)
+     *     ? \LaraGram\Database\Eloquent\Collection<int, TRelatedModel&object{pivot: TPivotModel}>
+     *     : (TRelatedModel&object{pivot: TPivotModel})|null
+     * )
      */
     public function find($id, $columns = ['*'])
     {
@@ -697,11 +741,28 @@ class BelongsToMany extends Relation
     }
 
     /**
+     * Find a sole related model by its primary key.
+     *
+     * @param  mixed  $id
+     * @param  array  $columns
+     * @return TRelatedModel&object{pivot: TPivotModel}
+     *
+     * @throws \LaraGram\Database\Eloquent\ModelNotFoundException<TRelatedModel>
+     * @throws \LaraGram\Database\MultipleRecordsFoundException
+     */
+    public function findSole($id, $columns = ['*'])
+    {
+        return $this->where(
+            $this->getRelated()->getQualifiedKeyName(), '=', $this->parseId($id)
+        )->sole($columns);
+    }
+
+    /**
      * Find multiple related models by their primary keys.
      *
      * @param  \LaraGram\Contracts\Support\Arrayable|array  $ids
      * @param  array  $columns
-     * @return \LaraGram\Database\Eloquent\Collection<int, TRelatedModel>
+     * @return \LaraGram\Database\Eloquent\Collection<int, TRelatedModel&object{pivot: TPivotModel}>
      */
     public function findMany($ids, $columns = ['*'])
     {
@@ -721,7 +782,11 @@ class BelongsToMany extends Relation
      *
      * @param  mixed  $id
      * @param  array  $columns
-     * @return ($id is (\LaraGram\Contracts\Support\Arrayable<array-key, mixed>|array<mixed>) ? \LaraGram\Database\Eloquent\Collection<int, TRelatedModel> : TRelatedModel)
+     * @return (
+     *     $id is (\LaraGram\Contracts\Support\Arrayable<array-key, mixed>|array<mixed>)
+     *     ? \LaraGram\Database\Eloquent\Collection<int, TRelatedModel&object{pivot: TPivotModel}>
+     *     : TRelatedModel&object{pivot: TPivotModel}
+     * )
      *
      * @throws \LaraGram\Database\Eloquent\ModelNotFoundException<TRelatedModel>
      */
@@ -752,8 +817,8 @@ class BelongsToMany extends Relation
      * @param  (\Closure(): TValue)|null  $callback
      * @return (
      *     $id is (\LaraGram\Contracts\Support\Arrayable<array-key, mixed>|array<mixed>)
-     *     ? \LaraGram\Database\Eloquent\Collection<int, TRelatedModel>|TValue
-     *     : TRelatedModel|TValue
+     *     ? \LaraGram\Database\Eloquent\Collection<int, TRelatedModel&object{pivot: TPivotModel}>|TValue
+     *     : (TRelatedModel&object{pivot: TPivotModel})|TValue
      * )
      */
     public function findOr($id, $columns = ['*'], ?Closure $callback = null)
@@ -786,7 +851,7 @@ class BelongsToMany extends Relation
      * @param  mixed  $operator
      * @param  mixed  $value
      * @param  string  $boolean
-     * @return TRelatedModel|null
+     * @return (TRelatedModel&object{pivot: TPivotModel})|null
      */
     public function firstWhere($column, $operator = null, $value = null, $boolean = 'and')
     {
@@ -797,11 +862,11 @@ class BelongsToMany extends Relation
      * Execute the query and get the first result.
      *
      * @param  array  $columns
-     * @return TRelatedModel|null
+     * @return (TRelatedModel&object{pivot: TPivotModel})|null
      */
     public function first($columns = ['*'])
     {
-        $results = $this->take(1)->get($columns);
+        $results = $this->limit(1)->get($columns);
 
         return count($results) > 0 ? $results->first() : null;
     }
@@ -810,7 +875,7 @@ class BelongsToMany extends Relation
      * Execute the query and get the first result or throw an exception.
      *
      * @param  array  $columns
-     * @return TRelatedModel
+     * @return TRelatedModel&object{pivot: TPivotModel}
      *
      * @throws \LaraGram\Database\Eloquent\ModelNotFoundException<TRelatedModel>
      */
@@ -830,7 +895,7 @@ class BelongsToMany extends Relation
      *
      * @param  (\Closure(): TValue)|list<string>  $columns
      * @param  (\Closure(): TValue)|null  $callback
-     * @return TRelatedModel|TValue
+     * @return (TRelatedModel&object{pivot: TPivotModel})|TValue
      */
     public function firstOr($columns = ['*'], ?Closure $callback = null)
     {
@@ -851,8 +916,8 @@ class BelongsToMany extends Relation
     public function getResults()
     {
         return ! is_null($this->parent->{$this->parentKey})
-                ? $this->get()
-                : $this->related->newCollection();
+            ? $this->get()
+            : $this->related->newCollection();
     }
 
     /** @inheritDoc */
@@ -907,11 +972,14 @@ class BelongsToMany extends Relation
      */
     protected function aliasedPivotColumns()
     {
-        $defaults = [$this->foreignPivotKey, $this->relatedPivotKey];
-
-        return (new BaseCollection(array_merge($defaults, $this->pivotColumns)))->map(function ($column) {
-            return $this->qualifyPivotColumn($column).' as pivot_'.$column;
-        })->unique()->all();
+        return (new BaseCollection([
+            $this->foreignPivotKey,
+            $this->relatedPivotKey,
+            ...$this->pivotColumns,
+        ]))
+            ->map(fn ($column) => $this->qualifyPivotColumn($column).' as pivot_'.$column)
+            ->unique()
+            ->all();
     }
 
     /**
@@ -921,7 +989,7 @@ class BelongsToMany extends Relation
      * @param  array  $columns
      * @param  string  $pageName
      * @param  int|null  $page
-     * @return \LaraGram\Contracts\Pagination\LengthAwarePaginator
+     * @return \LaraGram\Pagination\LengthAwarePaginator<int, TRelatedModel&object{pivot: TPivotModel}>
      */
     public function paginate($perPage = null, $columns = ['*'], $pageName = 'page', $page = null)
     {
@@ -939,7 +1007,7 @@ class BelongsToMany extends Relation
      * @param  array  $columns
      * @param  string  $pageName
      * @param  int|null  $page
-     * @return \LaraGram\Contracts\Pagination\Paginator
+     * @return \LaraGram\Contracts\Pagination\Paginator<int, TRelatedModel&object{pivot: TPivotModel}>
      */
     public function simplePaginate($perPage = null, $columns = ['*'], $pageName = 'page', $page = null)
     {
@@ -957,7 +1025,7 @@ class BelongsToMany extends Relation
      * @param  array  $columns
      * @param  string  $cursorName
      * @param  string|null  $cursor
-     * @return \LaraGram\Contracts\Pagination\CursorPaginator
+     * @return \LaraGram\Contracts\Pagination\CursorPaginator<int, TRelatedModel&object{pivot: TPivotModel}>
      */
     public function cursorPaginate($perPage = null, $columns = ['*'], $cursorName = 'cursor', $cursor = null)
     {
@@ -1009,7 +1077,7 @@ class BelongsToMany extends Relation
      */
     public function chunkByIdDesc($count, callable $callback, $column = null, $alias = null)
     {
-        return $this->orderedChunkById($count, $callback, $column, $alias, descending: true);
+        return $this->orderedChunkById($count, $callback, $column, $alias, descending: SortDirection::Descending);
     }
 
     /**
@@ -1039,7 +1107,7 @@ class BelongsToMany extends Relation
      * @param  callable  $callback
      * @param  string|null  $column
      * @param  string|null  $alias
-     * @param  bool  $descending
+     * @param  SortDirection|bool  $descending
      * @return bool
      */
     public function orderedChunkById($count, callable $callback, $column = null, $alias = null, $descending = false)
@@ -1079,7 +1147,7 @@ class BelongsToMany extends Relation
      * Query lazily, by chunks of the given size.
      *
      * @param  int  $chunkSize
-     * @return \LaraGram\Support\LazyCollection<int, TRelatedModel>
+     * @return \LaraGram\Support\LazyCollection<int, TRelatedModel&object{pivot: TPivotModel}>
      */
     public function lazy($chunkSize = 1000)
     {
@@ -1096,7 +1164,7 @@ class BelongsToMany extends Relation
      * @param  int  $chunkSize
      * @param  string|null  $column
      * @param  string|null  $alias
-     * @return \LaraGram\Support\LazyCollection<int, TRelatedModel>
+     * @return \LaraGram\Support\LazyCollection<int, TRelatedModel&object{pivot: TPivotModel}>
      */
     public function lazyById($chunkSize = 1000, $column = null, $alias = null)
     {
@@ -1119,7 +1187,7 @@ class BelongsToMany extends Relation
      * @param  int  $chunkSize
      * @param  string|null  $column
      * @param  string|null  $alias
-     * @return \LaraGram\Support\LazyCollection<int, TRelatedModel>
+     * @return \LaraGram\Support\LazyCollection<int, TRelatedModel&object{pivot: TPivotModel}>
      */
     public function lazyByIdDesc($chunkSize = 1000, $column = null, $alias = null)
     {
@@ -1139,7 +1207,7 @@ class BelongsToMany extends Relation
     /**
      * Get a lazy collection for the given query.
      *
-     * @return \LaraGram\Support\LazyCollection<int, TRelatedModel>
+     * @return \LaraGram\Support\LazyCollection<int, TRelatedModel&object{pivot: TPivotModel}>
      */
     public function cursor()
     {
@@ -1279,7 +1347,7 @@ class BelongsToMany extends Relation
      * @param  TRelatedModel  $model
      * @param  array  $pivotAttributes
      * @param  bool  $touch
-     * @return TRelatedModel
+     * @return TRelatedModel&object{pivot: TPivotModel}
      */
     public function save(Model $model, array $pivotAttributes = [], $touch = true)
     {
@@ -1296,7 +1364,7 @@ class BelongsToMany extends Relation
      * @param  TRelatedModel  $model
      * @param  array  $pivotAttributes
      * @param  bool  $touch
-     * @return TRelatedModel
+     * @return TRelatedModel&object{pivot: TPivotModel}
      */
     public function saveQuietly(Model $model, array $pivotAttributes = [], $touch = true)
     {
@@ -1347,10 +1415,12 @@ class BelongsToMany extends Relation
      * @param  array  $attributes
      * @param  array  $joining
      * @param  bool  $touch
-     * @return TRelatedModel
+     * @return TRelatedModel&object{pivot: TPivotModel}
      */
     public function create(array $attributes = [], array $joining = [], $touch = true)
     {
+        $attributes = array_merge($this->getQuery()->pendingAttributes, $attributes);
+
         $instance = $this->related->newInstance($attributes);
 
         // Once we save the related model, we need to attach it to the base model via
@@ -1368,7 +1438,7 @@ class BelongsToMany extends Relation
      *
      * @param  iterable  $records
      * @param  array  $joinings
-     * @return array<int, TRelatedModel>
+     * @return array<int, TRelatedModel&object{pivot: TPivotModel}>
      */
     public function createMany(iterable $records, array $joinings = [])
     {
@@ -1400,7 +1470,7 @@ class BelongsToMany extends Relation
      *
      * @param  \LaraGram\Database\Eloquent\Builder<TRelatedModel>  $query
      * @param  \LaraGram\Database\Eloquent\Builder<TDeclaringModel>  $parentQuery
-     * @param  array|mixed  $columns
+     * @param  mixed  $columns
      * @return \LaraGram\Database\Eloquent\Builder<TRelatedModel>
      */
     public function getRelationExistenceQueryForSelfJoin(Builder $query, Builder $parentQuery, $columns = ['*'])
@@ -1465,18 +1535,23 @@ class BelongsToMany extends Relation
     /**
      * Specify that the pivot table has creation and update timestamps.
      *
-     * @param  mixed  $createdAt
-     * @param  mixed  $updatedAt
+     * @param  string|null|false  $createdAt
+     * @param  string|null|false  $updatedAt
      * @return $this
      */
     public function withTimestamps($createdAt = null, $updatedAt = null)
     {
-        $this->withTimestamps = true;
+        $this->pivotCreatedAt = $createdAt !== false ? $createdAt : null;
+        $this->pivotUpdatedAt = $updatedAt !== false ? $updatedAt : null;
 
-        $this->pivotCreatedAt = $createdAt;
-        $this->pivotUpdatedAt = $updatedAt;
+        $pivots = array_filter([
+            $createdAt !== false ? $this->createdAt() : null,
+            $updatedAt !== false ? $this->updatedAt() : null,
+        ]);
 
-        return $this->withPivot($this->createdAt(), $this->updatedAt());
+        $this->withTimestamps = ! empty($pivots);
+
+        return $this->withTimestamps ? $this->withPivot($pivots) : $this;
     }
 
     /**
@@ -1510,7 +1585,7 @@ class BelongsToMany extends Relation
     }
 
     /**
-     * Get the fully qualified foreign key for the relation.
+     * Get the fully-qualified foreign key for the relation.
      *
      * @return string
      */
@@ -1530,7 +1605,7 @@ class BelongsToMany extends Relation
     }
 
     /**
-     * Get the fully qualified "related key" for the relation.
+     * Get the fully-qualified "related key" for the relation.
      *
      * @return string
      */
@@ -1550,7 +1625,7 @@ class BelongsToMany extends Relation
     }
 
     /**
-     * Get the fully qualified parent key name for the relation.
+     * Get the fully-qualified parent key name for the relation.
      *
      * @return string
      */
@@ -1570,7 +1645,7 @@ class BelongsToMany extends Relation
     }
 
     /**
-     * Get the fully qualified related key name for the relation.
+     * Get the fully-qualified related key name for the relation.
      *
      * @return string
      */
@@ -1602,7 +1677,7 @@ class BelongsToMany extends Relation
     /**
      * Get the name of the pivot accessor for this relationship.
      *
-     * @return string
+     * @return TAccessor
      */
     public function getPivotAccessor()
     {
@@ -1612,7 +1687,7 @@ class BelongsToMany extends Relation
     /**
      * Get the pivot columns for this relationship.
      *
-     * @return array
+     * @return array<string|\LaraGram\Contracts\Database\Query\Expression>
      */
     public function getPivotColumns()
     {
@@ -1632,7 +1707,7 @@ class BelongsToMany extends Relation
         }
 
         return str_contains($column, '.')
-                    ? $column
-                    : $this->table.'.'.$column;
+            ? $column
+            : $this->table.'.'.$column;
     }
 }

@@ -20,8 +20,8 @@ class BaseCommand extends Command
         if ($this->input->hasOption('path') && $this->option('path')) {
             return (new Collection($this->option('path')))->map(function ($path) {
                 return ! $this->usingRealPath()
-                                ? $this->laragram->basePath().'/'.$path
-                                : $path;
+                    ? $this->laragram->basePath().'/'.$path
+                    : $path;
             })->all();
         }
 

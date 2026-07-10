@@ -25,7 +25,6 @@ class CacheEventMutex implements EventMutex, CacheAware
      * Create a new overlapping strategy.
      *
      * @param  \LaraGram\Contracts\Cache\Factory  $cache
-     * @return void
      */
     public function __construct(Cache $cache)
     {

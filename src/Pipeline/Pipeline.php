@@ -6,12 +6,14 @@ use Closure;
 use LaraGram\Contracts\Container\Container;
 use LaraGram\Contracts\Pipeline\Pipeline as PipelineContract;
 use LaraGram\Support\Traits\Conditionable;
+use LaraGram\Support\Traits\Macroable;
 use RuntimeException;
 use Throwable;
 
 class Pipeline implements PipelineContract
 {
     use Conditionable;
+    use Macroable;
 
     /**
      * The container implementation.
@@ -49,10 +51,16 @@ class Pipeline implements PipelineContract
     protected $finally;
 
     /**
+     * Indicates whether to wrap the pipeline in a database transaction.
+     *
+     * @var string|null|\UnitEnum|false
+     */
+    protected $withinTransaction = false;
+
+    /**
      * Create a new class instance.
      *
      * @param  \LaraGram\Contracts\Container\Container|null  $container
-     * @return void
      */
     public function __construct(?Container $container = null)
     {
@@ -75,7 +83,7 @@ class Pipeline implements PipelineContract
     /**
      * Set the array of pipes.
      *
-     * @param  array|mixed  $pipes
+     * @param  mixed  $pipes
      * @return $this
      */
     public function through($pipes)
@@ -88,7 +96,7 @@ class Pipeline implements PipelineContract
     /**
      * Push additional pipes onto the pipeline.
      *
-     * @param  array|mixed  $pipes
+     * @param  mixed  $pipes
      * @return $this
      */
     public function pipe($pipes)
@@ -124,7 +132,9 @@ class Pipeline implements PipelineContract
         );
 
         try {
-            return $pipeline($this->passable);
+            return $this->withinTransaction !== false
+                ? $this->getContainer()->make('db')->connection($this->withinTransaction)->transaction(fn () => $pipeline($this->passable))
+                : $pipeline($this->passable);
         } finally {
             if ($this->finally) {
                 ($this->finally)($this->passable);
@@ -206,8 +216,8 @@ class Pipeline implements PipelineContract
                     }
 
                     $carry = method_exists($pipe, $this->method)
-                                    ? $pipe->{$this->method}(...$parameters)
-                                    : $pipe(...$parameters);
+                        ? $pipe->{$this->method}(...$parameters)
+                        : $pipe(...$parameters);
 
                     return $this->handleCarry($carry);
                 } catch (Throwable $e) {
@@ -225,10 +235,12 @@ class Pipeline implements PipelineContract
      */
     protected function parsePipeString($pipe)
     {
-        [$name, $parameters] = array_pad(explode(':', $pipe, 2), 2, []);
+        [$name, $parameters] = array_pad(explode(':', $pipe, 2), 2, null);
 
-        if (is_string($parameters)) {
+        if (! is_null($parameters)) {
             $parameters = explode(',', $parameters);
+        } else {
+            $parameters = [];
         }
 
         return [$name, $parameters];
@@ -242,6 +254,19 @@ class Pipeline implements PipelineContract
     protected function pipes()
     {
         return $this->pipes;
+    }
+
+    /**
+     * Execute each pipeline step within a database transaction.
+     *
+     * @param  string|null|\UnitEnum|false  $withinTransaction
+     * @return $this
+     */
+    public function withinTransaction($withinTransaction = null)
+    {
+        $this->withinTransaction = $withinTransaction;
+
+        return $this;
     }
 
     /**

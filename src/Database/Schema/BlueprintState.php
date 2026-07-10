@@ -4,7 +4,6 @@ namespace LaraGram\Database\Schema;
 
 use LaraGram\Database\Connection;
 use LaraGram\Database\Query\Expression;
-use LaraGram\Database\Schema\Grammars\Grammar;
 use LaraGram\Support\Collection;
 use LaraGram\Support\Fluent;
 use LaraGram\Support\Str;
@@ -24,13 +23,6 @@ class BlueprintState
      * @var \LaraGram\Database\Connection
      */
     protected $connection;
-
-    /**
-     * The grammar instance.
-     *
-     * @var \LaraGram\Database\Schema\Grammars\Grammar
-     */
-    protected $grammar;
 
     /**
      * The columns.
@@ -65,14 +57,11 @@ class BlueprintState
      *
      * @param  \LaraGram\Database\Schema\Blueprint  $blueprint
      * @param  \LaraGram\Database\Connection  $connection
-     * @param  \LaraGram\Database\Schema\Grammars\Grammar  $grammar
-     * @return void
      */
-    public function __construct(Blueprint $blueprint, Connection $connection, Grammar $grammar)
+    public function __construct(Blueprint $blueprint, Connection $connection)
     {
         $this->blueprint = $blueprint;
         $this->connection = $connection;
-        $this->grammar = $grammar;
 
         $schema = $connection->getSchemaBuilder();
         $table = $blueprint->getTable();
@@ -87,9 +76,11 @@ class BlueprintState
             'collation' => $column['collation'],
             'comment' => $column['comment'],
             'virtualAs' => ! is_null($column['generation']) && $column['generation']['type'] === 'virtual'
-                ? $column['generation']['expression'] : null,
+                ? $column['generation']['expression']
+                : null,
             'storedAs' => ! is_null($column['generation']) && $column['generation']['type'] === 'stored'
-                ? $column['generation']['expression'] : null,
+                ? $column['generation']['expression']
+                : null,
         ]))->all();
 
         [$primary, $indexes] = (new Collection($schema->getIndexes($table)))->map(fn ($index) => new IndexDefinition([
@@ -154,7 +145,7 @@ class BlueprintState
         return $this->foreignKeys;
     }
 
-    /*
+    /**
      * Update the blueprint's state.
      *
      * @param  \LaraGram\Support\Fluent  $command

@@ -54,7 +54,7 @@ interface Filesystem
      * Write the contents of a file.
      *
      * @param  string  $path
-     * @param  string|resource  $contents
+     * @param  \LaraGram\Http\Factory\StreamInterface|\LaraGram\Http\File|\LaraGram\Http\UploadedFile|string|resource  $contents
      * @param  mixed  $options
      * @return bool
      */
@@ -63,8 +63,8 @@ interface Filesystem
     /**
      * Store the uploaded file on the disk.
      *
-     * @param  string  $path
-     * @param  string|array|null  $file
+     * @param  \LaraGram\Http\File|\LaraGram\Http\UploadedFile|string  $path
+     * @param  \LaraGram\Http\File|\LaraGram\Http\UploadedFile|string|array|null  $file
      * @param  mixed  $options
      * @return string|false
      */
@@ -73,8 +73,8 @@ interface Filesystem
     /**
      * Store the uploaded file on the disk with a given name.
      *
-     * @param  string  $path
-     * @param  string|array|null  $file
+     * @param  \LaraGram\Http\File|\LaraGram\Http\UploadedFile|string  $path
+     * @param  \LaraGram\Http\File|\LaraGram\Http\UploadedFile|string|array|null  $file
      * @param  string|array|null  $name
      * @param  mixed  $options
      * @return string|false
@@ -173,7 +173,7 @@ interface Filesystem
      *
      * @param  string|null  $directory
      * @param  bool  $recursive
-     * @return array
+     * @return array<string>
      */
     public function files($directory = null, $recursive = false);
 
@@ -181,7 +181,7 @@ interface Filesystem
      * Get all of the files from the given directory (recursive).
      *
      * @param  string|null  $directory
-     * @return array
+     * @return array<string>
      */
     public function allFiles($directory = null);
 
@@ -190,7 +190,7 @@ interface Filesystem
      *
      * @param  string|null  $directory
      * @param  bool  $recursive
-     * @return array
+     * @return array<string>
      */
     public function directories($directory = null, $recursive = false);
 
@@ -198,7 +198,7 @@ interface Filesystem
      * Get all (recursive) of the directories within a given directory.
      *
      * @param  string|null  $directory
-     * @return array
+     * @return array<string>
      */
     public function allDirectories($directory = null);
 

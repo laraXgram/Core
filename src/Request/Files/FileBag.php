@@ -273,7 +273,7 @@ class FileBag
     }
 
     /**
-     * Download all files in the bag and store them using Laravel's Storage system.
+     * Download all files in the bag and store them using LaraGram's Storage system.
      *
      * @param string|string[] $pathOrDirectory
      * @param string|null $disk

@@ -7,10 +7,18 @@ use LaraGram\Console\Application as Commander;
 use LaraGram\Console\Scheduling\Schedule;
 use LaraGram\Foundation\Application;
 use LaraGram\Foundation\Bootstrap\RegisterProviders;
+use LaraGram\Foundation\Events\DiagnosingHealth;
+use LaraGram\Foundation\Http\Middleware\PreventRequestsDuringMaintenance;
 use LaraGram\Foundation\Support\Providers\EventServiceProvider as AppEventServiceProvider;
 use LaraGram\Foundation\Support\Providers\ListenServiceProvider as AppListenServiceProvider;
+use LaraGram\Foundation\Support\Providers\RouteServiceProvider as AppRouteServiceProvider;
+use LaraGram\Http\Middleware\PrefersJsonResponses;
+use LaraGram\Http\Request;
 use LaraGram\Support\Collection;
 use LaraGram\Support\Facades\Bot;
+use LaraGram\Support\Facades\Event;
+use LaraGram\Support\Facades\Route;
+use LaraGram\Support\Facades\View;
 
 class ApplicationBuilder
 {
@@ -29,6 +37,13 @@ class ApplicationBuilder
     protected array $additionalListeningCallbacks = [];
 
     /**
+     * Any additional routing callbacks that should be invoked while registering routes.
+     *
+     * @var array
+     */
+    protected array $additionalRoutingCallbacks = [];
+
+    /**
      * Create a new application builder instance.
      */
     public function __construct(protected Application $app)
@@ -45,6 +60,11 @@ class ApplicationBuilder
         $this->app->singleton(
             \LaraGram\Contracts\Bot\Kernel::class,
             \LaraGram\Foundation\Bot\Kernel::class,
+        );
+
+        $this->app->singleton(
+            \LaraGram\Contracts\Http\Kernel::class,
+            \LaraGram\Foundation\Http\Kernel::class,
         );
 
         $this->app->singleton(
@@ -99,6 +119,131 @@ class ApplicationBuilder
         $this->pendingProviders[AppEventServiceProvider::class] = true;
 
         return $this;
+    }
+
+    /**
+     * Register the routing services for the application.
+     *
+     * @param  \Closure|null  $using
+     * @param  array|string|null  $web
+     * @param  array|string|null  $api
+     * @param  string|null  $commands
+     * @param  string|null  $pages
+     * @param  string|null  $health
+     * @param  string  $apiPrefix
+     * @param  callable|null  $then
+     * @return $this
+     */
+    public function withRouting(?Closure $using = null,
+                                array|string|null $web = null,
+                                array|string|null $api = null,
+                                ?string $commands = null,
+                                ?string $health = null,
+                                string $apiPrefix = 'api',
+                                ?callable $then = null)
+    {
+        if (is_null($using) && (is_string($web) || is_array($web) || is_string($api) || is_array($api) || is_string($health)) || is_callable($then)) {
+            $using = $this->buildRoutingCallback($web, $api, $health, $apiPrefix, $then);
+
+            if (is_string($health)) {
+                PreventRequestsDuringMaintenance::except($health);
+            }
+        }
+
+        AppRouteServiceProvider::loadRoutesUsing($using);
+
+        $this->app->booting(function () {
+            $this->app->register(AppRouteServiceProvider::class, force: true);
+        });
+
+        if (is_string($commands) && realpath($commands) !== false) {
+            $this->withCommands([$commands]);
+        }
+
+        return $this;
+    }
+
+    /**
+     * Create the routing callback for the application.
+     *
+     * @param  array|string|null  $web
+     * @param  array|string|null  $api
+     * @param  string|null  $health
+     * @param  string  $apiPrefix
+     * @param  callable|null  $then
+     * @return \Closure
+     *
+     * @throws \Throwable
+     */
+    protected function buildRoutingCallback(array|string|null $web,
+                                            array|string|null $api,
+                                            ?string $health,
+                                            string $apiPrefix,
+                                            ?callable $then)
+    {
+        return function () use ($web, $api, $health, $apiPrefix, $then) {
+            if (is_string($api) || is_array($api)) {
+                if (is_array($api)) {
+                    foreach ($api as $apiRoute) {
+                        if (realpath($apiRoute) !== false) {
+                            Route::middleware('api')->prefix($apiPrefix)->group($apiRoute);
+                        }
+                    }
+                } else {
+                    Route::middleware('api')->prefix($apiPrefix)->group($api);
+                }
+            }
+
+            if (is_string($health)) {
+                Route::get($health, function (Request $request) {
+                    $exception = null;
+
+                    try {
+                        Event::dispatch(new DiagnosingHealth);
+                    } catch (\Throwable $e) {
+                        if (app()->hasDebugModeEnabled()) {
+                            throw $e;
+                        }
+
+                        report($e);
+
+                        $exception = $e->getMessage();
+                    }
+
+                    $status = $exception ? 500 : 200;
+
+                    if ($request->expectsJson()) {
+                        return response()->json([
+                            'status' => $exception ? 'down' : 'up',
+                        ], $status);
+                    }
+
+                    return response(View::file(__DIR__.'/../resources/health-up.blade.php', [
+                        'exception' => $exception,
+                    ]), status: $status);
+                });
+            }
+
+            if (is_string($web) || is_array($web)) {
+                if (is_array($web)) {
+                    foreach ($web as $webRoute) {
+                        if (realpath($webRoute) !== false) {
+                            Route::middleware('web')->group($webRoute);
+                        }
+                    }
+                } else {
+                    Route::middleware('web')->group($web);
+                }
+            }
+
+            foreach ($this->additionalRoutingCallbacks as $callback) {
+                $callback();
+            }
+
+            if (is_callable($then)) {
+                $then($this->app);
+            }
+        };
     }
 
     /**
@@ -221,10 +366,10 @@ class ApplicationBuilder
      */
     public function withMiddleware(?callable $callback = null)
     {
-        $this->app->afterResolving(\LaraGram\Contracts\Bot\Kernel::class, function ($kernel) use ($callback) {
+        $resolver = function ($kernel) use ($callback) {
             $middleware = new Middleware;
 
-            if (! is_null($callback)) {
+            if ($callback) {
                 $callback($middleware);
             }
 
@@ -236,18 +381,21 @@ class ApplicationBuilder
                 $kernel->setMiddlewarePriority($priorities);
             }
 
-            if ($priorityAppends = $middleware->getMiddlewarePriorityAppends()) {
-                foreach ($priorityAppends as $newMiddleware => $after) {
-                    $kernel->addToMiddlewarePriorityAfter($after, $newMiddleware);
-                }
+            foreach ($middleware->getMiddlewarePriorityAppends() as $newMiddleware => $after) {
+                $kernel->addToMiddlewarePriorityAfter($after, $newMiddleware);
             }
 
-            if ($priorityPrepends = $middleware->getMiddlewarePriorityPrepends()) {
-                foreach ($priorityPrepends as $newMiddleware => $before) {
-                    $kernel->addToMiddlewarePriorityBefore($before, $newMiddleware);
-                }
+            foreach ($middleware->getMiddlewarePriorityPrepends() as $newMiddleware => $before) {
+                $kernel->addToMiddlewarePriorityBefore($before, $newMiddleware);
             }
-        });
+        };
+
+        foreach ([
+                     \LaraGram\Contracts\Bot\Kernel::class,
+                     \LaraGram\Contracts\Http\Kernel::class,
+                 ] as $abstract) {
+            $this->app->afterResolving($abstract, $resolver);
+        }
 
         return $this;
     }
@@ -279,6 +427,21 @@ class ApplicationBuilder
     }
 
     /**
+     * Register additional Commander route paths.
+     *
+     * @param  array  $paths
+     * @return $this
+     */
+    protected function withCommandRouting(array $paths)
+    {
+        $this->app->afterResolving(\LaraGram\Contracts\Console\Kernel::class, function ($kernel) use ($paths) {
+            $this->app->booted(fn () => $kernel->addCommandRoutePaths($paths));
+        });
+
+        return $this;
+    }
+
+    /**
      * Register additional Commander listen paths.
      *
      * @param  array  $paths
@@ -301,8 +464,13 @@ class ApplicationBuilder
      */
     public function withSchedule(callable $callback)
     {
-        Commander::starting(fn () => $callback($this->app->make(Schedule::class)));
+        Commander::starting(function () use ($callback) {
+            $this->app->afterResolving(Schedule::class, fn ($schedule) => $callback($schedule));
 
+            if ($this->app->resolved(Schedule::class)) {
+                $callback($this->app->make(Schedule::class));
+            }
+        });
         return $this;
     }
 
@@ -319,12 +487,12 @@ class ApplicationBuilder
             \LaraGram\Foundation\Exceptions\Handler::class
         );
 
-        $using ??= fn () => true;
-
-        $this->app->afterResolving(
-            \LaraGram\Foundation\Exceptions\Handler::class,
-            fn ($handler) => $using(new Exceptions($handler)),
-        );
+        if ($using !== null) {
+            $this->app->afterResolving(
+                \LaraGram\Foundation\Exceptions\Handler::class,
+                fn ($handler) => $using(new Exceptions($handler)),
+            );
+        }
 
         return $this;
     }
@@ -361,6 +529,44 @@ class ApplicationBuilder
                 }
             }
         });
+    }
+
+    /**
+     * Register an array of scoped singleton container bindings to be bound when the application is booting.
+     *
+     * @param  array  $scopedSingletons
+     * @return $this
+     */
+    public function withScopedSingletons(array $scopedSingletons)
+    {
+        return $this->registered(function ($app) use ($scopedSingletons) {
+            foreach ($scopedSingletons as $abstract => $concrete) {
+                if (is_string($abstract)) {
+                    $app->scoped($abstract, $concrete);
+                } else {
+                    $app->scoped($concrete);
+                }
+            }
+        });
+    }
+
+    /**
+     * Globally prefer JSON responses when the incoming "Accept" header is broad.
+     *
+     * @param  bool  $prefer
+     * @return $this
+     */
+    public function prefersJsonResponses(bool $prefer = true)
+    {
+        if (! $prefer) {
+            return $this;
+        }
+
+        $this->app->booted(function () {
+            $this->app->make(\LaraGram\Foundation\Http\Kernel::class)->prependMiddleware(PrefersJsonResponses::class);
+        });
+
+        return $this;
     }
 
     /**

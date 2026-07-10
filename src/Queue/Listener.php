@@ -49,7 +49,6 @@ class Listener
      * Create a new queue listener.
      *
      * @param  string  $commandPath
-     * @return void
      */
     public function __construct($commandPath)
     {
@@ -98,7 +97,7 @@ class Listener
     }
 
     /**
-     * Create a new LaraGram process for the worker.
+     * Create a new Symfony process for the worker.
      *
      * @param  string  $connection
      * @param  string  $queue

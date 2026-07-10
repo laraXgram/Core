@@ -57,6 +57,10 @@ return [
 
     'url' => env('APP_URL', 'http://localhost'),
 
+    'frontend_url' => env('FRONTEND_URL', 'http://localhost:3000'),
+
+    'asset_url' => env('ASSET_URL'),
+
     /*
     |--------------------------------------------------------------------------
     | Application Timezone
@@ -128,6 +132,25 @@ return [
         ...array_filter(
             explode(',', env('APP_PREVIOUS_KEYS', ''))
         ),
+    ],
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Maintenance Mode Driver
+    |--------------------------------------------------------------------------
+    |
+    | These configuration options determine the driver used to determine and
+    | manage LaraGram's "maintenance mode" status. The "cache" driver will
+    | allow maintenance mode to be controlled across multiple machines.
+    |
+    | Supported drivers: "file", "cache", "array"
+    |
+    */
+
+    'maintenance' => [
+        'driver' => env('APP_MAINTENANCE_DRIVER', 'file'),
+        'store' => env('APP_MAINTENANCE_STORE', 'database'),
     ],
 
     /*

@@ -65,7 +65,9 @@ trait CreatesUserProviders
     {
         return new DatabaseUserProvider(
             $this->app['db']->connection($config['connection'] ?? null),
-            $config['table'], $config['column'],
+            $this->app['hash'],
+            $config['table'],
+            $config['column'] ?? null,
         );
     }
 
@@ -77,7 +79,7 @@ trait CreatesUserProviders
      */
     protected function createEloquentProvider($config)
     {
-        return new EloquentUserProvider($config['model']);
+        return new EloquentUserProvider($this->app['hash'], $config['model']);
     }
 
     /**

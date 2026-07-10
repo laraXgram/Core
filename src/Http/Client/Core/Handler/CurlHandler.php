@@ -1,0 +1,66 @@
+<?php
+
+namespace LaraGram\Http\Client\Core\Handler;
+
+use LaraGram\Http\Client\Promises\PromiseInterface;
+use LaraGram\Http\Client\Core\TransportSharing;
+use LaraGram\Http\Factory\RequestInterface;
+
+/**
+ * @final
+ */
+class CurlHandler
+{
+    /**
+     * @var CurlFactoryInterface
+     */
+    private $factory;
+
+    /**
+     * @var CurlShareHandleState|null
+     */
+    private $shareHandleState;
+
+    /**
+     * Accepts an associative array of options:
+     *
+     * - handle_factory: Optional curl factory used to create cURL handles.
+     * - transport_sharing: Optional transport sharing mode.
+     *
+     * @param array{handle_factory?: ?CurlFactoryInterface, transport_sharing?: mixed} $options Array of options to use with the handler
+     */
+    public function __construct(array $options = [])
+    {
+        CurlShareHandleState::assertNoRequiredSharingCustomFactoryConflict($options, 'CurlHandler');
+        $transportSharing = $options['transport_sharing'] ?? null;
+        $sharingMode = CurlShareHandleState::normalizeMode($transportSharing, 'transport_sharing');
+
+        if (\array_key_exists('handle_factory', $options) && $options['handle_factory'] !== null) {
+            $this->shareHandleState = null;
+            $this->factory = $options['handle_factory'];
+
+            return;
+        }
+
+        $this->shareHandleState = $sharingMode !== TransportSharing::NONE
+            ? CurlShareHandleState::fromOption($transportSharing)
+            : null;
+
+        $this->factory = $this->shareHandleState !== null
+            ? new CurlFactory(3, $this->shareHandleState->mode, $this->shareHandleState->handle)
+            : new CurlFactory(3);
+    }
+
+    public function __invoke(RequestInterface $request, array $options): PromiseInterface
+    {
+        if (isset($options['delay'])) {
+            \usleep($options['delay'] * 1000);
+        }
+
+        $easy = $this->factory->create($request, $options);
+        \curl_exec($easy->handle);
+        $easy->errno = \curl_errno($easy->handle);
+
+        return CurlFactory::finish($this, $easy, $this->factory);
+    }
+}

@@ -26,7 +26,6 @@ class Manager
      * Create a new queue capsule manager.
      *
      * @param  \LaraGram\Container\Container|null  $container
-     * @return void
      */
     public function __construct(?Container $container = null)
     {

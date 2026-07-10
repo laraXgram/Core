@@ -1,15 +1,108 @@
 <?php
 
 use LaraGram\Container\Container;
+use LaraGram\Contracts\Auth\Access\Gate;
+use LaraGram\Contracts\Auth\Guard;
+use LaraGram\Contracts\Auth\Factory as AuthFactory;
 use LaraGram\Contracts\Bus\Dispatcher;
 use LaraGram\Contracts\Debug\ExceptionHandler;
+use LaraGram\Contracts\Routing\ResponseFactory;
+use LaraGram\Contracts\Routing\UrlGenerator;
+use LaraGram\Contracts\Support\Responsable;
+use LaraGram\Cookie\Cookie;
+use LaraGram\Cookie\CookieJar;
+use LaraGram\Contracts\Cookie\Factory as CookieFactory;
 use LaraGram\Foundation\Bus\PendingClosureDispatch;
 use LaraGram\Foundation\Bus\PendingDispatch;
+use LaraGram\Http\BaseResponse;
+use LaraGram\Http\Factory\UriInterface;
+use LaraGram\Http\RedirectResponse;
 use LaraGram\Log\Context\Repository;
 use LaraGram\Queue\CallQueuedClosure;
+use LaraGram\Routing\Router;
 use LaraGram\Support\Facades\Date;
+use LaraGram\Support\Facades\Route;
+use LaraGram\Support\Uri;
 use LaraGram\Validation\Factory as ValidationFactory;
+use LaraGram\Contracts\View\Factory as ViewFactory;
+use LaraGram\Contracts\View\View as ViewContract;
 use LaraGram\Contracts\Template\Factory as TemplateFactory;
+
+if (! function_exists('abort')) {
+    /**
+     * Throw an HttpException with the given data.
+     *
+     * @param  \LaraGram\Http\BaseResponse|\LaraGram\Contracts\Support\Responsable|int  $code
+     * @param  string  $message
+     * @return never
+     *
+     * @throws \LaraGram\Foundation\Http\Exceptions\HttpException
+     * @throws \LaraGram\Foundation\Http\Exceptions\NotFoundHttpException
+     * @throws \LaraGram\Http\Exceptions\HttpResponseException
+     */
+    function abort($code, $message = '', array $headers = [])
+    {
+        if ($code instanceof BaseResponse) {
+            throw new HttpResponseException($code);
+        } elseif ($code instanceof Responsable) {
+            throw new HttpResponseException($code->toResponse(request()));
+        }
+
+        app()->abort($code, $message, $headers);
+    }
+}
+
+if (! function_exists('abort_if')) {
+    /**
+     * Throw an HttpException with the given data if the given condition is true.
+     *
+     * @param  bool  $boolean
+     * @param \LaraGram\Http\BaseResponse|\LaraGram\Contracts\Support\Responsable|int $code
+     * @param  string  $message
+     *
+     * @throws \LaraGram\Foundation\Http\Exceptions\HttpException
+     * @throws \LaraGram\Foundation\Http\Exceptions\NotFoundHttpException
+     */
+    function abort_if($boolean, $code, $message = '', array $headers = []): void
+    {
+        if ($boolean) {
+            abort($code, $message, $headers);
+        }
+    }
+}
+
+if (! function_exists('abort_unless')) {
+    /**
+     * Throw an HttpException with the given data unless the given condition is true.
+     *
+     * @param  bool  $boolean
+     * @param \LaraGram\Http\BaseResponse|\LaraGram\Contracts\Support\Responsable|int $code
+     * @param  string  $message
+     *
+     * @throws \LaraGram\Foundation\Http\Exceptions\HttpException
+     * @throws \LaraGram\Foundation\Http\Exceptions\NotFoundHttpException
+     */
+    function abort_unless($boolean, $code, $message = '', array $headers = []): void
+    {
+        if (! $boolean) {
+            abort($code, $message, $headers);
+        }
+    }
+}
+
+if (! function_exists('action')) {
+    /**
+     * Generate the URL to a controller action.
+     *
+     * @param  string|array  $name
+     * @param  mixed  $parameters
+     * @param  bool  $absolute
+     */
+    function action($name, $parameters = [], $absolute = true): string
+    {
+        return app('url')->action($name, $parameters, $absolute);
+    }
+}
 
 if (! function_exists('app')) {
     /**
@@ -41,6 +134,50 @@ if (! function_exists('app_path')) {
     function app_path($path = '')
     {
         return app()->path($path);
+    }
+}
+
+if (! function_exists('asset')) {
+    /**
+     * Generate an asset path for the application.
+     *
+     * @param  string  $path
+     * @param  bool|null  $secure
+     */
+    function asset($path, $secure = null): string
+    {
+        return app('url')->asset($path, $secure);
+    }
+}
+
+if (! function_exists('auth')) {
+    /**
+     * Get the available auth instance.
+     *
+     * @param  string|null  $guard
+     * @return ($guard is null ? \LaraGram\Contracts\Auth\Factory : \LaraGram\Contracts\Auth\Guard)
+     */
+    function auth($guard = null): AuthFactory|Guard
+    {
+        if (is_null($guard)) {
+            return app(AuthFactory::class);
+        }
+
+        return app(AuthFactory::class)->guard($guard);
+    }
+}
+
+if (! function_exists('back')) {
+    /**
+     * Create a new redirect response to the previous location.
+     *
+     * @param  int  $status
+     * @param  array  $headers
+     * @param  mixed  $fallback
+     */
+    function back($status = 302, $headers = [], $fallback = false): RedirectResponse
+    {
+        return app('redirect')->back($status, $headers, $fallback);
     }
 }
 
@@ -160,6 +297,33 @@ if (! function_exists('context')) {
     }
 }
 
+if (! function_exists('cookie')) {
+    /**
+     * Create a new cookie instance.
+     *
+     * @param  string|null  $name
+     * @param  string|null  $value
+     * @param  int  $minutes
+     * @param  string|null  $path
+     * @param  string|null  $domain
+     * @param  bool|null  $secure
+     * @param  bool  $httpOnly
+     * @param  bool  $raw
+     * @param  string|null  $sameSite
+     * @return ($name is null ? \LaraGram\Cookie\CookieJar : \LaraGram\Cookie\Cookie)
+     */
+    function cookie($name = null, $value = null, $minutes = 0, $path = null, $domain = null, $secure = null, $httpOnly = true, $raw = false, $sameSite = null): CookieJar|Cookie
+    {
+        $cookie = app(CookieFactory::class);
+
+        if (is_null($name)) {
+            return $cookie;
+        }
+
+        return $cookie->make($name, $value, $minutes, $path, $domain, $secure, $httpOnly, $raw, $sameSite);
+    }
+}
+
 if (! function_exists('database_path')) {
     /**
      * Get the database path.
@@ -276,6 +440,19 @@ if (! function_exists('info')) {
     }
 }
 
+if (! function_exists('lang_path')) {
+    /**
+     * Get the path to the language folder.
+     *
+     * @param  string  $path
+     * @return string
+     */
+    function lang_path($path = '')
+    {
+        return app()->langPath($path);
+    }
+}
+
 if (! function_exists('logger')) {
     /**
      * Log a debug message to the logs.
@@ -291,19 +468,6 @@ if (! function_exists('logger')) {
         }
 
         return app('log')->debug($message, $context);
-    }
-}
-
-if (! function_exists('lang_path')) {
-    /**
-     * Get the path to the language folder.
-     *
-     * @param  string  $path
-     * @return string
-     */
-    function lang_path($path = '')
-    {
-        return app()->langPath($path);
     }
 }
 
@@ -333,6 +497,50 @@ if (! function_exists('now')) {
     }
 }
 
+if (! function_exists('policy')) {
+    /**
+     * Get a policy instance for a given class.
+     *
+     * @param  object|string  $class
+     * @return mixed
+     *
+     * @throws \InvalidArgumentException
+     */
+    function policy($class)
+    {
+        return app(Gate::class)->getPolicyFor($class);
+    }
+}
+
+if (! function_exists('precognitive')) {
+    /**
+     * Handle a Precognition controller hook.
+     *
+     * @param  null|callable  $callable
+     * @return mixed
+     */
+    function precognitive($callable = null)
+    {
+        $callable ??= function () {
+            //
+        };
+
+        $payload = $callable(function ($default, $precognition = null) {
+            $response = request()->isPrecognitive()
+                ? ($precognition ?? $default)
+                : $default;
+
+            abort(Router::toResponse(request(), value($response)));
+        });
+
+        if (request()->isPrecognitive()) {
+            abort(204, headers: ['Precognition-Success' => 'true']);
+        }
+
+        return $payload;
+    }
+}
+
 if (! function_exists('public_path')) {
     /**
      * Get the path to the public folder.
@@ -348,9 +556,12 @@ if (! function_exists('public_path')) {
 
 if (! function_exists('redirect')) {
     /**
-     * Get an instance of the redirector.
+     * Get an instance of the redirector for the active request type.
      *
-     * @return \LaraGram\Listening\Redirector
+     * Resolves the Listening\Redirector under the bot kernel and the
+     * Routing\Redirector under the HTTP kernel.
+     *
+     * @return \LaraGram\Listening\Redirector|\LaraGram\Routing\Redirector
      */
     function redirect()
     {
@@ -407,6 +618,30 @@ if (! function_exists('report_unless')) {
     }
 }
 
+if (! function_exists('request')) {
+    /**
+     * Get an instance of the current request or an input item from the request.
+     *
+     * @param  list<string>|string|null  $key
+     * @param  mixed  $default
+     * @return ($key is null ? \LaraGram\Http\Request : ($key is string ? mixed : array<string, mixed>))
+     */
+    function request($key = null, $default = null)
+    {
+        if (is_null($key)) {
+            return app('http.request');
+        }
+
+        if (is_array($key)) {
+            return app('http.request')->only($key);
+        }
+
+        $value = app('http.request')->__get($key);
+
+        return is_null($value) ? value($default) : $value;
+    }
+}
+
 if (! function_exists('rescue')) {
     /**
      * Catch a potential exception and return a default value.
@@ -446,6 +681,102 @@ if (! function_exists('resolve')) {
     function resolve($name, array $parameters = [])
     {
         return app($name, $parameters);
+    }
+}
+
+if (! function_exists('resource_path')) {
+    /**
+     * Get the path to the resources folder.
+     *
+     * @param  string  $path
+     */
+    function resource_path($path = ''): string
+    {
+        return app()->resourcePath($path);
+    }
+}
+
+if (! function_exists('response')) {
+    /**
+     * Return a new response from the application.
+     *
+     * @param  \LaraGram\Contracts\View\View|string|array|null  $content
+     * @param  int  $status
+     * @return ($content is null ? \LaraGram\Contracts\Routing\ResponseFactory : \LaraGram\Http\Response)
+     */
+    function response($content = null, $status = 200, array $headers = []): ResponseFactory|\LaraGram\Http\Response
+    {
+        $factory = app(ResponseFactory::class);
+
+        if (func_num_args() === 0) {
+            return $factory;
+        }
+
+        return $factory->make($content ?? '', $status, $headers);
+    }
+}
+
+if (! function_exists('route')) {
+    /**
+     * Generate the URL to a named route.
+     *
+     * @param  \BackedEnum|string  $name
+     * @param  mixed  $parameters
+     * @param  bool  $absolute
+     */
+    function route($name, $parameters = [], $absolute = true): string
+    {
+        return app('url')->route($name, $parameters, $absolute);
+    }
+}
+
+if (! function_exists('secure_asset')) {
+    /**
+     * Generate an asset path for the application.
+     *
+     * @param  string  $path
+     */
+    function secure_asset($path): string
+    {
+        return asset($path, true);
+    }
+}
+
+if (! function_exists('secure_url')) {
+    /**
+     * Generate a HTTPS url for the application.
+     *
+     * @param  string  $path
+     * @param  mixed  $parameters
+     * @return string
+     */
+    function secure_url($path, $parameters = [])
+    {
+        return url($path, $parameters, true);
+    }
+}
+
+if (! function_exists('session')) {
+    /**
+     * Get / set the specified session value.
+     *
+     * If an array is passed as the key, we will assume you want to set an array of values.
+     *
+     * @param  array<string, mixed>|string|null  $key
+     * @param  mixed  $default
+     * @return ($key is null ? \LaraGram\Session\SessionManager : ($key is string ? mixed : null))
+     */
+    function session($key = null, $default = null)
+    {
+        if (is_null($key)) {
+            return app('session');
+        }
+
+        if (is_array($key)) {
+            return app('session')->put($key);
+        }
+
+        return app('session')->get($key, $default);
     }
 }
 
@@ -507,6 +838,20 @@ if (! function_exists('to_listen')) {
     function to_listen($listen, $parameters = [])
     {
         return redirect()->listen($listen, $parameters);
+    }
+}
+
+if (! function_exists('to_route')) {
+    /**
+     * Create a new redirect response to a named route.
+     *
+     * @param  \BackedEnum|string  $route
+     * @param  mixed  $parameters
+     * @return \LaraGram\Http\RedirectResponse
+     */
+    function to_route($route, $parameters = [])
+    {
+        return redirect()->route($route, $parameters);
     }
 }
 
@@ -577,6 +922,54 @@ if (! function_exists('__')) {
     }
 }
 
+if (!function_exists('trigger_deprecation')) {
+    /**
+     * Triggers a silenced deprecation notice.
+     *
+     * @param string $package The name of the Composer package that is triggering the deprecation
+     * @param string $version The version of the package that introduced the deprecation
+     * @param string $message The message of the deprecation
+     * @param mixed  ...$args Values to insert in the message using printf() formatting
+     */
+    function trigger_deprecation(string $package, string $version, string $message, mixed ...$args): void
+    {
+        @trigger_error(($package || $version ? "Since $package $version: " : '').($args ? vsprintf($message, $args) : $message), \E_USER_DEPRECATED);
+    }
+}
+
+if (! function_exists('uri')) {
+    /**
+     * Generate a URI for the application.
+     */
+    function uri(UriInterface|Stringable|array|string $uri, mixed $parameters = [], bool $absolute = true): Uri
+    {
+        return match (true) {
+            is_array($uri) || str_contains($uri, '\\') => Uri::action($uri, $parameters, $absolute),
+            str_contains($uri, '.') && Route::has($uri) => Uri::route($uri, $parameters, $absolute),
+            default => Uri::of($uri),
+        };
+    }
+}
+
+if (! function_exists('url')) {
+    /**
+     * Generate a URL for the application.
+     *
+     * @param  string|null  $path
+     * @param  mixed  $parameters
+     * @param  bool|null  $secure
+     * @return ($path is null ? \LaraGram\Contracts\Routing\UrlGenerator : string)
+     */
+    function url($path = null, $parameters = [], $secure = null): UrlGenerator|string
+    {
+        if (is_null($path)) {
+            return app(UrlGenerator::class);
+        }
+
+        return app(UrlGenerator::class)->to($path, $parameters, $secure);
+    }
+}
+
 if (! function_exists('validator')) {
     /**
      * Create a new Validator instance.
@@ -599,35 +992,23 @@ if (! function_exists('validator')) {
     }
 }
 
-
-if (! function_exists('report_if')) {
+if (! function_exists('view')) {
     /**
-     * Report an exception if the given condition is true.
+     * Get the evaluated view contents for the given view.
      *
-     * @param  bool  $boolean
-     * @param  \Throwable|string  $exception
-     * @return void
+     * @param  string|null  $view
+     * @param  \LaraGram\Contracts\Support\Arrayable|array  $data
+     * @param  array  $mergeData
+     * @return ($view is null ? \LaraGram\Contracts\View\Factory : \LaraGram\Contracts\View\View)
      */
-    function report_if($boolean, $exception)
+    function view($view = null, $data = [], $mergeData = []): ViewFactory|ViewContract
     {
-        if ($boolean) {
-            report($exception);
-        }
-    }
-}
+        $factory = app(ViewFactory::class);
 
-if (! function_exists('report_unless')) {
-    /**
-     * Report an exception unless the given condition is true.
-     *
-     * @param  bool  $boolean
-     * @param  \Throwable|string  $exception
-     * @return void
-     */
-    function report_unless($boolean, $exception)
-    {
-        if (! $boolean) {
-            report($exception);
+        if (func_num_args() === 0) {
+            return $factory;
         }
+
+        return $factory->make($view, $data, $mergeData);
     }
 }

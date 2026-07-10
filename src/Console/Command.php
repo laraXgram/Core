@@ -2,16 +2,23 @@
 
 namespace LaraGram\Console;
 
+use LaraGram\Console\Attribute\Aliases;
+use LaraGram\Console\Attribute\Description;
+use LaraGram\Console\Attribute\Help;
+use LaraGram\Console\Attribute\Hidden;
+use LaraGram\Console\Attribute\Signature;
+use LaraGram\Console\Attribute\Usage;
 use LaraGram\Console\View\Components\Factory;
 use LaraGram\Contracts\Console\Isolatable;
 use LaraGram\Support\Traits\Macroable;
-use LaraGram\Console\Command\Command as LaraGramCommand;
+use ReflectionClass;
+use LaraGram\Console\Command\Command as BaseCommand;
 use LaraGram\Console\Input\InputInterface;
 use LaraGram\Console\Input\InputOption;
 use LaraGram\Console\Output\OutputInterface;
 use Throwable;
 
-class Command extends LaraGramCommand
+class Command extends BaseCommand
 {
     use Concerns\CallsCommands,
         Concerns\ConfiguresPrompts,
@@ -45,16 +52,16 @@ class Command extends LaraGramCommand
     /**
      * The console command description.
      *
-     * @var string|null
+     * @var string
      */
-    protected $description;
+    protected $description = '';
 
     /**
      * The console command help text.
      *
      * @var string
      */
-    protected $help;
+    protected $help = '';
 
     /**
      * Indicates whether the command should be shown in the Commander command list.
@@ -73,24 +80,24 @@ class Command extends LaraGramCommand
     /**
      * The default exit code for isolated commands.
      *
-     * @var int
+     * @var self::SUCCESS|self::FAILURE|self::INVALID
      */
     protected $isolatedExitCode = self::SUCCESS;
 
     /**
      * The console command name aliases.
      *
-     * @var array
+     * @var string[]
      */
     protected $aliases;
 
     /**
      * Create a new console command instance.
-     *
-     * @return void
      */
     public function __construct()
     {
+        $this->configureFromAttributes();
+
         // We will go ahead and set the name, description, and parameters on console
         // commands just to make things a little easier on the developer. This is
         // so they don't have to all be manually specified in the constructors.
@@ -100,16 +107,18 @@ class Command extends LaraGramCommand
             parent::__construct($this->name);
         }
 
+        $this->configureUsageFromAttribute();
+
         // Once we have constructed the command, we'll set the description and other
         // related properties of the command. If a signature wasn't used to build
         // the command we'll set the arguments and the options on this command.
-        if (! isset($this->description)) {
-            $this->setDescription((string) static::getDefaultDescription());
-        } else {
-            $this->setDescription((string) $this->description);
+        if (! empty($this->description)) {
+            $this->setDescription($this->description);
         }
 
-        $this->setHelp((string) $this->help);
+        if (! empty($this->help)) {
+            $this->setHelp($this->help);
+        }
 
         $this->setHidden($this->isHidden());
 
@@ -127,6 +136,64 @@ class Command extends LaraGramCommand
     }
 
     /**
+     * Configure the command from class attributes.
+     *
+     * @return void
+     */
+    protected function configureFromAttributes()
+    {
+        $reflection = new ReflectionClass($this);
+
+        $signature = $reflection->getAttributes(Signature::class);
+
+        if ($signature !== []) {
+            $signatureInstance = $signature[0]->newInstance();
+
+            $this->signature = $signatureInstance->signature;
+
+            if ($signatureInstance->aliases !== null) {
+                $this->aliases = $signatureInstance->aliases;
+            }
+        }
+
+        $description = $reflection->getAttributes(Description::class);
+
+        if ($description !== []) {
+            $this->description = $description[0]->newInstance()->description;
+        }
+
+        $help = $reflection->getAttributes(Help::class);
+
+        if ($help !== []) {
+            $this->help = $help[0]->newInstance()->help;
+        }
+
+        if ($reflection->getAttributes(Hidden::class) !== []) {
+            $this->hidden = true;
+        }
+
+        $aliases = $reflection->getAttributes(Aliases::class);
+
+        if ($aliases !== []) {
+            $this->aliases = $aliases[0]->newInstance()->aliases;
+        }
+    }
+
+    /**
+     * Configure usage examples for the command from class attributes.
+     *
+     * @return void
+     */
+    protected function configureUsageFromAttribute()
+    {
+        $reflection = new ReflectionClass($this);
+
+        foreach ($reflection->getAttributes(Usage::class) as $usage) {
+            $this->addUsage($usage->newInstance()->usage);
+        }
+    }
+
+    /**
      * Configure the console command using a fluent definition.
      *
      * @return void
@@ -137,6 +204,9 @@ class Command extends LaraGramCommand
 
         parent::__construct($this->name = $name);
 
+        // After parsing the signature we will spin through the arguments and options
+        // and set them on this command. These will already be changed into proper
+        // instances of these "InputArgument" and "InputOption" LaraGram classes.
         $this->getDefinition()->addArguments($arguments);
         $this->getDefinition()->addOptions($options);
     }
@@ -200,8 +270,8 @@ class Command extends LaraGramCommand
             ));
 
             return (int) (is_numeric($this->option('isolated'))
-                        ? $this->option('isolated')
-                        : $this->isolatedExitCode);
+                ? $this->option('isolated')
+                : $this->isolatedExitCode);
         }
 
         $method = method_exists($this, 'handle') ? 'handle' : '__invoke';
@@ -226,7 +296,9 @@ class Command extends LaraGramCommand
      */
     protected function commandIsolationMutex()
     {
-        return $this->laragram->make(CommandMutex::class);
+        return $this->laragram->bound(CommandMutex::class)
+            ? $this->laragram->make(CommandMutex::class)
+            : $this->laragram->make(CacheCommandMutex::class);
     }
 
     /**
@@ -245,7 +317,7 @@ class Command extends LaraGramCommand
             $command = $this->laragram->make($command);
         }
 
-        if ($command instanceof LaraGramCommand) {
+        if ($command instanceof BaseCommand) {
             $command->setApplication($this->getApplication());
         }
 
@@ -260,7 +332,7 @@ class Command extends LaraGramCommand
      * Fail the command manually.
      *
      * @param  \Throwable|string|null  $exception
-     * @return void
+     * @return never
      *
      * @throws \LaraGram\Console\ManuallyFailedException|\Throwable
      */
@@ -310,7 +382,7 @@ class Command extends LaraGramCommand
     }
 
     /**
-     * Set the LarGram application instance.
+     * Set the LaraGram application instance.
      *
      * @param  \LaraGram\Contracts\Container\Container  $laragram
      * @return void

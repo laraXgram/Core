@@ -4,10 +4,12 @@ namespace LaraGram\Database\Eloquent\Concerns;
 
 use Closure;
 use LaraGram\Database\Eloquent\Attributes\ScopedBy;
+use LaraGram\Database\Eloquent\Model;
 use LaraGram\Database\Eloquent\Scope;
 use LaraGram\Support\Arr;
 use LaraGram\Support\Collection;
 use InvalidArgumentException;
+use ReflectionAttribute;
 use ReflectionClass;
 
 trait HasGlobalScopes
@@ -31,17 +33,29 @@ trait HasGlobalScopes
     {
         $reflectionClass = new ReflectionClass(static::class);
 
-        return (new Collection($reflectionClass->getAttributes(ScopedBy::class)))
-            ->map(fn ($attribute) => $attribute->getArguments())
+        $attributes = (new Collection($reflectionClass->getAttributes(ScopedBy::class, ReflectionAttribute::IS_INSTANCEOF)));
+
+        foreach ($reflectionClass->getTraits() as $trait) {
+            $attributes->push(...$trait->getAttributes(ScopedBy::class, ReflectionAttribute::IS_INSTANCEOF));
+        }
+
+        $isEloquentGrandchild = is_subclass_of(static::class, Model::class)
+            && get_parent_class(static::class) !== Model::class;
+
+        return $attributes->map(fn ($attribute) => $attribute->getArguments())
             ->flatten()
+            ->when($isEloquentGrandchild, function (Collection $attributes) {
+                return (new Collection(get_parent_class(static::class)::resolveGlobalScopeAttributes()))
+                    ->merge($attributes);
+            })
             ->all();
     }
 
     /**
      * Register a new global scope on the model.
      *
-     * @param  \LaraGram\Database\Eloquent\Scope|\Closure|string  $scope
-     * @param  \LaraGram\Database\Eloquent\Scope|\Closure|null  $implementation
+     * @param  \LaraGram\Database\Eloquent\Scope|(\Closure(\LaraGram\Database\Eloquent\Builder<static>): mixed)|string  $scope
+     * @param  \LaraGram\Database\Eloquent\Scope|(\Closure(\LaraGram\Database\Eloquent\Builder<static>): mixed)|null  $implementation
      * @return mixed
      *
      * @throws \InvalidArgumentException
@@ -93,7 +107,7 @@ trait HasGlobalScopes
      * Get a global scope registered with the model.
      *
      * @param  \LaraGram\Database\Eloquent\Scope|string  $scope
-     * @return \LaraGram\Database\Eloquent\Scope|\Closure|null
+     * @return \LaraGram\Database\Eloquent\Scope|(\Closure(\LaraGram\Database\Eloquent\Builder<static>): mixed)|null
      */
     public static function getGlobalScope($scope)
     {

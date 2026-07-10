@@ -335,70 +335,14 @@ class PatternValidator implements ValidatorInterface
      */
     protected function matchesContext(Listen $listen, ProvidesListenContext $request): bool
     {
-        $verb    = $request->listenVerb();
-        $pattern = $listen->pattern();
-
-        if (in_array($verb, ['TEXT', 'COMMAND', 'REFERRAL', 'CALLBACK_DATA'], true)) {
-            $value = $request->listenValue($verb);
-
-            if ($value === null) {
-                return false;
-            }
-
-            return (bool) preg_match($listen->getCompiled()->getRegex(), $value);
-        }
-
-        if ($verb === 'ENTITIES') {
-            $wanted = explode('|', $pattern);
-
-            foreach ($request->entities() as $entity) {
-                $ctor = is_array($entity) ? ($entity['_'] ?? null) : null;
-
-                if ($ctor !== null && in_array($ctor, $wanted, true)) {
-                    return true;
-                }
-            }
-
-            return false;
-        }
-
-        if ($verb === 'DICE') {
-            return $this->matchDice($pattern, $request->listenValue('DICE'));
-        }
-
+        $verb  = $request->listenVerb();
         $value = $request->listenValue($verb);
 
+        // Structural verb — no string to regex-match; verb match is enough.
         if ($value === null) {
-            return false;
-        }
-
-        if ($pattern === '*' || $pattern === '.*') {
             return true;
         }
 
-        return in_array($value, explode('|', $pattern), true);
-    }
-
-    /**
-     * Match a dice "emoji,value" pattern against the update's dice value.
-     */
-    protected function matchDice(string $pattern, ?string $value): bool
-    {
-        if ($value === null || !str_contains($pattern, ',') || !str_contains($value, ',')) {
-            return false;
-        }
-
-        [$pEmoji, $pValue] = explode(',', $pattern, 2);
-        [$emoji, $val]     = explode(',', $value, 2);
-
-        $emojiMatch = $pEmoji === 'any'
-            || $pEmoji === $emoji
-            || in_array($emoji, explode('|', $pEmoji), true);
-
-        $valueMatch = $pValue === '0'
-            || (is_numeric($pValue) && $pValue === $val)
-            || in_array($val, explode('|', $pValue), true);
-
-        return $emojiMatch && $valueMatch;
+        return (bool) preg_match($listen->getCompiled()->getRegex(), $value);
     }
 }

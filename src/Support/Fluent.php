@@ -3,9 +3,15 @@
 namespace LaraGram\Support;
 
 use ArrayAccess;
-use Closure;
+use ArrayIterator;
 use LaraGram\Contracts\Support\Arrayable;
+use LaraGram\Contracts\Support\Jsonable;
+use LaraGram\Support\Traits\Conditionable;
+use LaraGram\Support\Traits\InteractsWithData;
+use LaraGram\Support\Traits\Macroable;
+use IteratorAggregate;
 use JsonSerializable;
+use Traversable;
 
 /**
  * @template TKey of array-key
@@ -14,8 +20,12 @@ use JsonSerializable;
  * @implements \LaraGram\Contracts\Support\Arrayable<TKey, TValue>
  * @implements \ArrayAccess<TKey, TValue>
  */
-class Fluent implements Arrayable, ArrayAccess, JsonSerializable
+class Fluent implements Arrayable, ArrayAccess, IteratorAggregate, Jsonable, JsonSerializable
 {
+    use Conditionable, InteractsWithData, Macroable {
+        __call as macroCall;
+    }
+
     /**
      * All of the attributes set on the fluent instance.
      *
@@ -27,13 +37,21 @@ class Fluent implements Arrayable, ArrayAccess, JsonSerializable
      * Create a new fluent instance.
      *
      * @param  iterable<TKey, TValue>  $attributes
-     * @return void
      */
     public function __construct($attributes = [])
     {
-        foreach ($attributes as $key => $value) {
-            $this->attributes[$key] = $value;
-        }
+        $this->fill($attributes);
+    }
+
+    /**
+     * Create a new fluent instance.
+     *
+     * @param  iterable<TKey, TValue>  $attributes
+     * @return static
+     */
+    public static function make($attributes = [])
+    {
+        return new static($attributes);
     }
 
     /**
@@ -50,58 +68,33 @@ class Fluent implements Arrayable, ArrayAccess, JsonSerializable
         return data_get($this->attributes, $key, $default);
     }
 
-    private function data_get($target, $key, $default = null)
+    /**
+     * Set an attribute on the fluent instance using "dot" notation.
+     *
+     * @param  TKey  $key
+     * @param  TValue  $value
+     * @return $this
+     */
+    public function set($key, $value)
     {
-        if (is_null($key)) {
-            return $target;
+        data_set($this->attributes, $key, $value);
+
+        return $this;
+    }
+
+    /**
+     * Fill the fluent instance with an array of attributes.
+     *
+     * @param  iterable<TKey, TValue>  $attributes
+     * @return $this
+     */
+    public function fill($attributes)
+    {
+        foreach ($attributes as $key => $value) {
+            $this->attributes[$key] = $value;
         }
 
-        $key = is_array($key) ? $key : explode('.', $key);
-
-        foreach ($key as $i => $segment) {
-            unset($key[$i]);
-
-            if (is_null($segment)) {
-                return $target;
-            }
-
-            if ($segment === '*') {
-                if (! is_iterable($target)) {
-                    return value($default);
-                }
-
-                $result = [];
-
-                foreach ($target as $item) {
-                    $result[] = $this->data_get($item, $key);
-                }
-
-                return in_array('*', $key) ? Arr::collapse($result) : $result;
-            }
-
-            $segment = match ($segment) {
-                '*' => '*',
-                '{first}' => '{first}',
-                '{last}' => '{last}',
-                default => is_array($target) ? (array_key_first($target) ?? $segment) : (array_key_first((array) $target) ?? $segment),
-            };
-
-            if ($segment === '{first}') {
-                $segment = is_array($target) ? array_key_first($target) : array_key_first((array) $target);
-            } elseif ($segment === '{last}') {
-                $segment = is_array($target) ? array_key_last($target) : array_key_last((array) $target);
-            }
-
-            if (Arr::accessible($target) && Arr::exists($target, $segment)) {
-                $target = $target[$segment];
-            } elseif (is_object($target) && isset($target->{$segment})) {
-                $target = $target->{$segment};
-            } else {
-                return $default instanceof Closure ? $default() : $default;
-            }
-        }
-
-        return $target;
+        return $this;
     }
 
     /**
@@ -117,7 +110,7 @@ class Fluent implements Arrayable, ArrayAccess, JsonSerializable
             return $this->attributes[$key];
         }
 
-        return $default instanceof Closure ? $default() : $default;
+        return value($default);
     }
 
     /**
@@ -132,6 +125,41 @@ class Fluent implements Arrayable, ArrayAccess, JsonSerializable
         return new static(
             (array) $this->get($key, $default)
         );
+    }
+
+    /**
+     * Get all of the attributes from the fluent instance.
+     *
+     * @param  mixed  $keys
+     * @return array<TKey, TValue>
+     */
+    public function all($keys = null)
+    {
+        $data = $this->data();
+
+        if (! $keys) {
+            return $data;
+        }
+
+        $results = [];
+
+        foreach (is_array($keys) ? $keys : func_get_args() as $key) {
+            Arr::set($results, $key, Arr::get($data, $key));
+        }
+
+        return $results;
+    }
+
+    /**
+     * Get data from the fluent instance.
+     *
+     * @param  string|null  $key
+     * @param  mixed  $default
+     * @return mixed
+     */
+    protected function data($key = null, $default = null)
+    {
+        return $this->get($key, $default);
     }
 
     /**
@@ -154,11 +182,6 @@ class Fluent implements Arrayable, ArrayAccess, JsonSerializable
         return $this->attributes;
     }
 
-    public function collect($key = null)
-    {
-        return $this->get($key);
-    }
-
     /**
      * Convert the object into something JSON serializable.
      *
@@ -178,6 +201,37 @@ class Fluent implements Arrayable, ArrayAccess, JsonSerializable
     public function toJson($options = 0)
     {
         return json_encode($this->jsonSerialize(), $options);
+    }
+
+    /**
+     * Convert the fluent instance to pretty print formatted JSON.
+     *
+     * @param  int  $options
+     * @return string
+     */
+    public function toPrettyJson(int $options = 0)
+    {
+        return $this->toJson(JSON_PRETTY_PRINT | $options);
+    }
+
+    /**
+     * Determine if the fluent instance is empty.
+     *
+     * @return bool
+     */
+    public function isEmpty(): bool
+    {
+        return empty($this->attributes);
+    }
+
+    /**
+     * Determine if the fluent instance is not empty.
+     *
+     * @return bool
+     */
+    public function isNotEmpty(): bool
+    {
+        return ! $this->isEmpty();
     }
 
     /**
@@ -226,15 +280,29 @@ class Fluent implements Arrayable, ArrayAccess, JsonSerializable
     }
 
     /**
+     * Get an iterator for the attributes.
+     *
+     * @return ArrayIterator<TKey, TValue>
+     */
+    public function getIterator(): Traversable
+    {
+        return new ArrayIterator($this->attributes);
+    }
+
+    /**
      * Handle dynamic calls to the fluent instance to set attributes.
      *
      * @param  TKey  $method
-     * @param  array{0: ?TValue}  $parameters
+     * @param  array{0?: ?TValue}  $parameters
      * @return $this
      */
     public function __call($method, $parameters)
     {
-        $this->attributes[$method] = count($parameters) > 0 ? reset($parameters) : true;
+        if (static::hasMacro($method)) {
+            return $this->macroCall($method, $parameters);
+        }
+
+        $this->attributes[$method] = count($parameters) > 0 ? array_first($parameters) : true;
 
         return $this;
     }

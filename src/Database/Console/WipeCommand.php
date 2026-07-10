@@ -5,13 +5,14 @@ namespace LaraGram\Database\Console;
 use LaraGram\Console\Command;
 use LaraGram\Console\ConfirmableTrait;
 use LaraGram\Console\Prohibitable;
+use LaraGram\Database\Console\Concerns\InteractsWithPooledConnections;
 use LaraGram\Console\Attribute\AsCommand;
 use LaraGram\Console\Input\InputOption;
 
 #[AsCommand(name: 'db:wipe')]
 class WipeCommand extends Command
 {
-    use ConfirmableTrait, Prohibitable;
+    use ConfirmableTrait, Prohibitable, InteractsWithPooledConnections;
 
     /**
      * The console command name.
@@ -57,6 +58,8 @@ class WipeCommand extends Command
             $this->components->info('Dropped all types successfully.');
         }
 
+        $this->flushDatabaseConnection($database);
+
         return 0;
     }
 
@@ -68,9 +71,9 @@ class WipeCommand extends Command
      */
     protected function dropAllTables($database)
     {
-        $this->laragram['db']->connection($database)
-                    ->getSchemaBuilder()
-                    ->dropAllTables();
+        $this->resolveDirectConnectionIfPossible($this->laragram['db'], $database)
+            ->getSchemaBuilder()
+            ->dropAllTables();
     }
 
     /**
@@ -81,9 +84,9 @@ class WipeCommand extends Command
      */
     protected function dropAllViews($database)
     {
-        $this->laragram['db']->connection($database)
-                    ->getSchemaBuilder()
-                    ->dropAllViews();
+        $this->resolveDirectConnectionIfPossible($this->laragram['db'], $database)
+            ->getSchemaBuilder()
+            ->dropAllViews();
     }
 
     /**
@@ -94,9 +97,20 @@ class WipeCommand extends Command
      */
     protected function dropAllTypes($database)
     {
-        $this->laragram['db']->connection($database)
-                    ->getSchemaBuilder()
-                    ->dropAllTypes();
+        $this->resolveDirectConnectionIfPossible($this->laragram['db'], $database)
+            ->getSchemaBuilder()
+            ->dropAllTypes();
+    }
+
+    /**
+     * Flush the given database connection.
+     *
+     * @param  string  $database
+     * @return void
+     */
+    protected function flushDatabaseConnection($database)
+    {
+        $this->resolveDirectConnectionIfPossible($this->laragram['db'], $database)->disconnect();
     }
 
     /**

@@ -2,7 +2,7 @@
 
 namespace LaraGram\Listening\Expression\Node;
 
-use Symfony\Component\ExpressionLanguage\Compiler;
+use LaraGram\Listening\Expression\Compiler;
 
 class NameNode extends Node
 {

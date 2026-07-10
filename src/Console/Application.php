@@ -3,19 +3,23 @@
 namespace LaraGram\Console;
 
 use Closure;
-use LaraGram\Console\Command\Command as LaraGramCommand;
 use LaraGram\Console\Events\CommanderStarting;
+use LaraGram\Contracts\Console\Application as ApplicationContract;
+use LaraGram\Contracts\Container\Container;
+use LaraGram\Contracts\Events\Dispatcher;
+use LaraGram\Support\ProcessUtils;
+use ReflectionClass;
+use LaraGram\Console\Attribute\AsCommand;
+use LaraGram\Console\Command\Command as LaraGramCommand;
 use LaraGram\Console\Exception\CommandNotFoundException;
 use LaraGram\Console\Input\ArrayInput;
 use LaraGram\Console\Input\InputDefinition;
 use LaraGram\Console\Input\InputOption;
 use LaraGram\Console\Input\StringInput;
 use LaraGram\Console\Output\BufferedOutput;
-use LaraGram\Contracts\Console\Application as ApplicationContract;
-use LaraGram\Container\Container;
-use LaraGram\Events\Dispatcher;
-use LaraGram\Support\Process\PhpExecutableFinder;
-use LaraGram\Support\ProcessUtils;
+
+use function LaraGram\Support\commander_binary;
+use function LaraGram\Support\php_binary;
 
 class Application extends ExtendedApplication implements ApplicationContract
 {
@@ -50,7 +54,7 @@ class Application extends ExtendedApplication implements ApplicationContract
     /**
      * A map of command names to classes.
      *
-     * @var array
+     * @var array<string, \LaraGram\Console\Command|string>
      */
     protected $commandMap = [];
 
@@ -60,7 +64,6 @@ class Application extends ExtendedApplication implements ApplicationContract
      * @param  \LaraGram\Contracts\Container\Container  $laragram
      * @param  \LaraGram\Contracts\Events\Dispatcher  $events
      * @param  string  $version
-     * @return void
      */
     public function __construct(Container $laragram, Dispatcher $events, $version)
     {
@@ -83,7 +86,7 @@ class Application extends ExtendedApplication implements ApplicationContract
      */
     public static function phpBinary()
     {
-        return ProcessUtils::escapeArgument((new PhpExecutableFinder)->find(false) ?: 'php');
+        return ProcessUtils::escapeArgument(php_binary());
     }
 
     /**
@@ -93,7 +96,7 @@ class Application extends ExtendedApplication implements ApplicationContract
      */
     public static function commanderBinary()
     {
-        return ProcessUtils::escapeArgument('laragram');
+        return ProcessUtils::escapeArgument(commander_binary());
     }
 
     /**
@@ -143,7 +146,7 @@ class Application extends ExtendedApplication implements ApplicationContract
     /**
      * Run an Commander console command by name.
      *
-     * @param  string  $command
+     * @param  \LaraGram\Console\Command\Command|string  $command
      * @param  array  $parameters
      * @param  \LaraGram\Console\Output\OutputInterface|null  $outputBuffer
      * @return int
@@ -166,14 +169,18 @@ class Application extends ExtendedApplication implements ApplicationContract
     /**
      * Parse the incoming Commander command and its input.
      *
-     * @param  string  $command
+     * @param  \LaraGram\Console\Command\Command|string  $command
      * @param  array  $parameters
-     * @return array
+     * @return array<string, \LaraGram\Console\Input\ArrayInput>
      */
     protected function parseCommand($command, $parameters)
     {
         if (is_subclass_of($command, LaraGramCommand::class)) {
             $callingClass = true;
+
+            if (is_object($command)) {
+                $command = get_class($command);
+            }
 
             $command = $this->laragram->make($command)->getName();
         }
@@ -197,18 +204,28 @@ class Application extends ExtendedApplication implements ApplicationContract
     public function output()
     {
         return $this->lastOutput && method_exists($this->lastOutput, 'fetch')
-                        ? $this->lastOutput->fetch()
-                        : '';
+            ? $this->lastOutput->fetch()
+            : '';
+    }
+
+    /**
+     * Alias for addCommand() since LaraGram's add() method was deprecated.
+     *
+     * @param  \LaraGram\Console\Command\Command  $command
+     * @return \LaraGram\Console\Command\Command|null
+     */
+    public function add(LaraGramCommand $command): ?LaraGramCommand
+    {
+        return $this->addCommand($command);
     }
 
     /**
      * Add a command to the console.
      *
-     * @param  \LaraGram\Console\Command\Command  $command
+     * @param  \LaraGram\Console\Command\Command|callable  $command
      * @return \LaraGram\Console\Command\Command|null
      */
-    #[\Override]
-    public function add(LaraGramCommand $command): ?LaraGramCommand
+    public function addCommand(LaraGramCommand|callable $command): ?LaraGramCommand
     {
         if ($command instanceof Command) {
             $command->setLaraGram($this->laragram);
@@ -220,10 +237,10 @@ class Application extends ExtendedApplication implements ApplicationContract
     /**
      * Add the command to the parent instance.
      *
-     * @param  \LaraGram\Console\Command\Command  $command
+     * @param  \LaraGram\Console\Command\Command|callable  $command
      * @return \LaraGram\Console\Command\Command
      */
-    protected function addToParent(LaraGramCommand $command)
+    protected function addToParent(LaraGramCommand|callable $command)
     {
         return parent::add($command);
     }
@@ -236,25 +253,31 @@ class Application extends ExtendedApplication implements ApplicationContract
      */
     public function resolve($command)
     {
-        if (is_subclass_of($command, LaraGramCommand::class) && ($commandName = $command::getDefaultName())) {
-            foreach (explode('|', $commandName) as $name) {
-                $this->commandMap[$name] = $command;
-            }
+        if (is_subclass_of($command, LaraGramCommand::class)) {
+            $attribute = (new ReflectionClass($command))->getAttributes(AsCommand::class);
 
-            return null;
+            $commandName = ! empty($attribute) ? $attribute[0]->newInstance()->name : null;
+
+            if (! is_null($commandName)) {
+                foreach (explode('|', $commandName) as $name) {
+                    $this->commandMap[$name] = $command;
+                }
+
+                return null;
+            }
         }
 
         if ($command instanceof Command) {
-            return $this->add($command);
+            return $this->addCommand($command);
         }
 
-        return $this->add($this->laragram->make($command));
+        return $this->addCommand($this->laragram->make($command));
     }
 
     /**
      * Resolve an array of commands through the application.
      *
-     * @param  array|mixed  $commands
+     * @param  mixed  $commands
      * @return $this
      */
     public function resolveCommands($commands)
@@ -290,10 +313,9 @@ class Application extends ExtendedApplication implements ApplicationContract
     #[\Override]
     protected function getDefaultInputDefinition(): InputDefinition
     {
-        $definition = parent::getDefaultInputDefinition();
-        $definition->addOption($this->getEnvironmentOption());
-
-        return $definition;
+        return tap(parent::getDefaultInputDefinition(), function ($definition) {
+            $definition->addOption($this->getEnvironmentOption());
+        });
     }
 
     /**

@@ -3,6 +3,7 @@
 namespace LaraGram\Queue;
 
 use LaraGram\Queue\Attributes\WithoutRelations;
+use LaraGram\Support\Reflector;
 use ReflectionClass;
 use ReflectionProperty;
 
@@ -24,7 +25,7 @@ trait SerializesModels
         [$class, $properties, $classLevelWithoutRelations] = [
             get_class($this),
             $reflectionClass->getProperties(),
-            ! empty($reflectionClass->getAttributes(WithoutRelations::class)),
+            ! is_null(Reflector::getClassAttribute($this, WithoutRelations::class, ascend: true)),
         ];
 
         foreach ($properties as $property) {
@@ -33,6 +34,10 @@ trait SerializesModels
             }
 
             if (! $property->isInitialized($this)) {
+                continue;
+            }
+
+            if (method_exists($property, 'isVirtual') && $property->isVirtual()) {
                 continue;
             }
 

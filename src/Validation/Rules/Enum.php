@@ -7,16 +7,19 @@ use LaraGram\Contracts\Validation\Rule;
 use LaraGram\Contracts\Validation\ValidatorAwareRule;
 use LaraGram\Support\Arr;
 use LaraGram\Support\Traits\Conditionable;
+use Stringable;
 use TypeError;
 
-class Enum implements Rule, ValidatorAwareRule
+use function LaraGram\Support\enum_value;
+
+class Enum implements Rule, ValidatorAwareRule, Stringable
 {
     use Conditionable;
 
     /**
      * The type of the enum.
      *
-     * @var class-string
+     * @var class-string<\UnitEnum>
      */
     protected $type;
 
@@ -44,8 +47,7 @@ class Enum implements Rule, ValidatorAwareRule
     /**
      * Create a new rule instance.
      *
-     * @param  class-string  $type
-     * @return void
+     * @param  class-string<\UnitEnum>  $type
      */
     public function __construct($type)
     {
@@ -144,5 +146,25 @@ class Enum implements Rule, ValidatorAwareRule
         $this->validator = $validator;
 
         return $this;
+    }
+
+    /**
+     * Convert the rule to a validation string.
+     *
+     * @return string
+     */
+    public function __toString(): string
+    {
+        $cases = ! empty($this->only)
+            ? $this->only
+            : array_filter($this->type::cases(), fn ($case) => ! in_array($case, $this->except, true));
+
+        $values = array_map(function ($case) {
+            $value = enum_value($case);
+
+            return '"'.str_replace('"', '""', (string) $value).'"';
+        }, $cases);
+
+        return 'in:'.implode(',', $values);
     }
 }

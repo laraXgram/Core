@@ -3,6 +3,7 @@
 namespace LaraGram\Database\Eloquent\Relations\Concerns;
 
 use LaraGram\Database\Eloquent\Model;
+use LaraGram\Database\Eloquent\Relations\MorphPivot;
 use LaraGram\Support\Str;
 
 trait AsPivot
@@ -166,13 +167,13 @@ trait AsPivot
      */
     public function getTable()
     {
-        if (! isset($this->table)) {
+        if (! isset($this->table) && (! $this instanceof MorphPivot)) {
             $this->setTable(str_replace(
                 '\\', '', Str::snake(Str::singular(class_basename($this)))
             ));
         }
 
-        return $this->table;
+        return parent::getTable();
     }
 
     /**
@@ -242,7 +243,8 @@ trait AsPivot
      */
     public function hasTimestampAttributes($attributes = null)
     {
-        return array_key_exists($this->getCreatedAtColumn(), $attributes ?? $this->attributes);
+        return ($createdAt = $this->getCreatedAtColumn()) !== null
+            && array_key_exists($createdAt, $attributes ?? $this->attributes);
     }
 
     /**

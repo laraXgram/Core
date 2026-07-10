@@ -4,6 +4,7 @@ namespace LaraGram\Database\Console\Seeds;
 
 use LaraGram\Console\Command;
 use LaraGram\Console\ConfirmableTrait;
+use LaraGram\Console\Prohibitable;
 use LaraGram\Database\ConnectionResolverInterface as Resolver;
 use LaraGram\Database\Eloquent\Model;
 use LaraGram\Console\Attribute\AsCommand;
@@ -13,7 +14,7 @@ use LaraGram\Console\Input\InputOption;
 #[AsCommand(name: 'db:seed')]
 class SeedCommand extends Command
 {
-    use ConfirmableTrait;
+    use ConfirmableTrait, Prohibitable;
 
     /**
      * The console command name.
@@ -40,7 +41,6 @@ class SeedCommand extends Command
      * Create a new database seed command instance.
      *
      * @param  \LaraGram\Database\ConnectionResolverInterface  $resolver
-     * @return void
      */
     public function __construct(Resolver $resolver)
     {
@@ -56,8 +56,9 @@ class SeedCommand extends Command
      */
     public function handle()
     {
-        if (! $this->confirmToProceed()) {
-            return 1;
+        if ($this->isProhibited() ||
+            ! $this->confirmToProceed()) {
+            return Command::FAILURE;
         }
 
         $this->components->info('Seeding database.');
@@ -96,8 +97,8 @@ class SeedCommand extends Command
         }
 
         return $this->laragram->make($class)
-                        ->setContainer($this->laragram)
-                        ->setCommand($this);
+            ->setContainer($this->laragram)
+            ->setCommand($this);
     }
 
     /**
