@@ -2,7 +2,7 @@
 
 namespace LaraGram\Console\Scheduling;
 
-use DateTime;
+use Exception;
 use LaraGram\Console\Application;
 use LaraGram\Console\Command;
 use LaraGram\Console\Events\ScheduledTaskFailed;
@@ -12,6 +12,8 @@ use LaraGram\Console\Events\ScheduledTaskStarting;
 use LaraGram\Contracts\Cache\Repository as Cache;
 use LaraGram\Contracts\Debug\ExceptionHandler;
 use LaraGram\Contracts\Events\Dispatcher;
+use LaraGram\Support\Tempora;
+use LaraGram\Support\Facades\Date;
 use LaraGram\Support\Sleep;
 use LaraGram\Console\Attribute\AsCommand;
 use Throwable;
@@ -20,11 +22,11 @@ use Throwable;
 class ScheduleRunCommand extends Command
 {
     /**
-     * The console command name.
+     * The name and signature of the console command.
      *
      * @var string
      */
-    protected $name = 'schedule:run';
+    protected $signature = 'schedule:run {--whisper : Do not output message indicating that no jobs were ready to run}';
 
     /**
      * The console command description.
@@ -43,7 +45,7 @@ class ScheduleRunCommand extends Command
     /**
      * The 24 hour timestamp this scheduler command started running.
      *
-     * @var \DateTimeInterface
+     * @var \LaraGram\Support\Tempora
      */
     protected $startedAt;
 
@@ -84,12 +86,10 @@ class ScheduleRunCommand extends Command
 
     /**
      * Create a new command instance.
-     *
-     * @return void
      */
     public function __construct()
     {
-        $this->startedAt = new DateTime();
+        $this->startedAt = Date::now();
 
         parent::__construct();
     }
@@ -111,19 +111,29 @@ class ScheduleRunCommand extends Command
         $this->handler = $handler;
         $this->phpBinary = Application::phpBinary();
 
-        $this->newLine();
-
         $events = $this->schedule->dueEvents($this->laragram);
 
         if ($events->contains->isRepeatable()) {
             $this->clearInterruptSignal();
         }
 
+        $paused = $this->isPaused();
+
         foreach ($events as $event) {
+            if ($paused && ! $event->runsWhenPaused()) {
+                $this->dispatcher->dispatch(new ScheduledTaskSkipped($event));
+
+                continue;
+            }
+
             if (! $event->filtersPass($this->laragram)) {
                 $this->dispatcher->dispatch(new ScheduledTaskSkipped($event));
 
                 continue;
+            }
+
+            if (! $this->eventsRan) {
+                $this->newLine();
             }
 
             if ($event->onOneServer) {
@@ -140,7 +150,9 @@ class ScheduleRunCommand extends Command
         }
 
         if (! $this->eventsRan) {
-            $this->components->info('No scheduled commands are ready to run.');
+            if (! $this->option('whisper')) {
+                $this->components->info('No scheduled commands are ready to run.');
+            }
         } else {
             $this->newLine();
         }
@@ -158,7 +170,7 @@ class ScheduleRunCommand extends Command
             $this->runEvent($event);
         } else {
             $this->components->info(sprintf(
-                'Skipping [%s], as command already run on another server.', $event->getSummaryForDisplay()
+                'Skipping [%s] because the command already ran on another server.', $event->getSummaryForDisplay()
             ));
         }
     }
@@ -179,9 +191,9 @@ class ScheduleRunCommand extends Command
 
         $description = sprintf(
             '<fg=gray>%s</> Running [%s]%s',
-            (new DateTime())->format('Y-m-d H:i:s'),
+            Tempora::now()->format('Y-m-d H:i:s'),
             $command,
-            $event->runInBackground ? ' in background' : ''
+            $event->runInBackground ? ' in background' : '',
         );
 
         $this->components->task($description, function () use ($event) {
@@ -198,6 +210,10 @@ class ScheduleRunCommand extends Command
                 ));
 
                 $this->eventsRan = true;
+
+                if ($event->exitCode != 0 && ! $event->runInBackground) {
+                    throw new Exception("Scheduled command [{$event->command}] failed with exit code [{$event->exitCode}].");
+                }
             } catch (Throwable $e) {
                 $this->dispatcher->dispatch(new ScheduledTaskFailed($event, $e));
 
@@ -222,17 +238,35 @@ class ScheduleRunCommand extends Command
      */
     protected function repeatEvents($events)
     {
-        $now = new DateTime();
-        $endOfMinute = clone $this->startedAt;
-        $endOfMinute->setTime((int)$this->startedAt->format('H'), (int)$this->startedAt->format('i'), 59);
+        $hasEnteredMaintenanceMode = false;
 
-        while ($now <= $endOfMinute) {
+        $endOfMinute = $this->startedAt->copy()->endOfMinute();
+
+        while (Date::now()->lte($endOfMinute)) {
+            $paused = $this->isPaused();
+
             foreach ($events as $event) {
                 if ($this->shouldInterrupt()) {
                     return;
                 }
 
                 if (! $event->shouldRepeatNow()) {
+                    continue;
+                }
+
+                if (Date::now()->gt($endOfMinute)) {
+                    return;
+                }
+
+                $hasEnteredMaintenanceMode = $hasEnteredMaintenanceMode || $this->laragram->isDownForMaintenance();
+
+                if ($hasEnteredMaintenanceMode && ! $event->runsInMaintenanceMode()) {
+                    continue;
+                }
+
+                if ($paused && ! $event->runsWhenPaused()) {
+                    $this->dispatcher->dispatch(new ScheduledTaskSkipped($event));
+
                     continue;
                 }
 
@@ -251,8 +285,22 @@ class ScheduleRunCommand extends Command
                 $this->eventsRan = true;
             }
 
-            Sleep::usleep(100000);
+            Sleep::usleep(100_000);
         }
+    }
+
+    /**
+     * Determine if the schedule is paused.
+     *
+     * @return bool
+     */
+    protected function isPaused()
+    {
+        if (! Schedule::$pausable) {
+            return false;
+        }
+
+        return $this->cache->get('illuminate:schedule:paused', false);
     }
 
     /**
@@ -262,7 +310,11 @@ class ScheduleRunCommand extends Command
      */
     protected function shouldInterrupt()
     {
-        return $this->cache->get('LaraGram:schedule:interrupt', false);
+        if (! Schedule::$interruptible) {
+            return false;
+        }
+
+        return $this->cache->get('illuminate:schedule:interrupt', false);
     }
 
     /**
@@ -272,6 +324,6 @@ class ScheduleRunCommand extends Command
      */
     protected function clearInterruptSignal()
     {
-        $this->cache->forget('LaraGram:schedule:interrupt');
+        $this->cache->forget('illuminate:schedule:interrupt');
     }
 }

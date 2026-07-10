@@ -15,7 +15,6 @@ class Error extends Component
      */
     public function render($string, $verbosity = OutputInterface::VERBOSITY_NORMAL)
     {
-        $line = new Line($this->output);
-        $line->render('error', $string, $verbosity);
+        (new Line($this->output))->render('error', $string, $verbosity);
     }
 }

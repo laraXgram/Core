@@ -2,9 +2,9 @@
 
 namespace LaraGram\Console\Scheduling;
 
-use DateTime;
 use LaraGram\Console\Application;
 use LaraGram\Console\Command;
+use LaraGram\Support\Tempora;
 use LaraGram\Support\ProcessUtils;
 use LaraGram\Console\Attribute\AsCommand;
 use LaraGram\Console\Output\OutputInterface;
@@ -18,7 +18,9 @@ class ScheduleWorkCommand extends Command
      *
      * @var string
      */
-    protected $signature = 'schedule:work {--run-output-file= : The file to direct <info>schedule:run</info> output to}';
+    protected $signature = 'schedule:work
+        {--run-output-file= : The file to direct <info>schedule:run</info> output to}
+        {--whisper : Do not output message indicating that no jobs were ready to run}';
 
     /**
      * The console command description.
@@ -28,51 +30,108 @@ class ScheduleWorkCommand extends Command
     protected $description = 'Start the schedule worker';
 
     /**
+     * The "schedule:run" executions that are currently running.
+     *
+     * @var \LaraGram\Console\Process\Process[]
+     */
+    protected $executions = [];
+
+    /**
+     * Indicates if the schedule worker should exit.
+     *
+     * @var bool
+     */
+    protected $shouldQuit = false;
+
+    /**
      * Execute the console command.
      *
-     * @return void
+     * @return int
      */
     public function handle()
     {
-        $this->components->info('Running scheduled tasks.');
-
-        $lastExecutionStartedAt = new DateTime();
-        $lastExecutionStartedAt->modify('-10 minutes');
-        $executions = [];
+        $this->components->info(
+            'Running scheduled tasks.',
+            $this->getLaraGram()->environment('local') ? OutputInterface::VERBOSITY_NORMAL : OutputInterface::VERBOSITY_VERBOSE
+        );
 
         $command = Application::formatCommandString('schedule:run');
+
+        if ($this->option('whisper')) {
+            $command .= ' --whisper';
+        }
 
         if ($this->option('run-output-file')) {
             $command .= ' >> '.ProcessUtils::escapeArgument($this->option('run-output-file')).' 2>&1';
         }
 
+        $this->listenForSignals();
+
+        return $this->work($command);
+    }
+
+    /**
+     * Run the schedule worker loop until it is signalled to stop.
+     *
+     * @param  string  $command
+     * @return int
+     */
+    protected function work($command)
+    {
+        $lastExecutionStartedAt = Tempora::now()->subMinutes(10);
+
         while (true) {
-            usleep(100 * 1000);
+            $this->sleep();
 
-            $now = new DateTime();
-
-            $lastExecutionStartedAtStartOfMinute = clone $lastExecutionStartedAt;
-            $lastExecutionStartedAtStartOfMinute->setTime((int)$lastExecutionStartedAt->format('H'), (int)$lastExecutionStartedAt->format('i'), 0);
-
-            if ($now->format('s') === '00' && $now != $lastExecutionStartedAtStartOfMinute) {
-                $executions[] = $execution = Process::fromShellCommandline($command);
+            // Once a stop signal has been received we stop scheduling new runs so
+            // that the worker can stop any in-flight executions before exiting
+            // which lets the current tasks execute instead of being stopped.
+            if (! $this->shouldQuit &&
+                Tempora::now()->second === 0 &&
+                ! Tempora::now()->startOfMinute()->equalTo($lastExecutionStartedAt)) {
+                $this->executions[] = $execution = Process::fromShellCommandline($command, base_path());
 
                 $execution->start();
 
-                $lastExecutionStartedAt = new DateTime();
-                $lastExecutionStartedAt->setTime((int)$now->format('H'), (int)$now->format('i'), 0);
+                $lastExecutionStartedAt = Tempora::now()->startOfMinute();
             }
 
-            foreach ($executions as $key => $execution) {
+            foreach ($this->executions as $key => $execution) {
                 $output = $execution->getIncrementalOutput().
                     $execution->getIncrementalErrorOutput();
 
                 $this->output->write(ltrim($output, "\n"));
 
                 if (! $execution->isRunning()) {
-                    unset($executions[$key]);
+                    unset($this->executions[$key]);
                 }
             }
+
+            if ($this->shouldQuit && empty($this->executions)) {
+                return static::SUCCESS;
+            }
         }
+    }
+
+    /**
+     * Listen for the signals that should terminate the schedule worker.
+     *
+     * @return void
+     */
+    protected function listenForSignals()
+    {
+        $this->trap(fn () => [SIGINT, SIGTERM, SIGQUIT], function () {
+            $this->shouldQuit = true;
+        });
+    }
+
+    /**
+     * Sleep for a short period before the next worker tick.
+     *
+     * @return void
+     */
+    protected function sleep()
+    {
+        usleep(100 * 1000);
     }
 }

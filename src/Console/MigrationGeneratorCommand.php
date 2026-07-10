@@ -19,7 +19,6 @@ abstract class MigrationGeneratorCommand extends Command
      * Create a new migration generator command instance.
      *
      * @param  \LaraGram\Filesystem\Filesystem  $files
-     * @return void
      */
     public function __construct(Filesystem $files)
     {

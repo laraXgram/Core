@@ -30,7 +30,6 @@ abstract class Component
      * Creates a new component instance.
      *
      * @param  \LaraGram\Console\OutputStyle  $output
-     * @return void
      */
     public function __construct($output)
     {
@@ -57,7 +56,7 @@ abstract class Component
      *
      * @param  string  $view
      * @param  array  $data
-     * @return void
+     * @return string
      */
     protected function compile($view, $data)
     {
@@ -67,10 +66,9 @@ abstract class Component
 
         include __DIR__."/../../resources/views/components/$view.php";
 
-        $contents = ob_get_contents();
-        ob_end_clean();
-
-        return $contents;
+        return tap(ob_get_contents(), function () {
+            ob_end_clean();
+        });
     }
 
     /**
@@ -105,9 +103,9 @@ abstract class Component
      */
     protected function usingQuestionHelper($callable)
     {
-        $reflectionClass = new ReflectionClass(OutputStyle::class);
-        $parentClass = $reflectionClass->getParentClass();
-        $property = $parentClass->getProperty('questionHelper');
+        $property = (new ReflectionClass(OutputStyle::class))
+            ->getParentClass()
+            ->getProperty('questionHelper');
 
         $currentHelper = $property->isInitialized($this->output)
             ? $property->getValue($this->output)

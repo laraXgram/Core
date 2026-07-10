@@ -18,6 +18,9 @@ use LaraGram\Support\Collection;
 use LaraGram\Support\ProcessUtils;
 use LaraGram\Support\Traits\Macroable;
 use RuntimeException;
+use LaraGram\Console\Command\Command as SymfonyCommand;
+
+use function LaraGram\Support\enum_value;
 
 /**
  * @mixin \LaraGram\Console\Scheduling\PendingEventAttributes
@@ -99,10 +102,23 @@ class Schedule
     protected array $groupStack = [];
 
     /**
+     * Indicates if the schedule should check for the paused signal in the cache.
+     *
+     * @var bool
+     */
+    public static $pausable = true;
+
+    /**
+     * Indicates if the schedule should check for the interrupt signal in the cache.
+     *
+     * @var bool
+     */
+    public static $interruptible = true;
+
+    /**
      * Create a new schedule instance.
      *
      * @param  \DateTimeZone|string|null  $timezone
-     * @return void
      *
      * @throws \RuntimeException
      */
@@ -112,19 +128,19 @@ class Schedule
 
         if (! class_exists(Container::class)) {
             throw new RuntimeException(
-                'A container implementation is required to use the scheduler. Please install the LaraGram/container package.'
+                'A container implementation is required to use the scheduler. Please install the illuminate/container package.'
             );
         }
 
         $container = Container::getInstance();
 
         $this->eventMutex = $container->bound(EventMutex::class)
-                                ? $container->make(EventMutex::class)
-                                : $container->make(CacheEventMutex::class);
+            ? $container->make(EventMutex::class)
+            : $container->make(CacheEventMutex::class);
 
         $this->schedulingMutex = $container->bound(SchedulingMutex::class)
-                                ? $container->make(SchedulingMutex::class)
-                                : $container->make(CacheSchedulingMutex::class);
+            ? $container->make(SchedulingMutex::class)
+            : $container->make(CacheSchedulingMutex::class);
     }
 
     /**
@@ -148,12 +164,22 @@ class Schedule
     /**
      * Add a new Commander command event to the schedule.
      *
-     * @param  string  $command
+     * @param  \LaraGram\Console\Command\Command|string  $command
      * @param  array  $parameters
      * @return \LaraGram\Console\Scheduling\Event
      */
     public function command($command, array $parameters = [])
     {
+        if ($command instanceof SymfonyCommand) {
+            $command = get_class($command);
+
+            $command = Container::getInstance()->make($command);
+
+            return $this->exec(
+                Application::formatCommandString($command->getName()), $parameters,
+            )->description($command->getDescription());
+        }
+
         if (class_exists($command)) {
             $command = Container::getInstance()->make($command);
 
@@ -171,13 +197,16 @@ class Schedule
      * Add a new job callback event to the schedule.
      *
      * @param  object|string  $job
-     * @param  string|null  $queue
-     * @param  string|null  $connection
+     * @param  \UnitEnum|string|null  $queue
+     * @param  \UnitEnum|string|null  $connection
      * @return \LaraGram\Console\Scheduling\CallbackEvent
      */
     public function job($job, $queue = null, $connection = null)
     {
         $jobName = $job;
+
+        $queue = enum_value($queue);
+        $connection = enum_value($connection);
 
         if (! is_string($job)) {
             $jobName = method_exists($job, 'displayName')
@@ -185,15 +214,23 @@ class Schedule
                 : $job::class;
         }
 
-        return $this->name($jobName)->call(function () use ($job, $queue, $connection) {
-            $job = is_string($job) ? Container::getInstance()->make($job) : $job;
+        $this->events[] = $event = new CallbackEvent(
+            $this->eventMutex, function () use ($job, $queue, $connection) {
+                $job = is_string($job) ? Container::getInstance()->make($job) : $job;
 
-            if ($job instanceof ShouldQueue) {
-                $this->dispatchToQueue($job, $queue ?? $job->queue, $connection ?? $job->connection);
-            } else {
-                $this->dispatchNow($job);
-            }
-        });
+                if ($job instanceof ShouldQueue) {
+                    $this->dispatchToQueue($job, $queue ?? $job->queue, $connection ?? $job->connection);
+                } else {
+                    $this->dispatchNow($job);
+                }
+            }, [], $this->timezone
+        );
+
+        $event->name($jobName);
+
+        $this->mergePendingAttributes($event);
+
+        return $event;
     }
 
     /**
@@ -211,7 +248,7 @@ class Schedule
         if ($job instanceof Closure) {
             if (! class_exists(CallQueuedClosure::class)) {
                 throw new RuntimeException(
-                    'To enable support for closure jobs, please install the LaraGram/queue package.'
+                    'To enable support for closure jobs, please install the illuminate/queue package.'
                 );
             }
 
@@ -272,7 +309,7 @@ class Schedule
      */
     public function exec($command, array $parameters = [])
     {
-        if (count($parameters)) {
+        if ($parameters !== []) {
             $command .= ' '.$this->compileParameters($parameters);
         }
 
@@ -286,7 +323,7 @@ class Schedule
     /**
      * Create new schedule group.
      *
-     * @param  \LaraGram\Console\Scheduling\Event  $event
+     * @param  \Closure  $events
      * @return void
      *
      * @throws \RuntimeException
@@ -298,6 +335,7 @@ class Schedule
         }
 
         $this->groupStack[] = $this->attributes;
+        $this->attributes = null;
 
         $events($this);
 
@@ -316,10 +354,12 @@ class Schedule
             $this->attributes->mergeAttributes($event);
 
             $this->attributes = null;
+
+            return;
         }
 
         if (! empty($this->groupStack)) {
-            $group = end($this->groupStack);
+            $group = array_last($this->groupStack);
 
             $group->mergeAttributes($event);
         }
@@ -406,13 +446,29 @@ class Schedule
     }
 
     /**
+     * Get all of the events on the schedule which run on any of the provided environments.
+     *
+     * @param  list<string>  $environments
+     * @return \LaraGram\Console\Scheduling\Event[]
+     */
+    public function eventsForEnvironments(array $environments): array
+    {
+        return array_values(array_filter(
+            $this->events(),
+            static fn (Event $event) => array_any($environments, $event->runsInEnvironment(...))
+        ));
+    }
+
+    /**
      * Specify the cache store that should be used to store mutexes.
      *
-     * @param  string  $store
+     * @param  \UnitEnum|string  $store
      * @return $this
      */
     public function useCache($store)
     {
+        $store = enum_value($store);
+
         if ($this->eventMutex instanceof CacheAware) {
             $this->eventMutex->useStore($store);
         }
@@ -438,7 +494,7 @@ class Schedule
                 $this->dispatcher = Container::getInstance()->make(Dispatcher::class);
             } catch (BindingResolutionException $e) {
                 throw new RuntimeException(
-                    'Unable to resolve the dispatcher from the service container. Please bind it or install the LaraGram/bus package.',
+                    'Unable to resolve the dispatcher from the service container. Please bind it or install the illuminate/bus package.',
                     is_int($e->getCode()) ? $e->getCode() : 0, $e
                 );
             }
@@ -448,11 +504,26 @@ class Schedule
     }
 
     /**
+     * Indicate that the scheduler should not poll for pause or interrupt signals.
+     *
+     * This prevents the scheduler from hitting the application cache to determine if it needs to pause or interrupt.
+     *
+     * @return void
+     */
+    public static function withoutInterruptionPolling()
+    {
+        static::$pausable = false;
+        static::$interruptible = false;
+    }
+
+    /**
      * Dynamically handle calls into the schedule instance.
      *
      * @param  string  $method
      * @param  array  $parameters
      * @return mixed
+     *
+     * @throws \BadMethodCallException
      */
     public function __call($method, $parameters)
     {
@@ -460,8 +531,10 @@ class Schedule
             return $this->macroCall($method, $parameters);
         }
 
-        if (method_exists(PendingEventAttributes::class, $method)) {
-            $this->attributes ??= end($this->groupStack) ?: new PendingEventAttributes($this);
+        if (method_exists(PendingEventAttributes::class, $method)
+            || in_array($method, PendingEventAttributes::DEFERRED_EVENT_METHODS, true)
+            || Event::hasMacro($method)) {
+            $this->attributes ??= $this->groupStack ? clone array_last($this->groupStack) : new PendingEventAttributes($this);
 
             return $this->attributes->$method(...$parameters);
         }

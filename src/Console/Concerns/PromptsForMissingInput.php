@@ -5,6 +5,7 @@ namespace LaraGram\Console\Concerns;
 use Closure;
 use LaraGram\Contracts\Console\PromptsForMissingInput as PromptsForMissingInputContract;
 use LaraGram\Support\Arr;
+use LaraGram\Support\Collection;
 use LaraGram\Console\Input\InputArgument;
 use LaraGram\Console\Input\InputInterface;
 use LaraGram\Console\Output\OutputInterface;
@@ -20,7 +21,7 @@ trait PromptsForMissingInput
      * @param  \LaraGram\Console\Output\OutputInterface  $output
      * @return void
      */
-    protected function interact(InputInterface $input, OutputInterface $output)
+    protected function interact(InputInterface $input, OutputInterface $output): void
     {
         parent::interact($input, $output);
 
@@ -38,45 +39,33 @@ trait PromptsForMissingInput
      */
     protected function promptForMissingArguments(InputInterface $input, OutputInterface $output)
     {
-        $arguments = $this->getDefinition()->getArguments();
-
-        $filteredArguments = array_filter($arguments, fn (InputArgument $argument) => $argument->getName() !== 'command');
-
-        $missingArguments = array_filter($filteredArguments, function (InputArgument $argument) use ($input) {
-            if (!$argument->isRequired()) {
-                return false;
-            }
-
-            return match (true) {
+        $prompted = (new Collection($this->getDefinition()->getArguments()))
+            ->reject(fn (InputArgument $argument) => $argument->getName() === 'command')
+            ->filter(fn (InputArgument $argument) => $argument->isRequired() && match (true) {
                 $argument->isArray() => empty($input->getArgument($argument->getName())),
                 default => is_null($input->getArgument($argument->getName())),
-            };
-        });
+            })
+            ->each(function (InputArgument $argument) use ($input) {
+                $label = $this->promptForMissingArgumentsUsing()[$argument->getName()] ??
+                    'What is '.lcfirst($argument->getDescription() ?: ('the '.$argument->getName())).'?';
 
-        foreach ($missingArguments as $argument) {
-            $label = $this->promptForMissingArgumentsUsing()[$argument->getName()] ??
-                'What is ' . lcfirst($argument->getDescription() ?: ('the ' . $argument->getName())) . '?';
+                if ($label instanceof Closure) {
+                    return $input->setArgument($argument->getName(), $argument->isArray() ? Arr::wrap($label()) : $label());
+                }
 
-            if ($label instanceof Closure) {
-                $input->setArgument($argument->getName(), $argument->isArray() ? Arr::wrap($label()) : $label());
-                continue;
-            }
+                if (is_array($label)) {
+                    [$label, $placeholder] = $label;
+                }
 
-            if (is_array($label)) {
-                [$label, $placeholder] = $label;
-            }
+                $answer = text(
+                    label: $label,
+                    placeholder: $placeholder ?? '',
+                    validate: fn ($value) => empty($value) ? "The {$argument->getName()} is required." : null,
+                );
 
-            $answer = text(
-                label: $label,
-                placeholder: $placeholder ?? '',
-                validate: fn ($value) => empty($value) ? "The {$argument->getName()} is required." : null,
-            );
-
-            $input->setArgument($argument->getName(), $argument->isArray() ? [$answer] : $answer);
-        }
-
-        $prompted = !empty($missingArguments);
-
+                $input->setArgument($argument->getName(), $argument->isArray() ? [$answer] : $answer);
+            })
+            ->isNotEmpty();
 
         if ($prompted) {
             $this->afterPromptingForMissingArguments($input, $output);
@@ -86,7 +75,7 @@ trait PromptsForMissingInput
     /**
      * Prompt for missing input arguments using the returned questions.
      *
-     * @return array
+     * @return array<string, string|array{string, string}|\Closure(): (array<int|string>|string|int|bool)>
      */
     protected function promptForMissingArgumentsUsing()
     {
@@ -113,10 +102,8 @@ trait PromptsForMissingInput
      */
     protected function didReceiveOptions(InputInterface $input)
     {
-        $options = $this->getDefinition()->getOptions();
-
-        $filteredOptions = array_filter($options, fn ($option) => $input->getOption($option->getName()) !== $option->getDefault());
-
-        return !empty($filteredOptions);
+        return (new Collection($this->getDefinition()->getOptions()))
+            ->reject(fn ($option) => $input->getOption($option->getName()) === $option->getDefault())
+            ->isNotEmpty();
     }
 }

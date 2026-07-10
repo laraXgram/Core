@@ -3,15 +3,21 @@
 namespace LaraGram\Console;
 
 use LaraGram\Console\Concerns\CreatesMatchingTest;
+use LaraGram\Console\Concerns\FindsAvailableModels;
 use LaraGram\Contracts\Console\PromptsForMissingInput;
 use LaraGram\Filesystem\Filesystem;
-use LaraGram\Console\Input\InputArgument;
 use LaraGram\Support\Collection;
-use LaraGram\Support\Finder\Finder;
 use LaraGram\Support\Str;
+use LaraGram\Console\Completion\CompletionInput;
+use LaraGram\Console\Completion\CompletionSuggestions;
+use LaraGram\Console\Completion\Suggestion;
+use LaraGram\Console\Input\InputArgument;
+use LaraGram\Support\Finder\Finder;
 
 abstract class GeneratorCommand extends Command implements PromptsForMissingInput
 {
+    use FindsAvailableModels;
+
     /**
      * The filesystem instance.
      *
@@ -119,15 +125,12 @@ abstract class GeneratorCommand extends Command implements PromptsForMissingInpu
 
     /**
      * Create a new generator command instance.
-     *
-     * @param  \LaraGram\Filesystem\Filesystem  $files
-     * @return void
      */
     public function __construct(Filesystem $files)
     {
         parent::__construct();
 
-        if (in_array(CreatesMatchingTest::class, class_uses_recursive($this))) {
+        if (isset(class_uses_recursive($this)[CreatesMatchingTest::class])) {
             $this->addTestOptions();
         }
 
@@ -167,8 +170,8 @@ abstract class GeneratorCommand extends Command implements PromptsForMissingInpu
         // to create the class and overwrite the user's code. So, we will bail out so the
         // code is untouched. Otherwise, we will continue generating this class' files.
         if ((! $this->hasOption('force') ||
-             ! $this->option('force')) &&
-             $this->alreadyExists($this->getNameInput())) {
+                ! $this->option('force')) &&
+            $this->alreadyExists($this->getNameInput())) {
             $this->components->error($this->type.' already exists.');
 
             return false;
@@ -183,7 +186,7 @@ abstract class GeneratorCommand extends Command implements PromptsForMissingInpu
 
         $info = $this->type;
 
-        if (in_array(CreatesMatchingTest::class, class_uses_recursive($this))) {
+        if (isset(class_uses_recursive($this)[CreatesMatchingTest::class])) {
             $this->handleTestCreation($path);
         }
 
@@ -220,8 +223,7 @@ abstract class GeneratorCommand extends Command implements PromptsForMissingInpu
     /**
      * Qualify the given model class base name.
      *
-     * @param  string  $model
-     * @return string
+     * @return class-string
      */
     protected function qualifyModel(string $model)
     {
@@ -244,16 +246,12 @@ abstract class GeneratorCommand extends Command implements PromptsForMissingInpu
      * Get a list of possible model names.
      *
      * @return array<int, string>
+     *
+     * @deprecated 12.38.0 Use `findAvailableModels()` method instead.
      */
     protected function possibleModels()
     {
-        $modelPath = is_dir(app_path('Models')) ? app_path('Models') : app_path();
-
-        return (new Collection(Finder::create()->files()->depth(0)->in($modelPath)))
-            ->map(fn ($file) => $file->getBasename('.php'))
-            ->sort()
-            ->values()
-            ->all();
+        return $this->findAvailableModels();
     }
 
     /**
@@ -446,7 +444,7 @@ abstract class GeneratorCommand extends Command implements PromptsForMissingInpu
     {
         $config = $this->laragram['config'];
 
-        $provider = $config->get('auth.defaults.provider');
+        $provider = $config->get('auth.guards.'.$config->get('auth.defaults.guard').'.provider');
 
         return $config->get("auth.providers.{$provider}.model");
     }
@@ -468,23 +466,28 @@ abstract class GeneratorCommand extends Command implements PromptsForMissingInpu
     }
 
     /**
-     * Get the first template directory path from the application configuration.
+     * Get the first view directory path from the application configuration.
      *
      * @param  string  $path
      * @return string
      */
-    protected function templatePath($path = '')
+    protected function viewPath($path = '')
     {
-        $templates = $this->laragram['config']['template.paths'][0] ?? app_path('templates');
+        $views = $this->laragram['config']['view.paths'][0] ?? resource_path('views');
 
-        return $templates.($path ? DIRECTORY_SEPARATOR.$path : $path);
+        return $views.($path ? DIRECTORY_SEPARATOR.$path : $path);
     }
-
 
     /**
      * Get the console command arguments.
      *
-     * @return array
+     * @return (InputArgument|array{
+     *    0: non-empty-string,
+     *    1?: InputArgument::REQUIRED|InputArgument::OPTIONAL|InputArgument::IS_ARRAY,
+     *    2?: string,
+     *    3?: mixed,
+     *    4?: list<string|Suggestion>|\Closure(CompletionInput, CompletionSuggestions): list<string|Suggestion>
+     * })[]
      */
     protected function getArguments()
     {
@@ -496,7 +499,7 @@ abstract class GeneratorCommand extends Command implements PromptsForMissingInpu
     /**
      * Prompt for missing input arguments using the returned questions.
      *
-     * @return array
+     * @return array<string, string|array{string, string}|\Closure(): (array<int, string>|string|int|bool)>
      */
     protected function promptForMissingArgumentsUsing()
     {
@@ -505,7 +508,7 @@ abstract class GeneratorCommand extends Command implements PromptsForMissingInpu
                 'What should the '.strtolower($this->type).' be named?',
                 match ($this->type) {
                     'Cast' => 'E.g. Json',
-//                    'Channel' => 'E.g. OrderChannel',
+                    'Channel' => 'E.g. OrderChannel',
                     'Console command' => 'E.g. SendEmails',
                     'Component' => 'E.g. Alert',
                     'Controller' => 'E.g. UserController',
@@ -514,19 +517,19 @@ abstract class GeneratorCommand extends Command implements PromptsForMissingInpu
                     'Factory' => 'E.g. PostFactory',
                     'Job' => 'E.g. ProcessPodcast',
                     'Listener' => 'E.g. SendPodcastNotification',
-//                    'Mailable' => 'E.g. OrderShipped',
+                    'Mailable' => 'E.g. OrderShipped',
                     'Middleware' => 'E.g. EnsureTokenIsValid',
                     'Model' => 'E.g. Flight',
-//                    'Notification' => 'E.g. InvoicePaid',
+                    'Notification' => 'E.g. InvoicePaid',
                     'Observer' => 'E.g. UserObserver',
                     'Policy' => 'E.g. PostPolicy',
                     'Provider' => 'E.g. ElasticServiceProvider',
-//                    'Request' => 'E.g. StorePodcastRequest',
+                    'Request' => 'E.g. StorePodcastRequest',
                     'Resource' => 'E.g. UserResource',
                     'Rule' => 'E.g. Uppercase',
                     'Scope' => 'E.g. TrendingScope',
                     'Seeder' => 'E.g. UserSeeder',
-//                    'Test' => 'E.g. UserTest',
+                    'Test' => 'E.g. UserTest',
                     default => '',
                 },
             ],

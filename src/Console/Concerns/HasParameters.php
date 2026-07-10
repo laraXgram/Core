@@ -2,6 +2,9 @@
 
 namespace LaraGram\Console\Concerns;
 
+use LaraGram\Console\Completion\CompletionInput;
+use LaraGram\Console\Completion\CompletionSuggestions;
+use LaraGram\Console\Completion\Suggestion;
 use LaraGram\Console\Input\InputArgument;
 use LaraGram\Console\Input\InputOption;
 
@@ -37,7 +40,13 @@ trait HasParameters
     /**
      * Get the console command arguments.
      *
-     * @return array
+     * @return (InputArgument|array{
+     *    0: non-empty-string,
+     *    1?: int-mask-of<InputArgument::REQUIRED|InputArgument::OPTIONAL|InputArgument::IS_ARRAY>,
+     *    2?: string,
+     *    3?: mixed,
+     *    4?: list<string|Suggestion>|\Closure(CompletionInput, CompletionSuggestions): list<string|Suggestion>
+     * })[]
      */
     protected function getArguments()
     {
@@ -47,7 +56,14 @@ trait HasParameters
     /**
      * Get the console command options.
      *
-     * @return array
+     * @return (InputOption|array{
+     *    0: non-empty-string,
+     *    1?: string|non-empty-array<string>,
+     *    2?: int-mask-of<InputOption::VALUE_*>,
+     *    3?: string,
+     *    4?: mixed,
+     *    5?: list<string|Suggestion>|\Closure(CompletionInput, CompletionSuggestions): list<string|Suggestion>
+     * })[]
      */
     protected function getOptions()
     {

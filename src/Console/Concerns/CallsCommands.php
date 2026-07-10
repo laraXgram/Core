@@ -2,6 +2,7 @@
 
 namespace LaraGram\Console\Concerns;
 
+use LaraGram\Support\Collection;
 use LaraGram\Console\Input\ArrayInput;
 use LaraGram\Console\Output\NullOutput;
 use LaraGram\Console\Output\OutputInterface;
@@ -81,37 +82,30 @@ trait CallsCommands
      */
     protected function createInputFromArguments(array $arguments)
     {
-        $input = new ArrayInput(array_merge($this->context(), $arguments));
-
-        if ($input->getParameterOption('--no-interaction')) {
-            $input->setInteractive(false);
-        }
-
-        return $input;
+        return tap(new ArrayInput(array_merge($this->context(), $arguments)), function ($input) {
+            if ($input->getParameterOption('--no-interaction')) {
+                $input->setInteractive(false);
+            }
+        });
     }
 
     /**
      * Get all of the context passed to the command.
      *
-     * @return array
+     * @return array{'--ansi'?: bool, '--no-ansi'?: bool, '--no-interaction'?: bool, '--quiet'?: bool, '--verbose'?: bool}
      */
     protected function context()
     {
-        $options = $this->option();
-
-        $filteredOptions = array_filter([
-            'ansi' => $options['ansi'] ?? null,
-            'no-ansi' => $options['no-ansi'] ?? null,
-            'no-interaction' => $options['no-interaction'] ?? null,
-            'quiet' => $options['quiet'] ?? null,
-            'verbose' => $options['verbose'] ?? null,
-        ]);
-
-        $mappedOptions = [];
-        foreach ($filteredOptions as $key => $value) {
-            $mappedOptions["--{$key}"] = $value;
-        }
-
-        return $mappedOptions;
+        return (new Collection($this->option()))
+            ->only([
+                'ansi',
+                'no-ansi',
+                'no-interaction',
+                'quiet',
+                'verbose',
+            ])
+            ->filter()
+            ->mapWithKeys(fn ($value, $key) => ["--{$key}" => $value])
+            ->all();
     }
 }

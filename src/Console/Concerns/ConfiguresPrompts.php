@@ -115,10 +115,14 @@ trait ConfiguresPrompts
     /**
      * Prompt the user until the given validation callback passes.
      *
-     * @param  \Closure  $prompt
+     * @template PResult
+     *
+     * @param  \Closure(): PResult  $prompt
      * @param  bool|string  $required
-     * @param  \Closure|null  $validate
-     * @return mixed
+     * @param  (\Closure(PResult): mixed)|null  $validate
+     * @return PResult
+     *
+     * @throws \LaraGram\Console\PromptValidationException
      */
     protected function promptUntilValid($prompt, $required, $validate)
     {
@@ -133,7 +137,7 @@ trait ConfiguresPrompts
 
             $error = is_callable($validate) ? $validate($result) : $this->validatePrompt($result, $validate);
 
-            if (is_string($error) && strlen($error) > 0) {
+            if (is_string($error) && $error !== '') {
                 $this->components->error($error);
 
                 continue;
@@ -196,7 +200,7 @@ trait ConfiguresPrompts
     /**
      * Get the validation messages that should be used during prompt validation.
      *
-     * @return array
+     * @return array<string, string>
      */
     protected function validationMessages()
     {
@@ -206,7 +210,7 @@ trait ConfiguresPrompts
     /**
      * Get the validation attributes that should be used during prompt validation.
      *
-     * @return array
+     * @return array<string, string>
      */
     protected function validationAttributes()
     {
@@ -227,7 +231,7 @@ trait ConfiguresPrompts
      * Select fallback.
      *
      * @param  string  $label
-     * @param  array  $options
+     * @param  array<array-key, string>  $options
      * @param  string|int|null  $default
      * @return string|int
      */

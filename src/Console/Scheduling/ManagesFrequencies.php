@@ -2,10 +2,10 @@
 
 namespace LaraGram\Console\Scheduling;
 
-use DateInterval;
-use DateTime;
-use DateTimeZone;
+use LaraGram\Support\Tempora;
 use InvalidArgumentException;
+
+use function LaraGram\Support\enum_value;
 
 trait ManagesFrequencies
 {
@@ -55,20 +55,29 @@ trait ManagesFrequencies
      */
     private function inTimeInterval($startTime, $endTime)
     {
-        $now = new DateTime(null, new DateTimeZone($this->timezone));
-        $startTime = new DateTime($startTime, new DateTimeZone($this->timezone));
-        $endTime = new DateTime($endTime, new DateTimeZone($this->timezone));
+        $now = Tempora::now();
 
-        if ($endTime < $startTime) {
-            if ($startTime > $now) {
-                $startTime->sub(new DateInterval('P1D'));
-            } else {
-                $endTime->add(new DateInterval('P1D'));
+        return function () use ($startTime, $endTime, $now) {
+            $now = $now->copy();
+
+            if ($this->timezone) {
+                $now->setTimezone($this->timezone);
             }
-        }
 
-        return function() use ($now, $startTime, $endTime) {
-            return $now >= $startTime && $now <= $endTime;
+            [$startTime, $endTime] = [
+                Tempora::parse($startTime, $this->timezone),
+                Tempora::parse($endTime, $this->timezone),
+            ];
+
+            if ($endTime->lessThan($startTime)) {
+                if ($startTime->greaterThan($now)) {
+                    $startTime = $startTime->subDay();
+                } else {
+                    $endTime = $endTime->addDay();
+                }
+            }
+
+            return $now->between($startTime, $endTime);
         };
     }
 
@@ -145,11 +154,17 @@ trait ManagesFrequencies
     /**
      * Schedule the event to run multiple times per minute.
      *
-     * @param  int<0, 59>  $seconds
+     * @param  int<1, 59>  $seconds
      * @return $this
+     *
+     * @throws \InvalidArgumentException
      */
     protected function repeatEvery($seconds)
     {
+        if ($seconds <= 0) {
+            throw new InvalidArgumentException("The seconds [$seconds] must be greater than zero.");
+        }
+
         if (60 % $seconds !== 0) {
             throw new InvalidArgumentException("The seconds [$seconds] are not evenly divisible by 60.");
         }
@@ -347,7 +362,7 @@ trait ManagesFrequencies
         $segments = explode(':', $time);
 
         return $this->hourBasedSchedule(
-            count($segments) === 2 ? (int) $segments[1] : '0',
+            count($segments) >= 2 ? (int) $segments[1] : '0',
             (int) $segments[0]
         );
     }
@@ -393,7 +408,7 @@ trait ManagesFrequencies
         $hours = is_array($hours) ? implode(',', $hours) : $hours;
 
         return $this->spliceIntoPosition(1, $minutes)
-                    ->spliceIntoPosition(2, $hours);
+            ->spliceIntoPosition(2, $hours);
     }
 
     /**
@@ -494,14 +509,14 @@ trait ManagesFrequencies
     public function weekly()
     {
         return $this->spliceIntoPosition(1, 0)
-                    ->spliceIntoPosition(2, 0)
-                    ->spliceIntoPosition(5, 0);
+            ->spliceIntoPosition(2, 0)
+            ->spliceIntoPosition(5, 0);
     }
 
     /**
      * Schedule the event to run weekly on a given day and time.
      *
-     * @param  array|mixed  $dayOfWeek
+     * @param  mixed  $dayOfWeek
      * @param  string  $time
      * @return $this
      */
@@ -520,8 +535,8 @@ trait ManagesFrequencies
     public function monthly()
     {
         return $this->spliceIntoPosition(1, 0)
-                    ->spliceIntoPosition(2, 0)
-                    ->spliceIntoPosition(3, 1);
+            ->spliceIntoPosition(2, 0)
+            ->spliceIntoPosition(3, 1);
     }
 
     /**
@@ -565,11 +580,22 @@ trait ManagesFrequencies
     {
         $this->dailyAt($time);
 
-        $now = new DateTime();
-        $now->modify('last day of this month');
-        $day = $now->format('j');
+        return $this->spliceIntoPosition(3, Tempora::now()->endOfMonth()->day);
+    }
 
-        return $this->spliceIntoPosition(3, $day);
+    /**
+     * Schedule the event to run on specific days of the month.
+     *
+     * @param  array<int<1, 31>>|int<1, 31>  ...$days
+     * @return $this
+     */
+    public function daysOfMonth(...$days)
+    {
+        $days = count($days) === 1 && is_array($days[0]) ? $days[0] : $days;
+
+        $this->dailyAt('0:0');
+
+        return $this->spliceIntoPosition(3, implode(',', $days));
     }
 
     /**
@@ -580,9 +606,9 @@ trait ManagesFrequencies
     public function quarterly()
     {
         return $this->spliceIntoPosition(1, 0)
-                    ->spliceIntoPosition(2, 0)
-                    ->spliceIntoPosition(3, 1)
-                    ->spliceIntoPosition(4, '1-12/3');
+            ->spliceIntoPosition(2, 0)
+            ->spliceIntoPosition(3, 1)
+            ->spliceIntoPosition(4, '1-12/3');
     }
 
     /**
@@ -597,7 +623,7 @@ trait ManagesFrequencies
         $this->dailyAt($time);
 
         return $this->spliceIntoPosition(3, $dayOfQuarter)
-                    ->spliceIntoPosition(4, '1-12/3');
+            ->spliceIntoPosition(4, '1-12/3');
     }
 
     /**
@@ -608,9 +634,9 @@ trait ManagesFrequencies
     public function yearly()
     {
         return $this->spliceIntoPosition(1, 0)
-                    ->spliceIntoPosition(2, 0)
-                    ->spliceIntoPosition(3, 1)
-                    ->spliceIntoPosition(4, 1);
+            ->spliceIntoPosition(2, 0)
+            ->spliceIntoPosition(3, 1)
+            ->spliceIntoPosition(4, 1);
     }
 
     /**
@@ -626,13 +652,13 @@ trait ManagesFrequencies
         $this->dailyAt($time);
 
         return $this->spliceIntoPosition(3, $dayOfMonth)
-                    ->spliceIntoPosition(4, $month);
+            ->spliceIntoPosition(4, $month);
     }
 
     /**
      * Set the days of the week the command should run on.
      *
-     * @param  array|mixed  $days
+     * @param  mixed  $days
      * @return $this
      */
     public function days($days)
@@ -645,12 +671,12 @@ trait ManagesFrequencies
     /**
      * Set the timezone the date should be evaluated on.
      *
-     * @param  \DateTimeZone|string  $timezone
+     * @param  \UnitEnum|\DateTimeZone|string  $timezone
      * @return $this
      */
     public function timezone($timezone)
     {
-        $this->timezone = $timezone;
+        $this->timezone = enum_value($timezone);
 
         return $this;
     }
@@ -659,7 +685,7 @@ trait ManagesFrequencies
      * Splice the given value into the given position of the expression.
      *
      * @param  int  $position
-     * @param  string  $value
+     * @param  string|int  $value
      * @return $this
      */
     protected function spliceIntoPosition($position, $value)

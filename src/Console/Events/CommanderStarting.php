@@ -2,23 +2,17 @@
 
 namespace LaraGram\Console\Events;
 
+use LaraGram\Console\Application;
+
 class CommanderStarting
 {
     /**
-     * The Commander application instance.
-     *
-     * @var \LaraGram\Console\Application
-     */
-    public $commander;
-
-    /**
      * Create a new event instance.
      *
-     * @param  \LaraGram\Console\Application  $commander
-     * @return void
+     * @param  \LaraGram\Console\Application  $commander  The Commander application instance.
      */
-    public function __construct($commander)
-    {
-        $this->commander = $commander;
+    public function __construct(
+        public Application $commander,
+    ) {
     }
 }

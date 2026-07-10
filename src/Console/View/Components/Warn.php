@@ -15,7 +15,6 @@ class Warn extends Component
      */
     public function render($string, $verbosity = OutputInterface::VERBOSITY_NORMAL)
     {
-        $line = new Line($this->output);
-        $line->render('warn', $string, $verbosity);
+        (new Line($this->output))->render('warn', $string, $verbosity);
     }
 }

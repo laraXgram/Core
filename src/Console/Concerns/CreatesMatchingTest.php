@@ -2,6 +2,7 @@
 
 namespace LaraGram\Console\Concerns;
 
+use LaraGram\Support\Stringable;
 use LaraGram\Console\Input\InputOption;
 
 trait CreatesMatchingTest
@@ -35,14 +36,11 @@ trait CreatesMatchingTest
             return false;
         }
 
-        $path = $this->laragram['path'];
-        $name = str_replace('\\', '/', substr($path, strlen($path), -4)) . 'Test';
-
         return $this->call('make:test', [
-                'name' => $name,
-                '--pest' => $this->option('pest'),
-                '--phpunit' => $this->option('phpunit'),
-            ]) == 0;
-
+            'name' => (new Stringable($path))->after($this->laragram['path'])->beforeLast('.php')->append('Test')->replace('\\', '/'),
+            '--pest' => $this->option('pest'),
+            '--phpunit' => $this->option('phpunit'),
+            '--force' => $this->hasOption('force') && $this->option('force'),
+        ]) == 0;
     }
 }
