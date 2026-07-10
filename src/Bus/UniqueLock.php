@@ -3,11 +3,25 @@
 namespace LaraGram\Bus;
 
 use LaraGram\Contracts\Cache\Repository as Cache;
+use LaraGram\Queue\Attributes\ReadsQueueAttributes;
+use LaraGram\Queue\Attributes\UniqueFor;
 
 class UniqueLock
 {
+    use ReadsQueueAttributes;
+
+    /**
+     * The cache repository implementation.
+     *
+     * @var \LaraGram\Contracts\Cache\Repository
+     */
     protected $cache;
 
+    /**
+     * Create a new unique lock manager instance.
+     *
+     * @param  \LaraGram\Contracts\Cache\Repository  $cache
+     */
     public function __construct(Cache $cache)
     {
         $this->cache = $cache;
@@ -23,13 +37,13 @@ class UniqueLock
     {
         $uniqueFor = method_exists($job, 'uniqueFor')
             ? $job->uniqueFor()
-            : ($job->uniqueFor ?? 0);
+            : ($this->getAttributeValue($job, UniqueFor::class, 'uniqueFor') ?? 0);
 
         $cache = method_exists($job, 'uniqueVia')
-            ? $job->uniqueVia()
+            ? ($job->uniqueVia() ?? $this->cache)
             : $this->cache;
 
-        return (bool) $cache->lock($this->getKey($job), $uniqueFor)->get();
+        return (bool) $cache->lock(self::getKey($job), $uniqueFor)->get();
     }
 
     /**
@@ -41,10 +55,10 @@ class UniqueLock
     public function release($job)
     {
         $cache = method_exists($job, 'uniqueVia')
-            ? $job->uniqueVia()
+            ? ($job->uniqueVia() ?? $this->cache)
             : $this->cache;
 
-        $cache->lock($this->getKey($job))->forceRelease();
+        $cache->lock(self::getKey($job))->forceRelease();
     }
 
     /**
@@ -53,12 +67,16 @@ class UniqueLock
      * @param  mixed  $job
      * @return string
      */
-    protected function getKey($job)
+    public static function getKey($job)
     {
         $uniqueId = method_exists($job, 'uniqueId')
             ? $job->uniqueId()
             : ($job->uniqueId ?? '');
 
-        return 'laragram_unique_job:'.get_class($job).':'.$uniqueId;
+        $jobName = method_exists($job, 'displayName')
+            ? hash('xxh128', $job->displayName())
+            : get_class($job);
+
+        return 'laravel_unique_job:'.$jobName.':'.$uniqueId;
     }
 }

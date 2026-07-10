@@ -4,7 +4,7 @@ namespace LaraGram\Bus\Events;
 
 use LaraGram\Bus\Batch;
 
-class BatchDispatched
+class BatchFinished
 {
     /**
      * Create a new event instance.

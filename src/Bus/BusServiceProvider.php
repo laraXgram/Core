@@ -2,6 +2,7 @@
 
 namespace LaraGram\Bus;
 
+use LaraGram\Container\Container;
 use LaraGram\Contracts\Bus\Dispatcher as DispatcherContract;
 use LaraGram\Contracts\Bus\QueueingDispatcher as QueueingDispatcherContract;
 use LaraGram\Contracts\Queue\Factory as QueueFactoryContract;
@@ -18,8 +19,8 @@ class BusServiceProvider extends ServiceProvider implements DeferrableProvider
     public function register()
     {
         $this->app->singleton(Dispatcher::class, function ($app) {
-            return new Dispatcher($app, function ($connection = null) use ($app) {
-                return $app[QueueFactoryContract::class]->connection($connection);
+            return new Dispatcher($app, function ($connection = null) {
+                return Container::getInstance()->make(QueueFactoryContract::class)->connection($connection);
             });
         });
 
@@ -30,7 +31,7 @@ class BusServiceProvider extends ServiceProvider implements DeferrableProvider
         );
 
         $this->app->alias(
-            Dispatcher::class, QueueingDispatcherContract::class
+            DispatcherContract::class, QueueingDispatcherContract::class
         );
     }
 
@@ -59,7 +60,7 @@ class BusServiceProvider extends ServiceProvider implements DeferrableProvider
      *
      * @return array
      */
-    public function provides(): array
+    public function provides()
     {
         return [
             Dispatcher::class,

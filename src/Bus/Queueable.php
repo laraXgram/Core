@@ -3,11 +3,13 @@
 namespace LaraGram\Bus;
 
 use Closure;
-use DateInterval;
-use DateTimeInterface;
 use LaraGram\Queue\CallQueuedClosure;
 use LaraGram\Support\Arr;
+use LaraGram\Support\Collection;
+use LaraGram\Support\SerializableClosure\SerializableClosure;
 use RuntimeException;
+
+use function LaraGram\Support\enum_value;
 
 trait Queueable
 {
@@ -26,9 +28,30 @@ trait Queueable
     public $queue;
 
     /**
+     * The job "group" the job should be sent to.
+     *
+     * @var string|null
+     */
+    public $messageGroup;
+
+    /**
+     * The job deduplicator callback the job should use to generate the deduplication ID.
+     *
+     * @var \LaraGram\Support\SerializableClosure\SerializableClosure|null
+     */
+    public $deduplicator;
+
+    /**
+     * The lock owner token for debounce supersession checks.
+     *
+     * @var string
+     */
+    public $debounceOwner = '';
+
+    /**
      * The number of seconds before the job should be made available.
      *
-     * @var DateTimeInterface|DateInterval|array|int|null
+     * @var \DateTimeInterface|\DateInterval|array|int|null
      */
     public $delay;
 
@@ -77,12 +100,12 @@ trait Queueable
     /**
      * Set the desired connection for the job.
      *
-     * @param  string|null  $connection
+     * @param  \UnitEnum|string|null  $connection
      * @return $this
      */
     public function onConnection($connection)
     {
-        $this->connection = $connection;
+        $this->connection = enum_value($connection);
 
         return $this;
     }
@@ -90,12 +113,44 @@ trait Queueable
     /**
      * Set the desired queue for the job.
      *
-     * @param  string|null  $queue
+     * @param  \UnitEnum|string|null  $queue
      * @return $this
      */
     public function onQueue($queue)
     {
-        $this->queue = $queue;
+        $this->queue = enum_value($queue);
+
+        return $this;
+    }
+
+    /**
+     * Set the desired job "group".
+     *
+     * This feature is only supported by some queues, such as Amazon SQS.
+     *
+     * @param  \UnitEnum|string  $group
+     * @return $this
+     */
+    public function onGroup($group)
+    {
+        $this->messageGroup = enum_value($group);
+
+        return $this;
+    }
+
+    /**
+     * Set the desired job deduplicator callback.
+     *
+     * This feature is only supported by some queues, such as Amazon SQS FIFO.
+     *
+     * @param  callable|null  $deduplicator
+     * @return $this
+     */
+    public function withDeduplicator($deduplicator)
+    {
+        $this->deduplicator = $deduplicator instanceof Closure
+            ? new SerializableClosure($deduplicator)
+            : $deduplicator;
 
         return $this;
     }
@@ -103,13 +158,15 @@ trait Queueable
     /**
      * Set the desired connection for the chain.
      *
-     * @param  string|null  $connection
+     * @param  \UnitEnum|string|null  $connection
      * @return $this
      */
     public function allOnConnection($connection)
     {
-        $this->chainConnection = $connection;
-        $this->connection = $connection;
+        $resolvedConnection = enum_value($connection);
+
+        $this->chainConnection = $resolvedConnection;
+        $this->connection = $resolvedConnection;
 
         return $this;
     }
@@ -117,13 +174,15 @@ trait Queueable
     /**
      * Set the desired queue for the chain.
      *
-     * @param  string|null  $queue
+     * @param  \UnitEnum|string|null  $queue
      * @return $this
      */
     public function allOnQueue($queue)
     {
-        $this->chainQueue = $queue;
-        $this->queue = $queue;
+        $resolvedQueue = enum_value($queue);
+
+        $this->chainQueue = $resolvedQueue;
+        $this->queue = $resolvedQueue;
 
         return $this;
     }
@@ -131,12 +190,24 @@ trait Queueable
     /**
      * Set the desired delay in seconds for the job.
      *
-     * @param  DateTimeInterface|DateInterval|array|int|null  $delay
+     * @param  \DateTimeInterface|\DateInterval|array|int|null  $delay
      * @return $this
      */
     public function delay($delay)
     {
         $this->delay = $delay;
+
+        return $this;
+    }
+
+    /**
+     * Set the delay for the job to zero seconds.
+     *
+     * @return $this
+     */
+    public function withoutDelay()
+    {
+        $this->delay = 0;
 
         return $this;
     }
@@ -186,9 +257,9 @@ trait Queueable
      */
     public function chain($chain)
     {
-        $this->chained = array_map(function ($job) {
-            return $this->serializeJob($job);
-        }, $chain);
+        $this->chained = ChainedBatch::prepareNestedBatches(new Collection($chain))
+            ->map(fn ($job) => $this->serializeJob($job))
+            ->all();
 
         return $this;
     }
@@ -201,7 +272,11 @@ trait Queueable
      */
     public function prependToChain($job)
     {
-        $this->chained = Arr::prepend($this->chained, $this->serializeJob($job));
+        $jobs = ChainedBatch::prepareNestedBatches(Collection::wrap($job));
+
+        foreach ($jobs->reverse() as $job) {
+            $this->chained = Arr::prepend($this->chained, $this->serializeJob($job));
+        }
 
         return $this;
     }
@@ -214,7 +289,11 @@ trait Queueable
      */
     public function appendToChain($job)
     {
-        $this->chained = array_merge($this->chained, [$this->serializeJob($job)]);
+        $jobs = ChainedBatch::prepareNestedBatches(Collection::wrap($job));
+
+        foreach ($jobs as $job) {
+            $this->chained = array_merge($this->chained, [$this->serializeJob($job)]);
+        }
 
         return $this;
     }
@@ -230,6 +309,12 @@ trait Queueable
     protected function serializeJob($job)
     {
         if ($job instanceof Closure) {
+            if (! class_exists(CallQueuedClosure::class)) {
+                throw new RuntimeException(
+                    'To enable support for closure jobs, please install the illuminate/queue package.'
+                );
+            }
+
             $job = CallQueuedClosure::create($job);
         }
 
@@ -243,7 +328,7 @@ trait Queueable
      */
     public function dispatchNextJobInChain()
     {
-        if (! empty($this->chained)) {
+        if (is_array($this->chained) && ! empty($this->chained)) {
             dispatch(tap(unserialize(array_shift($this->chained)), function ($next) {
                 $next->chained = $this->chained;
 
@@ -265,7 +350,7 @@ trait Queueable
      */
     public function invokeChainCatchCallbacks($e)
     {
-        collect($this->chainCatchCallbacks)->each(function ($callback) use ($e) {
+        (new Collection($this->chainCatchCallbacks))->each(function ($callback) use ($e) {
             $callback($e);
         });
     }
