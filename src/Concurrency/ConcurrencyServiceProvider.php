@@ -24,7 +24,7 @@ class ConcurrencyServiceProvider extends ServiceProvider implements DeferrablePr
      *
      * @return array
      */
-    public function provides(): array
+    public function provides()
     {
         return [
             ConcurrencyManager::class,

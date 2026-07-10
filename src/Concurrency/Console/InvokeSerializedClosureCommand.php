@@ -25,7 +25,7 @@ class InvokeSerializedClosureCommand extends Command
     protected $description = 'Invoke the given serialized closure';
 
     /**
-     * Indicates whether the command should be shown in the Commander command list.
+     * Indicates whether the command should be shown in the Artisan command list.
      *
      * @var bool
      */
@@ -45,7 +45,9 @@ class InvokeSerializedClosureCommand extends Command
                 'successful' => true,
                 'result' => serialize($this->laragram->call(match (true) {
                     ! is_null($this->argument('code')) => unserialize($this->argument('code')),
-                    isset($_SERVER['LARAGRAM_INVOKABLE_CLOSURE']) => unserialize($_SERVER['LARAGRAM_INVOKABLE_CLOSURE']),
+                    isset($_SERVER['LARAGRAM_INVOKABLE_CLOSURE']) => unserialize(
+                        base64_decode($_SERVER['LARAGRAM_INVOKABLE_CLOSURE'])
+                    ),
                     default => fn () => null,
                 })),
             ]));

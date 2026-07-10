@@ -5,21 +5,30 @@ namespace LaraGram\Concurrency;
 use LaraGram\Tempora\TemporaInterval;
 use Closure;
 use LaraGram\Contracts\Concurrency\Driver;
-use LaraGram\Support\Collection;
+use LaraGram\Support\Arr;
 use LaraGram\Support\Defer\DeferredCallback;
+use Spatie\Fork\Fork;
 
 use function LaraGram\Support\defer;
 
-class SyncDriver implements Driver
+class ForkDriver implements Driver
 {
     /**
      * Run the given tasks concurrently and return an array containing the results.
      */
     public function run(Closure|array $tasks, TemporaInterval|int|null $timeout = null): array
     {
-        return Collection::wrap($tasks)->map(
-            fn ($task) => $task()
-        )->all();
+        $tasks = Arr::wrap($tasks);
+
+        $keys = array_keys($tasks);
+        $values = array_values($tasks);
+
+        /** @phpstan-ignore class.notFound (spatie/fork is not installed as it is practically incompatible with Windows) */
+        $results = Fork::new()->run(...$values);
+
+        ksort($results);
+
+        return array_combine($keys, $results);
     }
 
     /**
@@ -27,6 +36,6 @@ class SyncDriver implements Driver
      */
     public function defer(Closure|array $tasks): DeferredCallback
     {
-        return defer(fn () => Collection::wrap($tasks)->each(fn ($task) => $task()));
+        return defer(fn () => $this->run($tasks));
     }
 }
