@@ -34,4 +34,17 @@ interface ProvidesListenContext
      * @return array
      */
     public function entities(): array;
+
+    /**
+     * The scope this request belongs to. the value listens are filtered by via
+     * their `forConnections()`/`forSessions()` binding.
+     *
+     * For the Bot-API this is the bot **connection** the update arrived on; for
+     * the MTProto Client it is the **session** name. Returning null (or a listen
+     * bound to "*") means "match regardless of scope".
+     *
+     * Read from the request object itself, not a global/static, so matching is
+     * coroutine-safe under a concurrent (Surge) runtime.
+     */
+    public function listenScope(): ?string;
 }
