@@ -218,7 +218,8 @@ class ServeCommand extends Command
             php_binary(),
             '-S',
             $this->host().':'.$this->port(),
-            __DIR__.'/../resources/index.php'
+            '-t',
+            $this->laragram->publicPath(),
         ];
     }
 
