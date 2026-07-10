@@ -2,11 +2,10 @@
 
 namespace LaraGram\Database\Eloquent;
 
-use LaraGram\Contracts\Container\BindingResolutionException;
 use LaraGram\Contracts\Foundation\Application;
 use LaraGram\Database\Eloquent\Relations\Relation;
 use LaraGram\Support\Collection as BaseCollection;
-//use LaraGram\Support\Facades\Gate;
+use LaraGram\Support\Facades\Gate;
 use LaraGram\Support\Str;
 use ReflectionClass;
 use ReflectionMethod;
@@ -18,16 +17,9 @@ use function LaraGram\Support\enum_value;
 class ModelInspector
 {
     /**
-     * The LaraGram application instance.
-     *
-     * @var \LaraGram\Contracts\Foundation\Application
-     */
-    protected $app;
-
-    /**
      * The methods that can be called in a model to indicate a relation.
      *
-     * @var array<int, string>
+     * @var list<string>
      */
     protected $relationMethods = [
         'hasMany',
@@ -46,12 +38,10 @@ class ModelInspector
     /**
      * Create a new model inspector instance.
      *
-     * @param  \LaraGram\Contracts\Foundation\Application  $app
-     * @return void
+     * @param  \LaraGram\Contracts\Foundation\Application  $app  The LaraGram application instance.
      */
-    public function __construct(Application $app)
+    public function __construct(protected Application $app)
     {
-        $this->app = $app;
     }
 
     /**
@@ -59,9 +49,9 @@ class ModelInspector
      *
      * @param  class-string<\LaraGram\Database\Eloquent\Model>|string  $model
      * @param  string|null  $connection
-     * @return array{"class": class-string<\LaraGram\Database\Eloquent\Model>, database: string, table: string, policy: class-string|null, attributes: \LaraGram\Support\Collection, relations: \LaraGram\Support\Collection, events: \LaraGram\Support\Collection, observers: \LaraGram\Support\Collection, collection: class-string<\LaraGram\Database\Eloquent\Collection<\LaraGram\Database\Eloquent\Model>>, builder: class-string<\LaraGram\Database\Eloquent\Builder<\LaraGram\Database\Eloquent\Model>>}
+     * @return \LaraGram\Database\Eloquent\ModelInfo
      *
-     * @throws BindingResolutionException
+     * @throws \LaraGram\Contracts\Container\BindingResolutionException
      */
     public function inspect($model, $connection = null)
     {
@@ -74,18 +64,19 @@ class ModelInspector
             $model->setConnection($connection);
         }
 
-        return [
-            'class' => get_class($model),
-            'database' => $model->getConnection()->getName(),
-            'table' => $model->getConnection()->getTablePrefix().$model->getTable(),
-//            'policy' => $this->getPolicy($model),
-            'attributes' => $this->getAttributes($model),
-            'relations' => $this->getRelations($model),
-            'events' => $this->getEvents($model),
-            'observers' => $this->getObservers($model),
-            'collection' => $this->getCollectedBy($model),
-            'builder' => $this->getBuilder($model),
-        ];
+        return new ModelInfo(
+            class: $model::class,
+            database: $model->getConnection()->getName(),
+            table: $model->getConnection()->getTablePrefix().$model->getTable(),
+            policy: $this->getPolicy($model),
+            attributes: $this->getAttributes($model),
+            relations: $this->getRelations($model),
+            events: $this->getEvents($model),
+            observers: $this->getObservers($model),
+            collection: $this->getCollectedBy($model),
+            builder: $this->getBuilder($model),
+            resource: $this->getResource($model),
+        );
     }
 
     /**
@@ -210,18 +201,18 @@ class ModelInspector
             ->values();
     }
 
-//    /**
-//     * Get the first policy associated with this model.
-//     *
-//     * @param  \LaraGram\Database\Eloquent\Model  $model
-//     * @return string|null
-//     */
-//    protected function getPolicy($model)
-//    {
-//        $policy = Gate::getPolicyFor($model::class);
-//
-//        return $policy ? $policy::class : null;
-//    }
+    /**
+     * Get the first policy associated with this model.
+     *
+     * @param  \LaraGram\Database\Eloquent\Model  $model
+     * @return string|null
+     */
+    protected function getPolicy($model)
+    {
+        $policy = Gate::getPolicyFor($model::class);
+
+        return $policy ? $policy::class : null;
+    }
 
     /**
      * Get the events that the model dispatches.
@@ -244,7 +235,7 @@ class ModelInspector
      * @param  \LaraGram\Database\Eloquent\Model  $model
      * @return \LaraGram\Support\Collection
      *
-     * @throws BindingResolutionException
+     * @throws \LaraGram\Contracts\Container\BindingResolutionException
      */
     protected function getObservers($model)
     {
@@ -296,6 +287,17 @@ class ModelInspector
     protected function getBuilder($model)
     {
         return $model->newQuery()::class;
+    }
+
+    /**
+     * Get the class used for JSON response transforming.
+     *
+     * @param  \LaraGram\Database\Eloquent\Model  $model
+     * @return \LaraGram\Http\Resources\Json\JsonResource|null
+     */
+    protected function getResource($model)
+    {
+        return rescue(static fn () => $model->toResource()::class, null, false);
     }
 
     /**
@@ -387,7 +389,7 @@ class ModelInspector
      *
      * @param  array<string, mixed>  $column
      * @param  \LaraGram\Database\Eloquent\Model  $model
-     * @return mixed|null
+     * @return mixed
      */
     protected function getColumnDefault($column, $model)
     {

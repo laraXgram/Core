@@ -9,8 +9,8 @@ use LaraGram\Support\Collection as BaseCollection;
  * @method static \LaraGram\Database\Eloquent\Builder<static> withTrashed(bool $withTrashed = true)
  * @method static \LaraGram\Database\Eloquent\Builder<static> onlyTrashed()
  * @method static \LaraGram\Database\Eloquent\Builder<static> withoutTrashed()
- * @method static static restoreOrCreate(array $attributes = [], array $values = [])
- * @method static static createOrRestore(array $attributes = [], array $values = [])
+ * @method static static restoreOrCreate(array<string, mixed> $attributes = [], array<string, mixed> $values = [])
+ * @method static static createOrRestore(array<string, mixed> $attributes = [], array<string, mixed> $values = [])
  */
 trait SoftDeletes
 {
@@ -46,7 +46,7 @@ trait SoftDeletes
     /**
      * Force a hard delete on a soft deleted model.
      *
-     * @return \LaraGram\Support\HigherOrderTapProxy
+     * @return bool|null
      */
     public function forceDelete()
     {
@@ -93,7 +93,7 @@ trait SoftDeletes
 
         $ids = is_array($ids) ? $ids : func_get_args();
 
-        if (count($ids) === 0) {
+        if ($ids === []) {
             return 0;
         }
 
@@ -104,7 +104,7 @@ trait SoftDeletes
 
         $count = 0;
 
-        foreach ($instance->withTrashed()->whereIn($key, $ids)->get() as $model) {
+        foreach ($instance::withTrashed()->whereIn($key, $ids)->get() as $model) {
             if ($model->forceDelete()) {
                 $count++;
             }
@@ -180,7 +180,9 @@ trait SoftDeletes
 
         $result = $this->save();
 
-        $this->fireModelEvent('restored', false);
+        if ($result) {
+            $this->fireModelEvent('restored', false);
+        }
 
         return $result;
     }
@@ -281,7 +283,7 @@ trait SoftDeletes
     }
 
     /**
-     * Get the fully qualified "deleted at" column.
+     * Get the fully-qualified "deleted at" column.
      *
      * @return string
      */

@@ -22,7 +22,6 @@ class ConnectionResolver implements ConnectionResolverInterface
      * Create a new connection resolver instance.
      *
      * @param  array<string, \LaraGram\Database\ConnectionInterface>  $connections
-     * @return void
      */
     public function __construct(array $connections = [])
     {

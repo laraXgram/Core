@@ -8,6 +8,7 @@ use LaraGram\Database\Eloquent\Builder;
 use LaraGram\Database\Eloquent\Collection as EloquentCollection;
 use LaraGram\Database\Eloquent\RelationNotFoundException;
 use LaraGram\Database\Eloquent\Relations\BelongsTo;
+use LaraGram\Database\Eloquent\Relations\BelongsToMany;
 use LaraGram\Database\Eloquent\Relations\MorphTo;
 use LaraGram\Database\Eloquent\Relations\Relation;
 use LaraGram\Database\Query\Builder as QueryBuilder;
@@ -24,11 +25,13 @@ trait QueriesRelationships
     /**
      * Add a relationship count / exists condition to the query.
      *
-     * @param  \LaraGram\Database\Eloquent\Relations\Relation<*, *, *>|string  $relation
+     * @template TRelatedModel of \LaraGram\Database\Eloquent\Model
+     *
+     * @param  \LaraGram\Database\Eloquent\Relations\Relation<TRelatedModel, *, *>|string  $relation
      * @param  string  $operator
-     * @param  int  $count
+     * @param  \LaraGram\Contracts\Database\Query\Expression|int  $count
      * @param  string  $boolean
-     * @param  \Closure|null  $callback
+     * @param  (\Closure(\LaraGram\Database\Eloquent\Builder<TRelatedModel>): mixed)|null  $callback
      * @return $this
      *
      * @throws \RuntimeException
@@ -51,8 +54,8 @@ trait QueriesRelationships
         // the subquery to only run a "where exists" clause instead of this full "count"
         // clause. This will make these queries run much faster compared with a count.
         $method = $this->canUseExistsForExistenceCheck($operator, $count)
-                        ? 'getRelationExistenceQuery'
-                        : 'getRelationExistenceCountQuery';
+            ? 'getRelationExistenceQuery'
+            : 'getRelationExistenceCountQuery';
 
         $hasQuery = $relation->{$method}(
             $relation->getRelated()->newQueryWithoutRelationships(), $this
@@ -77,14 +80,16 @@ trait QueriesRelationships
      *
      * @param  string  $relations
      * @param  string  $operator
-     * @param  int  $count
+     * @param  \LaraGram\Contracts\Database\Query\Expression|int  $count
      * @param  string  $boolean
-     * @param  \Closure|null  $callback
+     * @param  (\Closure(\LaraGram\Database\Eloquent\Builder<*>): mixed)|null  $callback
      * @return $this
      */
     protected function hasNested($relations, $operator = '>=', $count = 1, $boolean = 'and', $callback = null)
     {
         $relations = explode('.', $relations);
+
+        $initialRelations = [...$relations];
 
         $doesntHave = $operator === '<' && $count === 1;
 
@@ -93,7 +98,14 @@ trait QueriesRelationships
             $count = 1;
         }
 
-        $closure = function ($q) use (&$closure, &$relations, $operator, $count, $callback) {
+        $closure = function ($q) use (&$closure, &$relations, $operator, $count, $callback, $initialRelations) {
+            // If the same closure is called multiple times, reset the relation array to loop through them again...
+            if ($count === 1 && empty($relations)) {
+                $relations = [...$initialRelations];
+
+                array_shift($relations);
+            }
+
             // In order to nest "has", we need to add count relation constraints on the
             // callback Closure. We'll do this by simply passing the Closure its own
             // reference to itself so it calls itself recursively on each segment.
@@ -110,7 +122,7 @@ trait QueriesRelationships
      *
      * @param  \LaraGram\Database\Eloquent\Relations\Relation<*, *, *>|string  $relation
      * @param  string  $operator
-     * @param  int  $count
+     * @param  \LaraGram\Contracts\Database\Query\Expression|int  $count
      * @return $this
      */
     public function orHas($relation, $operator = '>=', $count = 1)
@@ -121,9 +133,11 @@ trait QueriesRelationships
     /**
      * Add a relationship count / exists condition to the query.
      *
-     * @param  \LaraGram\Database\Eloquent\Relations\Relation<*, *, *>|string  $relation
+     * @template TRelatedModel of \LaraGram\Database\Eloquent\Model
+     *
+     * @param  \LaraGram\Database\Eloquent\Relations\Relation<TRelatedModel, *, *>|string  $relation
      * @param  string  $boolean
-     * @param  \Closure|null  $callback
+     * @param  (\Closure(\LaraGram\Database\Eloquent\Builder<TRelatedModel>): mixed)|null  $callback
      * @return $this
      */
     public function doesntHave($relation, $boolean = 'and', ?Closure $callback = null)
@@ -145,10 +159,12 @@ trait QueriesRelationships
     /**
      * Add a relationship count / exists condition to the query with where clauses.
      *
-     * @param  \LaraGram\Database\Eloquent\Relations\Relation<*, *, *>|string  $relation
-     * @param  \Closure|null  $callback
+     * @template TRelatedModel of \LaraGram\Database\Eloquent\Model
+     *
+     * @param  \LaraGram\Database\Eloquent\Relations\Relation<TRelatedModel, *, *>|string  $relation
+     * @param  (\Closure(\LaraGram\Database\Eloquent\Builder<TRelatedModel>): mixed)|null  $callback
      * @param  string  $operator
-     * @param  int  $count
+     * @param  \LaraGram\Contracts\Database\Query\Expression|int  $count
      * @return $this
      */
     public function whereHas($relation, ?Closure $callback = null, $operator = '>=', $count = 1)
@@ -159,12 +175,12 @@ trait QueriesRelationships
     /**
      * Add a relationship count / exists condition to the query with where clauses.
      *
-     * Also load the relationship with same condition.
+     * Also load the relationship with the same condition.
      *
-     * @param  \LaraGram\Database\Eloquent\Relations\Relation<*, *, *>|string  $relation
-     * @param  \Closure|null  $callback
+     * @param  string  $relation
+     * @param  (\Closure(\LaraGram\Database\Eloquent\Builder<*>|\LaraGram\Database\Eloquent\Relations\Relation<*, *, *>): mixed)|null  $callback
      * @param  string  $operator
-     * @param  int  $count
+     * @param  \LaraGram\Contracts\Database\Query\Expression|int  $count
      * @return $this
      */
     public function withWhereHas($relation, ?Closure $callback = null, $operator = '>=', $count = 1)
@@ -176,10 +192,12 @@ trait QueriesRelationships
     /**
      * Add a relationship count / exists condition to the query with where clauses and an "or".
      *
-     * @param  \LaraGram\Database\Eloquent\Relations\Relation<*, *, *>|string  $relation
-     * @param  \Closure|null  $callback
+     * @template TRelatedModel of \LaraGram\Database\Eloquent\Model
+     *
+     * @param  \LaraGram\Database\Eloquent\Relations\Relation<TRelatedModel, *, *>|string  $relation
+     * @param  (\Closure(\LaraGram\Database\Eloquent\Builder<TRelatedModel>): mixed)|null  $callback
      * @param  string  $operator
-     * @param  int  $count
+     * @param  \LaraGram\Contracts\Database\Query\Expression|int  $count
      * @return $this
      */
     public function orWhereHas($relation, ?Closure $callback = null, $operator = '>=', $count = 1)
@@ -190,8 +208,10 @@ trait QueriesRelationships
     /**
      * Add a relationship count / exists condition to the query with where clauses.
      *
-     * @param  \LaraGram\Database\Eloquent\Relations\Relation<*, *, *>|string  $relation
-     * @param  \Closure|null  $callback
+     * @template TRelatedModel of \LaraGram\Database\Eloquent\Model
+     *
+     * @param  \LaraGram\Database\Eloquent\Relations\Relation<TRelatedModel, *, *>|string  $relation
+     * @param  (\Closure(\LaraGram\Database\Eloquent\Builder<TRelatedModel>): mixed)|null  $callback
      * @return $this
      */
     public function whereDoesntHave($relation, ?Closure $callback = null)
@@ -202,8 +222,10 @@ trait QueriesRelationships
     /**
      * Add a relationship count / exists condition to the query with where clauses and an "or".
      *
-     * @param  \LaraGram\Database\Eloquent\Relations\Relation<*, *, *>|string  $relation
-     * @param  \Closure|null  $callback
+     * @template TRelatedModel of \LaraGram\Database\Eloquent\Model
+     *
+     * @param  \LaraGram\Database\Eloquent\Relations\Relation<TRelatedModel, *, *>|string  $relation
+     * @param  (\Closure(\LaraGram\Database\Eloquent\Builder<TRelatedModel>): mixed)|null  $callback
      * @return $this
      */
     public function orWhereDoesntHave($relation, ?Closure $callback = null)
@@ -214,12 +236,14 @@ trait QueriesRelationships
     /**
      * Add a polymorphic relationship count / exists condition to the query.
      *
-     * @param  \LaraGram\Database\Eloquent\Relations\MorphTo<*, *>|string  $relation
-     * @param  string|array  $types
+     * @template TRelatedModel of \LaraGram\Database\Eloquent\Model
+     *
+     * @param  \LaraGram\Database\Eloquent\Relations\MorphTo<TRelatedModel, *>|string  $relation
+     * @param  string|array<int, string>  $types
      * @param  string  $operator
-     * @param  int  $count
+     * @param  \LaraGram\Contracts\Database\Query\Expression|int  $count
      * @param  string  $boolean
-     * @param  \Closure|null  $callback
+     * @param  (\Closure(\LaraGram\Database\Eloquent\Builder<TRelatedModel>, string): mixed)|null  $callback
      * @return $this
      */
     public function hasMorph($relation, $types, $operator = '>=', $count = 1, $boolean = 'and', ?Closure $callback = null)
@@ -229,6 +253,12 @@ trait QueriesRelationships
         }
 
         $types = (array) $types;
+
+        $checkMorphNull = $types === ['*']
+            && (($operator === '<' && $count >= 1)
+                || ($operator === '<=' && $count >= 0)
+                || ($operator === '=' && $count === 0)
+                || ($operator === '!=' && $count >= 1));
 
         if ($types === ['*']) {
             $types = $this->model->newModelQuery()->distinct()->pluck($relation->getMorphType())
@@ -245,7 +275,7 @@ trait QueriesRelationships
             $type = Relation::getMorphedModel($type) ?? $type;
         }
 
-        return $this->where(function ($query) use ($relation, $callback, $operator, $count, $types) {
+        return $this->where(function ($query) use ($relation, $callback, $operator, $count, $types, $checkMorphNull) {
             foreach ($types as $type) {
                 $query->orWhere(function ($query) use ($relation, $callback, $operator, $count, $type) {
                     $belongsTo = $this->getBelongsToRelation($relation, $type);
@@ -257,9 +287,11 @@ trait QueriesRelationships
                     }
 
                     $query->where($this->qualifyColumn($relation->getMorphType()), '=', (new $type)->getMorphClass())
-                                ->whereHas($belongsTo, $callback, $operator, $count);
+                        ->whereHas($belongsTo, $callback, $operator, $count);
                 });
             }
+
+            $query->when($checkMorphNull, fn (self $query) => $query->orWhereMorphedTo($relation, null));
         }, null, null, $boolean);
     }
 
@@ -292,9 +324,9 @@ trait QueriesRelationships
      * Add a polymorphic relationship count / exists condition to the query with an "or".
      *
      * @param  \LaraGram\Database\Eloquent\Relations\MorphTo<*, *>|string  $relation
-     * @param  string|array  $types
+     * @param  string|array<int, string>  $types
      * @param  string  $operator
-     * @param  int  $count
+     * @param  \LaraGram\Contracts\Database\Query\Expression|int  $count
      * @return $this
      */
     public function orHasMorph($relation, $types, $operator = '>=', $count = 1)
@@ -305,10 +337,12 @@ trait QueriesRelationships
     /**
      * Add a polymorphic relationship count / exists condition to the query.
      *
-     * @param  \LaraGram\Database\Eloquent\Relations\MorphTo<*, *>|string  $relation
-     * @param  string|array  $types
+     * @template TRelatedModel of \LaraGram\Database\Eloquent\Model
+     *
+     * @param  \LaraGram\Database\Eloquent\Relations\MorphTo<TRelatedModel, *>|string  $relation
+     * @param  string|array<int, string>  $types
      * @param  string  $boolean
-     * @param  \Closure|null  $callback
+     * @param  (\Closure(\LaraGram\Database\Eloquent\Builder<TRelatedModel>, string): mixed)|null  $callback
      * @return $this
      */
     public function doesntHaveMorph($relation, $types, $boolean = 'and', ?Closure $callback = null)
@@ -320,7 +354,7 @@ trait QueriesRelationships
      * Add a polymorphic relationship count / exists condition to the query with an "or".
      *
      * @param  \LaraGram\Database\Eloquent\Relations\MorphTo<*, *>|string  $relation
-     * @param  string|array  $types
+     * @param  string|array<int, string>  $types
      * @return $this
      */
     public function orDoesntHaveMorph($relation, $types)
@@ -331,11 +365,13 @@ trait QueriesRelationships
     /**
      * Add a polymorphic relationship count / exists condition to the query with where clauses.
      *
-     * @param  \LaraGram\Database\Eloquent\Relations\MorphTo<*, *>|string  $relation
-     * @param  string|array  $types
-     * @param  \Closure|null  $callback
+     * @template TRelatedModel of \LaraGram\Database\Eloquent\Model
+     *
+     * @param  \LaraGram\Database\Eloquent\Relations\MorphTo<TRelatedModel, *>|string  $relation
+     * @param  string|array<int, string>  $types
+     * @param  (\Closure(\LaraGram\Database\Eloquent\Builder<TRelatedModel>, string): mixed)|null  $callback
      * @param  string  $operator
-     * @param  int  $count
+     * @param  \LaraGram\Contracts\Database\Query\Expression|int  $count
      * @return $this
      */
     public function whereHasMorph($relation, $types, ?Closure $callback = null, $operator = '>=', $count = 1)
@@ -346,11 +382,13 @@ trait QueriesRelationships
     /**
      * Add a polymorphic relationship count / exists condition to the query with where clauses and an "or".
      *
-     * @param  \LaraGram\Database\Eloquent\Relations\MorphTo<*, *>|string  $relation
-     * @param  string|array  $types
-     * @param  \Closure|null  $callback
+     * @template TRelatedModel of \LaraGram\Database\Eloquent\Model
+     *
+     * @param  \LaraGram\Database\Eloquent\Relations\MorphTo<TRelatedModel, *>|string  $relation
+     * @param  string|array<int, string>  $types
+     * @param  (\Closure(\LaraGram\Database\Eloquent\Builder<TRelatedModel>, string): mixed)|null  $callback
      * @param  string  $operator
-     * @param  int  $count
+     * @param  \LaraGram\Contracts\Database\Query\Expression|int  $count
      * @return $this
      */
     public function orWhereHasMorph($relation, $types, ?Closure $callback = null, $operator = '>=', $count = 1)
@@ -361,9 +399,11 @@ trait QueriesRelationships
     /**
      * Add a polymorphic relationship count / exists condition to the query with where clauses.
      *
-     * @param  \LaraGram\Database\Eloquent\Relations\MorphTo<*, *>|string  $relation
-     * @param  string|array  $types
-     * @param  \Closure|null  $callback
+     * @template TRelatedModel of \LaraGram\Database\Eloquent\Model
+     *
+     * @param  \LaraGram\Database\Eloquent\Relations\MorphTo<TRelatedModel, *>|string  $relation
+     * @param  string|array<int, string>  $types
+     * @param  (\Closure(\LaraGram\Database\Eloquent\Builder<TRelatedModel>, string): mixed)|null  $callback
      * @return $this
      */
     public function whereDoesntHaveMorph($relation, $types, ?Closure $callback = null)
@@ -374,9 +414,11 @@ trait QueriesRelationships
     /**
      * Add a polymorphic relationship count / exists condition to the query with where clauses and an "or".
      *
-     * @param  \LaraGram\Database\Eloquent\Relations\MorphTo<*, *>|string  $relation
-     * @param  string|array  $types
-     * @param  \Closure|null  $callback
+     * @template TRelatedModel of \LaraGram\Database\Eloquent\Model
+     *
+     * @param  \LaraGram\Database\Eloquent\Relations\MorphTo<TRelatedModel, *>|string  $relation
+     * @param  string|array<int, string>  $types
+     * @param  (\Closure(\LaraGram\Database\Eloquent\Builder<TRelatedModel>, string): mixed)|null  $callback
      * @return $this
      */
     public function orWhereDoesntHaveMorph($relation, $types, ?Closure $callback = null)
@@ -387,8 +429,10 @@ trait QueriesRelationships
     /**
      * Add a basic where clause to a relationship query.
      *
-     * @param  \LaraGram\Database\Eloquent\Relations\Relation<*, *, *>|string  $relation
-     * @param  \Closure|string|array|\LaraGram\Contracts\Database\Query\Expression  $column
+     * @template TRelatedModel of \LaraGram\Database\Eloquent\Model
+     *
+     * @param  \LaraGram\Database\Eloquent\Relations\Relation<TRelatedModel, *, *>|string  $relation
+     * @param  (\Closure(\LaraGram\Database\Eloquent\Builder<TRelatedModel>): mixed)|string|array|\LaraGram\Contracts\Database\Query\Expression  $column
      * @param  mixed  $operator
      * @param  mixed  $value
      * @return $this
@@ -405,10 +449,31 @@ trait QueriesRelationships
     }
 
     /**
-     * Add an "or where" clause to a relationship query.
+     * Add a basic where clause to a relationship query and eager-load the relationship with the same conditions.
      *
      * @param  \LaraGram\Database\Eloquent\Relations\Relation<*, *, *>|string  $relation
      * @param  \Closure|string|array|\LaraGram\Contracts\Database\Query\Expression  $column
+     * @param  mixed  $operator
+     * @param  mixed  $value
+     * @return $this
+     */
+    public function withWhereRelation($relation, $column, $operator = null, $value = null)
+    {
+        return $this->whereRelation($relation, $column, $operator, $value)
+            ->with([
+                $relation => fn ($query) => $column instanceof Closure
+                    ? $column($query)
+                    : $query->where($column, $operator, $value),
+            ]);
+    }
+
+    /**
+     * Add an "or where" clause to a relationship query.
+     *
+     * @template TRelatedModel of \LaraGram\Database\Eloquent\Model
+     *
+     * @param  \LaraGram\Database\Eloquent\Relations\Relation<TRelatedModel, *, *>|string  $relation
+     * @param  (\Closure(\LaraGram\Database\Eloquent\Builder<TRelatedModel>): mixed)|string|array|\LaraGram\Contracts\Database\Query\Expression  $column
      * @param  mixed  $operator
      * @param  mixed  $value
      * @return $this
@@ -427,8 +492,10 @@ trait QueriesRelationships
     /**
      * Add a basic count / exists condition to a relationship query.
      *
-     * @param  \LaraGram\Database\Eloquent\Relations\Relation<*, *, *>|string  $relation
-     * @param  \Closure|string|array|\LaraGram\Contracts\Database\Query\Expression  $column
+     * @template TRelatedModel of \LaraGram\Database\Eloquent\Model
+     *
+     * @param  \LaraGram\Database\Eloquent\Relations\Relation<TRelatedModel, *, *>|string  $relation
+     * @param  (\Closure(\LaraGram\Database\Eloquent\Builder<TRelatedModel>): mixed)|string|array|\LaraGram\Contracts\Database\Query\Expression  $column
      * @param  mixed  $operator
      * @param  mixed  $value
      * @return $this
@@ -447,8 +514,10 @@ trait QueriesRelationships
     /**
      * Add an "or where" clause to a relationship query.
      *
-     * @param  \LaraGram\Database\Eloquent\Relations\Relation<*, *, *>|string  $relation
-     * @param  \Closure|string|array|\LaraGram\Contracts\Database\Query\Expression  $column
+     * @template TRelatedModel of \LaraGram\Database\Eloquent\Model
+     *
+     * @param  \LaraGram\Database\Eloquent\Relations\Relation<TRelatedModel, *, *>|string  $relation
+     * @param  (\Closure(\LaraGram\Database\Eloquent\Builder<TRelatedModel>): mixed)|string|array|\LaraGram\Contracts\Database\Query\Expression  $column
      * @param  mixed  $operator
      * @param  mixed  $value
      * @return $this
@@ -467,9 +536,11 @@ trait QueriesRelationships
     /**
      * Add a polymorphic relationship condition to the query with a where clause.
      *
-     * @param  \LaraGram\Database\Eloquent\Relations\MorphTo<*, *>|string  $relation
-     * @param  string|array  $types
-     * @param  \Closure|string|array|\LaraGram\Contracts\Database\Query\Expression  $column
+     * @template TRelatedModel of \LaraGram\Database\Eloquent\Model
+     *
+     * @param  \LaraGram\Database\Eloquent\Relations\MorphTo<TRelatedModel, *>|string  $relation
+     * @param  string|array<int, string>  $types
+     * @param  (\Closure(\LaraGram\Database\Eloquent\Builder<TRelatedModel>): mixed)|string|array|\LaraGram\Contracts\Database\Query\Expression  $column
      * @param  mixed  $operator
      * @param  mixed  $value
      * @return $this
@@ -484,9 +555,11 @@ trait QueriesRelationships
     /**
      * Add a polymorphic relationship condition to the query with an "or where" clause.
      *
-     * @param  \LaraGram\Database\Eloquent\Relations\MorphTo<*, *>|string  $relation
-     * @param  string|array  $types
-     * @param  \Closure|string|array|\LaraGram\Contracts\Database\Query\Expression  $column
+     * @template TRelatedModel of \LaraGram\Database\Eloquent\Model
+     *
+     * @param  \LaraGram\Database\Eloquent\Relations\MorphTo<TRelatedModel, *>|string  $relation
+     * @param  string|array<int, string>  $types
+     * @param  (\Closure(\LaraGram\Database\Eloquent\Builder<TRelatedModel>): mixed)|string|array|\LaraGram\Contracts\Database\Query\Expression  $column
      * @param  mixed  $operator
      * @param  mixed  $value
      * @return $this
@@ -501,9 +574,11 @@ trait QueriesRelationships
     /**
      * Add a polymorphic relationship condition to the query with a doesn't have clause.
      *
-     * @param  \LaraGram\Database\Eloquent\Relations\MorphTo<*, *>|string  $relation
-     * @param  string|array  $types
-     * @param  \Closure|string|array|\LaraGram\Contracts\Database\Query\Expression  $column
+     * @template TRelatedModel of \LaraGram\Database\Eloquent\Model
+     *
+     * @param  \LaraGram\Database\Eloquent\Relations\MorphTo<TRelatedModel, *>|string  $relation
+     * @param  string|array<int, string>  $types
+     * @param  (\Closure(\LaraGram\Database\Eloquent\Builder<TRelatedModel>): mixed)|string|array|\LaraGram\Contracts\Database\Query\Expression  $column
      * @param  mixed  $operator
      * @param  mixed  $value
      * @return $this
@@ -518,9 +593,11 @@ trait QueriesRelationships
     /**
      * Add a polymorphic relationship condition to the query with an "or doesn't have" clause.
      *
-     * @param  \LaraGram\Database\Eloquent\Relations\MorphTo<*, *>|string  $relation
-     * @param  string|array  $types
-     * @param  \Closure|string|array|\LaraGram\Contracts\Database\Query\Expression  $column
+     * @template TRelatedModel of \LaraGram\Database\Eloquent\Model
+     *
+     * @param  \LaraGram\Database\Eloquent\Relations\MorphTo<TRelatedModel, *>|string  $relation
+     * @param  string|array<int, string>  $types
+     * @param  (\Closure(\LaraGram\Database\Eloquent\Builder<TRelatedModel>): mixed)|string|array|\LaraGram\Contracts\Database\Query\Expression  $column
      * @param  mixed  $operator
      * @param  mixed  $value
      * @return $this
@@ -536,8 +613,10 @@ trait QueriesRelationships
      * Add a morph-to relationship condition to the query.
      *
      * @param  \LaraGram\Database\Eloquent\Relations\MorphTo<*, *>|string  $relation
-     * @param  \LaraGram\Database\Eloquent\Model|string|null  $model
+     * @param  \LaraGram\Database\Eloquent\Model|iterable<int, \LaraGram\Database\Eloquent\Model>|string|null  $model
      * @return $this
+     *
+     * @throws \InvalidArgumentException
      */
     public function whereMorphedTo($relation, $model, $boolean = 'and')
     {
@@ -559,9 +638,19 @@ trait QueriesRelationships
             return $this->where($relation->qualifyColumn($relation->getMorphType()), $model, null, $boolean);
         }
 
-        return $this->where(function ($query) use ($relation, $model) {
-            $query->where($relation->qualifyColumn($relation->getMorphType()), $model->getMorphClass())
-                ->where($relation->qualifyColumn($relation->getForeignKeyName()), $model->getKey());
+        $models = BaseCollection::wrap($model);
+
+        if ($models->isEmpty()) {
+            throw new InvalidArgumentException('Collection given to whereMorphedTo method may not be empty.');
+        }
+
+        return $this->where(function ($query) use ($relation, $models) {
+            $models->groupBy(fn ($model) => $model->getMorphClass())->each(function ($models) use ($query, $relation) {
+                $query->orWhere(function ($query) use ($relation, $models) {
+                    $query->where($relation->qualifyColumn($relation->getMorphType()), $models->first()->getMorphClass())
+                        ->whereIn($relation->qualifyColumn($relation->getForeignKeyName()), $models->map->getKey());
+                });
+            });
         }, null, null, $boolean);
     }
 
@@ -569,8 +658,10 @@ trait QueriesRelationships
      * Add a not morph-to relationship condition to the query.
      *
      * @param  \LaraGram\Database\Eloquent\Relations\MorphTo<*, *>|string  $relation
-     * @param  \LaraGram\Database\Eloquent\Model|string  $model
+     * @param  \LaraGram\Database\Eloquent\Model|iterable<int, \LaraGram\Database\Eloquent\Model>|string  $model
      * @return $this
+     *
+     * @throws \InvalidArgumentException
      */
     public function whereNotMorphedTo($relation, $model, $boolean = 'and')
     {
@@ -585,12 +676,24 @@ trait QueriesRelationships
                 $model = array_search($model, $morphMap, true);
             }
 
-            return $this->whereNot($relation->qualifyColumn($relation->getMorphType()), '<=>', $model, $boolean);
+            return $this->whereNot(fn ($query) => $query->whereNullSafeEquals(
+                $relation->qualifyColumn($relation->getMorphType()), $model
+            ), null, null, $boolean);
         }
 
-        return $this->whereNot(function ($query) use ($relation, $model) {
-            $query->where($relation->qualifyColumn($relation->getMorphType()), '<=>', $model->getMorphClass())
-                ->where($relation->qualifyColumn($relation->getForeignKeyName()), '<=>', $model->getKey());
+        $models = BaseCollection::wrap($model);
+
+        if ($models->isEmpty()) {
+            throw new InvalidArgumentException('Collection given to whereNotMorphedTo method may not be empty.');
+        }
+
+        return $this->whereNot(function ($query) use ($relation, $models) {
+            $models->groupBy(fn ($model) => $model->getMorphClass())->each(function ($models) use ($query, $relation) {
+                $query->orWhere(function ($query) use ($relation, $models) {
+                    $query->whereNullSafeEquals($relation->qualifyColumn($relation->getMorphType()), $models->first()->getMorphClass())
+                        ->whereIn($relation->qualifyColumn($relation->getForeignKeyName()), $models->map->getKey());
+                });
+            });
         }, null, null, $boolean);
     }
 
@@ -598,7 +701,7 @@ trait QueriesRelationships
      * Add a morph-to relationship condition to the query with an "or where" clause.
      *
      * @param  \LaraGram\Database\Eloquent\Relations\MorphTo<*, *>|string  $relation
-     * @param  \LaraGram\Database\Eloquent\Model|string|null  $model
+     * @param  \LaraGram\Database\Eloquent\Model|iterable<int, \LaraGram\Database\Eloquent\Model>|string|null  $model
      * @return $this
      */
     public function orWhereMorphedTo($relation, $model)
@@ -610,7 +713,7 @@ trait QueriesRelationships
      * Add a not morph-to relationship condition to the query with an "or where" clause.
      *
      * @param  \LaraGram\Database\Eloquent\Relations\MorphTo<*, *>|string  $relation
-     * @param  \LaraGram\Database\Eloquent\Model|string  $model
+     * @param  \LaraGram\Database\Eloquent\Model|iterable<int, \LaraGram\Database\Eloquent\Model>|string  $model
      * @return $this
      */
     public function orWhereNotMorphedTo($relation, $model)
@@ -626,6 +729,7 @@ trait QueriesRelationships
      * @param  string  $boolean
      * @return $this
      *
+     * @throws \InvalidArgumentException
      * @throws \LaraGram\Database\Eloquent\RelationNotFoundException
      */
     public function whereBelongsTo($related, $relationshipName = null, $boolean = 'and')
@@ -671,8 +775,6 @@ trait QueriesRelationships
      * @param  \LaraGram\Database\Eloquent\Model  $related
      * @param  string|null  $relationshipName
      * @return $this
-     *
-     * @throws \RuntimeException
      */
     public function orWhereBelongsTo($related, $relationshipName = null)
     {
@@ -680,11 +782,69 @@ trait QueriesRelationships
     }
 
     /**
+     * Add a "belongs to many" relationship where clause to the query.
+     *
+     * @param  \LaraGram\Database\Eloquent\Model|\LaraGram\Database\Eloquent\Collection<int, \LaraGram\Database\Eloquent\Model>  $related
+     * @param  string|null  $relationshipName
+     * @param  string  $boolean
+     * @return $this
+     *
+     * @throws \InvalidArgumentException
+     * @throws \LaraGram\Database\Eloquent\RelationNotFoundException
+     */
+    public function whereAttachedTo($related, $relationshipName = null, $boolean = 'and')
+    {
+        $relatedCollection = $related instanceof EloquentCollection ? $related : $related->newCollection([$related]);
+
+        $related = $relatedCollection->first();
+
+        if ($relatedCollection->isEmpty()) {
+            throw new InvalidArgumentException('Collection given to whereAttachedTo method may not be empty.');
+        }
+
+        if ($relationshipName === null) {
+            $relationshipName = Str::plural(Str::camel(class_basename($related)));
+        }
+
+        try {
+            $relationship = $this->model->{$relationshipName}();
+        } catch (BadMethodCallException) {
+            throw RelationNotFoundException::make($this->model, $relationshipName);
+        }
+
+        if (! $relationship instanceof BelongsToMany) {
+            throw RelationNotFoundException::make($this->model, $relationshipName, BelongsToMany::class);
+        }
+
+        $this->has(
+            $relationshipName,
+            boolean: $boolean,
+            callback: fn (Builder $query) => $query->whereKey($relatedCollection->pluck($related->getKeyName())),
+        );
+
+        return $this;
+    }
+
+    /**
+     * Add a "belongs to many" relationship with an "or where" clause to the query.
+     *
+     * @param  \LaraGram\Database\Eloquent\Model  $related
+     * @param  string|null  $relationshipName
+     * @return $this
+     *
+     * @throws \RuntimeException
+     */
+    public function orWhereAttachedTo($related, $relationshipName = null)
+    {
+        return $this->whereAttachedTo($related, $relationshipName, 'or');
+    }
+
+    /**
      * Add subselect queries to include an aggregate value for a relationship.
      *
      * @param  mixed  $relations
      * @param  \LaraGram\Contracts\Database\Query\Expression|string  $column
-     * @param  string  $function
+     * @param  string|null  $function
      * @return $this
      */
     public function withAggregate($relations, $column, $function = null)
@@ -755,7 +915,11 @@ trait QueriesRelationships
             // the query builder. Then, we will return the builder instance back to the developer
             // for further constraint chaining that needs to take place on the query as needed.
             $alias ??= Str::snake(
-                preg_replace('/[^[:alnum:][:space:]_]/u', '', "$name $function {$this->getQuery()->getGrammar()->getValue($column)}")
+                preg_replace(
+                    '/[^[:alnum:][:space:]_]/u',
+                    '',
+                    sprintf('%s %s %s', $name, $function, strtolower($this->getQuery()->getGrammar()->getValue($column)))
+                )
             );
 
             if ($function === 'exists') {
@@ -868,7 +1032,7 @@ trait QueriesRelationships
      * @param  \LaraGram\Database\Eloquent\Builder<*>  $hasQuery
      * @param  \LaraGram\Database\Eloquent\Relations\Relation<*, *, *>  $relation
      * @param  string  $operator
-     * @param  int  $count
+     * @param  \LaraGram\Contracts\Database\Query\Expression|int  $count
      * @param  string  $boolean
      * @return $this
      */
@@ -877,8 +1041,8 @@ trait QueriesRelationships
         $hasQuery->mergeConstraintsFrom($relation->getQuery());
 
         return $this->canUseExistsForExistenceCheck($operator, $count)
-                ? $this->addWhereExistsQuery($hasQuery->toBase(), $boolean, $operator === '<' && $count === 1)
-                : $this->addWhereCountQuery($hasQuery->toBase(), $operator, $count, $boolean);
+            ? $this->addWhereExistsQuery($hasQuery->toBase(), $boolean, $operator === '<' && $count === 1)
+            : $this->addWhereCountQuery($hasQuery->toBase(), $operator, $count, $boolean);
     }
 
     /**
@@ -932,7 +1096,7 @@ trait QueriesRelationships
      *
      * @param  \LaraGram\Database\Query\Builder  $query
      * @param  string  $operator
-     * @param  int  $count
+     * @param  \LaraGram\Contracts\Database\Query\Expression|int  $count
      * @param  string  $boolean
      * @return $this
      */
@@ -965,7 +1129,7 @@ trait QueriesRelationships
      * Check if we can run an "exists" query to optimize performance.
      *
      * @param  string  $operator
-     * @param  int  $count
+     * @param  \LaraGram\Contracts\Database\Query\Expression|int  $count
      * @return bool
      */
     protected function canUseExistsForExistenceCheck($operator, $count)

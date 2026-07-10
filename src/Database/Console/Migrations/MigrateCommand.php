@@ -9,6 +9,7 @@ use LaraGram\Database\Events\SchemaLoaded;
 use LaraGram\Database\Migrations\Migrator;
 use LaraGram\Database\SQLiteDatabaseDoesNotExistException;
 use LaraGram\Database\SqlServerConnection;
+use LaraGram\Support\Str;
 use PDOException;
 use RuntimeException;
 use LaraGram\Console\Attribute\AsCommand;
@@ -63,7 +64,6 @@ class MigrateCommand extends BaseCommand implements Isolatable
      *
      * @param  \LaraGram\Database\Migrations\Migrator  $migrator
      * @param  \LaraGram\Contracts\Events\Dispatcher  $dispatcher
-     * @return void
      */
     public function __construct(Migrator $migrator, Dispatcher $dispatcher)
     {
@@ -77,6 +77,8 @@ class MigrateCommand extends BaseCommand implements Isolatable
      * Execute the console command.
      *
      * @return int
+     *
+     * @throws \Throwable
      */
     public function handle()
     {
@@ -163,24 +165,39 @@ class MigrateCommand extends BaseCommand implements Isolatable
     {
         return retry(2, fn () => $this->migrator->repositoryExists(), 0, function ($e) {
             try {
-                if ($e->getPrevious() instanceof SQLiteDatabaseDoesNotExistException) {
-                    return $this->createMissingSqliteDatabase($e->getPrevious()->path);
-                }
-
-                $connection = $this->migrator->resolveConnection($this->option('database'));
-
-                if (
-                    $e->getPrevious() instanceof PDOException &&
-                    $e->getPrevious()->getCode() === 1049 &&
-                    in_array($connection->getDriverName(), ['mysql', 'mariadb'])) {
-                    return $this->createMissingMysqlDatabase($connection);
-                }
-
-                return false;
+                return $this->handleMissingDatabase($e->getPrevious());
             } catch (Throwable) {
                 return false;
             }
         });
+    }
+
+    /**
+     * Attempt to create the database if it is missing.
+     *
+     * @param  \Throwable  $e
+     * @return bool
+     */
+    protected function handleMissingDatabase(Throwable $e)
+    {
+        if ($e instanceof SQLiteDatabaseDoesNotExistException) {
+            return $this->createMissingSqliteDatabase($e->path);
+        }
+
+        $connection = $this->migrator->resolveConnection($this->option('database'));
+
+        if (! $e instanceof PDOException) {
+            return false;
+        }
+
+        if (($e->getCode() === 1049 && in_array($connection->getDriverName(), ['mysql', 'mariadb'])) ||
+            (($e->errorInfo[0] ?? null) == '08006' &&
+              $connection->getDriverName() == 'pgsql' &&
+              Str::contains($e->getMessage(), '"'.$connection->getDatabaseName().'"'))) {
+            return $this->createMissingMySqlOrPgsqlDatabase($connection);
+        }
+
+        return false;
     }
 
     /**
@@ -213,13 +230,14 @@ class MigrateCommand extends BaseCommand implements Isolatable
     }
 
     /**
-     * Create a missing MySQL database.
+     * Create a missing MySQL or Postgres database.
      *
-     * @return \LaraGram\Support\HigherOrderTapProxy|bool
+     * @param  \LaraGram\Database\Connection  $connection
+     * @return bool
      *
      * @throws \RuntimeException
      */
-    protected function createMissingMysqlDatabase($connection)
+    protected function createMissingMySqlOrPgsqlDatabase($connection)
     {
         if ($this->laragram['config']->get("database.connections.{$connection->getName()}.database") !== $connection->getDatabaseName()) {
             return false;
@@ -238,15 +256,25 @@ class MigrateCommand extends BaseCommand implements Isolatable
                 throw new RuntimeException('Database was not created. Aborting migration.');
             }
         }
-
         try {
-            $this->laragram['config']->set("database.connections.{$connection->getName()}.database", null);
+            $this->laragram['config']->set(
+                "database.connections.{$connection->getName()}.database",
+                match ($connection->getDriverName()) {
+                    'mysql', 'mariadb' => null,
+                    'pgsql' => 'postgres',
+                },
+            );
 
             $this->laragram['db']->purge();
 
             $freshConnection = $this->migrator->resolveConnection($this->option('database'));
 
-            return tap($freshConnection->unprepared("CREATE DATABASE IF NOT EXISTS `{$connection->getDatabaseName()}`"), function () {
+            return tap($freshConnection->unprepared(
+                match ($connection->getDriverName()) {
+                    'mysql', 'mariadb' => "CREATE DATABASE IF NOT EXISTS `{$connection->getDatabaseName()}`",
+                    'pgsql' => 'CREATE DATABASE "'.$connection->getDatabaseName().'"',
+                }
+            ), function () {
                 $this->laragram['db']->purge();
             });
         } finally {
@@ -306,10 +334,10 @@ class MigrateCommand extends BaseCommand implements Isolatable
             return $this->option('schema-path');
         }
 
-        if (file_exists($path = $this->laragram->databasePath('schema/'.$connection->getName().'-schema.dump'))) {
+        if (file_exists($path = database_path('schema/'.$connection->getName().'-schema.dump'))) {
             return $path;
         }
 
-        return $this->laragram->databasePath('schema/'.$connection->getName().'-schema.sql');
+        return database_path('schema/'.$connection->getName().'-schema.sql');
     }
 }

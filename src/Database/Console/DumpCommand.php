@@ -3,6 +3,7 @@
 namespace LaraGram\Database\Console;
 
 use LaraGram\Console\Command;
+use LaraGram\Console\Prohibitable;
 use LaraGram\Contracts\Events\Dispatcher;
 use LaraGram\Database\Connection;
 use LaraGram\Database\ConnectionResolverInterface;
@@ -15,6 +16,8 @@ use LaraGram\Console\Attribute\AsCommand;
 #[AsCommand(name: 'schema:dump')]
 class DumpCommand extends Command
 {
+    use Prohibitable;
+
     /**
      * The console command name.
      *
@@ -23,7 +26,8 @@ class DumpCommand extends Command
     protected $signature = 'schema:dump
                 {--database= : The database connection to use}
                 {--path= : The path where the schema dump file should be stored}
-                {--prune : Delete all existing migration files}';
+                {--prune : Delete all existing migration files}
+                {--without-migration-data : Dump the schema without the migration data}';
 
     /**
      * The console command description.
@@ -37,10 +41,14 @@ class DumpCommand extends Command
      *
      * @param  \LaraGram\Database\ConnectionResolverInterface  $connections
      * @param  \LaraGram\Contracts\Events\Dispatcher  $dispatcher
-     * @return void
+     * @return int
      */
     public function handle(ConnectionResolverInterface $connections, Dispatcher $dispatcher)
     {
+        if ($this->isProhibited()) {
+            return Command::FAILURE;
+        }
+
         $connection = $connections->connection($database = $this->input->getOption('database'));
 
         $this->schemaState($connection)->dump(
@@ -53,7 +61,7 @@ class DumpCommand extends Command
 
         if ($this->option('prune')) {
             (new Filesystem)->deleteDirectory(
-                $path = database_path('migrations'), $preserve = false
+                $path = database_path('migrations'), preserve: false
             );
 
             $info .= ' and pruned';
@@ -76,11 +84,15 @@ class DumpCommand extends Command
 
         $migrationTable = is_array($migrations) ? ($migrations['table'] ?? 'migrations') : $migrations;
 
+        if ($this->option('without-migration-data')) {
+            $migrationTable = null;
+        }
+
         return $connection->getSchemaState()
-                ->withMigrationTable($migrationTable)
-                ->handleOutputUsing(function ($type, $buffer) {
-                    $this->output->write($buffer);
-                });
+            ->withMigrationTable($migrationTable)
+            ->handleOutputUsing(function ($type, $buffer) {
+                $this->output->write($buffer);
+            });
     }
 
     /**
@@ -90,7 +102,7 @@ class DumpCommand extends Command
      */
     protected function path(Connection $connection)
     {
-        return tap($this->option('path') ?: $this->laragram->databasePath('schema/'.$connection->getName().'-schema.sql'), function ($path) {
+        return tap($this->option('path') ?: database_path('schema/'.$connection->getName().'-schema.sql'), function ($path) {
             (new Filesystem)->ensureDirectoryExists(dirname($path));
         });
     }

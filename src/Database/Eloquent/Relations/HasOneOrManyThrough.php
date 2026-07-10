@@ -9,9 +9,9 @@ use LaraGram\Database\Eloquent\Collection as EloquentCollection;
 use LaraGram\Database\Eloquent\Model;
 use LaraGram\Database\Eloquent\ModelNotFoundException;
 use LaraGram\Database\Eloquent\Relations\Concerns\InteractsWithDictionary;
-use LaraGram\Database\Eloquent\SoftDeletes;
 use LaraGram\Database\Query\Grammars\MySqlGrammar;
 use LaraGram\Database\UniqueConstraintViolationException;
+use LaraGram\Support\Arr;
 
 /**
  * @template TRelatedModel of \LaraGram\Database\Eloquent\Model
@@ -77,7 +77,6 @@ abstract class HasOneOrManyThrough extends Relation
      * @param  string  $secondKey
      * @param  string  $localKey
      * @param  string  $secondLocalKey
-     * @return void
      */
     public function __construct(Builder $query, Model $farParent, Model $throughParent, $firstKey, $secondKey, $localKey, $secondLocalKey)
     {
@@ -98,12 +97,14 @@ abstract class HasOneOrManyThrough extends Relation
      */
     public function addConstraints()
     {
-        $localValue = $this->farParent[$this->localKey];
+        $query = $this->getRelationQuery();
 
-        $this->performJoin();
+        $this->performJoin($query);
 
         if (static::$constraints) {
-            $this->query->where($this->getQualifiedFirstKeyName(), '=', $localValue);
+            $localValue = $this->farParent[$this->localKey];
+
+            $query->where($this->getQualifiedFirstKeyName(), '=', $localValue);
         }
     }
 
@@ -115,7 +116,7 @@ abstract class HasOneOrManyThrough extends Relation
      */
     protected function performJoin(?Builder $query = null)
     {
-        $query = $query ?: $this->query;
+        $query ??= $this->query;
 
         $farKey = $this->getQualifiedFarKeyName();
 
@@ -129,7 +130,7 @@ abstract class HasOneOrManyThrough extends Relation
     }
 
     /**
-     * Get the fully qualified parent key name.
+     * Get the fully-qualified parent key name.
      *
      * @return string
      */
@@ -145,7 +146,7 @@ abstract class HasOneOrManyThrough extends Relation
      */
     public function throughParentSoftDeletes()
     {
-        return in_array(SoftDeletes::class, class_uses_recursive($this->throughParent));
+        return $this->throughParent::isSoftDeletable();
     }
 
     /**
@@ -168,7 +169,8 @@ abstract class HasOneOrManyThrough extends Relation
         $this->whereInEager(
             $whereIn,
             $this->getQualifiedFirstKeyName(),
-            $this->getKeys($models, $this->localKey)
+            $this->getKeys($models, $this->localKey),
+            $this->getRelationQuery(),
         );
     }
 
@@ -176,17 +178,23 @@ abstract class HasOneOrManyThrough extends Relation
      * Build model dictionary keyed by the relation's foreign key.
      *
      * @param  \LaraGram\Database\Eloquent\Collection<int, TRelatedModel>  $results
-     * @return array<array<TRelatedModel>>
+     * @return array<array<array-key, TRelatedModel>>
      */
     protected function buildDictionary(EloquentCollection $results)
     {
         $dictionary = [];
 
+        $isAssociative = Arr::isAssoc($results->all());
+
         // First we will create a dictionary of models keyed by the foreign key of the
         // relationship as this will allow us to quickly access all of the related
         // models without having to do nested looping which will be quite slow.
-        foreach ($results as $result) {
-            $dictionary[$result->laragram_through_key][] = $result;
+        foreach ($results as $key => $result) {
+            if ($isAssociative) {
+                $dictionary[$result->laragram_through_key][$key] = $result;
+            } else {
+                $dictionary[$result->laragram_through_key][] = $result;
+            }
         }
 
         return $dictionary;
@@ -212,29 +220,31 @@ abstract class HasOneOrManyThrough extends Relation
      * Get the first record matching the attributes. If the record is not found, create it.
      *
      * @param  array  $attributes
-     * @param  array  $values
+     * @param  (\Closure(): array)|array  $values
      * @return TRelatedModel
      */
-    public function firstOrCreate(array $attributes = [], array $values = [])
+    public function firstOrCreate(array $attributes = [], Closure|array $values = [])
     {
         if (! is_null($instance = (clone $this)->where($attributes)->first())) {
             return $instance;
         }
 
-        return $this->createOrFirst(array_merge($attributes, $values));
+        return $this->createOrFirst(array_merge($attributes, value($values)));
     }
 
     /**
      * Attempt to create the record. If a unique constraint violation occurs, attempt to find the matching record.
      *
      * @param  array  $attributes
-     * @param  array  $values
+     * @param  (\Closure(): array)|array  $values
      * @return TRelatedModel
+     *
+     * @throws \LaraGram\Database\UniqueConstraintViolationException
      */
-    public function createOrFirst(array $attributes = [], array $values = [])
+    public function createOrFirst(array $attributes = [], Closure|array $values = [])
     {
         try {
-            return $this->getQuery()->withSavepointIfNeeded(fn () => $this->create(array_merge($attributes, $values)));
+            return $this->getQuery()->withSavepointIfNeeded(fn () => $this->create(array_merge($attributes, value($values))));
         } catch (UniqueConstraintViolationException $exception) {
             return $this->where($attributes)->first() ?? throw $exception;
         }
@@ -245,7 +255,7 @@ abstract class HasOneOrManyThrough extends Relation
      *
      * @param  array  $attributes
      * @param  array  $values
-     * @return \LaraGram\Support\HigherOrderTapProxy
+     * @return TRelatedModel
      */
     public function updateOrCreate(array $attributes, array $values = [])
     {
@@ -278,7 +288,7 @@ abstract class HasOneOrManyThrough extends Relation
      */
     public function first($columns = ['*'])
     {
-        $results = $this->take(1)->get($columns);
+        $results = $this->limit(1)->get($columns);
 
         return count($results) > 0 ? $results->first() : null;
     }
@@ -340,6 +350,23 @@ abstract class HasOneOrManyThrough extends Relation
         return $this->where(
             $this->getRelated()->getQualifiedKeyName(), '=', $id
         )->first($columns);
+    }
+
+    /**
+     * Find a sole related model by its primary key.
+     *
+     * @param  mixed  $id
+     * @param  array  $columns
+     * @return TRelatedModel
+     *
+     * @throws \LaraGram\Database\Eloquent\ModelNotFoundException<TRelatedModel>
+     * @throws \LaraGram\Database\MultipleRecordsFoundException
+     */
+    public function findSole($id, $columns = ['*'])
+    {
+        return $this->where(
+            $this->getRelated()->getQualifiedKeyName(), '=', $id
+        )->sole($columns);
     }
 
     /**
@@ -445,6 +472,54 @@ abstract class HasOneOrManyThrough extends Relation
     }
 
     /**
+     * Get a paginator for the "select" statement.
+     *
+     * @param  int|null  $perPage
+     * @param  array  $columns
+     * @param  string  $pageName
+     * @param  int|null  $page
+     * @return \LaraGram\Pagination\LengthAwarePaginator
+     */
+    public function paginate($perPage = null, $columns = ['*'], $pageName = 'page', $page = null)
+    {
+        $this->query->addSelect($this->shouldSelect($columns));
+
+        return $this->query->paginate($perPage, $columns, $pageName, $page);
+    }
+
+    /**
+     * Paginate the given query into a simple paginator.
+     *
+     * @param  int|null  $perPage
+     * @param  array  $columns
+     * @param  string  $pageName
+     * @param  int|null  $page
+     * @return \LaraGram\Contracts\Pagination\Paginator
+     */
+    public function simplePaginate($perPage = null, $columns = ['*'], $pageName = 'page', $page = null)
+    {
+        $this->query->addSelect($this->shouldSelect($columns));
+
+        return $this->query->simplePaginate($perPage, $columns, $pageName, $page);
+    }
+
+    /**
+     * Paginate the given query into a cursor paginator.
+     *
+     * @param  int|null  $perPage
+     * @param  array  $columns
+     * @param  string  $cursorName
+     * @param  string|null  $cursor
+     * @return \LaraGram\Contracts\Pagination\CursorPaginator
+     */
+    public function cursorPaginate($perPage = null, $columns = ['*'], $cursorName = 'cursor', $cursor = null)
+    {
+        $this->query->addSelect($this->shouldSelect($columns));
+
+        return $this->query->cursorPaginate($perPage, $columns, $cursorName, $cursor);
+    }
+
+    /**
      * Set the select clause for the relation query.
      *
      * @param  array  $columns
@@ -518,9 +593,9 @@ abstract class HasOneOrManyThrough extends Relation
      */
     public function eachById(callable $callback, $count = 1000, $column = null, $alias = null)
     {
-        $column = $column ?? $this->getRelated()->getQualifiedKeyName();
+        $column ??= $this->getRelated()->getQualifiedKeyName();
 
-        $alias = $alias ?? $this->getRelated()->getKeyName();
+        $alias ??= $this->getRelated()->getKeyName();
 
         return $this->prepareQueryBuilder()->eachById($callback, $count, $column, $alias);
     }
@@ -636,7 +711,7 @@ abstract class HasOneOrManyThrough extends Relation
      *
      * @param  \LaraGram\Database\Eloquent\Builder<TRelatedModel>  $query
      * @param  \LaraGram\Database\Eloquent\Builder<TDeclaringModel>  $parentQuery
-     * @param  array|mixed  $columns
+     * @param  mixed  $columns
      * @return \LaraGram\Database\Eloquent\Builder<TRelatedModel>
      */
     public function getRelationExistenceQueryForSelfRelation(Builder $query, Builder $parentQuery, $columns = ['*'])
@@ -661,7 +736,7 @@ abstract class HasOneOrManyThrough extends Relation
      *
      * @param  \LaraGram\Database\Eloquent\Builder<TRelatedModel>  $query
      * @param  \LaraGram\Database\Eloquent\Builder<TDeclaringModel>  $parentQuery
-     * @param  array|mixed  $columns
+     * @param  mixed  $columns
      * @return \LaraGram\Database\Eloquent\Builder<TRelatedModel>
      */
     public function getRelationExistenceQueryForThroughSelfRelation(Builder $query, Builder $parentQuery, $columns = ['*'])

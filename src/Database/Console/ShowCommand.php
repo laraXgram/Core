@@ -4,15 +4,18 @@ namespace LaraGram\Database\Console;
 
 use LaraGram\Database\ConnectionInterface;
 use LaraGram\Database\ConnectionResolverInterface;
+use LaraGram\Database\Console\Concerns\InteractsWithPooledConnections;
 use LaraGram\Database\Schema\Builder;
 use LaraGram\Support\Arr;
 use LaraGram\Support\Collection;
-use LaraGram\Support\Stringable;
+use LaraGram\Support\Number;
 use LaraGram\Console\Attribute\AsCommand;
 
 #[AsCommand(name: 'db:show')]
 class ShowCommand extends DatabaseInspectionCommand
 {
+    use InteractsWithPooledConnections;
+
     /**
      * The name and signature of the console command.
      *
@@ -39,7 +42,7 @@ class ShowCommand extends DatabaseInspectionCommand
      */
     public function handle(ConnectionResolverInterface $connections)
     {
-        $connection = $connections->connection($database = $this->input->getOption('database'));
+        $connection = $this->resolveDirectConnectionIfPossible($connections, $database = $this->input->getOption('database'));
 
         $schema = $connection->getSchemaBuilder();
 
@@ -79,9 +82,10 @@ class ShowCommand extends DatabaseInspectionCommand
         return (new Collection($schema->getTables()))->map(fn ($table) => [
             'table' => $table['name'],
             'schema' => $table['schema'],
+            'schema_qualified_name' => $table['schema_qualified_name'],
             'size' => $table['size'],
             'rows' => $this->option('counts')
-                ? ($connection->table($table['schema'] ? $table['schema'].'.'.$table['name'] : $table['name'])->count())
+                ? $connection->withoutTablePrefix(fn ($connection) => $connection->table($table['schema_qualified_name'])->count())
                 : null,
             'engine' => $table['engine'],
             'collation' => $table['collation'],
@@ -99,11 +103,10 @@ class ShowCommand extends DatabaseInspectionCommand
     protected function views(ConnectionInterface $connection, Builder $schema)
     {
         return (new Collection($schema->getViews()))
-            ->reject(fn ($view) => (new Stringable($view['name']))->startsWith(['pg_catalog', 'information_schema', 'spt_']))
             ->map(fn ($view) => [
                 'view' => $view['name'],
                 'schema' => $view['schema'],
-                'rows' => $connection->table($view['schema'] ? $view['schema'].'.'.$view['name'] : $view['name'])->count(),
+                'rows' => $connection->withoutTablePrefix(fn ($connection) => $connection->table($view['schema_qualified_name'])->count()),
             ]);
     }
 
@@ -173,10 +176,7 @@ class ShowCommand extends DatabaseInspectionCommand
         $this->components->twoColumnDetail('Tables', $tables->count());
 
         if ($tableSizeSum = $tables->sum('size')) {
-            $this->components->twoColumnDetail(
-                'Total Size',
-                sprintf("%.2f %s", $tableSizeSum / pow(1024, ($factor = floor((strlen($tableSizeSum) - 1) / 3))), ['B', 'KB', 'MB', 'GB', 'TB'][$factor])
-            );
+            $this->components->twoColumnDetail('Total Size', Number::fileSize($tableSizeSum, 2));
         }
 
         $this->newLine();
@@ -190,11 +190,11 @@ class ShowCommand extends DatabaseInspectionCommand
             );
 
             $tables->each(function ($table) {
-                $tableSize = is_null($table['size']) ? null : sprintf("%.2f %s", $table['size'] / pow(1024, ($factor = floor((strlen($table['size']) - 1) / 3))), ['B', 'KB', 'MB', 'GB', 'TB'][$factor]);
+                $tableSize = is_null($table['size']) ? null : Number::fileSize($table['size'], 2);
 
                 $this->components->twoColumnDetail(
                     ($table['schema'] ? $table['schema'].' <fg=gray;options=bold>/</> ' : '').$table['table'].($this->output->isVerbose() ? ' <fg=gray>'.$table['engine'].'</>' : null),
-                    ($tableSize ?? '—').($this->option('counts') ? ' <fg=gray;options=bold>/</> <fg=yellow;options=bold>'.number_format($table['rows']).'</>' : '')
+                    ($tableSize ?? '—').($this->option('counts') ? ' <fg=gray;options=bold>/</> <fg=yellow;options=bold>'.Number::format($table['rows']).'</>' : '')
                 );
 
                 if ($this->output->isVerbose()) {
@@ -219,7 +219,7 @@ class ShowCommand extends DatabaseInspectionCommand
 
             $views->each(fn ($view) => $this->components->twoColumnDetail(
                 ($view['schema'] ? $view['schema'].' <fg=gray;options=bold>/</> ' : '').$view['view'],
-                number_format($view['rows'])
+                Number::format($view['rows'])
             ));
 
             $this->newLine();

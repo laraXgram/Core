@@ -97,7 +97,7 @@ class MorphOne extends MorphOneOrMany implements SupportsPartialRelations
      * Make a new related instance for the given model.
      *
      * @param  TDeclaringModel  $parent
-     * @return \LaraGram\Support\HigherOrderTapProxy
+     * @return TRelatedModel
      */
     public function newRelatedInstanceFor(Model $parent)
     {

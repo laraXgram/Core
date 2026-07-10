@@ -2,11 +2,20 @@
 
 namespace LaraGram\Database\Concerns;
 
+use LaraGram\Container\Container;
+use LaraGram\Database\Eloquent\Builder;
 use LaraGram\Database\MultipleRecordsFoundException;
+use LaraGram\Database\Query\Expression;
 use LaraGram\Database\RecordNotFoundException;
 use LaraGram\Database\RecordsNotFoundException;
+use LaraGram\Pagination\Cursor;
+use LaraGram\Pagination\CursorPaginator;
+use LaraGram\Pagination\LengthAwarePaginator;
+use LaraGram\Pagination\Paginator;
 use LaraGram\Support\Collection;
 use LaraGram\Support\LazyCollection;
+use LaraGram\Support\SortDirection;
+use LaraGram\Support\Str;
 use LaraGram\Support\Traits\Conditionable;
 use InvalidArgumentException;
 use RuntimeException;
@@ -14,7 +23,6 @@ use RuntimeException;
 /**
  * @template TValue
  *
- * @mixin \LaraGram\Database\Eloquent\Builder
  * @mixin \LaraGram\Database\Query\Builder
  */
 trait BuildsQueries
@@ -32,13 +40,21 @@ trait BuildsQueries
     {
         $this->enforceOrderBy();
 
+        $skip = $this->getOffset();
+        $remaining = $this->getLimit();
+
         $page = 1;
 
         do {
-            // We'll execute the query for the given page and get the results. If there are
-            // no results we can just break and return from here. When there are results
-            // we will call the callback with the current chunk of these results here.
-            $results = $this->forPage($page, $count)->get();
+            $offset = (($page - 1) * $count) + (int) $skip;
+
+            $limit = is_null($remaining) ? $count : min($count, $remaining);
+
+            if ($limit == 0) {
+                break;
+            }
+
+            $results = $this->offset($offset)->limit($limit)->get();
 
             $countResults = $results->count();
 
@@ -46,9 +62,10 @@ trait BuildsQueries
                 break;
             }
 
-            // On each chunk result set, we will pass them to the callback and then let the
-            // developer take care of everything within the callback, which allows us to
-            // keep the memory low for spinning through large result sets for working.
+            if (! is_null($remaining)) {
+                $remaining = max($remaining - $countResults, 0);
+            }
+
             if ($callback($results, $page) === false) {
                 return false;
             }
@@ -128,7 +145,7 @@ trait BuildsQueries
      */
     public function chunkByIdDesc($count, callable $callback, $column = null, $alias = null)
     {
-        return $this->orderedChunkById($count, $callback, $column, $alias, descending: true);
+        return $this->orderedChunkById($count, $callback, $column, $alias, descending: SortDirection::Descending);
     }
 
     /**
@@ -138,7 +155,7 @@ trait BuildsQueries
      * @param  callable(\LaraGram\Support\Collection<int, TValue>, int): mixed  $callback
      * @param  string|null  $column
      * @param  string|null  $alias
-     * @param  bool  $descending
+     * @param  SortDirection|bool  $descending
      * @return bool
      *
      * @throws \RuntimeException
@@ -146,29 +163,42 @@ trait BuildsQueries
     public function orderedChunkById($count, callable $callback, $column = null, $alias = null, $descending = false)
     {
         $column ??= $this->defaultKeyName();
-
         $alias ??= $column;
-
         $lastId = null;
+        $skip = $this->getOffset();
+        $remaining = $this->getLimit();
 
         $page = 1;
 
         do {
             $clone = clone $this;
 
+            if ($skip && $page > 1) {
+                $clone->offset(0);
+            }
+
+            $limit = is_null($remaining) ? $count : min($count, $remaining);
+
+            if ($limit == 0) {
+                break;
+            }
+
             // We'll execute the query for the given page and get the results. If there are
             // no results we can just break and return from here. When there are results
             // we will call the callback with the current chunk of these results here.
-            if ($descending) {
-                $results = $clone->forPageBeforeId($count, $lastId, $column)->get();
-            } else {
-                $results = $clone->forPageAfterId($count, $lastId, $column)->get();
-            }
+            $results = match ($descending) {
+                SortDirection::Ascending, false => $clone->forPageAfterId($limit, $lastId, $column)->get(),
+                SortDirection::Descending, true => $clone->forPageBeforeId($limit, $lastId, $column)->get(),
+            };
 
             $countResults = $results->count();
 
             if ($countResults == 0) {
                 break;
+            }
+
+            if (! is_null($remaining)) {
+                $remaining = max($remaining - $countResults, 0);
             }
 
             // On each chunk result set, we will pass them to the callback and then let the
@@ -216,7 +246,7 @@ trait BuildsQueries
      * Query lazily, by chunks of the given size.
      *
      * @param  int  $chunkSize
-     * @return \LaraGram\Support\LazyCollection
+     * @return \LaraGram\Support\LazyCollection<int, TValue>
      *
      * @throws \InvalidArgumentException
      */
@@ -228,7 +258,7 @@ trait BuildsQueries
 
         $this->enforceOrderBy();
 
-        return LazyCollection::make(function () use ($chunkSize) {
+        return new LazyCollection(function () use ($chunkSize) {
             $page = 1;
 
             while (true) {
@@ -251,7 +281,7 @@ trait BuildsQueries
      * @param  int  $chunkSize
      * @param  string|null  $column
      * @param  string|null  $alias
-     * @return \LaraGram\Support\LazyCollection
+     * @return \LaraGram\Support\LazyCollection<int, TValue>
      *
      * @throws \InvalidArgumentException
      */
@@ -266,13 +296,13 @@ trait BuildsQueries
      * @param  int  $chunkSize
      * @param  string|null  $column
      * @param  string|null  $alias
-     * @return \LaraGram\Support\LazyCollection
+     * @return \LaraGram\Support\LazyCollection<int, TValue>
      *
      * @throws \InvalidArgumentException
      */
     public function lazyByIdDesc($chunkSize = 1000, $column = null, $alias = null)
     {
-        return $this->orderedLazyById($chunkSize, $column, $alias, true);
+        return $this->orderedLazyById($chunkSize, $column, $alias, SortDirection::Descending);
     }
 
     /**
@@ -281,10 +311,11 @@ trait BuildsQueries
      * @param  int  $chunkSize
      * @param  string|null  $column
      * @param  string|null  $alias
-     * @param  bool  $descending
+     * @param  SortDirection|bool  $descending
      * @return \LaraGram\Support\LazyCollection
      *
      * @throws \InvalidArgumentException
+     * @throws \RuntimeException
      */
     protected function orderedLazyById($chunkSize = 1000, $column = null, $alias = null, $descending = false)
     {
@@ -296,17 +327,16 @@ trait BuildsQueries
 
         $alias ??= $column;
 
-        return LazyCollection::make(function () use ($chunkSize, $column, $alias, $descending) {
+        return new LazyCollection(function () use ($chunkSize, $column, $alias, $descending) {
             $lastId = null;
 
             while (true) {
                 $clone = clone $this;
 
-                if ($descending) {
-                    $results = $clone->forPageBeforeId($chunkSize, $lastId, $column)->get();
-                } else {
-                    $results = $clone->forPageAfterId($chunkSize, $lastId, $column)->get();
-                }
+                $results = match ($descending) {
+                    SortDirection::Ascending, false => $clone->forPageAfterId($chunkSize, $lastId, $column)->get(),
+                    SortDirection::Descending, true => $clone->forPageBeforeId($chunkSize, $lastId, $column)->get(),
+                };
 
                 foreach ($results as $result) {
                     yield $result;
@@ -333,7 +363,7 @@ trait BuildsQueries
      */
     public function first($columns = ['*'])
     {
-        return $this->take(1)->get($columns)->first();
+        return $this->limit(1)->get($columns)->first();
     }
 
     /**
@@ -365,7 +395,7 @@ trait BuildsQueries
      */
     public function sole($columns = ['*'])
     {
-        $result = $this->take(2)->get($columns);
+        $result = $this->limit(2)->get($columns);
 
         $count = $result->count();
 
@@ -381,7 +411,183 @@ trait BuildsQueries
     }
 
     /**
-     * Pass the query to a given callback.
+     * Paginate the given query using a cursor paginator.
+     *
+     * @param  int  $perPage
+     * @param  array|string  $columns
+     * @param  string  $cursorName
+     * @param  \LaraGram\Pagination\Cursor|string|null  $cursor
+     * @return \LaraGram\Contracts\Pagination\CursorPaginator
+     */
+    protected function paginateUsingCursor($perPage, $columns = ['*'], $cursorName = 'cursor', $cursor = null)
+    {
+        if (! $cursor instanceof Cursor) {
+            $cursor = is_string($cursor)
+                ? Cursor::fromEncoded($cursor)
+                : CursorPaginator::resolveCurrentCursor($cursorName, $cursor);
+        }
+
+        $orders = $this->ensureOrderForCursorPagination(! is_null($cursor) && $cursor->pointsToPreviousItems());
+
+        if (! is_null($cursor)) {
+            // Reset the union bindings so we can add the cursor where in the correct position...
+            $this->setBindings([], 'union');
+
+            $addCursorConditions = function (self $builder, $previousColumn, $originalColumn, $i) use (&$addCursorConditions, $cursor, $orders) {
+                $unionBuilders = $builder->getUnionBuilders();
+
+                if (! is_null($previousColumn)) {
+                    $originalColumn ??= $this->getOriginalColumnNameForCursorPagination($this, $previousColumn);
+
+                    $builder->where(
+                        Str::contains($originalColumn, ['(', ')']) ? new Expression($originalColumn) : $originalColumn,
+                        '=',
+                        $cursor->parameter($previousColumn)
+                    );
+
+                    $unionBuilders->each(function ($unionBuilder) use ($previousColumn, $cursor) {
+                        $unionBuilder->where(
+                            $this->getOriginalColumnNameForCursorPagination($unionBuilder, $previousColumn),
+                            '=',
+                            $cursor->parameter($previousColumn)
+                        );
+
+                        $this->addBinding($unionBuilder->getRawBindings()['where'], 'union');
+                    });
+                }
+
+                $builder->where(function (self $secondBuilder) use ($addCursorConditions, $cursor, $orders, $i, $unionBuilders) {
+                    ['column' => $column, 'direction' => $direction] = $orders[$i];
+
+                    $originalColumn = $this->getOriginalColumnNameForCursorPagination($this, $column);
+
+                    $secondBuilder->where(
+                        Str::contains($originalColumn, ['(', ')']) ? new Expression($originalColumn) : $originalColumn,
+                        $direction === 'asc' ? '>' : '<',
+                        $cursor->parameter($column)
+                    );
+
+                    if ($i < $orders->count() - 1) {
+                        $secondBuilder->orWhere(function (self $thirdBuilder) use ($addCursorConditions, $column, $originalColumn, $i) {
+                            $addCursorConditions($thirdBuilder, $column, $originalColumn, $i + 1);
+                        });
+                    }
+
+                    $unionBuilders->each(function ($unionBuilder) use ($column, $direction, $cursor, $i, $orders, $addCursorConditions) {
+                        $unionWheres = $unionBuilder->getRawBindings()['where'];
+
+                        $originalColumn = $this->getOriginalColumnNameForCursorPagination($unionBuilder, $column);
+                        $unionBuilder->where(function ($unionBuilder) use ($column, $direction, $cursor, $i, $orders, $addCursorConditions, $originalColumn, $unionWheres) {
+                            $unionBuilder->where(
+                                $originalColumn,
+                                $direction === 'asc' ? '>' : '<',
+                                $cursor->parameter($column)
+                            );
+
+                            if ($i < $orders->count() - 1) {
+                                $unionBuilder->orWhere(function (self $fourthBuilder) use ($addCursorConditions, $column, $originalColumn, $i) {
+                                    $addCursorConditions($fourthBuilder, $column, $originalColumn, $i + 1);
+                                });
+                            }
+
+                            $this->addBinding($unionWheres, 'union');
+                            $this->addBinding($unionBuilder->getRawBindings()['where'], 'union');
+                        });
+                    });
+                });
+            };
+
+            $addCursorConditions($this, null, null, 0);
+        }
+
+        $this->limit($perPage + 1);
+
+        return $this->cursorPaginator($this->get($columns), $perPage, $cursor, [
+            'path' => Paginator::resolveCurrentPath(),
+            'cursorName' => $cursorName,
+            'parameters' => $orders->pluck('column')->toArray(),
+        ]);
+    }
+
+    /**
+     * Get the original column name of the given column, without any aliasing.
+     *
+     * @param  \LaraGram\Database\Query\Builder|\LaraGram\Database\Eloquent\Builder<*>  $builder
+     * @param  string  $parameter
+     * @return string
+     */
+    protected function getOriginalColumnNameForCursorPagination($builder, string $parameter)
+    {
+        $columns = $builder instanceof Builder ? $builder->getQuery()->getColumns() : $builder->getColumns();
+
+        if (! is_null($columns)) {
+            foreach ($columns as $column) {
+                if (($position = strripos($column, ' as ')) !== false) {
+                    $original = substr($column, 0, $position);
+
+                    $alias = substr($column, $position + 4);
+
+                    if ($parameter === $alias || $builder->getGrammar()->wrap($parameter) === $alias) {
+                        return $original;
+                    }
+                }
+            }
+        }
+
+        return $parameter;
+    }
+
+    /**
+     * Create a new length-aware paginator instance.
+     *
+     * @param  \LaraGram\Support\Collection  $items
+     * @param  int  $total
+     * @param  int  $perPage
+     * @param  int  $currentPage
+     * @param  array  $options
+     * @return \LaraGram\Pagination\LengthAwarePaginator
+     */
+    protected function paginator($items, $total, $perPage, $currentPage, $options)
+    {
+        return Container::getInstance()->makeWith(LengthAwarePaginator::class, [
+            'items' => $items, 'total' => $total, 'perPage' => $perPage, 'currentPage' => $currentPage, 'options' => $options,
+        ]);
+    }
+
+    /**
+     * Create a new simple paginator instance.
+     *
+     * @param  \LaraGram\Support\Collection  $items
+     * @param  int  $perPage
+     * @param  int  $currentPage
+     * @param  array  $options
+     * @return \LaraGram\Pagination\Paginator
+     */
+    protected function simplePaginator($items, $perPage, $currentPage, $options)
+    {
+        return Container::getInstance()->makeWith(Paginator::class, [
+            'items' => $items, 'perPage' => $perPage, 'currentPage' => $currentPage, 'options' => $options,
+        ]);
+    }
+
+    /**
+     * Create a new cursor paginator instance.
+     *
+     * @param  \LaraGram\Support\Collection  $items
+     * @param  int  $perPage
+     * @param  \LaraGram\Pagination\Cursor  $cursor
+     * @param  array  $options
+     * @return \LaraGram\Pagination\CursorPaginator
+     */
+    protected function cursorPaginator($items, $perPage, $cursor, $options)
+    {
+        return Container::getInstance()->makeWith(CursorPaginator::class, [
+            'items' => $items, 'perPage' => $perPage, 'cursor' => $cursor, 'options' => $options,
+        ]);
+    }
+
+    /**
+     * Pass the query to a given callback and then return it.
      *
      * @param  callable($this): mixed  $callback
      * @return $this
@@ -391,5 +597,18 @@ trait BuildsQueries
         $callback($this);
 
         return $this;
+    }
+
+    /**
+     * Pass the query to a given callback and return the result.
+     *
+     * @template TReturn
+     *
+     * @param  (callable($this): TReturn)  $callback
+     * @return (TReturn is null|void ? $this : TReturn)
+     */
+    public function pipe($callback)
+    {
+        return $callback($this) ?? $this;
     }
 }

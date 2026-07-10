@@ -59,7 +59,7 @@ class PostgresSchemaState extends SchemaState
      */
     protected function getMigrationTable(): string
     {
-        [$schema, $table] = $this->connection->getSchemaBuilder()->parseSchemaAndTable($this->migrationTable);
+        [$schema, $table] = $this->connection->getSchemaBuilder()->parseSchemaAndTable($this->migrationTable, withDefaultSchema: true);
 
         return $schema.'.'.$this->connection->getTablePrefix().$table;
     }
@@ -82,14 +82,25 @@ class PostgresSchemaState extends SchemaState
      */
     protected function baseVariables(array $config)
     {
+        if ($this->connection->hasDirectConnection()) {
+            $config = $this->connection->getDirectPdoConfig();
+        }
+
         $config['host'] ??= '';
 
-        return [
+        $variables = [
             'LARAGRAM_LOAD_HOST' => is_array($config['host']) ? $config['host'][0] : $config['host'],
             'LARAGRAM_LOAD_PORT' => $config['port'] ?? '',
             'LARAGRAM_LOAD_USER' => $config['username'],
             'PGPASSWORD' => $config['password'],
-            'LARAGRAM_LOAD_DATABASE' => $config['database'],
         ];
+
+        if (! empty($config['sslmode'])) {
+            $variables['PGSSLMODE'] = $config['sslmode'];
+        }
+
+        $variables['LARAGRAM_LOAD_DATABASE'] = $config['database'];
+
+        return $variables;
     }
 }

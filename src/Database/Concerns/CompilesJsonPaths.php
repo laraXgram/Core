@@ -3,6 +3,7 @@
 namespace LaraGram\Database\Concerns;
 
 use LaraGram\Support\Collection;
+use LaraGram\Support\Str;
 
 trait CompilesJsonPaths
 {
@@ -50,8 +51,7 @@ trait CompilesJsonPaths
     protected function wrapJsonPathSegment($segment)
     {
         if (preg_match('/(\[[^\]]+\])+$/', $segment, $parts)) {
-            $position = strrpos($segment, $parts[0]);
-            $key = $position !== false ? substr($segment, 0, $position) : $segment;
+            $key = Str::beforeLast($segment, $parts[0]);
 
             if (! empty($key)) {
                 return '"'.$key.'"'.$parts[0];

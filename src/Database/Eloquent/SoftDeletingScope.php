@@ -2,6 +2,11 @@
 
 namespace LaraGram\Database\Eloquent;
 
+/**
+ * @template TModel of \LaraGram\Database\Eloquent\Model
+ *
+ * @implements \LaraGram\Database\Eloquent\Scope<TModel>
+ */
 class SoftDeletingScope implements Scope
 {
     /**
@@ -13,8 +18,6 @@ class SoftDeletingScope implements Scope
 
     /**
      * Apply the scope to a given Eloquent query builder.
-     *
-     * @template TModel of \LaraGram\Database\Eloquent\Model
      *
      * @param  \LaraGram\Database\Eloquent\Builder<TModel>  $builder
      * @param  TModel  $model
@@ -54,7 +57,7 @@ class SoftDeletingScope implements Scope
      */
     protected function getDeletedAtColumn(Builder $builder)
     {
-        if (count((array) $builder->getQuery()->joins) > 0) {
+        if ((array) $builder->getQuery()->joins !== []) {
             return $builder->getModel()->getQualifiedDeletedAtColumn();
         }
 

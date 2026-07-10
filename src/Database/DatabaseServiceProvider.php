@@ -4,8 +4,9 @@ namespace LaraGram\Database;
 
 use Faker\Factory as FakerFactory;
 use Faker\Generator as FakerGenerator;
+use LaraGram\Contracts\Database\ConcurrencyErrorDetector as ConcurrencyErrorDetectorContract;
+use LaraGram\Contracts\Database\LostConnectionDetector as LostConnectionDetectorContract;
 use LaraGram\Contracts\Queue\EntityResolver;
-use LaraGram\Contracts\Support\DeferrableProvider;
 use LaraGram\Database\Connectors\ConnectionFactory;
 use LaraGram\Database\Eloquent\Model;
 use LaraGram\Database\Eloquent\QueueEntityResolver;
@@ -75,8 +76,16 @@ class DatabaseServiceProvider extends ServiceProvider
             return $app['db']->connection()->getSchemaBuilder();
         });
 
-        $this->app->singleton('db.transactions', function ($app) {
+        $this->app->singleton('db.transactions', function () {
             return new DatabaseTransactionsManager;
+        });
+
+        $this->app->singleton(ConcurrencyErrorDetectorContract::class, function () {
+            return new ConcurrencyErrorDetector;
+        });
+
+        $this->app->singleton(LostConnectionDetectorContract::class, function () {
+            return new LostConnectionDetector;
         });
     }
 
@@ -87,6 +96,10 @@ class DatabaseServiceProvider extends ServiceProvider
      */
     protected function registerFakerGenerator()
     {
+        if (! class_exists(FakerGenerator::class)) {
+            return;
+        }
+
         $this->app->singleton(FakerGenerator::class, function ($app, $parameters) {
             $locale = $parameters['locale'] ?? $app['config']->get('app.faker_locale', 'en_US');
 
