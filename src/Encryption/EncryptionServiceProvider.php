@@ -72,7 +72,7 @@ class EncryptionServiceProvider extends ServiceProvider
      * Extract the encryption key from the given configuration.
      *
      * @param  array  $config
-     * @return \LaraGram\Support\HigherOrderTapProxy
+     * @return string
      *
      * @throws \LaraGram\Encryption\MissingAppKeyException
      */
