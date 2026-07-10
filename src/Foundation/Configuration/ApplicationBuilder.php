@@ -404,7 +404,7 @@ class ApplicationBuilder
     }
 
     /**
-     * Register additional Artisan route paths.
+     * Register additional Commander route paths.
      *
      * @param  array  $paths
      * @return $this

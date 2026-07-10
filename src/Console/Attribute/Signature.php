@@ -1,6 +1,6 @@
 <?php
 
-namespace LaraGram\Console\Attributes;
+namespace LaraGram\Console\Attribute;
 
 use Attribute;
 

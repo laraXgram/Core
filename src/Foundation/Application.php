@@ -318,7 +318,7 @@ class Application extends Container implements ApplicationContract, CachesConfig
 
         foreach ($bootstrappers as $bootstrapper) {
             $this['events']->dispatch('bootstrapping: ' . $bootstrapper, [$this]);
-
+            echo 2;
             $this->make($bootstrapper)->bootstrap($this);
 
             $this['events']->dispatch('bootstrapped: ' . $bootstrapper, [$this]);

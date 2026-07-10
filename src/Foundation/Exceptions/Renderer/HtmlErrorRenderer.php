@@ -7,13 +7,10 @@ use LaraGram\Log\LoggerInterface;
 use LaraGram\Http\VarDumper\Exceptions\FlattenException;
 use LaraGram\Http\RequestStack;
 use LaraGram\Http\BaseResponse as Response;
-use LaraGram\Log\DebugLoggerConfigurator;
+use LaraGram\Log\Logger\DebugLoggerConfigurator;
 use LaraGram\Http\VarDumper\Cloner\Data;
 use LaraGram\Http\VarDumper\Dumper\HtmlDumper;
 
-/**
- * @author Yonel Ceruto <yonelceruto@gmail.com>
- */
 class HtmlErrorRenderer implements ErrorRendererInterface
 {
     private const GHOST_ADDONS = [

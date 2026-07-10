@@ -1,6 +1,5 @@
 <?php
 
-
 namespace LaraGram\Support;
 
 class AggregateServiceProvider extends ServiceProvider
@@ -8,14 +7,14 @@ class AggregateServiceProvider extends ServiceProvider
     /**
      * The provider class names.
      *
-     * @var array
+     * @var array<int, class-string<\LaraGram\Support\ServiceProvider>>
      */
     protected $providers = [];
 
     /**
      * An array of the service provider instances.
      *
-     * @var array
+     * @var array<int, \LaraGram\Support\ServiceProvider>
      */
     protected $instances = [];
 
@@ -36,9 +35,9 @@ class AggregateServiceProvider extends ServiceProvider
     /**
      * Get the services provided by the provider.
      *
-     * @return array
+     * @return array<int, string>
      */
-    public function provides(): array
+    public function provides()
     {
         $provides = [];
 

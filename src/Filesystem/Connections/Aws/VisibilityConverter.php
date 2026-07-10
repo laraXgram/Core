@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace LaraGram\FileSystem\Connections\Aws;
+namespace LaraGram\Filesystem\Connections\Aws;
 
 interface VisibilityConverter
 {

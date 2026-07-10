@@ -29,7 +29,6 @@ class Composer
      *
      * @param  \LaraGram\Filesystem\Filesystem  $files
      * @param  string|null  $workingPath
-     * @return void
      */
     public function __construct(Filesystem $files, $workingPath = null)
     {
@@ -43,7 +42,7 @@ class Composer
      * @param  string  $package
      * @return bool
      *
-     * @throw \RuntimeException
+     * @throws \RuntimeException
      */
     public function hasPackage($package)
     {
@@ -74,12 +73,12 @@ class Composer
             })->all();
 
         return 0 === $this->getProcess($command, ['COMPOSER_MEMORY_LIMIT' => '-1'])
-            ->run(
-                $output instanceof OutputInterface
-                    ? function ($type, $line) use ($output) {
+                ->run(
+                    $output instanceof OutputInterface
+                        ? function ($type, $line) use ($output) {
                         $output->write('    '.$line);
                     } : $output
-            );
+                );
     }
 
     /**
@@ -103,21 +102,22 @@ class Composer
             })->all();
 
         return 0 === $this->getProcess($command, ['COMPOSER_MEMORY_LIMIT' => '-1'])
-            ->run(
-                $output instanceof OutputInterface
-                    ? function ($type, $line) use ($output) {
+                ->run(
+                    $output instanceof OutputInterface
+                        ? function ($type, $line) use ($output) {
                         $output->write('    '.$line);
                     } : $output
-            );
+                );
     }
 
     /**
      * Modify the "composer.json" file contents using the given callback.
      *
-     * @param  callable(array):array  $callback
+     * @param  callable(array<string, mixed>):array<string, mixed>  $callback
      * @return void
      *
-     * @throw \RuntimeException
+     * @throws \JsonException
+     * @throws \RuntimeException
      */
     public function modify(callable $callback)
     {
@@ -137,7 +137,7 @@ class Composer
     /**
      * Regenerate the Composer autoloader files.
      *
-     * @param  string|array  $extra
+     * @param  string|array<string>  $extra
      * @param  string|null  $composerBinary
      * @return int
      */
@@ -165,7 +165,7 @@ class Composer
      * Get the Composer binary / command for the environment.
      *
      * @param  string|null  $composerBinary
-     * @return array
+     * @return array<string>
      */
     public function findComposer($composerBinary = null)
     {
@@ -183,7 +183,7 @@ class Composer
      *
      * @return string
      *
-     * @throw \RuntimeException
+     * @throws \RuntimeException
      */
     protected function findComposerFile()
     {
@@ -209,8 +209,8 @@ class Composer
     /**
      * Get a new Symfony process instance.
      *
-     * @param  array  $command
-     * @param  array  $env
+     * @param  array<string>  $command
+     * @param  array<string, string>  $env
      * @return \LaraGram\Console\Process\Process
      */
     protected function getProcess(array $command, array $env = [])

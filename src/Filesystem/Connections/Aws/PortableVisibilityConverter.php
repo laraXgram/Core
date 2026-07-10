@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace LaraGram\FileSystem\Connections\Aws;
+namespace LaraGram\Filesystem\Connections\Aws;
 
-use LaraGram\FileSystem\Visibility;
+use LaraGram\Filesystem\Visibility;
 
 class PortableVisibilityConverter implements VisibilityConverter
 {

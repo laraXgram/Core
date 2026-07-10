@@ -334,8 +334,8 @@ class CallQueuedHandler
         $context = $this->container->make(ContextRepository::class);
 
         [$store, $key] = [
-            $context->getHidden('laravel_unique_job_cache_store'),
-            $context->getHidden('laravel_unique_job_key'),
+            $context->getHidden('laragram_unique_job_cache_store'),
+            $context->getHidden('laragram_unique_job_key'),
         ];
 
         if ($store && $key) {

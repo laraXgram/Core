@@ -2,12 +2,12 @@
 
 namespace LaraGram\Console;
 
-use LaraGram\Console\Attributes\Aliases;
-use LaraGram\Console\Attributes\Description;
-use LaraGram\Console\Attributes\Help;
-use LaraGram\Console\Attributes\Hidden;
-use LaraGram\Console\Attributes\Signature;
-use LaraGram\Console\Attributes\Usage;
+use LaraGram\Console\Attribute\Aliases;
+use LaraGram\Console\Attribute\Description;
+use LaraGram\Console\Attribute\Help;
+use LaraGram\Console\Attribute\Hidden;
+use LaraGram\Console\Attribute\Signature;
+use LaraGram\Console\Attribute\Usage;
 use LaraGram\Console\View\Components\Factory;
 use LaraGram\Contracts\Console\Isolatable;
 use LaraGram\Support\Traits\Macroable;

@@ -1,6 +1,6 @@
 <?php
 
-namespace LaraGram\Log;
+namespace LaraGram\Log\Logger;
 
 use LaraGram\Http\BaseRequest as Request;
 

@@ -2,17 +2,12 @@
 
 namespace {{ namespace }};
 
-use LaraGram\Broadcasting\Channel;
-use LaraGram\Broadcasting\InteractsWithSockets;
-use LaraGram\Broadcasting\PresenceChannel;
-use LaraGram\Broadcasting\PrivateChannel;
-use LaraGram\Contracts\Broadcasting\ShouldBroadcast;
 use LaraGram\Foundation\Events\Dispatchable;
 use LaraGram\Queue\SerializesModels;
 
 class {{ class }}
 {
-    use Dispatchable, InteractsWithSockets, SerializesModels;
+    use Dispatchable, SerializesModels;
 
     /**
      * Create a new event instance.
@@ -20,17 +15,5 @@ class {{ class }}
     public function __construct()
     {
         //
-    }
-
-    /**
-     * Get the channels the event should broadcast on.
-     *
-     * @return array<int, \LaraGram\Broadcasting\Channel>
-     */
-    public function broadcastOn(): array
-    {
-        return [
-            new PrivateChannel('channel-name'),
-        ];
     }
 }

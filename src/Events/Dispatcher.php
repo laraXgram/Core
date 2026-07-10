@@ -317,10 +317,6 @@ class Dispatcher implements DispatcherContract
      */
     protected function invokeListeners($event, $payload, $halt = false)
     {
-        if ($this->shouldBroadcast($payload)) {
-            $this->broadcastEvent($payload[0]);
-        }
-
         $responses = [];
 
         foreach ($this->getListeners($event) as $listener) {

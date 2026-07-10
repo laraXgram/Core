@@ -24,7 +24,7 @@ class SqsQueue extends Queue implements QueueContract, ClearableQueue
      *
      * @var string
      */
-    const EXTENDED_PAYLOAD_CACHE_PREFIX = 'laravel:sqs-payloads:';
+    const EXTENDED_PAYLOAD_CACHE_PREFIX = 'laragram:sqs-payloads:';
 
     /**
      * The Amazon SQS instance.

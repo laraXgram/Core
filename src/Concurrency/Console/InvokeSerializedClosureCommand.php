@@ -25,7 +25,7 @@ class InvokeSerializedClosureCommand extends Command
     protected $description = 'Invoke the given serialized closure';
 
     /**
-     * Indicates whether the command should be shown in the Artisan command list.
+     * Indicates whether the command should be shown in the Commander command list.
      *
      * @var bool
      */

@@ -2,10 +2,9 @@
 
 namespace LaraGram\Support;
 
+use LaraGram\Tempora\TemporaInterval;
 use Closure;
 use DateInterval;
-use DateTime;
-use DateTimeZone;
 use LaraGram\Support\Traits\Macroable;
 use RuntimeException;
 
@@ -21,16 +20,16 @@ class Sleep
     public static $fakeSleepCallbacks = [];
 
     /**
-     * Keep Carbon's "now" in sync when sleeping.
+     * Keep Tempora's "now" in sync when sleeping.
      *
      * @var bool
      */
-    protected static $syncWithCarbon = false;
+    protected static $syncWithTempora = false;
 
     /**
      * The total duration to sleep.
      *
-     * @var \DateInterval
+     * @var \LaraGram\Tempora\TemporaInterval
      */
     public $duration;
 
@@ -58,7 +57,7 @@ class Sleep
     /**
      * The sequence of sleep durations encountered while faking.
      *
-     * @var array<int, \DateInterval>
+     * @var array<int, \LaraGram\Tempora\TemporaInterval>
      */
     protected static $sequence = [];
 
@@ -80,7 +79,6 @@ class Sleep
      * Create a new class instance.
      *
      * @param  int|float|\DateInterval  $duration
-     * @return void
      */
     public function __construct($duration)
     {
@@ -107,10 +105,10 @@ class Sleep
     public static function until($timestamp)
     {
         if (is_numeric($timestamp)) {
-            $timestamp = DateTime::createFromFormat('U', $timestamp, new DateTimeZone(date_default_timezone_get()));
+            $timestamp = Tempora::createFromTimestamp($timestamp, date_default_timezone_get());
         }
 
-        return new static((new DateTime())->diff($timestamp));
+        return new static(Tempora::now()->diff($timestamp));
     }
 
     /**
@@ -144,12 +142,14 @@ class Sleep
     protected function duration($duration)
     {
         if (! $duration instanceof DateInterval) {
-            $this->duration = new DateInterval('PT0S');
+            $this->duration = TemporaInterval::microsecond(0);
 
             $this->pending = $duration;
         } else {
-            if ($duration->invert) {
-                $duration = new DateInterval('PT0S');
+            $duration = TemporaInterval::instance($duration);
+
+            if ($duration->totalMicroseconds < 0) {
+                $duration = TemporaInterval::seconds(0);
             }
 
             $this->duration = $duration;
@@ -166,13 +166,7 @@ class Sleep
      */
     public function minutes()
     {
-        $pendingMinutes = $this->pullPending();
-
-        if ($pendingMinutes) {
-            $dateTime = new DateTime();
-            $dateTime->add(new DateInterval("PT{$pendingMinutes}M"));
-            $this->duration = $dateTime->diff(new DateTime('0000-01-01 00:00:00'));
-        }
+        $this->duration->add('minutes', $this->pullPending());
 
         return $this;
     }
@@ -194,13 +188,7 @@ class Sleep
      */
     public function seconds()
     {
-        $pendingSeconds = $this->pullPending();
-
-        if ($pendingSeconds) {
-            $dateTime = new DateTime();
-            $dateTime->add(new DateInterval("PT{$pendingSeconds}S"));
-            $this->duration = $dateTime->diff(new DateTime('0000-01-01 00:00:00'));
-        }
+        $this->duration->add('seconds', $this->pullPending());
 
         return $this;
     }
@@ -222,13 +210,7 @@ class Sleep
      */
     public function milliseconds()
     {
-        $pendingMilliseconds = $this->pullPending();
-
-        if ($pendingMilliseconds) {
-            $dateTime = new DateTime();
-            $dateTime->add(new DateInterval("PT" . ($pendingMilliseconds / 1000) . "S"));
-            $this->duration = $dateTime->diff(new DateTime('0000-01-01 00:00:00'));
-        }
+        $this->duration->add('milliseconds', $this->pullPending());
 
         return $this;
     }
@@ -250,19 +232,13 @@ class Sleep
      */
     public function microseconds()
     {
-        $pendingMicroseconds = $this->pullPending();
-
-        if ($pendingMicroseconds) {
-            $dateTime = new DateTime();
-            $dateTime->add(new DateInterval("PT" . ($pendingMicroseconds / 1000000) . "S"));
-            $this->duration = $dateTime->diff(new DateTime('0000-01-01 00:00:00'));
-        }
+        $this->duration->add('microseconds', $this->pullPending());
 
         return $this;
     }
 
     /**
-     * Sleep for on microsecond.
+     * Sleep for one microsecond.
      *
      * @return $this
      */
@@ -326,6 +302,8 @@ class Sleep
      * Handle the object's destruction.
      *
      * @return void
+     *
+     * @throws \RuntimeException
      */
     protected function goodnight()
     {
@@ -340,8 +318,8 @@ class Sleep
         if (static::$fake) {
             static::$sequence[] = $this->duration;
 
-            if (static::$syncWithCarbon) {
-                static::$testNow = (new DateTime())->add($this->duration);
+            if (static::$syncWithTempora) {
+                Tempora::setTestNow(Tempora::now()->add($this->duration));
             }
 
             foreach (static::$fakeSleepCallbacks as $callback) {
@@ -351,9 +329,9 @@ class Sleep
             return;
         }
 
-        $remaining = clone $this->duration;
+        $remaining = $this->duration->copy();
 
-        $seconds = (int) $remaining->s;
+        $seconds = (int) $remaining->totalSeconds;
 
         $while = $this->while ?: function () {
             static $return = [true, false];
@@ -364,10 +342,11 @@ class Sleep
         while ($while()) {
             if ($seconds > 0) {
                 sleep($seconds);
-                $remaining->s = max(0, $remaining->s - $seconds);
+
+                $remaining = $remaining->subSeconds($seconds);
             }
 
-            $microseconds = (int) ($remaining->f * 1000000);
+            $microseconds = (int) $remaining->totalMicroseconds;
 
             if ($microseconds > 0) {
                 usleep($microseconds);
@@ -378,7 +357,9 @@ class Sleep
     /**
      * Resolve the pending duration.
      *
-     * @return HigherOrderTapProxy|int
+     * @return int|float
+     *
+     * @throws \RuntimeException
      */
     protected function pullPending()
     {
@@ -401,16 +382,16 @@ class Sleep
      * Stay awake and capture any attempts to sleep.
      *
      * @param  bool  $value
-     * @param  bool  $syncWithCarbon
+     * @param  bool  $syncWithTempora
      * @return void
      */
-    public static function fake($value = true, $syncWithCarbon = false)
+    public static function fake($value = true, $syncWithTempora = false)
     {
         static::$fake = $value;
 
         static::$sequence = [];
         static::$fakeSleepCallbacks = [];
-        static::$syncWithCarbon = $syncWithCarbon;
+        static::$syncWithTempora = $syncWithTempora;
     }
 
     /**
@@ -461,12 +442,12 @@ class Sleep
     }
 
     /**
-     * Indicate that Carbon's "now" should be kept in sync when sleeping.
+     * Indicate that Tempora's "now" should be kept in sync when sleeping.
      *
      * @return void
      */
-    public static function syncWithCarbon($value = true)
+    public static function syncWithTempora($value = true)
     {
-        static::$syncWithCarbon = $value;
+        static::$syncWithTempora = $value;
     }
 }
