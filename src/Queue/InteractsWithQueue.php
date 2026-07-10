@@ -7,7 +7,6 @@ use LaraGram\Contracts\Queue\Job as JobContract;
 use LaraGram\Queue\Jobs\FakeJob;
 use LaraGram\Support\InteractsWithTime;
 use InvalidArgumentException;
-use RuntimeException;
 use Throwable;
 
 trait InteractsWithQueue
@@ -48,6 +47,8 @@ trait InteractsWithQueue
      *
      * @param  \Throwable|string|null  $exception
      * @return void
+     *
+     * @throws \InvalidArgumentException
      */
     public function fail($exception = null)
     {

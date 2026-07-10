@@ -18,7 +18,6 @@ class DatabaseConnector implements ConnectorInterface
      * Create a new connector instance.
      *
      * @param  \LaraGram\Database\ConnectionResolverInterface  $connections
-     * @return void
      */
     public function __construct(ConnectionResolverInterface $connections)
     {

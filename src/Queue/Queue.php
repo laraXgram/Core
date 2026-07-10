@@ -4,19 +4,33 @@ namespace LaraGram\Queue;
 
 use Closure;
 use DateTimeInterface;
+use LaraGram\Bus\DebounceLock;
+use LaraGram\Bus\UniqueLock;
 use LaraGram\Container\Container;
+use LaraGram\Contracts\Cache\Repository as Cache;
 use LaraGram\Contracts\Encryption\Encrypter;
 use LaraGram\Contracts\Queue\ShouldBeEncrypted;
+use LaraGram\Contracts\Queue\ShouldBeUnique;
 use LaraGram\Contracts\Queue\ShouldQueueAfterCommit;
+use LaraGram\Queue\Attributes\Backoff;
+use LaraGram\Queue\Attributes\DeleteWhenMissingModels;
+use LaraGram\Queue\Attributes\FailOnTimeout;
+use LaraGram\Queue\Attributes\MaxExceptions;
+use LaraGram\Queue\Attributes\ReadsQueueAttributes;
+use LaraGram\Queue\Attributes\Timeout;
+use LaraGram\Queue\Attributes\Tries;
 use LaraGram\Queue\Events\JobQueued;
 use LaraGram\Queue\Events\JobQueueing;
+use LaraGram\Support\Tempora;
 use LaraGram\Support\Collection;
 use LaraGram\Support\InteractsWithTime;
 use LaraGram\Support\Str;
+use RuntimeException;
+use Throwable;
 
 abstract class Queue
 {
-    use InteractsWithTime;
+    use InteractsWithTime, ReadsQueueAttributes;
 
     /**
      * The IoC container instance.
@@ -31,6 +45,13 @@ abstract class Queue
      * @var string
      */
     protected $connectionName;
+
+    /**
+     * The original configuration for the queue.
+     *
+     * @var array
+     */
+    protected $config;
 
     /**
      * Indicates that jobs should be dispatched after all database transactions have committed.
@@ -94,17 +115,24 @@ abstract class Queue
      * @param  \Closure|string|object  $job
      * @param  string  $queue
      * @param  mixed  $data
+     * @param  \DateTimeInterface|\DateInterval|int|null  $delay
      * @return string
      *
      * @throws \LaraGram\Queue\InvalidPayloadException
      */
-    protected function createPayload($job, $queue, $data = '')
+    protected function createPayload($job, $queue, $data = '', $delay = null)
     {
         if ($job instanceof Closure) {
             $job = CallQueuedClosure::create($job);
         }
 
-        $payload = json_encode($value = $this->createPayloadArray($job, $queue, $data), \JSON_UNESCAPED_UNICODE);
+        $value = $this->createPayloadArray($job, $queue, $data);
+
+        $value['delay'] = isset($delay)
+            ? $this->secondsUntil($delay)
+            : null;
+
+        $payload = json_encode($value, \JSON_UNESCAPED_UNICODE);
 
         if (json_last_error() !== JSON_ERROR_NONE) {
             throw new InvalidPayloadException(
@@ -126,8 +154,8 @@ abstract class Queue
     protected function createPayloadArray($job, $queue, $data = '')
     {
         return is_object($job)
-                    ? $this->createObjectPayload($job, $queue)
-                    : $this->createStringPayload($job, $queue, $data);
+            ? $this->createObjectPayload($job, $queue)
+            : $this->createStringPayload($job, $queue, $data);
     }
 
     /**
@@ -136,6 +164,8 @@ abstract class Queue
      * @param  object  $job
      * @param  string  $queue
      * @return array
+     *
+     * @throws \RuntimeException
      */
     protected function createObjectPayload($job, $queue)
     {
@@ -144,20 +174,31 @@ abstract class Queue
             'displayName' => $this->getDisplayName($job),
             'job' => 'LaraGram\Queue\CallQueuedHandler@call',
             'maxTries' => $this->getJobTries($job),
-            'maxExceptions' => $job->maxExceptions ?? null,
-            'failOnTimeout' => $job->failOnTimeout ?? false,
+            'maxExceptions' => $this->getAttributeValue($job, MaxExceptions::class, 'maxExceptions'),
+            'failOnTimeout' => $this->getAttributeValue($job, FailOnTimeout::class, 'failOnTimeout') ?? false,
             'backoff' => $this->getJobBackoff($job),
-            'timeout' => $job->timeout ?? null,
+            'timeout' => $this->getAttributeValue($job, Timeout::class, 'timeout'),
             'retryUntil' => $this->getJobExpiration($job),
+            'deleteWhenMissingModels' => $this->getAttributeValue($job, DeleteWhenMissingModels::class, 'deleteWhenMissingModels') ?? false,
             'data' => [
                 'commandName' => $job,
                 'command' => $job,
+                'batchId' => $job->batchId ?? null,
             ],
+            'createdAt' => Tempora::now()->getTimestamp(),
         ]);
 
-        $command = $this->jobShouldBeEncrypted($job) && $this->container->bound(Encrypter::class)
-                    ? $this->container[Encrypter::class]->encrypt(serialize(clone $job))
-                    : serialize(clone $job);
+        try {
+            $command = $this->jobShouldBeEncrypted($job) && $this->container->bound(Encrypter::class)
+                ? $this->container[Encrypter::class]->encrypt(serialize(clone $job))
+                : serialize(clone $job);
+        } catch (Throwable $e) {
+            throw new RuntimeException(
+                sprintf('Failed to serialize job of type [%s]: %s', get_class($job), $e->getMessage()),
+                0,
+                $e
+            );
+        }
 
         return array_merge($payload, [
             'data' => array_merge($payload['data'], [
@@ -176,7 +217,8 @@ abstract class Queue
     protected function getDisplayName($job)
     {
         return method_exists($job, 'displayName')
-                        ? $job->displayName() : get_class($job);
+            ? $job->displayName()
+            : get_class($job);
     }
 
     /**
@@ -187,12 +229,10 @@ abstract class Queue
      */
     public function getJobTries($job)
     {
-        if (! method_exists($job, 'tries') && ! isset($job->tries)) {
-            return;
-        }
+        $tries = $this->getAttributeValue($job, Tries::class, 'tries');
 
-        if (is_null($tries = $job->tries ?? $job->tries())) {
-            return;
+        if (method_exists($job, 'tries')) {
+            $tries = $job->tries();
         }
 
         return $tries;
@@ -206,11 +246,13 @@ abstract class Queue
      */
     public function getJobBackoff($job)
     {
-        if (! method_exists($job, 'backoff') && ! isset($job->backoff)) {
-            return;
+        $backoff = $this->getAttributeValue($job, Backoff::class, 'backoff');
+
+        if (method_exists($job, 'backoff')) {
+            $backoff = $job->backoff();
         }
 
-        if (is_null($backoff = $job->backoff ?? $job->backoff())) {
+        if (is_null($backoff)) {
             return;
         }
 
@@ -234,7 +276,8 @@ abstract class Queue
         $expiration = $job->retryUntil ?? $job->retryUntil();
 
         return $expiration instanceof DateTimeInterface
-                        ? $expiration->getTimestamp() : $expiration;
+            ? $expiration->getTimestamp()
+            : $expiration;
     }
 
     /**
@@ -272,6 +315,7 @@ abstract class Queue
             'backoff' => null,
             'timeout' => null,
             'data' => $data,
+            'createdAt' => Tempora::now()->getTimestamp(),
         ]);
     }
 
@@ -294,7 +338,6 @@ abstract class Queue
      * Create the given payload using any registered payload hooks.
      *
      * @param  string  $queue
-     * @param  array  $payload
      * @return array
      */
     protected function withCreatePayloadHooks($queue, array $payload)
@@ -322,6 +365,22 @@ abstract class Queue
     {
         if ($this->shouldDispatchAfterCommit($job) &&
             $this->container->bound('db.transactions')) {
+            if ($job instanceof ShouldBeUnique) {
+                $this->container->make('db.transactions')->addCallbackForRollback(
+                    function () use ($job) {
+                        (new UniqueLock($this->container->make(Cache::class)))->release($job);
+                    }
+                );
+            }
+
+            if (! empty($job->debounceOwner ?? '')) {
+                $this->container->make('db.transactions')->addCallbackForRollback(
+                    function () use ($job) {
+                        (new DebounceLock($this->container->make(Cache::class)))->release($job, $job->debounceOwner ?? '');
+                    }
+                );
+            }
+
             return $this->container->make('db.transactions')->addCallback(
                 function () use ($queue, $job, $payload, $delay, $callback) {
                     $this->raiseJobQueueingEvent($queue, $job, $payload, $delay);
@@ -349,7 +408,7 @@ abstract class Queue
     protected function shouldDispatchAfterCommit($job)
     {
         if ($job instanceof ShouldQueueAfterCommit) {
-            return true;
+            return ! (isset($job->afterCommit) && $job->afterCommit === false);
         }
 
         if (! $job instanceof Closure && is_object($job) && isset($job->afterCommit)) {
@@ -420,6 +479,28 @@ abstract class Queue
     }
 
     /**
+     * Get the queue configuration array.
+     *
+     * @return array
+     */
+    public function getConfig()
+    {
+        return $this->config;
+    }
+
+    /**
+     * Set the queue configuration array.
+     *
+     * @return $this
+     */
+    public function setConfig(array $config)
+    {
+        $this->config = $config;
+
+        return $this;
+    }
+
+    /**
      * Get the container instance being used by the connection.
      *
      * @return \LaraGram\Container\Container
@@ -432,7 +513,6 @@ abstract class Queue
     /**
      * Set the IoC container instance.
      *
-     * @param  \LaraGram\Container\Container  $container
      * @return void
      */
     public function setContainer(Container $container)

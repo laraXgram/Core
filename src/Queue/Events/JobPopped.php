@@ -5,29 +5,14 @@ namespace LaraGram\Queue\Events;
 class JobPopped
 {
     /**
-     * The connection name.
-     *
-     * @var string
-     */
-    public $connectionName;
-
-    /**
-     * The job instance.
-     *
-     * @var \LaraGram\Contracts\Queue\Job|null
-     */
-    public $job;
-
-    /**
      * Create a new event instance.
      *
-     * @param  string  $connectionName
-     * @param  \LaraGram\Contracts\Queue\Job|null  $job
-     * @return void
+     * @param  string  $connectionName  The connection name.
+     * @param  \LaraGram\Contracts\Queue\Job|null  $job  The job instance.
      */
-    public function __construct($connectionName, $job)
-    {
-        $this->connectionName = $connectionName;
-        $this->job = $job;
+    public function __construct(
+        public $connectionName,
+        public $job,
+    ) {
     }
 }

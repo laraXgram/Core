@@ -6,6 +6,7 @@ use LaraGram\Bus\BatchRepository;
 use LaraGram\Bus\DatabaseBatchRepository;
 use LaraGram\Bus\PrunableBatchRepository;
 use LaraGram\Console\Command;
+use LaraGram\Support\Tempora;
 use LaraGram\Console\Attribute\AsCommand;
 
 #[AsCommand(name: 'queue:prune-batches')]
@@ -40,7 +41,7 @@ class PruneBatchesCommand extends Command
         $count = 0;
 
         if ($repository instanceof PrunableBatchRepository) {
-            $count = $repository->prune((new \DateTime())->modify('-' . $this->option('hours') . ' hours'));
+            $count = $repository->prune(Tempora::now()->subHours($this->option('hours')));
         }
 
         $this->components->info("{$count} entries deleted.");
@@ -49,7 +50,7 @@ class PruneBatchesCommand extends Command
             $count = 0;
 
             if ($repository instanceof DatabaseBatchRepository) {
-                $count = $repository->pruneUnfinished((new \DateTime())->modify('-' . $this->option('unfinished') . ' hours'));
+                $count = $repository->pruneUnfinished(Tempora::now()->subHours($this->option('unfinished')));
             }
 
             $this->components->info("{$count} unfinished entries deleted.");
@@ -59,7 +60,7 @@ class PruneBatchesCommand extends Command
             $count = 0;
 
             if ($repository instanceof DatabaseBatchRepository) {
-                $count = $repository->pruneCancelled((new \DateTime())->modify('-' . $this->option('cancelled') . ' hours'));
+                $count = $repository->pruneCancelled(Tempora::now()->subHours($this->option('cancelled')));
             }
 
             $this->components->info("{$count} cancelled entries deleted.");

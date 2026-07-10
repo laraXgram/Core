@@ -2,9 +2,10 @@
 
 namespace LaraGram\Queue\Jobs;
 
+use LaraGram\Contracts\Queue\Job as JobContract;
 use LaraGram\Support\Str;
 
-class FakeJob extends Job
+class FakeJob extends Job implements JobContract
 {
     /**
      * The number of seconds the released job was delayed.

@@ -4,6 +4,7 @@ namespace LaraGram\Queue\Failed;
 
 use DateTimeInterface;
 use LaraGram\Database\ConnectionResolverInterface;
+use LaraGram\Support\Facades\Date;
 
 class DatabaseUuidFailedJobProvider implements CountableFailedJobProvider, FailedJobProviderInterface, PrunableFailedJobProvider
 {
@@ -34,7 +35,6 @@ class DatabaseUuidFailedJobProvider implements CountableFailedJobProvider, Faile
      * @param  \LaraGram\Database\ConnectionResolverInterface  $resolver
      * @param  string  $database
      * @param  string  $table
-     * @return void
      */
     public function __construct(ConnectionResolverInterface $resolver, $database, $table)
     {
@@ -60,7 +60,7 @@ class DatabaseUuidFailedJobProvider implements CountableFailedJobProvider, Faile
             'queue' => $queue,
             'payload' => $payload,
             'exception' => (string) mb_convert_encoding($exception, 'UTF-8'),
-            'failed_at' => new \DateTime()
+            'failed_at' => Date::now(),
         ]);
 
         return $uuid;
@@ -132,9 +132,7 @@ class DatabaseUuidFailedJobProvider implements CountableFailedJobProvider, Faile
     public function flush($hours = null)
     {
         $this->getTable()->when($hours, function ($query, $hours) {
-            $date = new \DateTime();
-            $date->modify("-{$hours} hours");
-            $query->where('failed_at', '<=', $date->format('Y-m-d H:i:s'));
+            $query->where('failed_at', '<=', Date::now()->subHours($hours));
         })->delete();
     }
 
@@ -151,7 +149,7 @@ class DatabaseUuidFailedJobProvider implements CountableFailedJobProvider, Faile
         $totalDeleted = 0;
 
         do {
-            $deleted = $query->take(1000)->delete();
+            $deleted = $query->limit(1000)->delete();
 
             $totalDeleted += $deleted;
         } while ($deleted !== 0);
@@ -179,7 +177,7 @@ class DatabaseUuidFailedJobProvider implements CountableFailedJobProvider, Faile
      *
      * @return \LaraGram\Database\Query\Builder
      */
-    protected function getTable()
+    public function getTable()
     {
         return $this->resolver->connection($this->database)->table($this->table);
     }
