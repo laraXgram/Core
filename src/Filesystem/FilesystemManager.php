@@ -2,7 +2,14 @@
 
 namespace LaraGram\Filesystem;
 
+use Aws\S3\S3Client;
+use LaraGram\Filesystem\Connections\Aws\PortableVisibilityConverter as AwsS3PortableVisibilityConverter;
+use LaraGram\Filesystem\Connections\Aws\AwsS3V3Adapter as S3Adapter;
+use League\Flysystem\PhpseclibV3\SftpAdapter;
+use League\Flysystem\PhpseclibV3\SftpConnectionProvider;
 use Closure;
+use LaraGram\Filesystem\Connections\Ftp\FtpAdapter;
+use LaraGram\Filesystem\Connections\Ftp\FtpConnectionOptions;
 use LaraGram\Support\Arr;
 use LaraGram\Contracts\Filesystem\Factory as FactoryContract;
 use InvalidArgumentException;
@@ -70,6 +77,18 @@ class FilesystemManager implements FactoryContract
     public function disk($name = null)
     {
         $name = enum_value($name) ?: $this->getDefaultDriver();
+
+        return $this->disks[$name] = $this->get($name);
+    }
+
+    /**
+     * Get a default cloud filesystem instance.
+     *
+     * @return \LaraGram\Contracts\Filesystem\Cloud
+     */
+    public function cloud()
+    {
+        $name = $this->getDefaultCloudDriver();
 
         return $this->disks[$name] = $this->get($name);
     }
@@ -172,6 +191,100 @@ class FilesystemManager implements FactoryContract
             $config['serve'] ?? false,
             fn () => $this->app['url'],
         );
+    }
+
+    /**
+     * Create an instance of the ftp driver.
+     *
+     * @param  array  $config
+     * @return \LaraGram\Contracts\Filesystem\Filesystem
+     */
+    public function createFtpDriver(array $config)
+    {
+        if (! isset($config['root'])) {
+            $config['root'] = '';
+        }
+
+        $adapter = new FtpAdapter(FtpConnectionOptions::fromArray($config));
+
+        return new FilesystemAdapter($this->createFlysystem($adapter, $config), $adapter, $config);
+    }
+
+    /**
+     * Create an instance of the sftp driver.
+     *
+     * @param  array  $config
+     * @return \LaraGram\Contracts\Filesystem\Filesystem
+     */
+    public function createSftpDriver(array $config)
+    {
+        if (! class_exists('League\Flysystem\PhpseclibV3\SftpConnectionProvider')) {
+            throw new InvalidArgumentException('SftpConnectionProvider is not available. Please install league/flysystem-php-v3');
+        }
+
+        $provider = SftpConnectionProvider::fromArray($config);
+
+        $root = $config['root'] ?? '';
+
+        $visibility = PortableVisibilityConverter::fromArray(
+            $config['permissions'] ?? []
+        );
+
+        $adapter = new SftpAdapter($provider, $root, $visibility);
+
+        return new FilesystemAdapter($this->createFlysystem($adapter, $config), $adapter, $config);
+    }
+
+    /**
+     * Create an instance of the Amazon S3 driver.
+     *
+     * @param  array  $config
+     * @return \LaraGram\Contracts\Filesystem\Cloud
+     */
+    public function createS3Driver(array $config)
+    {
+        if (! class_exists('Aws\S3\S3Client')) {
+            throw new InvalidArgumentException('S3Client is not available. Please install aws/aws-sdk-php.');
+        }
+
+        $s3Config = $this->formatS3Config($config);
+
+        $root = (string) ($s3Config['root'] ?? '');
+
+        $visibility = new AwsS3PortableVisibilityConverter(
+            $config['visibility'] ?? Visibility::PUBLIC
+        );
+
+        $streamReads = $s3Config['stream_reads'] ?? false;
+
+        $client = new S3Client($s3Config);
+
+        $adapter = new S3Adapter($client, $s3Config['bucket'], $root, $visibility, null, $config['options'] ?? [], $streamReads);
+
+        return new AwsS3V3Adapter(
+            $this->createFlysystem($adapter, $config), $adapter, $s3Config, $client
+        );
+    }
+
+    /**
+     * Format the given S3 configuration with the default options.
+     *
+     * @param  array  $config
+     * @return array
+     */
+    protected function formatS3Config(array $config)
+    {
+        $config += ['version' => 'latest'];
+
+        if (! empty($config['key']) && ! empty($config['secret'])) {
+            $config['credentials'] = Arr::only($config, ['key', 'secret']);
+
+            if (! empty($config['token'])) {
+                $config['credentials']['token'] = $config['token'];
+            }
+        }
+
+        return Arr::except($config, ['token']);
     }
 
     /**
@@ -279,6 +392,16 @@ class FilesystemManager implements FactoryContract
     public function getDefaultDriver()
     {
         return $this->app['config']['filesystems.default'];
+    }
+
+    /**
+     * Get the default cloud driver name.
+     *
+     * @return string
+     */
+    public function getDefaultCloudDriver()
+    {
+        return $this->app['config']['filesystems.cloud'] ?? 's3';
     }
 
     /**

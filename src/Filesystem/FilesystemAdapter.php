@@ -5,8 +5,14 @@ namespace LaraGram\Filesystem;
 use Closure;
 use LaraGram\Container\Container;
 use LaraGram\Contracts\Debug\ExceptionHandler;
+use LaraGram\Contracts\Filesystem\Cloud;
 use LaraGram\Contracts\Filesystem\Filesystem as FilesystemContract;
 use LaraGram\Contracts\Filesystem\FilesystemAdapter as FilesystemAdapterContract;
+use LaraGram\Filesystem\Connections\Ftp\FtpAdapter;
+use LaraGram\Http\File;
+use LaraGram\Http\Request;
+use LaraGram\Http\StreamedResponse;
+use LaraGram\Http\UploadedFile;
 use LaraGram\Support\Str;
 use LaraGram\Support\Traits\Conditionable;
 use LaraGram\Support\Traits\Macroable;
@@ -23,17 +29,18 @@ use LaraGram\Filesystem\Exception\UnableToReadFile;
 use LaraGram\Filesystem\Exception\UnableToRetrieveMetadata;
 use LaraGram\Filesystem\Exception\UnableToSetVisibility;
 use LaraGram\Filesystem\Exception\UnableToWriteFile;
-use Psr\Http\Message\StreamInterface;
+use LaraGram\Http\Factory\StreamInterface;
+use League\Flysystem\PhpseclibV3\SftpAdapter;
 use RuntimeException;
 
 /**
  * @mixin \LaraGram\Contracts\Filesystem\FilesystemOperator
  */
-class FilesystemAdapter
+class FilesystemAdapter implements Cloud
 {
     use Conditionable;
     use Macroable {
-        __call as macroCall;
+        Macroable::__call as macroCall;
     }
 
     /**
@@ -215,6 +222,78 @@ class FilesystemAdapter
     }
 
     /**
+     * Create a streamed response for a given file.
+     *
+     * @param  string  $path
+     * @param  string|null  $name
+     * @param  array  $headers
+     * @param  string|null  $disposition
+     * @return \LaraGram\Http\StreamedResponse
+     *
+     * @throws UnableToRetrieveMetadata
+     */
+    public function response($path, $name = null, array $headers = [], $disposition = 'inline')
+    {
+        $response = new StreamedResponse;
+
+        $headers['Content-Type'] ??= $this->mimeType($path);
+        $headers['Content-Length'] ??= $this->size($path);
+
+        if (! array_key_exists('Content-Disposition', $headers)) {
+            $filename = $name ?? basename($path);
+
+            $disposition = $response->headers->makeDisposition(
+                $disposition, $filename, $this->fallbackName($filename)
+            );
+
+            $headers['Content-Disposition'] = $disposition;
+        }
+
+        $response->headers->replace($headers);
+
+        $response->setCallback(function () use ($path) {
+            $stream = $this->readStream($path);
+            fpassthru($stream);
+            fclose($stream);
+        });
+
+        return $response;
+    }
+
+    /**
+     * Create a streamed download response for a given file.
+     *
+     * @param  \LaraGram\Http\Request  $request
+     * @param  string  $path
+     * @param  string|null  $name
+     * @param  array  $headers
+     * @return \LaraGram\Http\StreamedResponse
+     *
+     * @throws UnableToRetrieveMetadata
+     */
+    public function serve(Request $request, $path, $name = null, array $headers = [])
+    {
+        return isset($this->serveCallback)
+            ? call_user_func($this->serveCallback, $request, $path, $headers)
+            : $this->response($path, $name, $headers);
+    }
+
+    /**
+     * Create a streamed download response for a given file.
+     *
+     * @param  string  $path
+     * @param  string|null  $name
+     * @param  array  $headers
+     * @return \LaraGram\Http\StreamedResponse
+     *
+     * @throws UnableToRetrieveMetadata
+     */
+    public function download($path, $name = null, array $headers = [])
+    {
+        return $this->response($path, $name, $headers, 'attachment');
+    }
+
+    /**
      * Convert the string to ASCII characters that are equivalent to the given name.
      *
      * @param  string  $name
@@ -229,7 +308,7 @@ class FilesystemAdapter
      * Write the contents of a file.
      *
      * @param  string  $path
-     * @param  \Psr\Http\Message\StreamInterface|string|resource  $contents
+     * @param  \LaraGram\Http\Factory\StreamInterface|\LaraGram\Http\File|\LaraGram\Http\UploadedFile|string|resource  $contents
      * @param  mixed  $options
      * @return string|bool
      */
@@ -238,6 +317,11 @@ class FilesystemAdapter
         $options = is_string($options)
             ? ['visibility' => $options]
             : (array) $options;
+
+        if ($contents instanceof File ||
+            $contents instanceof UploadedFile) {
+            return $this->putFile($path, $contents, $options);
+        }
 
         try {
             if ($contents instanceof StreamInterface) {
@@ -261,10 +345,29 @@ class FilesystemAdapter
     }
 
     /**
+     * Store the uploaded file on the disk.
+     *
+     * @param  \LaraGram\Http\File|\LaraGram\Http\UploadedFile|string  $path
+     * @param  \LaraGram\Http\File|\LaraGram\Http\UploadedFile|string|array|null  $file
+     * @param  mixed  $options
+     * @return string|false
+     */
+    public function putFile($path, $file = null, $options = [])
+    {
+        if (is_null($file) || is_array($file)) {
+            [$path, $file, $options] = ['', $path, $file ?? []];
+        }
+
+        $file = is_string($file) ? new File($file) : $file;
+
+        return $this->putFileAs($path, $file, $file->hashName(), $options);
+    }
+
+    /**
      * Store the uploaded file on the disk with a given name.
      *
-     * @param  string  $path
-     * @param  string|array|null  $file
+     * @param  \LaraGram\Http\File|\LaraGram\Http\UploadedFile|string  $path
+     * @param  \LaraGram\Http\File|\LaraGram\Http\UploadedFile|string|array|null  $file
      * @param  string|array|null  $name
      * @param  mixed  $options
      * @return string|false
@@ -275,11 +378,8 @@ class FilesystemAdapter
             [$path, $file, $name, $options] = ['', $path, $file, $name ?? []];
         }
 
-        $stream = fopen($file, 'r');
+        $stream = fopen(is_string($file) ? $file : $file->getRealPath(), 'r');
 
-        // Next, we will format the path of the file and store the file using a stream since
-        // they provide better performance than alternatives. Once we write the file this
-        // stream will get closed automatically by us so the developer doesn't have to.
         $result = $this->put(
             $path = trim($path.'/'.$name, '/'), $stream, $options
         );
@@ -548,6 +648,8 @@ class FilesystemAdapter
             return $adapter->getUrl($path);
         } elseif (method_exists($this->driver, 'getUrl')) {
             return $this->driver->getUrl($path);
+        } elseif ($adapter instanceof FtpAdapter || (class_exists(SftpAdapter::class) && $adapter instanceof SftpAdapter)) {
+            return $this->getFtpUrl($path);
         } elseif ($adapter instanceof LocalAdapter) {
             return $this->getLocalUrl($path);
         } else {

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace LaraGram\Filesystem;
 
 use LaraGram\Contracts\Filesystem\PathNormalizer;
+use LaraGram\Filesystem\Exception\CorruptedPathDetected;
 
 class WhitespacePathNormalizer implements PathNormalizer
 {
