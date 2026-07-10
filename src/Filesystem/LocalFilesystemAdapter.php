@@ -39,8 +39,8 @@ class LocalFilesystemAdapter extends FilesystemAdapter
     public function providesTemporaryUrls()
     {
         return $this->temporaryUrlCallback || (
-            $this->shouldServeSignedUrls && $this->urlGeneratorResolver instanceof Closure
-        );
+                $this->shouldServeSignedUrls && $this->urlGeneratorResolver instanceof Closure
+            );
     }
 
     /**
@@ -51,8 +51,8 @@ class LocalFilesystemAdapter extends FilesystemAdapter
     public function providesTemporaryUploadUrls()
     {
         return $this->temporaryUploadUrlCallback || (
-            $this->shouldServeSignedUrls && $this->urlGeneratorResolver instanceof Closure
-        );
+                $this->shouldServeSignedUrls && $this->urlGeneratorResolver instanceof Closure
+            );
     }
 
     /**
@@ -82,7 +82,7 @@ class LocalFilesystemAdapter extends FilesystemAdapter
         return $url->to($url->temporarySignedRoute(
             'storage.'.$this->disk,
             $expiration,
-            ['path' => rawurlencode($path)],
+            ['path' => strtr(rawurlencode($path), ['%2F' => '/'])],
             absolute: false
         ));
     }
@@ -115,7 +115,7 @@ class LocalFilesystemAdapter extends FilesystemAdapter
             'url' => $url->to($url->temporarySignedRoute(
                 'storage.'.$this->disk.'.upload',
                 $expiration,
-                ['path' => rawurlencode($path), 'upload' => true],
+                ['path' => strtr(rawurlencode($path), ['%2F' => '/']), 'upload' => true],
                 absolute: false
             )),
             'headers' => [],

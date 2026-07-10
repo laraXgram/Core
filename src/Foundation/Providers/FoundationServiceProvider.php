@@ -190,15 +190,15 @@ class FoundationServiceProvider extends AggregateServiceProvider
             return URL::hasValidSignature($this, $absolute);
         });
 
-        Request::macro('hasValidRelativeSignature', function () {
+        \LaraGram\Http\Request::macro('hasValidRelativeSignature', function () {
             return URL::hasValidSignature($this, $absolute = false);
         });
 
-        Request::macro('hasValidSignatureWhileIgnoring', function ($ignoreQuery = [], $absolute = true) {
+        \LaraGram\Http\Request::macro('hasValidSignatureWhileIgnoring', function ($ignoreQuery = [], $absolute = true) {
             return URL::hasValidSignature($this, $absolute, $ignoreQuery);
         });
 
-        Request::macro('hasValidRelativeSignatureWhileIgnoring', function ($ignoreQuery = []) {
+        \LaraGram\Http\Request::macro('hasValidRelativeSignatureWhileIgnoring', function ($ignoreQuery = []) {
             return URL::hasValidSignature($this, $absolute = false, $ignoreQuery);
         });
     }

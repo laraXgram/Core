@@ -6,6 +6,7 @@ use LaraGram\Contracts\Foundation\CachesRoutes;
 use LaraGram\Http\Request;
 use LaraGram\Support\Facades\Route;
 use LaraGram\Support\ServiceProvider;
+use InvalidArgumentException;
 
 class FilesystemServiceProvider extends ServiceProvider
 {
@@ -98,7 +99,7 @@ class FilesystemServiceProvider extends ServiceProvider
                     : '/storage';
 
                 if (isset($served[$uri])) {
-                    throw new \InvalidArgumentException(
+                    throw new InvalidArgumentException(
                         "The [{$disk}] disk conflicts with the [{$served[$uri]}] disk at [{$uri}]. Each served disk must have a unique URL."
                     );
                 }

@@ -7,9 +7,9 @@ namespace LaraGram\Filesystem;
 use DateTimeInterface;
 use Generator;
 use LaraGram\Contracts\Filesystem\ChecksumProvider;
-use LaraGram\Contracts\Filesystem\FilesystemAdapter as FilesystemAdapterContract;
 use LaraGram\Contracts\Filesystem\FilesystemOperator;
 use LaraGram\Contracts\Filesystem\PathNormalizer;
+use LaraGram\Contracts\Filesystem\FilesystemAdapter;
 use LaraGram\Filesystem\Exception\ChecksumAlgoIsNotSupported;
 use LaraGram\Filesystem\Exception\InvalidStreamProvided;
 use LaraGram\Filesystem\Exception\UnableToCopyFile;
@@ -17,6 +17,7 @@ use LaraGram\Filesystem\Exception\UnableToGeneratePublicUrl;
 use LaraGram\Filesystem\Exception\UnableToGenerateTemporaryUrl;
 use LaraGram\Filesystem\Exception\UnableToListContents;
 use LaraGram\Filesystem\Exception\UnableToMoveFile;
+use LaraGram\Filesystem\Exception\UnableToRetrieveMetadata;
 use LaraGram\Filesystem\UrlGeneration\PrefixPublicUrlGenerator;
 use LaraGram\Filesystem\UrlGeneration\PublicUrlGenerator;
 use LaraGram\Filesystem\UrlGeneration\ShardedPrefixPublicUrlGenerator;
@@ -34,14 +35,14 @@ class Flysystem implements FilesystemOperator
     private PathNormalizer $pathNormalizer;
 
     public function __construct(
-        private FilesystemAdapterContract $adapter,
+        private FilesystemAdapter $adapter,
         array $config = [],
         ?PathNormalizer $pathNormalizer = null,
         private ?PublicUrlGenerator $publicUrlGenerator = null,
         private ?TemporaryUrlGenerator $temporaryUrlGenerator = null,
     ) {
         $this->config = new Config($config);
-        $this->pathNormalizer = $pathNormalizer ?? new WhitespacePathNormalizer();
+        $this->pathNormalizer = $pathNormalizer ?? new WhitespacePathNormalizer($this->config->get('allow_relative_path_traversal', true));
     }
 
     public function fileExists(string $location): bool
@@ -179,8 +180,16 @@ class Flysystem implements FilesystemOperator
 
     public function mimeType(string $path): string
     {
-        return $this->adapter->mimeType($this->pathNormalizer->normalizePath($path))->mimeType();
+        $normalizedPath = $this->pathNormalizer->normalizePath($path);
+        $attributes = $this->adapter->mimeType($normalizedPath);
+
+        if ($attributes->mimeType() === null) {
+            throw UnableToRetrieveMetadata::mimeType($path);
+        }
+
+        return $attributes->mimeType();
     }
+
 
     public function setVisibility(string $path, string $visibility): void
     {

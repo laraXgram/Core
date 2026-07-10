@@ -5,20 +5,19 @@ namespace LaraGram\Filesystem;
 use Closure;
 use LaraGram\Container\Container;
 use LaraGram\Contracts\Debug\ExceptionHandler;
-use LaraGram\Contracts\Filesystem\Cloud;
+use LaraGram\Contracts\Filesystem\FilesystemOperator;
+use LaraGram\Contracts\Filesystem\Cloud as CloudFilesystemContract;
 use LaraGram\Contracts\Filesystem\Filesystem as FilesystemContract;
-use LaraGram\Contracts\Filesystem\FilesystemAdapter as FilesystemAdapterContract;
-use LaraGram\Filesystem\Connections\Ftp\FtpAdapter;
 use LaraGram\Http\File;
 use LaraGram\Http\Request;
-use LaraGram\Http\StreamedResponse;
 use LaraGram\Http\UploadedFile;
 use LaraGram\Support\Str;
 use LaraGram\Support\Traits\Conditionable;
 use LaraGram\Support\Traits\Macroable;
 use InvalidArgumentException;
-use LaraGram\Contracts\Filesystem\FilesystemOperator;
-use LaraGram\Filesystem\LocalFilesystemAdapter as LocalAdapter;
+use LaraGram\Contracts\Filesystem\FilesystemAdapter as FilesystemAdapterContract;
+use LaraGram\Filesystem\Connections\Ftp\FtpAdapter;
+use LaraGram\Filesystem\FlysystemLocalFilesystemAdapter as LocalAdapter;
 use LaraGram\Filesystem\Exception\UnableToCopyFile;
 use LaraGram\Filesystem\Exception\UnableToCreateDirectory;
 use LaraGram\Filesystem\Exception\UnableToDeleteDirectory;
@@ -30,17 +29,20 @@ use LaraGram\Filesystem\Exception\UnableToRetrieveMetadata;
 use LaraGram\Filesystem\Exception\UnableToSetVisibility;
 use LaraGram\Filesystem\Exception\UnableToWriteFile;
 use LaraGram\Http\Factory\StreamInterface;
-use League\Flysystem\PhpseclibV3\SftpAdapter;
+use LaraGram\Http\StreamedResponse;
 use RuntimeException;
+
+use League\Flysystem\PhpseclibV3\SftpAdapter;
+
 
 /**
  * @mixin \LaraGram\Contracts\Filesystem\FilesystemOperator
  */
-class FilesystemAdapter implements Cloud
+class FilesystemAdapter implements CloudFilesystemContract
 {
     use Conditionable;
     use Macroable {
-        Macroable::__call as macroCall;
+        __call as macroCall;
     }
 
     /**
@@ -318,6 +320,9 @@ class FilesystemAdapter implements Cloud
             ? ['visibility' => $options]
             : (array) $options;
 
+        // If the given contents is actually a file or uploaded file instance than we will
+        // automatically store the file using a stream. This provides a convenient path
+        // for the developer to store streams without managing them manually in code.
         if ($contents instanceof File ||
             $contents instanceof UploadedFile) {
             return $this->putFile($path, $contents, $options);
@@ -380,6 +385,9 @@ class FilesystemAdapter implements Cloud
 
         $stream = fopen(is_string($file) ? $file : $file->getRealPath(), 'r');
 
+        // Next, we will format the path of the file and store the file using a stream since
+        // they provide better performance than alternatives. Once we write the file this
+        // stream will get closed automatically by us so the developer doesn't have to.
         $result = $this->put(
             $path = trim($path.'/'.$name, '/'), $stream, $options
         );
@@ -648,7 +656,7 @@ class FilesystemAdapter implements Cloud
             return $adapter->getUrl($path);
         } elseif (method_exists($this->driver, 'getUrl')) {
             return $this->driver->getUrl($path);
-        } elseif ($adapter instanceof FtpAdapter || (class_exists(SftpAdapter::class) && $adapter instanceof SftpAdapter)) {
+        } elseif ($adapter instanceof FtpAdapter || (class_exists(SftpAdapter::class) &&$adapter instanceof SftpAdapter)) {
             return $this->getFtpUrl($path);
         } elseif ($adapter instanceof LocalAdapter) {
             return $this->getLocalUrl($path);
@@ -777,6 +785,23 @@ class FilesystemAdapter implements Cloud
     protected function concatPathToUrl($url, $path)
     {
         return rtrim($url, '/').'/'.ltrim($path, '/');
+    }
+
+    /**
+     * Replace the scheme, host and port of the given UriInterface with values from the given URL.
+     *
+     * @param  \LaraGram\Http\Factory\UriInterface  $uri
+     * @param  string  $url
+     * @return \LaraGram\Http\Factory\UriInterface
+     */
+    protected function replaceBaseUrl($uri, $url)
+    {
+        $parsed = parse_url($url);
+
+        return $uri
+            ->withScheme($parsed['scheme'])
+            ->withHost($parsed['host'])
+            ->withPort($parsed['port'] ?? null);
     }
 
     /**

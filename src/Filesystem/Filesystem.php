@@ -2,19 +2,16 @@
 
 namespace LaraGram\Filesystem;
 
-use DirectoryIterator;
 use ErrorException;
 use FilesystemIterator;
 use LaraGram\Contracts\Filesystem\FileNotFoundException;
-use LaraGram\Filesystem\Mime\MimeTypes;
-use LaraGram\Support\Finder\Finder;
 use LaraGram\Support\LazyCollection;
 use LaraGram\Support\Traits\Conditionable;
 use LaraGram\Support\Traits\Macroable;
-use RecursiveDirectoryIterator;
-use RecursiveIteratorIterator;
 use RuntimeException;
 use SplFileObject;
+use LaraGram\Support\Finder\Finder;
+use LaraGram\Filesystem\Mime\MimeTypes;
 
 class Filesystem
 {
@@ -92,7 +89,7 @@ class Filesystem
                 if (flock($handle, LOCK_SH)) {
                     clearstatcache(true, $path);
 
-                    $contents = fread($handle, $this->size($path) ?: 1);
+                    $contents = stream_get_contents($handle);
 
                     flock($handle, LOCK_UN);
                 }
@@ -170,7 +167,7 @@ class Filesystem
             );
         }
 
-        return LazyCollection::make(function () use ($path) {
+        return new LazyCollection(function () use ($path) {
             $file = new SplFileObject($path);
 
             $file->setFlags(SplFileObject::DROP_NEW_LINE);
@@ -251,10 +248,9 @@ class Filesystem
     /**
      * Prepend to a file.
      *
-     * @param string $path
-     * @param string $data
+     * @param  string  $path
+     * @param  string  $data
      * @return int
-     * @throws FileNotFoundException
      */
     public function prepend($path, $data)
     {
@@ -350,7 +346,7 @@ class Filesystem
      *
      * @param  string  $target
      * @param  string  $link
-     * @return bool|null|void
+     * @return bool|null
      */
     public function link($target, $link)
     {
@@ -452,7 +448,7 @@ class Filesystem
     }
 
     /**
-     * Guess the file extension from the mime-type of a given file.
+     * Guess the file extension from the MIME type of a given file.
      *
      * @param  string  $path
      * @return string|null
@@ -461,6 +457,12 @@ class Filesystem
      */
     public function guessExtension($path)
     {
+        if (! class_exists(MimeTypes::class)) {
+            throw new RuntimeException(
+                'To enable support for guessing extensions, please install the symfony/mime package.'
+            );
+        }
+
         return (new MimeTypes)->getExtensions($this->mimeType($path))[0] ?? null;
     }
 
@@ -468,7 +470,7 @@ class Filesystem
      * Get the file type of a given file.
      *
      * @param  string  $path
-     * @return string
+     * @return string|false
      */
     public function type($path)
     {
@@ -476,7 +478,7 @@ class Filesystem
     }
 
     /**
-     * Get the mime-type of a given file.
+     * Get the MIME type of a given file.
      *
      * @param  string  $path
      * @return string|false
@@ -562,9 +564,9 @@ class Filesystem
      */
     public function hasSameHash($firstFile, $secondFile)
     {
-        $hash = @md5_file($firstFile);
+        $hash = @hash_file('xxh128', $firstFile);
 
-        return $hash && hash_equals($hash, (string) @md5_file($secondFile));
+        return $hash && hash_equals($hash, (string) @hash_file('xxh128', $secondFile));
     }
 
     /**
@@ -610,13 +612,12 @@ class Filesystem
      *
      * @param  string  $directory
      * @param  bool  $hidden
-     * @return array
+     * @return \LaraGram\Support\Finder\SplFileInfo[]
      */
     public function allFiles($directory, $hidden = false)
     {
         return $this->files($directory, $hidden, []);
     }
-
 
     /**
      * Get all of the directories within a given directory.
