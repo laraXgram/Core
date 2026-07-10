@@ -3,6 +3,7 @@
 use LaraGram\Container\Container;
 use LaraGram\Contracts\Auth\Access\Gate;
 use LaraGram\Contracts\Auth\Guard;
+use LaraGram\Contracts\Auth\Factory as AuthFactory;
 use LaraGram\Contracts\Bus\Dispatcher;
 use LaraGram\Contracts\Debug\ExceptionHandler;
 use LaraGram\Contracts\Routing\ResponseFactory;
@@ -18,6 +19,7 @@ use LaraGram\Http\Factory\UriInterface;
 use LaraGram\Http\RedirectResponse;
 use LaraGram\Log\Context\Repository;
 use LaraGram\Queue\CallQueuedClosure;
+use LaraGram\Routing\Router;
 use LaraGram\Support\Facades\Date;
 use LaraGram\Support\Facades\Route;
 use LaraGram\Support\Uri;
@@ -554,9 +556,12 @@ if (! function_exists('public_path')) {
 
 if (! function_exists('redirect')) {
     /**
-     * Get an instance of the redirector.
+     * Get an instance of the redirector for the active request type.
      *
-     * @return \LaraGram\Listening\Redirector
+     * Resolves the Listening\Redirector under the bot kernel and the
+     * Routing\Redirector under the HTTP kernel.
+     *
+     * @return \LaraGram\Listening\Redirector|\LaraGram\Routing\Redirector
      */
     function redirect()
     {
@@ -833,6 +838,20 @@ if (! function_exists('to_listen')) {
     function to_listen($listen, $parameters = [])
     {
         return redirect()->listen($listen, $parameters);
+    }
+}
+
+if (! function_exists('to_route')) {
+    /**
+     * Create a new redirect response to a named route.
+     *
+     * @param  \BackedEnum|string  $route
+     * @param  mixed  $parameters
+     * @return \LaraGram\Http\RedirectResponse
+     */
+    function to_route($route, $parameters = [])
+    {
+        return redirect()->route($route, $parameters);
     }
 }
 

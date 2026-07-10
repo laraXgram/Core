@@ -166,6 +166,8 @@ class Kernel implements KernelContract
             $this->app['auth']->shouldUse('bot');
         }
 
+        $this->app->forgetInstance('redirect');
+
         return (new Pipeline($this->app))
             ->send($request)
             ->through($this->app->shouldSkipMiddleware() ? [] : $this->middleware)

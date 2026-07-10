@@ -128,7 +128,7 @@ class RoutingServiceProvider extends ServiceProvider
      */
     protected function registerRedirector()
     {
-        $this->app->singleton('redirect', function ($app) {
+        $this->app->singleton('http.redirect', function ($app) {
             $redirector = new Redirector($app['url']);
 
             // If the session is set on the application instance, we'll inject it into
@@ -195,7 +195,7 @@ class RoutingServiceProvider extends ServiceProvider
     protected function registerResponseFactory()
     {
         $this->app->singleton(ResponseFactoryContract::class, function ($app) {
-            return new ResponseFactory($app[ViewFactoryContract::class], $app['redirect']);
+            return new ResponseFactory($app[ViewFactoryContract::class], $app['http.redirect']);
         });
     }
 

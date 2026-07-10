@@ -224,7 +224,7 @@ class Request implements ProvidesListenContext
             return $method;
         }
 
-        return strtoupper(Type::findVerb($this->getUpdateType())?->value);
+        return strtoupper(Type::findVerb($this->getUpdateType())?->value ?? '');
     }
 
     /**

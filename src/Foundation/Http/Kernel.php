@@ -173,6 +173,8 @@ class Kernel implements KernelContract
             $this->app['auth']->shouldUse($this->app['config']['auth.defaults.guard']);
         }
 
+        $this->app->instance('redirect', $this->app['http.redirect']);
+
         return (new Pipeline($this->app))
             ->send($request)
             ->through($this->app->shouldSkipMiddleware() ? [] : $this->middleware)
