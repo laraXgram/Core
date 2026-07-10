@@ -3,28 +3,27 @@
 namespace LaraGram\Config;
 
 use ArrayAccess;
+use LaraGram\Contracts\Config\Repository as ConfigContract;
 use LaraGram\Support\Arr;
+use LaraGram\Support\Collection;
 use LaraGram\Support\Traits\Macroable;
 use InvalidArgumentException;
-use ReturnTypeWillChange;
-use LaraGram\Contracts\Config\Repository as RepositoryContract;
 
-class Repository implements ArrayAccess, RepositoryContract
+class Repository implements ArrayAccess, ConfigContract
 {
     use Macroable;
 
     /**
      * All of the configuration items.
      *
-     * @var array
+     * @var array<string,mixed>
      */
-    protected array $items = [];
+    protected $items = [];
 
     /**
      * Create a new configuration repository.
      *
-     * @param array $items
-     * @return void
+     * @param  array  $items
      */
     public function __construct(array $items = [])
     {
@@ -34,10 +33,10 @@ class Repository implements ArrayAccess, RepositoryContract
     /**
      * Determine if the given configuration value exists.
      *
-     * @param string $key
+     * @param  string  $key
      * @return bool
      */
-    public function has($key): bool
+    public function has($key)
     {
         return Arr::has($this->items, $key);
     }
@@ -45,11 +44,11 @@ class Repository implements ArrayAccess, RepositoryContract
     /**
      * Get the specified configuration value.
      *
-     * @param array|string $key
-     * @param mixed|null $default
+     * @param  array|string  $key
+     * @param  mixed  $default
      * @return mixed
      */
-    public function get($key, mixed $default = null): mixed
+    public function get($key, $default = null)
     {
         if (is_array($key)) {
             return $this->getMany($key);
@@ -61,10 +60,10 @@ class Repository implements ArrayAccess, RepositoryContract
     /**
      * Get many configuration values.
      *
-     * @param array $keys
-     * @return array
+     * @param  array<string|int,mixed>  $keys
+     * @return array<string,mixed>
      */
-    public function getMany(array $keys): array
+    public function getMany($keys)
     {
         $config = [];
 
@@ -83,14 +82,16 @@ class Repository implements ArrayAccess, RepositoryContract
      * Get the specified string configuration value.
      *
      * @param  string  $key
-     * @param mixed|null $default
+     * @param  (\Closure():(string|null))|string|null  $default
      * @return string
+     *
+     * @throws \InvalidArgumentException
      */
-    public function string(string $key, mixed $default = null): string
+    public function string(string $key, $default = null): string
     {
         $value = $this->get($key, $default);
 
-        if (!is_string($value)) {
+        if (! is_string($value)) {
             throw new InvalidArgumentException(
                 sprintf('Configuration value for key [%s] must be a string, %s given.', $key, gettype($value))
             );
@@ -103,14 +104,16 @@ class Repository implements ArrayAccess, RepositoryContract
      * Get the specified integer configuration value.
      *
      * @param  string  $key
-     * @param mixed|null $default
+     * @param  (\Closure():(int|null))|int|null  $default
      * @return int
+     *
+     * @throws \InvalidArgumentException
      */
-    public function integer(string $key, mixed $default = null): int
+    public function integer(string $key, $default = null): int
     {
         $value = $this->get($key, $default);
 
-        if (!is_int($value)) {
+        if (! is_int($value)) {
             throw new InvalidArgumentException(
                 sprintf('Configuration value for key [%s] must be an integer, %s given.', $key, gettype($value))
             );
@@ -123,14 +126,16 @@ class Repository implements ArrayAccess, RepositoryContract
      * Get the specified float configuration value.
      *
      * @param  string  $key
-     * @param mixed|null $default
+     * @param  (\Closure():(float|null))|float|null  $default
      * @return float
+     *
+     * @throws \InvalidArgumentException
      */
-    public function float(string $key, mixed $default = null): float
+    public function float(string $key, $default = null): float
     {
         $value = $this->get($key, $default);
 
-        if (!is_float($value)) {
+        if (! is_float($value)) {
             throw new InvalidArgumentException(
                 sprintf('Configuration value for key [%s] must be a float, %s given.', $key, gettype($value))
             );
@@ -143,14 +148,16 @@ class Repository implements ArrayAccess, RepositoryContract
      * Get the specified boolean configuration value.
      *
      * @param  string  $key
-     * @param mixed|null $default
+     * @param  (\Closure():(bool|null))|bool|null  $default
      * @return bool
+     *
+     * @throws \InvalidArgumentException
      */
-    public function boolean(string $key, mixed $default = null): bool
+    public function boolean(string $key, $default = null): bool
     {
         $value = $this->get($key, $default);
 
-        if (!is_bool($value)) {
+        if (! is_bool($value)) {
             throw new InvalidArgumentException(
                 sprintf('Configuration value for key [%s] must be a boolean, %s given.', $key, gettype($value))
             );
@@ -163,14 +170,16 @@ class Repository implements ArrayAccess, RepositoryContract
      * Get the specified array configuration value.
      *
      * @param  string  $key
-     * @param mixed|null $default
-     * @return array
+     * @param  (\Closure():(array<array-key, mixed>|null))|array<array-key, mixed>|null  $default
+     * @return array<array-key, mixed>
+     *
+     * @throws \InvalidArgumentException
      */
-    public function array(string $key, mixed $default = null): array
+    public function array(string $key, $default = null): array
     {
         $value = $this->get($key, $default);
 
-        if (!is_array($value)) {
+        if (! is_array($value)) {
             throw new InvalidArgumentException(
                 sprintf('Configuration value for key [%s] must be an array, %s given.', $key, gettype($value))
             );
@@ -180,13 +189,25 @@ class Repository implements ArrayAccess, RepositoryContract
     }
 
     /**
+     * Get the specified array configuration value as a collection.
+     *
+     * @param  string  $key
+     * @param  (\Closure():(array<array-key, mixed>|null))|array<array-key, mixed>|null  $default
+     * @return Collection<array-key, mixed>
+     */
+    public function collection(string $key, $default = null): Collection
+    {
+        return new Collection($this->array($key, $default));
+    }
+
+    /**
      * Set a given configuration value.
      *
-     * @param array|string $key
-     * @param mixed|null $value
+     * @param  array|string  $key
+     * @param  mixed  $value
      * @return void
      */
-    public function set($key, mixed $value = null): void
+    public function set($key, $value = null)
     {
         $keys = is_array($key) ? $key : [$key => $value];
 
@@ -198,11 +219,11 @@ class Repository implements ArrayAccess, RepositoryContract
     /**
      * Prepend a value onto an array configuration value.
      *
-     * @param string $key
+     * @param  string  $key
      * @param  mixed  $value
      * @return void
      */
-    public function prepend($key, mixed $value): void
+    public function prepend($key, $value)
     {
         $array = $this->get($key, []);
 
@@ -214,11 +235,11 @@ class Repository implements ArrayAccess, RepositoryContract
     /**
      * Push a value onto an array configuration value.
      *
-     * @param string $key
+     * @param  string  $key
      * @param  mixed  $value
      * @return void
      */
-    public function push($key, mixed $value): void
+    public function push($key, $value)
     {
         $array = $this->get($key, []);
 
@@ -230,9 +251,9 @@ class Repository implements ArrayAccess, RepositoryContract
     /**
      * Get all of the configuration items for the application.
      *
-     * @return array
+     * @return array<string, mixed>
      */
-    public function all(): array
+    public function all()
     {
         return $this->items;
     }
@@ -254,7 +275,6 @@ class Repository implements ArrayAccess, RepositoryContract
      * @param  string  $offset
      * @return mixed
      */
-    #[ReturnTypeWillChange]
     public function offsetGet($offset): mixed
     {
         return $this->get($offset);
@@ -267,7 +287,7 @@ class Repository implements ArrayAccess, RepositoryContract
      * @param  mixed  $value
      * @return void
      */
-    public function offsetSet($offset, mixed $value): void
+    public function offsetSet($offset, $value): void
     {
         $this->set($offset, $value);
     }
