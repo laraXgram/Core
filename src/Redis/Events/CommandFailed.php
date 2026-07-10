@@ -2,10 +2,12 @@
 
 namespace LaraGram\Redis\Events;
 
-class CommandExecuted
+use Throwable;
+
+class CommandFailed
 {
     /**
-     * The Redis command that was executed.
+     * The Redis command that failed.
      *
      * @var string
      */
@@ -19,11 +21,11 @@ class CommandExecuted
     public $parameters;
 
     /**
-     * The number of milliseconds it took to execute the command.
+     * The exception that was thrown.
      *
-     * @var float
+     * @var \Throwable
      */
-    public $time;
+    public $exception;
 
     /**
      * The Redis connection instance.
@@ -44,14 +46,14 @@ class CommandExecuted
      *
      * @param  string  $command
      * @param  array  $parameters
-     * @param  float|null  $time
+     * @param  \Throwable  $exception
      * @param  \LaraGram\Redis\Connections\Connection  $connection
      */
-    public function __construct($command, $parameters, $time, $connection)
+    public function __construct($command, $parameters, Throwable $exception, $connection)
     {
-        $this->time = $time;
         $this->command = $command;
         $this->parameters = $parameters;
+        $this->exception = $exception;
         $this->connection = $connection;
         $this->connectionName = $connection->getName();
     }
