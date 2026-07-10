@@ -12,6 +12,13 @@ interface Guard
     public function check();
 
     /**
+     * Determine if the current user is a guest.
+     *
+     * @return bool
+     */
+    public function guest();
+
+    /**
      * Get the currently authenticated user.
      *
      * @return \LaraGram\Contracts\Auth\Authenticatable|null

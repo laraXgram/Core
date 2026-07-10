@@ -3,13 +3,21 @@
 namespace LaraGram\Auth;
 
 use Closure;
+use LaraGram\Contracts\Auth\Factory as FactoryContract;
+use LaraGram\Support\RebindsCallbacksToSelf;
+use InvalidArgumentException;
+use ReflectionException;
+use RuntimeException;
+
+use function LaraGram\Support\enum_value;
 
 /**
  * @mixin \LaraGram\Contracts\Auth\Guard
+ * @mixin \LaraGram\Contracts\Auth\StatefulGuard
  */
-class AuthManager
+class AuthManager implements FactoryContract
 {
-    use CreatesUserProviders;
+    use CreatesUserProviders, RebindsCallbacksToSelf;
 
     /**
      * The application instance.
@@ -19,18 +27,18 @@ class AuthManager
     protected $app;
 
     /**
-     * The currently authenticated user.
+     * The registered custom driver creators.
      *
-     * @var \LaraGram\Contracts\Auth\Authenticatable|null
+     * @var array
      */
-    protected $user;
+    protected $customCreators = [];
 
     /**
-     * The user provider implementation.
+     * The array of created "drivers".
      *
-     * @var \LaraGram\Contracts\Auth\UserProvider
+     * @var array
      */
-    protected $provider;
+    protected $guards = [];
 
     /**
      * The user resolver shared by various services.
@@ -45,31 +53,206 @@ class AuthManager
      * Create a new Auth manager instance.
      *
      * @param  \LaraGram\Contracts\Foundation\Application  $app
-     * @return void
      */
     public function __construct($app)
     {
         $this->app = $app;
 
-        $this->provider = $this->createUserProvider();
-
-        $this->userResolver = fn () => $this->user();
+        $this->userResolver = fn ($guard = null) => $this->guard($guard)->user();
     }
 
     /**
-     * Get the currently authenticated user.
+     * Attempt to get the guard from the local cache.
      *
-     * @return \LaraGram\Contracts\Auth\Authenticatable|null
+     * @param  \UnitEnum|string|null  $name
+     * @return \LaraGram\Contracts\Auth\Guard|\LaraGram\Contracts\Auth\StatefulGuard
      */
-    public function user()
+    public function guard($name = null)
     {
-        if (! is_null($this->user)) {
-            return $this->user;
+        $name = enum_value($name) ?: $this->getDefaultDriver();
+
+        return $this->guards[$name] ??= $this->resolve($name);
+    }
+
+    /**
+     * Resolve the given guard.
+     *
+     * @param  string  $name
+     * @return \LaraGram\Contracts\Auth\Guard|\LaraGram\Contracts\Auth\StatefulGuard
+     *
+     * @throws \InvalidArgumentException
+     */
+    protected function resolve($name)
+    {
+        $config = $this->getConfig($name);
+
+        if (is_null($config)) {
+            throw new InvalidArgumentException("Auth guard [{$name}] is not defined.");
         }
 
-        $this->user = $this->provider->retrieveByUserId(user()->id);
+        if (isset($this->customCreators[$config['driver']])) {
+            return $this->callCustomCreator($name, $config);
+        }
 
-        return $this->user;
+        $driverMethod = 'create'.ucfirst($config['driver']).'Driver';
+
+        if (method_exists($this, $driverMethod)) {
+            return $this->{$driverMethod}($name, $config);
+        }
+
+        throw new InvalidArgumentException(
+            "Auth driver [{$config['driver']}] for guard [{$name}] is not defined."
+        );
+    }
+
+    /**
+     * Call a custom driver creator.
+     *
+     * @param  string  $name
+     * @param  array  $config
+     * @return mixed
+     */
+    protected function callCustomCreator($name, array $config)
+    {
+        return $this->customCreators[$config['driver']]($this->app, $name, $config);
+    }
+
+    /**
+     * Create a Telegram bot based authentication guard.
+     *
+     * @param  string  $name
+     * @param  array  $config
+     * @return \LaraGram\Auth\BotGuard
+     */
+    public function createBotDriver($name, $config)
+    {
+        return new BotGuard(
+            $this->createUserProvider($config['provider'] ?? null)
+        );
+    }
+
+    /**
+     * Create a session based authentication guard.
+     *
+     * @param  string  $name
+     * @param  array  $config
+     * @return \LaraGram\Auth\SessionGuard
+     */
+    public function createSessionDriver($name, $config)
+    {
+        $guard = new SessionGuard(
+            $name,
+            $this->createUserProvider($config['provider'] ?? null),
+            $this->app['session.store'],
+            rehashOnLogin: $this->app['config']->get('hashing.rehash_on_login', true),
+            timeboxDuration: $this->app['config']->get('auth.timebox_duration', 200000),
+            hashKey: $this->app['config']->get('app.key'),
+        );
+
+        // When using the remember me functionality of the authentication services we
+        // will need to be set the encryption instance of the guard, which allows
+        // secure, encrypted cookie values to get generated for those cookies.
+        $guard->setCookieJar($this->app['cookie']);
+
+        $guard->setDispatcher($this->app['events']);
+
+        $guard->setRequest($this->app->refresh('http.request', $guard, 'setRequest'));
+
+        if (isset($config['remember'])) {
+            $guard->setRememberDuration($config['remember']);
+        }
+
+        return $guard;
+    }
+
+    /**
+     * Create a token based authentication guard.
+     *
+     * @param  string  $name
+     * @param  array  $config
+     * @return \LaraGram\Auth\TokenGuard
+     */
+    public function createTokenDriver($name, $config)
+    {
+        // The token guard implements a basic API token based guard implementation
+        // that takes an API token field from the request and matches it to the
+        // user in the database or another persistence layer where users are.
+        $guard = new TokenGuard(
+            $this->createUserProvider($config['provider'] ?? null),
+            $this->app['http.request'],
+            $config['input_key'] ?? 'api_token',
+            $config['storage_key'] ?? 'api_token',
+            $config['hash'] ?? false
+        );
+
+        $this->app->refresh('http.request', $guard, 'setRequest');
+
+        return $guard;
+    }
+
+    /**
+     * Get the guard configuration.
+     *
+     * @param  string  $name
+     * @return array
+     */
+    protected function getConfig($name)
+    {
+        return $this->app['config']["auth.guards.{$name}"];
+    }
+
+    /**
+     * Get the default authentication driver name.
+     *
+     * @return string
+     */
+    public function getDefaultDriver()
+    {
+        return $this->app['config']['auth.defaults.guard'];
+    }
+
+    /**
+     * Set the default guard driver the factory should serve.
+     *
+     * @param  \UnitEnum|string|null  $name
+     * @return void
+     */
+    public function shouldUse($name)
+    {
+        $name = enum_value($name) ?: $this->getDefaultDriver();
+
+        $this->setDefaultDriver($name);
+
+        $this->userResolver = fn ($name = null) => $this->guard($name)->user();
+    }
+
+    /**
+     * Set the default authentication driver name.
+     *
+     * @param  \UnitEnum|string  $name
+     * @return void
+     */
+    public function setDefaultDriver($name)
+    {
+        $this->app['config']['auth.defaults.guard'] = enum_value($name);
+    }
+
+    /**
+     * Register a new callback based request guard.
+     *
+     * @param  string  $driver
+     * @param  callable  $callback
+     * @return $this
+     */
+    public function viaRequest($driver, callable $callback)
+    {
+        return $this->extend($driver, function () use ($callback) {
+            $guard = new RequestGuard($callback, $this->app['http.request'], $this->createUserProvider());
+
+            $this->app->refresh('http.request', $guard, 'setRequest');
+
+            return $guard;
+        });
     }
 
     /**
@@ -96,6 +279,29 @@ class AuthManager
     }
 
     /**
+     * Register a custom driver creator Closure.
+     *
+     * @param  string  $driver
+     * @param  \Closure  $callback
+     *
+     * @param-closure-this  $this  $callback
+     *
+     * @return $this
+     */
+    public function extend($driver, Closure $callback)
+    {
+        try {
+            $callback = $this->bindCallbackToSelf($callback) ?? throw new RuntimeException('Unable to bind custom driver callback');
+        } catch (ReflectionException $e) {
+            throw new RuntimeException('Unable to bind custom driver callback', previous: $e);
+        }
+
+        $this->customCreators[$driver] = $callback;
+
+        return $this;
+    }
+
+    /**
      * Register a custom provider creator Closure.
      *
      * @param  string  $name
@@ -105,6 +311,28 @@ class AuthManager
     public function provider($name, Closure $callback)
     {
         $this->customProviderCreators[$name] = $callback;
+
+        return $this;
+    }
+
+    /**
+     * Determines if any guards have already been resolved.
+     *
+     * @return bool
+     */
+    public function hasResolvedGuards()
+    {
+        return count($this->guards) > 0;
+    }
+
+    /**
+     * Forget all of the resolved guard instances.
+     *
+     * @return $this
+     */
+    public function forgetGuards()
+    {
+        $this->guards = [];
 
         return $this;
     }
@@ -120,5 +348,17 @@ class AuthManager
         $this->app = $app;
 
         return $this;
+    }
+
+    /**
+     * Dynamically call the default driver instance.
+     *
+     * @param  string  $method
+     * @param  array  $parameters
+     * @return mixed
+     */
+    public function __call($method, $parameters)
+    {
+        return $this->guard()->{$method}(...$parameters);
     }
 }

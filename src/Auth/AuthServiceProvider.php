@@ -3,10 +3,13 @@
 namespace LaraGram\Auth;
 
 use LaraGram\Auth\Access\Gate;
+use LaraGram\Auth\Middleware\RequirePassword;
 use LaraGram\Auth\Status\StatusManager;
 use LaraGram\Contracts\Auth\Access\Gate as GateContract;
 use LaraGram\Contracts\Auth\Authenticatable as AuthenticatableContract;
 use LaraGram\Contracts\Auth\StatusProvider as StatusProviderContract;
+use LaraGram\Contracts\Routing\ResponseFactory;
+use LaraGram\Contracts\Routing\UrlGenerator;
 use LaraGram\Listening\Listen;
 use LaraGram\Request\Request;
 use LaraGram\Support\Facades\Bot;
@@ -25,8 +28,10 @@ class AuthServiceProvider extends ServiceProvider
         $this->registerAuthenticator();
         $this->registerUserResolver();
         $this->registerAccessGate();
+        $this->registerRequirePassword();
         $this->registerStatusManager();
         $this->registerRequestRebindHandler();
+        $this->registerEventRebindHandler();
 
         if ($this->app['auth.status']->shouldObserve()) {
             $this->registerListens();
@@ -57,6 +62,24 @@ class AuthServiceProvider extends ServiceProvider
     protected function registerAuthenticator()
     {
         $this->app->singleton('auth', fn($app) => new AuthManager($app));
+
+        $this->app->singleton('auth.driver', fn($app) => $app['auth']->guard());
+    }
+
+    /**
+     * Register the "require password" middleware binding.
+     *
+     * @return void
+     */
+    protected function registerRequirePassword()
+    {
+        $this->app->bind(RequirePassword::class, function ($app) {
+            return new RequirePassword(
+                $app[ResponseFactory::class],
+                $app[UrlGenerator::class],
+                $app['config']->get('auth.password_timeout')
+            );
+        });
     }
 
     /**
@@ -88,10 +111,32 @@ class AuthServiceProvider extends ServiceProvider
      */
     protected function registerRequestRebindHandler()
     {
-        $this->app->rebinding('request', function ($app, $request) {
-            $request->setUserResolver(function () use ($app) {
-                return call_user_func($app['auth']->userResolver());
+        $resolver = function ($app, $request) {
+            $request->setUserResolver(function ($guard = null) use ($app) {
+                return call_user_func($app['auth']->userResolver(), $guard);
             });
+        };
+
+        $this->app->rebinding('request', $resolver);
+        $this->app->rebinding('http.request', $resolver);
+    }
+
+    /**
+     * Handle the re-binding of the event dispatcher binding.
+     *
+     * @return void
+     */
+    protected function registerEventRebindHandler()
+    {
+        $this->app->rebinding('events', function ($app, $dispatcher) {
+            if (! $app->resolved('auth') ||
+                $app['auth']->hasResolvedGuards() === false) {
+                return;
+            }
+
+            if (method_exists($guard = $app['auth']->guard(), 'setDispatcher')) {
+                $guard->setDispatcher($dispatcher);
+            }
         });
     }
 

@@ -2,7 +2,7 @@
 
 namespace LaraGram\Auth;
 
-use LaraGram\Contracts\Auth\Authenticatable as UserContract;
+use LaraGram\Contracts\Auth\StatefulAuthenticatable as UserContract;
 
 class GenericUser implements UserContract
 {
@@ -14,14 +14,26 @@ class GenericUser implements UserContract
     protected $attributes;
 
     /**
+     * The name of the unique identifier attribute for the user.
+     *
+     * For HTTP users this is the table primary key ("id"); for bot users it is
+     * the Telegram user column configured on the provider (e.g. "user_id").
+     *
+     * @var string
+     */
+    protected $authIdentifierName;
+
+    /**
      * Create a new generic User object.
      *
      * @param  array  $attributes
+     * @param  string  $authIdentifierName
      * @return void
      */
-    public function __construct(array $attributes)
+    public function __construct(array $attributes, $authIdentifierName = 'id')
     {
         $this->attributes = $attributes;
+        $this->authIdentifierName = $authIdentifierName;
     }
 
     /**
@@ -31,7 +43,7 @@ class GenericUser implements UserContract
      */
     public function getAuthIdentifierName()
     {
-        return 'user_id';
+        return $this->authIdentifierName;
     }
 
     /**
@@ -42,6 +54,57 @@ class GenericUser implements UserContract
     public function getAuthIdentifier()
     {
         return $this->attributes[$this->getAuthIdentifierName()];
+    }
+
+    /**
+     * Get the name of the password attribute for the user.
+     *
+     * @return string
+     */
+    public function getAuthPasswordName()
+    {
+        return 'password';
+    }
+
+    /**
+     * Get the password for the user.
+     *
+     * @return string
+     */
+    public function getAuthPassword()
+    {
+        return $this->attributes[$this->getAuthPasswordName()];
+    }
+
+    /**
+     * Get the "remember me" token value.
+     *
+     * @return string
+     */
+    public function getRememberToken()
+    {
+        return $this->attributes[$this->getRememberTokenName()];
+    }
+
+    /**
+     * Set the "remember me" token value.
+     *
+     * @param  string  $value
+     * @return void
+     */
+    public function setRememberToken($value)
+    {
+        $this->attributes[$this->getRememberTokenName()] = $value;
+    }
+
+    /**
+     * Get the column name for the "remember me" token.
+     *
+     * @return string
+     */
+    public function getRememberTokenName()
+    {
+        return 'remember_token';
     }
 
     /**
