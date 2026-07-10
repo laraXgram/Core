@@ -6,7 +6,7 @@ use Closure;
 use InvalidArgumentException;
 use Stringable;
 
-class ProhibitedIf implements Stringable
+class ProhibitedUnless implements Stringable
 {
     /**
      * The condition that validates the attribute.
@@ -39,9 +39,9 @@ class ProhibitedIf implements Stringable
     public function __toString(): string
     {
         if (is_callable($this->condition)) {
-            return call_user_func($this->condition) ? 'prohibited' : '';
+            return call_user_func($this->condition) ? '' : 'prohibited';
         }
 
-        return $this->condition ? 'prohibited' : '';
+        return $this->condition ? '' : 'prohibited';
     }
 }

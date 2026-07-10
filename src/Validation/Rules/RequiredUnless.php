@@ -6,7 +6,7 @@ use Closure;
 use InvalidArgumentException;
 use Stringable;
 
-class ProhibitedIf implements Stringable
+class RequiredUnless implements Stringable
 {
     /**
      * The condition that validates the attribute.
@@ -16,14 +16,18 @@ class ProhibitedIf implements Stringable
     public $condition;
 
     /**
-     * Create a new prohibited validation rule based on a condition.
+     * Create a new required validation rule based on a condition.
      *
-     * @param  (\Closure(): bool)|bool  $condition
+     * @param  (\Closure(): bool)|bool|null  $condition
      *
      * @throws \InvalidArgumentException
      */
     public function __construct($condition)
     {
+        if (is_null($condition)) {
+            $condition = false;
+        }
+
         if ($condition instanceof Closure || is_bool($condition)) {
             $this->condition = $condition;
         } else {
@@ -39,9 +43,9 @@ class ProhibitedIf implements Stringable
     public function __toString(): string
     {
         if (is_callable($this->condition)) {
-            return call_user_func($this->condition) ? 'prohibited' : '';
+            return call_user_func($this->condition) ? '' : 'required';
         }
 
-        return $this->condition ? 'prohibited' : '';
+        return $this->condition ? '' : 'required';
     }
 }

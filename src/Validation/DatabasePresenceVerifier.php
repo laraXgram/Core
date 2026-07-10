@@ -25,7 +25,6 @@ class DatabasePresenceVerifier implements DatabasePresenceVerifierInterface
      * Create a new database presence verifier.
      *
      * @param  \LaraGram\Database\ConnectionResolverInterface  $db
-     * @return void
      */
     public function __construct(ConnectionResolverInterface $db)
     {

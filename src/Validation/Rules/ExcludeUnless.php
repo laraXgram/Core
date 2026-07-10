@@ -6,7 +6,7 @@ use Closure;
 use InvalidArgumentException;
 use Stringable;
 
-class ProhibitedIf implements Stringable
+class ExcludeUnless implements Stringable
 {
     /**
      * The condition that validates the attribute.
@@ -16,7 +16,7 @@ class ProhibitedIf implements Stringable
     public $condition;
 
     /**
-     * Create a new prohibited validation rule based on a condition.
+     * Create a new exclude validation rule based on a condition.
      *
      * @param  (\Closure(): bool)|bool  $condition
      *
@@ -39,9 +39,9 @@ class ProhibitedIf implements Stringable
     public function __toString(): string
     {
         if (is_callable($this->condition)) {
-            return call_user_func($this->condition) ? 'prohibited' : '';
+            return call_user_func($this->condition) ? '' : 'exclude';
         }
 
-        return $this->condition ? 'prohibited' : '';
+        return $this->condition ? '' : 'exclude';
     }
 }

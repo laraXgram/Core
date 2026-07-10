@@ -3,6 +3,8 @@
 namespace LaraGram\Validation;
 
 use LaraGram\Contracts\Support\DeferrableProvider;
+use LaraGram\Contracts\Validation\UncompromisedVerifier;
+use LaraGram\Http\Client\Factory as HttpFactory;
 use LaraGram\Support\ServiceProvider;
 
 class ValidationServiceProvider extends ServiceProvider implements DeferrableProvider
@@ -15,6 +17,7 @@ class ValidationServiceProvider extends ServiceProvider implements DeferrablePro
     public function register()
     {
         $this->registerPresenceVerifier();
+        $this->registerUncompromisedVerifier();
         $this->registerValidationFactory();
     }
 
@@ -52,12 +55,24 @@ class ValidationServiceProvider extends ServiceProvider implements DeferrablePro
     }
 
     /**
+     * Register the uncompromised password verifier.
+     *
+     * @return void
+     */
+    protected function registerUncompromisedVerifier()
+    {
+        $this->app->singleton(UncompromisedVerifier::class, function ($app) {
+            return new NotPwnedVerifier($app[HttpFactory::class]);
+        });
+    }
+
+    /**
      * Get the services provided by the provider.
      *
      * @return array
      */
     public function provides()
     {
-        return ['validator', 'validation.presence'];
+        return ['validator', 'validation.presence', UncompromisedVerifier::class];
     }
 }

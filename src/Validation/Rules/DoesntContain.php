@@ -7,24 +7,17 @@ use Stringable;
 
 use function LaraGram\Support\enum_value;
 
-class NotIn implements Stringable
+class DoesntContain implements Stringable
 {
     /**
-     * The name of the rule.
-     *
-     * @var string
-     */
-    protected $rule = 'not_in';
-
-    /**
-     * The accepted values.
+     * The values that should not be contained in the attribute.
      *
      * @var array
      */
     protected $values;
 
     /**
-     * Create a new "not in" rule instance.
+     * Create a new doesntContain rule instance.
      *
      * @param  \LaraGram\Contracts\Support\Arrayable|\UnitEnum|array|string  $values
      */
@@ -50,6 +43,6 @@ class NotIn implements Stringable
             return '"'.str_replace('"', '""', (string) $value).'"';
         }, $this->values);
 
-        return $this->rule.':'.implode(',', $values);
+        return 'doesnt_contain:'.implode(',', $values);
     }
 }
