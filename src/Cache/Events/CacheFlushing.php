@@ -2,7 +2,7 @@
 
 namespace LaraGram\Cache\Events;
 
-abstract class CacheEvent
+class CacheFlushing
 {
     /**
      * The name of the cache store.
@@ -10,13 +10,6 @@ abstract class CacheEvent
      * @var string|null
      */
     public $storeName;
-
-    /**
-     * The key of the event.
-     *
-     * @var string
-     */
-    public $key;
 
     /**
      * The tags that were assigned to the key.
@@ -29,13 +22,11 @@ abstract class CacheEvent
      * Create a new event instance.
      *
      * @param  string|null  $storeName
-     * @param  string  $key
      * @param  array  $tags
      */
-    public function __construct($storeName, $key, array $tags = [])
+    public function __construct($storeName, array $tags = [])
     {
         $this->storeName = $storeName;
-        $this->key = $key;
         $this->tags = $tags;
     }
 

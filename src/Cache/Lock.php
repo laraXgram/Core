@@ -4,9 +4,11 @@ namespace LaraGram\Cache;
 
 use LaraGram\Contracts\Cache\Lock as LockContract;
 use LaraGram\Contracts\Cache\LockTimeoutException;
+use LaraGram\Support\Tempora;
 use LaraGram\Support\InteractsWithTime;
 use LaraGram\Support\Sleep;
 use LaraGram\Support\Str;
+use RuntimeException;
 
 abstract class Lock implements LockContract
 {
@@ -46,7 +48,6 @@ abstract class Lock implements LockContract
      * @param  string  $name
      * @param  int  $seconds
      * @param  string|null  $owner
-     * @return void
      */
     public function __construct($name, $seconds, $owner = null)
     {
@@ -76,7 +77,7 @@ abstract class Lock implements LockContract
     /**
      * Returns the owner value written into the driver for this lock.
      *
-     * @return string
+     * @return string|null
      */
     abstract protected function getCurrentOwner();
 
@@ -112,12 +113,12 @@ abstract class Lock implements LockContract
      */
     public function block($seconds, $callback = null)
     {
-        $starting = (int) (microtime(true) * 1000);
+        $starting = ((int) Tempora::now()->format('Uu')) / 1000;
 
         $milliseconds = $seconds * 1000;
 
         while (! $this->acquire()) {
-            $now = (int) (microtime(true) * 1000);
+            $now = ((int) Tempora::now()->format('Uu')) / 1000;
 
             if (($now + $this->sleepMilliseconds - $milliseconds) >= $starting) {
                 throw new LockTimeoutException;
@@ -138,6 +139,17 @@ abstract class Lock implements LockContract
     }
 
     /**
+     * Attempt to refresh the lock for the given number of seconds.
+     *
+     * @param  int|null  $seconds
+     * @return bool
+     */
+    public function refresh($seconds = null)
+    {
+        throw new RuntimeException('This lock driver does not support refreshing locks.');
+    }
+
+    /**
      * Returns the current owner of the lock.
      *
      * @return string
@@ -145,6 +157,16 @@ abstract class Lock implements LockContract
     public function owner()
     {
         return $this->owner;
+    }
+
+    /**
+     * Determine if the lock is currently held by any process.
+     *
+     * @return bool
+     */
+    public function isLocked(): bool
+    {
+        return $this->getCurrentOwner() !== null;
     }
 
     /**

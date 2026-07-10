@@ -9,7 +9,7 @@ abstract class TaggableStore implements Store
     /**
      * Begin executing a new tags operation.
      *
-     * @param  array|mixed  $names
+     * @param  mixed  $names
      * @return \LaraGram\Cache\TaggedCache
      */
     public function tags($names)
