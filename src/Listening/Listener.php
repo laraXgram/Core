@@ -574,7 +574,7 @@ class Listener implements BindingRegistrar, RegistrarContract
      * @param  \LaraGram\Listening\Listen  $primary
      * @return void
      */
-    protected function runOverlapListens(Request $request, Listen $primary)
+    protected function runOverlapListens(ProvidesListenContext $request, Listen $primary)
     {
         foreach ($this->listens->matchOverlap($request, $primary) as $listen) {
             $listen->setContainer($this->container);
@@ -584,6 +584,19 @@ class Listener implements BindingRegistrar, RegistrarContract
 
             $this->runListenWithinStack($listen, $request);
         }
+    }
+
+    /**
+     * Determine whether a non-fallback listen (normal or step) matches the
+     * request. Used to decide whether a conversation should handle an update
+     * before the application's fallback listens run.
+     *
+     * @param  \LaraGram\Request\Request  $request
+     * @return bool
+     */
+    public function matchesNonFallback($request)
+    {
+        return $this->listens->matchesNonFallback($request);
     }
 
     /**

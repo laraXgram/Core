@@ -255,6 +255,31 @@ class Request implements ProvidesListenContext
     /**
      * {@inheritdoc}
      */
+    public function listenVerb(): string
+    {
+        return $this->method();
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function listenValue(string $verb): ?string
+    {
+        return match ($verb) {
+            'COMMAND' => ($t = text()) !== null ? Str::replaceFirst('/', '', $t) : null,
+            'REFERRAL' => ($t = text()) !== null ? Str::replaceFirst('/start ', '', $t) : null,
+            'CALLBACK_DATA' => callback_query()->data ?? null,
+            default => text()
+                ?? callback_query()->data
+                ?? inline_query()->query
+                ?? chosen_inline_result()->query
+                ?? null,
+        };
+    }
+
+    /**
+     * {@inheritdoc}
+     */
     public function entities(): array
     {
         return $this->message?->entities
@@ -262,7 +287,7 @@ class Request implements ProvidesListenContext
             ?? [];
     }
 
-        /**
+    /**
      * Check if the Update method is a top-level poll state update.
      *
      * @return false|string
@@ -493,7 +518,7 @@ class Request implements ProvidesListenContext
      *
      * @return array
      */
-    protected function toArray(): array
+    public function toArray(): array
     {
         $source = $this->getInputSource();
 
@@ -813,7 +838,7 @@ class Request implements ProvidesListenContext
      * @param string $key
      * @return bool
      */
-    public function __isset($key)
+    public function __isset($key): bool
     {
         return !is_null($this->__get($key));
     }

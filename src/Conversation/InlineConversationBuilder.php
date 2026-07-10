@@ -65,6 +65,57 @@ class InlineConversationBuilder
         return $this->hook('onSkip', $callback);
     }
 
+    public function onBack(Closure $callback): static
+    {
+        return $this->hook('onBack', $callback);
+    }
+
+    /**
+     * Configure the conversation-wide back control.
+     *
+     * @param  string|null  $mode          reply | inline | command | text | none
+     * @param  string|null  $label         Button text / matched text.
+     * @param  string|null  $callbackData  Callback data for inline mode.
+     * @param  string|null  $command       Command that triggers back.
+     * @return $this
+     */
+    public function back(
+        ?string $mode = null,
+        ?string $label = null,
+        ?string $callbackData = null,
+        ?string $command = null,
+    ): static {
+        $this->settings['back'] = Back::make($mode, $label, $callbackData, $command, enabled: true);
+
+        return $this;
+    }
+
+    /**
+     * Disable the back control for the whole conversation.
+     *
+     * @return $this
+     */
+    public function noBack(): static
+    {
+        $this->settings['back'] = Back::disabled();
+
+        return $this;
+    }
+
+    /**
+     * Set the conversation-wide priority (listens-first by default, or make the
+     * conversation handle updates before listens).
+     *
+     * @param  \LaraGram\Conversation\Priority  $priority
+     * @return $this
+     */
+    public function priority(Priority $priority): static
+    {
+        $this->settings['priority'] = $priority;
+
+        return $this;
+    }
+
     public function onInvalid(Closure $callback): static
     {
         return $this->hook('onInvalid', $callback);

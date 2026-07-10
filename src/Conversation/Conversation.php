@@ -102,6 +102,31 @@ abstract class Conversation
     }
 
     /**
+     * Get the conversation-wide back control (applies to every question but the
+     * first). Override this to return Back::make(...) / Back::disabled(), or
+     * declare a public ?Back $back property.
+     *
+     * @return \LaraGram\Conversation\Back|null
+     */
+    public function back(): ?Back
+    {
+        return $this->back ?? null;
+    }
+
+    /**
+     * Get the conversation-wide priority: whether regular/step listens handle an
+     * update first (Priority::Listen, the default) or the conversation does
+     * (Priority::Conversation). Override this or declare a public ?Priority
+     * $priority property.
+     *
+     * @return \LaraGram\Conversation\Priority|null
+     */
+    public function priority(): ?Priority
+    {
+        return $this->priority ?? null;
+    }
+
+    /**
      * Called once when the conversation begins.
      */
     public function onStart(Request $request): void
@@ -130,6 +155,15 @@ abstract class Conversation
     }
 
     /**
+     * Called when the user goes back to the previous question.
+     *
+     * $question is the previous question being re-asked.
+     */
+    public function onBack(Request $request, Question $question): void
+    {
+    }
+
+    /**
      * Called when an answer fails validation (before the next attempt).
      */
     public function onInvalid(Request $request, Question $question, array $errors, int $attempt): void
@@ -139,7 +173,7 @@ abstract class Conversation
     /**
      * Called when the conversation is cancelled.
      *
-     * Reasons: "command", "timeout", "max_attempts", "manual".
+     * Reasons: "command", "timeout", "max_attempts", "interrupted", "manual".
      */
     public function onCancel(Request $request, string $reason): void
     {

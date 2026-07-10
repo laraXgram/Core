@@ -178,7 +178,12 @@ abstract class AbstractListenCollection implements Countable, IteratorAggregate,
         $attributes = [];
 
         foreach ($this->getListens() as $listen) {
-            $attributes[$listen->getName()] = [
+            $connections = $listen->getForConnections();
+            $nameKeys = (count($connections) === 1 && $connections[0] === '*')
+                ? [$listen->getName()]
+                : array_map(fn($c) => $listen->getName() . '@' . $c, $connections);
+
+            $listenData = [
                 'methods' => $listen->methods(),
                 'pattern' => $listen->pattern(),
                 'action' => $listen->getAction(),
@@ -193,6 +198,10 @@ abstract class AbstractListenCollection implements Countable, IteratorAggregate,
                 'overlap' => $listen->overlap,
                 'overlapGroups' => $listen->overlapGroups,
             ];
+
+            foreach ($nameKeys as $key) {
+                $attributes[$key] = $listenData;
+            }
         }
 
         return compact('compiled', 'attributes');

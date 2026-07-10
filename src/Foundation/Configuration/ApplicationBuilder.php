@@ -251,16 +251,15 @@ class ApplicationBuilder
      *
      * @param  \Closure|null  $using
      * @param  array|string|null  $bot
+     * @param  array|string|null  $client
      * @param  string|null  $commands
-     * @param  string|null  $channels
-     * @param  string|null  $pages
      * @param  callable|null  $then
      * @return $this
      */
     public function withListener(?Closure $using = null,
                                 array|string|null $bot = null,
-                                ?string $commands = null,
                                 array|string|null $client = null,
+                                ?string $commands = null,
                                 ?callable $then = null)
     {
         if (is_null($using) && (is_string($bot) || is_array($bot) || is_string($client) || is_array($client) || is_callable($then))) {
@@ -283,9 +282,9 @@ class ApplicationBuilder
     /**
      * Create the listening callback for the application.
      *
-     * @param array|string|null $bot
-     * @param array|string|null $client
-     * @param callable|null $then
+     * @param  array|string|null  $bot
+     * @param  array|string|null  $client
+     * @param  callable|null  $then
      * @return \Closure
      */
     protected function buildListeningCallback(array|string|null $bot, array|string|null $client, ?callable $then)
@@ -293,16 +292,34 @@ class ApplicationBuilder
         return function () use ($bot, $client, $then) {
             if (is_string($bot) || is_array($bot)) {
                 if (is_array($bot)) {
-                    foreach ($bot as $file => $connections) {
+                    $httpConnections = (array) ($this->app['config']['bot.connections'] ?? []);
+
+                    foreach ($bot as $file => $names) {
                         if (is_int($file)) {
-                            $file = $connections;
-                            $connections = ['*'];
+                            $file = $names;
+                            $names = ['*'];
                         } else {
-                            $connections = (array) $connections;
+                            $names = (array) $names;
                         }
 
-                        if (realpath($file) !== false) {
-                            Bot::middleware('bot')->forConnections($connections)->group($file);
+                        if (realpath($file) === false) {
+                            continue;
+                        }
+
+                        if ($names === ['*']) {
+                            Bot::middleware('bot')->forConnections(['*'])->group($file);
+                            continue;
+                        }
+
+                        $httpNames = array_values(array_filter($names, fn ($n) => isset($httpConnections[$n])));
+                        $mtNames   = array_values(array_filter($names, fn ($n) => !isset($httpConnections[$n])));
+
+                        if ($httpNames !== []) {
+                            Bot::middleware('bot')->forConnections($httpNames)->group($file);
+                        }
+
+                        if ($mtNames !== [] && $this->app->bound('client.listener')) {
+                            $this->app->make('client.listener')->middleware('client')->forSessions($mtNames)->group($file);
                         }
                     }
                 } else {
@@ -312,16 +329,22 @@ class ApplicationBuilder
 
             if ((is_string($client) || is_array($client)) && $this->app->bound('client.listener')) {
                 $clientListener = $this->app->make('client.listener');
+
                 if (is_array($client)) {
-                    foreach ($client as $clientListen) {
-                        if (realpath($clientListen) !== false) {
-                            $clientListener->group(['middleware' => ['client']], $clientListen);
+                    foreach ($client as $file => $sessions) {
+                        if (is_int($file)) {
+                            $file = $sessions;
+                            $sessions = ['*'];
+                        } else {
+                            $sessions = (array) $sessions;
+                        }
+
+                        if (realpath($file) !== false) {
+                            $clientListener->middleware('client')->forSessions($sessions)->group($file);
                         }
                     }
                 } else {
-                    if (realpath($client) !== false) {
-                        $clientListener->group(['middleware' => ['client']], $client);
-                    }
+                    $clientListener->middleware('client')->group($client);
                 }
             }
 
