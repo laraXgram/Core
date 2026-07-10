@@ -2,15 +2,14 @@
 
 namespace LaraGram\Events;
 
-use LaraGram\Support\SerializableClosure\SerializableClosure;
-use Throwable;
+use LaraGram\Support\Collection;
 
 class InvokeQueuedClosure
 {
     /**
      * Handle the event.
      *
-     * @param  SerializableClosure  $closure
+     * @param  \LaraGram\Support\SerializableClosure\SerializableClosure  $closure
      * @param  array  $arguments
      * @return void
      */
@@ -22,16 +21,16 @@ class InvokeQueuedClosure
     /**
      * Handle a job failure.
      *
-     * @param  SerializableClosure  $closure
+     * @param  \LaraGram\Support\SerializableClosure\SerializableClosure  $closure
      * @param  array  $arguments
      * @param  array  $catchCallbacks
-     * @param  Throwable  $exception
+     * @param  \Throwable  $exception
      * @return void
      */
     public function failed($closure, array $arguments, array $catchCallbacks, $exception)
     {
         $arguments[] = $exception;
 
-        collect($catchCallbacks)->each->__invoke(...$arguments);
+        (new Collection($catchCallbacks))->each->__invoke(...$arguments);
     }
 }
