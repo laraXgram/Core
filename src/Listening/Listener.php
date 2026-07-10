@@ -209,6 +209,27 @@ class Listener implements BindingRegistrar, RegistrarContract
     }
 
     /**
+     * Register a listen that starts a conversation when it matches.
+     *
+     * @param  string  $pattern
+     * @param  string  $conversation
+     * @param  string|array  $updateVerbs
+     * @param  array  $parameters
+     * @return \LaraGram\Listening\Listen
+     */
+    public function conversation(string $pattern, string $conversation, string|array $updateVerbs = 'TEXT', array $parameters = [])
+    {
+        $verbs = array_map(
+            static fn ($verb) => strtoupper(trim((string) $verb)),
+            is_array($updateVerbs) ? $updateVerbs : [$updateVerbs]
+        );
+
+        return $this->addListen($verbs, $pattern, function () use ($conversation, $parameters) {
+            return app('conversation')->start($conversation, $parameters);
+        });
+    }
+
+    /**
      * Register a new listen with the given verbs.
      *
      * @param  array|string  $methods
@@ -563,6 +584,19 @@ class Listener implements BindingRegistrar, RegistrarContract
 
             $this->runListenWithinStack($listen, $request);
         }
+    }
+
+    /**
+     * Determine whether a non-fallback listen (normal or step) matches the
+     * request. Used to decide whether a conversation should handle an update
+     * before the application's fallback listens run.
+     *
+     * @param  \LaraGram\Request\Request  $request
+     * @return bool
+     */
+    public function matchesNonFallback($request)
+    {
+        return $this->listens->matchesNonFallback($request);
     }
 
     /**

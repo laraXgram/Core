@@ -253,14 +253,16 @@ class Request implements ProvidesListenContext
     }
 
     /**
-     * {@inheritdoc}
+     * Check if the Update method is a top-level poll state update.
      *
-     * For the Bot-API the scope is the current bot connection, preserved exactly
-     * as the engine read it before (the multi-bot middleware sets it per update).
+     * @return false|string
      */
-    public function listenScope(): ?string
+    protected function checkIfMethodIsPollUpdate()
     {
-        return static::getDefaultConnection();
+        if (isset($this->poll)) {
+            return 'UPDATE';
+        }
+        return false;
     }
 
     /**
@@ -481,7 +483,7 @@ class Request implements ProvidesListenContext
      *
      * @return array
      */
-    protected function toArray(): array
+    public function toArray(): array
     {
         $source = $this->getInputSource();
 
@@ -801,7 +803,7 @@ class Request implements ProvidesListenContext
      * @param string $key
      * @return bool
      */
-    public function __isset($key)
+    public function __isset($key): bool
     {
         return !is_null($this->__get($key));
     }

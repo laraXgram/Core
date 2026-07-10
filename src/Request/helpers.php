@@ -382,10 +382,10 @@ if (!function_exists('reaction')) {
 }
 
 if (!function_exists('inline_url')) {
-    function inline_url($text, $url, $parse_mode = 'markdown'): false|string
+    function inline_url($text, $url, $parse_mode = 'markdownv2'): false|string
     {
         return match (strtolower($parse_mode)){
-            'markdown' => "[{$text}]({$url})",
+            'markdown', 'markdownv2' => "[{$text}]({$url})",
             'html' => "<a href='{$url}'>{$text}</a>",
             default => false
         };
@@ -393,10 +393,10 @@ if (!function_exists('inline_url')) {
 }
 
 if (!function_exists('code')) {
-    function code($text, $parse_mode = 'markdown'): false|string
+    function code($text, $parse_mode = 'markdownv2'): false|string
     {
         return match (strtolower($parse_mode)){
-            'markdown' => "`{$text}`",
+            'markdown', 'markdownv2' => "`{$text}`",
             'html' => "<code>{$text}</code>",
             default => false
         };
@@ -404,23 +404,35 @@ if (!function_exists('code')) {
 }
 
 if (!function_exists('pre')) {
-    function pre($text, $lang = '', $parse_mode = 'markdown'): false|string
+    function pre($text, $parse_mode = 'markdownv2'): false|string
     {
         return match (strtolower($parse_mode)){
-            'markdown' => "```{$lang}
+            'markdown', 'markdownv2' => "```
 {$text}
 ```",
-            'html' => "<pre lang='{$lang}'>{$text}</pre>",
+            'html' => "<pre>{$text}</pre>",
+            default => false
+        };
+    }
+}
+
+if (!function_exists('inline_code')) {
+    function inline_code($code, $lang = '', $parse_mode = 'markdownv2'): false|string
+    {
+        return match (strtolower($parse_mode)){
+            'markdown', 'markdownv2' => "```{$lang}
+{$code}```",
+            'html' => "<pre><code class=\"lanquage-{$lang}\">{$code}</code></pre>",
             default => false
         };
     }
 }
 
 if (!function_exists('spoiler')) {
-    function spoiler($text, $parse_mode = 'markdown'): false|string
+    function spoiler($text, $parse_mode = 'markdownv2'): false|string
     {
         return match (strtolower($parse_mode)){
-            'markdown' => "||{$text}||",
+            'markdown', 'markdownv2' => "||{$text}||",
             'html' => "<tg-spoiler>{$text}</tg-spoiler>",
             default => false
         };
@@ -428,17 +440,21 @@ if (!function_exists('spoiler')) {
 }
 
 if (!function_exists('underline')) {
-    function underline($text): string
+    function underline($text, $parse_mode = 'markdownv2'): string
     {
-        return "<u>{$text}</u>";
+        return match (strtolower($parse_mode)){
+            'markdown', 'markdownv2' => "__{$text}_",
+            'html' => "<u>{$text}</u>",
+            default => false
+        };
     }
 }
 
 if (!function_exists('italic')) {
-    function italic($text, $parse_mode = 'markdown'): false|string
+    function italic($text, $parse_mode = 'markdownv2'): false|string
     {
         return match (strtolower($parse_mode)){
-            'markdown' => "__{$text}__",
+            'markdown', 'markdownv2' => "_{$text}_",
             'html' => "<i>{$text}</i>",
             default => false
         };
@@ -446,49 +462,141 @@ if (!function_exists('italic')) {
 }
 
 if (!function_exists('bold')) {
-    function bold($text, $parse_mode = 'markdown'): false|string
+    function bold($text, $parse_mode = 'markdownv2'): false|string
     {
         return match (strtolower($parse_mode)){
-            'markdown' => "**{$text}**",
+            'markdown', 'markdownv2' => "*{$text}*",
             'html' => "<b>{$text}</b>",
             default => false
         };
     }
 }
 
-if (!function_exists('mentionUserById')) {
-    function mentionUserById($user_id, $text, $parse_mode = 'markdown'): false|string
+if (!function_exists('strikethrough')) {
+    function strikethrough($text, $parse_mode = 'markdownv2'): false|string
     {
         return match (strtolower($parse_mode)){
-            'markdown' => "[{$text}](tg://user?id={$user_id})",
+            'markdown', 'markdownv2' => "~{$text}~",
+            'html' => "<s>{$text}</s>",
+            default => false
+        };
+    }
+}
+
+if (!function_exists('custom_emoji')) {
+    function custom_emoji($id, $fallback = '👍', $parse_mode = 'markdownv2'): false|string
+    {
+        return match (strtolower($parse_mode)){
+            'markdown', 'markdownv2' => "![{$fallback}](tg://emoji?id={$id})",
+            'html' => "<tg-emoji emoji-id=\"{$id}\">{$fallback}</tg-emoji>",
+            default => false
+        };
+    }
+}
+
+if (!function_exists('tg_time')) {
+    function tg_time($text, $time, $format = '', $parse_mode = 'markdownv2'): false|string
+    {
+        return match (strtolower($parse_mode)){
+            'markdown', 'markdownv2' => "![{$text}](tg://time?unix={$time}&format={$format})",
+            'html' => "<tg-time unix=\"{$time}\" format=\"{$format}\">{$text}</tg-time>",
+            default => false
+        };
+    }
+}
+
+if (!function_exists('blockquote')) {
+    function blockquote($text, $expandable = false, $parse_mode = 'markdownv2'): false|string
+    {
+        return match (strtolower($parse_mode)){
+            'markdown', 'markdownv2' => ($expandable ? '**>' : '>') . implode("\n>", explode(PHP_EOL, trim($text, PHP_EOL))) . "||",
+            'html' => ($expandable ? '<blockquote expandable>' : '<blockquote>') . "{$text}</blockquote>",
+            default => false
+        };
+    }
+}
+
+if (!function_exists('mention_user_by_id')) {
+    function mention_user_by_id($user_id, $text, $parse_mode = 'markdownv2'): false|string
+    {
+        return match (strtolower($parse_mode)){
+            'markdown', 'markdownv2' => "[{$text}](tg://user?id={$user_id})",
             'html' => "<a href='tg://user?id={$user_id}'>{$text}</a>",
             default => false
         };
     }
 }
 
-if (!function_exists('mentionReplyUser')) {
-    function mentionReplyUser(): string
+if (!function_exists('mention_reply_user')) {
+    function mention_reply_user($parse_mode = 'markdownv2'): false|string
     {
         $message = message();
-        return "[{$message->reply_to_message->from->first_name}](tg://user?id={$message->reply_to_message->from->id})";
+        return match(strtolower($parse_mode)) {
+            'markdown', 'markdownv2' => "[{$message->reply_to_message->from->first_name}](tg://user?id={$message->reply_to_message->from->id})",
+            'html' => "<a href=\"tg://user?id={$message->reply_to_message->from->id}\">{$message->reply_to_message->from->first_name}</a>",
+            default =>  false
+        };
     }
 }
 
-if (!function_exists('mentionSenderUser')) {
-    function mentionSenderUser(): string
+if (!function_exists('mention_sender_user')) {
+    function mention_sender_user($parse_mode = 'markdownv2'): false|string
     {
         $message = message();
-        return "[{$message->from->first_name}](tg://user?id={$message->from->id})";
+        return match(strtolower($parse_mode)) {
+            'markdown', 'markdownv2' => "[{$message->from->first_name}](tg://user?id={$message->from->id})",
+            'html' => "<a href=\"tg://user?id={$message->from->id}\">{$message->from->first_name}</a>",
+            default =>  false
+        };
     }
 }
 
-if (!function_exists('selfDelete')) {
-    function selfDelete($methods = ['*']): void
+if (!function_exists('self_delete')) {
+    function self_delete($methods = ['*']): void
     {
         $request = app('request');
         if ($methods === ['*'] || in_array($request->method(), \LaraGram\Support\Arr::wrap($methods))) {
             $request->mode(LaraGram\Laraquest\Mode::NO_RESPONSE_CURL)->deleteMessage(chat()->id, message()->message_id);
         }
+    }
+}
+
+if (!function_exists('selfDelete')) {
+    /**
+     * @deprecated use `self_delete`
+     */
+    function selfDelete($methods = ['*']): void
+    {
+        self_delete($methods);
+    }
+}
+
+if (!function_exists('mentionSenderUser')) {
+    /**
+     * @deprecated use `mention_sender_user`
+     */
+    function mentionSenderUser($parse_mode = 'markdownv2'): string|false
+    {
+        return mention_sender_user($parse_mode);
+    }
+}
+
+if (!function_exists('mentionReplyUser')) {
+    /**
+     * @deprecated use `mention_reply_user`
+     */
+    function mentionReplyUser($parse_mode = 'markdownv2'): string|false
+    {
+        return mention_reply_user($parse_mode);
+    }
+}
+
+if (!function_exists('mentionUserById')) {
+    /**
+     * @deprecated use `mention_user_by_id`
+     */
+    function mentionUserById($user_id, $text, $parse_mode = 'markdownv2'): string|false
+    {
+        return mention_user_by_id($user_id, $text, $parse_mode);
     }
 }

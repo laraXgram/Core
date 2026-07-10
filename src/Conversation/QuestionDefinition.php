@@ -28,6 +28,8 @@ final class QuestionDefinition
         public readonly ?int $maxAttempts,
         public readonly string $promptKind,
         public readonly mixed $promptMedia,
+        public readonly ?Back $back = null,
+        public readonly ?Priority $priority = null,
     ) {
     }
 

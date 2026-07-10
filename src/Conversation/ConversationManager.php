@@ -8,6 +8,7 @@ use LaraGram\Contracts\Config\Repository as Config;
 use LaraGram\Contracts\Container\Container;
 use LaraGram\Contracts\Events\Dispatcher;
 use LaraGram\Conversation\Events\AnswerInvalid;
+use LaraGram\Conversation\Events\BackRequested;
 use LaraGram\Conversation\Events\AnswerReceived;
 use LaraGram\Conversation\Events\ConversationCancelled;
 use LaraGram\Conversation\Events\ConversationCompleted;
@@ -82,31 +83,85 @@ class ConversationManager
      */
     public function start(string $name, array $parameters = []): void
     {
-        $conversation = $this->resolve($name);
+        $this->begin($this->resolve($name), [
+            'name'       => $name,
+            'parameters' => $parameters,
+        ]);
+    }
 
-        $questions = $this->buildQuestions($conversation);
+    /**
+     * Begin a one-off inline conversation defined by a fluent builder.
+     *
+     * @param  \Closure  $builder
+     * @return \LaraGram\Conversation\InlineConversationBuilder
+     */
+    public function inline(Closure $builder): InlineConversationBuilder
+    {
+        return new InlineConversationBuilder($this, $builder);
+    }
 
+    /**
+     * Begin a single-question inline conversation.
+     *
+     * @param  string  $prompt
+     * @param  string  $name
+     * @return \LaraGram\Conversation\InlineConversationBuilder
+     */
+    public function ask(string $prompt, string $name = 'answer'): InlineConversationBuilder
+    {
+        return $this->inline(function (Questioner $questioner) use ($prompt, $name) {
+            $questioner->ask($prompt)->name($name);
+        });
+    }
+
+    /**
+     * Start a prepared inline conversation payload (called by the builder).
+     *
+     * @param  array  $payload
+     * @param  array<string, mixed>  $parameters
+     * @return void
+     */
+    public function startInline(array $payload, array $parameters = []): void
+    {
+        $this->begin(InlineConversation::fromPayload($payload), [
+            'name'       => $payload['name'] ?? 'inline',
+            'inline'     => $payload,
+            'parameters' => $parameters,
+        ]);
+    }
+
+    /**
+     * Persist initial state and send the first question (or complete).
+     *
+     * @param  \LaraGram\Conversation\Conversation  $conversation
+     * @param  array<string, mixed>  $seed
+     * @return void
+     */
+    protected function begin(Conversation $conversation, array $seed): void
+    {
         $now = Tempora::now()->getTimestamp();
 
-        $state = [
-            'name'       => $name,
+        $state = array_merge([
+            'name'       => 'conversation',
             'index'      => 0,
             'answers'    => [],
             'attempts'   => 0,
-            'parameters' => $parameters,
+            'parameters' => [],
             'started_at' => $now,
             'updated_at' => $now,
-        ];
+        ], $seed);
 
         $this->putState($state);
 
         $request = $this->request();
 
         $conversation->onStart($request);
-        $this->events->dispatch(new ConversationStarted($name, $conversation));
+        $this->events->dispatch(new ConversationStarted($state['name'], $conversation));
+
+        $questions = $this->buildQuestions($conversation);
 
         if ($first = $questions->get(0)) {
-            $this->askQuestion($conversation, $first, $name);
+            $this->askQuestion($conversation, $first, $state['name'], 0);
         } else {
             // A conversation with no questions completes immediately.
             $this->complete($conversation, $request, $questions, $state);
@@ -114,7 +169,7 @@ class ConversationManager
     }
 
     /**
-     * Declare questions through the facade form (Conversation::create(...)).
+     * Declare questions.
      *
      * @param  \Closure  $callback
      * @return void
@@ -134,7 +189,7 @@ class ConversationManager
      * Handle an incoming update against the active conversation, if any.
      *
      * @param  \LaraGram\Request\Request  $request
-     * @return bool  True if the update was consumed by a conversation.
+     * @return bool
      */
     public function handle(Request $request): bool
     {
@@ -149,7 +204,7 @@ class ConversationManager
             return false;
         }
 
-        $conversation = $this->resolve($state['name']);
+        $conversation = $this->resolveFromState($state);
         $questions = $this->buildQuestions($conversation);
         $question = $questions->get($state['index']);
 
@@ -183,6 +238,15 @@ class ConversationManager
             $this->finishCancel($conversation, $request, 'command', $state['name']);
 
             return true;
+        }
+
+        // Back: return to the previous question (never from the first one).
+        if ($state['index'] > 0) {
+            $back = Back::resolve($definition->back, $conversation->back());
+
+            if ($back->matches($text, callback_query()?->data)) {
+                return $this->goBack($conversation, $request, $questions, $state);
+            }
         }
 
         // Skip command for the current question.
@@ -232,6 +296,74 @@ class ConversationManager
     public function active(): bool
     {
         return $this->getState() !== null;
+    }
+
+    /**
+     * Determine whether the active conversation's current question should handle
+     * the update BEFORE regular/step listens (Priority::Conversation). Otherwise
+     * the conversation is a fallback that runs only when no listen matches.
+     *
+     * @param  \LaraGram\Request\Request  $request
+     * @return bool
+     */
+    public function prefersConversation(Request $request): bool
+    {
+        if (user() === null) {
+            return false;
+        }
+
+        $state = $this->getState();
+
+        if (! $state) {
+            return false;
+        }
+
+        $conversation = $this->resolveFromState($state);
+        $question = $this->buildQuestions($conversation)->get($state['index']);
+
+        if ($question === null) {
+            return false;
+        }
+
+        $priority = QuestionAccessor::compile($question)->priority
+            ?? $conversation->priority()
+            ?? Priority::Listen;
+
+        return $priority === Priority::Conversation;
+    }
+
+    /**
+     * Determine whether the conversation should handle the update as the
+     * fallback - active, and no regular/step listen matches (so it runs before
+     * the application's own fallback listens).
+     *
+     * @param  \LaraGram\Request\Request  $request
+     * @return bool
+     */
+    public function handlesUpdateAsFallback(Request $request): bool
+    {
+        if (! $this->active()) {
+            return false;
+        }
+
+        return ! $this->container->make('listener')->matchesNonFallback($request);
+    }
+
+    /**
+     * Stop and forget the active conversation because another listen is taking
+     * over the update. Reached only when a regular/step listen matched while a
+     * conversation was active (and it was not given conversation priority).
+     *
+     * @param  \LaraGram\Request\Request  $request
+     * @return void
+     */
+    public function interruptIfActive(Request $request): void
+    {
+        if (user() === null || ! $this->active()) {
+            return;
+        }
+
+        $this->cancel('interrupted');
     }
 
     /**
@@ -303,9 +435,22 @@ class ConversationManager
             return;
         }
 
-        $conversation = $this->resolve($state['name']);
+        $conversation = $this->resolveFromState($state);
 
         $this->finishCancel($conversation, $this->request(), $reason, $state['name']);
+    }
+
+    /**
+     * Resolve the conversation instance backing the given state (file or inline).
+     *
+     * @param  array  $state
+     * @return \LaraGram\Conversation\Conversation
+     */
+    protected function resolveFromState(array $state): Conversation
+    {
+        return isset($state['inline'])
+            ? InlineConversation::fromPayload($state['inline'])
+            : $this->resolve($state['name']);
     }
 
     /**
@@ -364,7 +509,34 @@ class ConversationManager
         }
 
         $this->putState($state);
-        $this->askQuestion($conversation, $question, $state['name']);
+        $this->askQuestion($conversation, $question, $state['name'], $state['index']);
+
+        return true;
+    }
+
+    /**
+     * Return to the previous question, clearing its stored answer.
+     *
+     * @param  array  $state
+     * @return bool
+     */
+    protected function goBack(Conversation $conversation, Request $request, Questioner $questions, array $state): bool
+    {
+        $target = $state['index'] - 1;
+        $previous = $questions->get($target);
+
+        // Clear the previous answer so it is asked (and answered) again.
+        $previousKey = QuestionAccessor::compile($previous)->key($target);
+        unset($state['answers'][$previousKey]);
+
+        $state['index'] = $target;
+        $state['attempts'] = 0;
+
+        $conversation->onBack($request, $previous);
+        $this->events->dispatch(new BackRequested($state['name'], $previous));
+
+        $this->putState($state);
+        $this->askQuestion($conversation, $previous, $state['name'], $target);
 
         return true;
     }
@@ -385,7 +557,7 @@ class ConversationManager
 
         if ($next = $questions->get($state['index'])) {
             $this->putState($state);
-            $this->askQuestion($conversation, $next, $state['name']);
+            $this->askQuestion($conversation, $next, $state['name'], $state['index']);
 
             return;
         }
@@ -454,7 +626,7 @@ class ConversationManager
      * @param  string  $name
      * @return void
      */
-    protected function askQuestion(Conversation $conversation, Question $question, string $name): void
+    protected function askQuestion(Conversation $conversation, Question $question, string $name, int $index): void
     {
         $request = $this->request();
 
@@ -469,8 +641,10 @@ class ConversationManager
             return;
         }
 
+        $replyMarkup = $this->replyMarkupFor($conversation, $definition, $index);
+
         if ($definition->promptKind !== 'text' && $definition->promptMedia !== null) {
-            $this->sendMedia($request, $definition);
+            $this->sendMedia($request, $definition, $replyMarkup);
 
             return;
         }
@@ -479,8 +653,24 @@ class ConversationManager
             $this->chatId(),
             $definition->prompt,
             $definition->parseMode,
-            $definition->keyboard
+            $replyMarkup
         );
+    }
+
+    /**
+     * Resolve the reply markup for a question, injecting the back button unless
+     * this is the first question (nowhere to go back to).
+     *
+     * @param  int  $index
+     * @return mixed
+     */
+    protected function replyMarkupFor(Conversation $conversation, QuestionDefinition $definition, int $index): mixed
+    {
+        $back = $index > 0
+            ? Back::resolve($definition->back, $conversation->back())
+            : Back::disabled();
+
+        return $back->markup($definition->keyboard);
     }
 
     /**
@@ -508,12 +698,12 @@ class ConversationManager
      *
      * @return void
      */
-    protected function sendMedia(Request $request, QuestionDefinition $question): void
+    protected function sendMedia(Request $request, QuestionDefinition $question, mixed $replyMarkup = null): void
     {
         $map = self::MEDIA_METHODS[$question->promptKind] ?? null;
 
         if ($map === null) {
-            $request->sendMessage($this->chatId(), $question->prompt, $question->parseMode, $question->keyboard);
+            $request->sendMessage($this->chatId(), $question->prompt, $question->parseMode, $replyMarkup);
 
             return;
         }
@@ -525,8 +715,8 @@ class ConversationManager
             $field    => $question->promptMedia,
         ];
 
-        if ($question->keyboard !== null) {
-            $arguments['reply_markup'] = $question->keyboard;
+        if ($replyMarkup !== null) {
+            $arguments['reply_markup'] = $replyMarkup;
         }
 
         if ($captionable) {

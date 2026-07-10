@@ -38,9 +38,15 @@ class HandleConversation
      */
     public function handle($request, Closure $next)
     {
-        if ($this->manager->handle($request)) {
-            return new Response('');
+        if ($this->manager->prefersConversation($request) && $this->manager->handle($request)) {
+            return new Response();
         }
+
+        if ($this->manager->handlesUpdateAsFallback($request) && $this->manager->handle($request)) {
+            return new Response();
+        }
+
+        $this->manager->interruptIfActive($request);
 
         return $next($request);
     }
