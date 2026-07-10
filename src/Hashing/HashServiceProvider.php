@@ -28,7 +28,7 @@ class HashServiceProvider extends ServiceProvider implements DeferrableProvider
      *
      * @return array
      */
-    public function provides(): array
+    public function provides()
     {
         return ['hash', 'hash.driver'];
     }
