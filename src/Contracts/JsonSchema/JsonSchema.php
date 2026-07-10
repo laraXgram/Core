@@ -48,4 +48,20 @@ interface JsonSchema
      * @return \LaraGram\JsonSchema\Types\BooleanType
      */
     public function boolean();
+
+    /**
+     * Create a new multi-type union instance.
+     *
+     * @param  array<int, string>  $types
+     * @return \LaraGram\JsonSchema\Types\UnionType
+     */
+    public function union(array $types);
+
+    /**
+     * Create a new anyOf schema instance.
+     *
+     * @param  (Closure(JsonSchema): array<int, \LaraGram\JsonSchema\Types\Type>)|array<int, \LaraGram\JsonSchema\Types\Type>  $schemas
+     * @return \LaraGram\JsonSchema\Types\AnyOfType
+     */
+    public function anyOf(Closure|array $schemas);
 }
