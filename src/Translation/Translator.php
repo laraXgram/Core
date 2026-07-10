@@ -7,9 +7,12 @@ use LaraGram\Contracts\Translation\Loader;
 use LaraGram\Contracts\Translation\Translator as TranslatorContract;
 use LaraGram\Support\Arr;
 use LaraGram\Support\NamespacedItemResolver;
+use LaraGram\Support\Str;
 use LaraGram\Support\Traits\Macroable;
 use LaraGram\Support\Traits\ReflectsClosures;
 use InvalidArgumentException;
+
+use function LaraGram\Support\enum_value;
 
 class Translator extends NamespacedItemResolver implements TranslatorContract
 {
@@ -83,7 +86,6 @@ class Translator extends NamespacedItemResolver implements TranslatorContract
      *
      * @param  \LaraGram\Contracts\Translation\Loader  $loader
      * @param  string  $locale
-     * @return void
      */
     public function __construct(Loader $loader, $locale)
     {
@@ -188,6 +190,44 @@ class Translator extends NamespacedItemResolver implements TranslatorContract
     }
 
     /**
+     * Get the specified string translation value.
+     *
+     * @throws \InvalidArgumentException
+     */
+    public function string(string $key, array $replace = [], ?string $locale = null, bool $fallback = true): string
+    {
+        $value = $this->get($key, $replace, $locale, $fallback);
+
+        if (! is_string($value)) {
+            throw new InvalidArgumentException(
+                sprintf('Translation value for key [%s] must be a string, %s given.', $key, gettype($value))
+            );
+        }
+
+        return $value;
+    }
+
+    /**
+     * Get the specified array translation value.
+     *
+     * @return array<array-key, mixed>
+     *
+     * @throws \InvalidArgumentException
+     */
+    public function array(string $key, array $replace = [], ?string $locale = null, bool $fallback = true): array
+    {
+        $value = $this->get($key, $replace, $locale, $fallback);
+
+        if (! is_array($value)) {
+            throw new InvalidArgumentException(
+                sprintf('Translation value for key [%s] must be an array, %s given.', $key, gettype($value))
+            );
+        }
+
+        return $value;
+    }
+
+    /**
      * Get a translation according to an integer value.
      *
      * @param  string  $key
@@ -250,7 +290,7 @@ class Translator extends NamespacedItemResolver implements TranslatorContract
 
         if (is_string($line)) {
             return $this->makeReplacements($line, $replace);
-        } elseif (is_array($line) && count($line) > 0) {
+        } elseif (is_array($line) && $line !== []) {
             array_walk_recursive($line, function (&$value, $key) use ($replace) {
                 $value = $this->makeReplacements($value, $replace);
             });
@@ -285,12 +325,14 @@ class Translator extends NamespacedItemResolver implements TranslatorContract
                 continue;
             }
 
-            if (is_object($value) && isset($this->stringableHandlers[get_class($value)])) {
-                $value = call_user_func($this->stringableHandlers[get_class($value)], $value);
+            if (is_object($value)) {
+                $value = isset($this->stringableHandlers[get_class($value)])
+                    ? call_user_func($this->stringableHandlers[get_class($value)], $value)
+                    : enum_value($value);
             }
 
-            $shouldReplace[':'.ucfirst($key)] = ucfirst($value ?? '');
-            $shouldReplace[':'.strtoupper($key)] = strtoupper($value ?? '');
+            $shouldReplace[':'.Str::ucfirst($key)] = Str::ucfirst($value ?? '');
+            $shouldReplace[':'.Str::upper($key)] = Str::upper($value ?? '');
             $shouldReplace[':'.$key] = $value;
         }
 
@@ -382,7 +424,7 @@ class Translator extends NamespacedItemResolver implements TranslatorContract
      * Register a callback that is responsible for handling missing translation keys.
      *
      * @param  callable|null  $callback
-     * @return static
+     * @return $this
      */
     public function handleMissingKeysUsing(?callable $callback)
     {
@@ -401,6 +443,17 @@ class Translator extends NamespacedItemResolver implements TranslatorContract
     public function addNamespace($namespace, $hint)
     {
         $this->loader->addNamespace($namespace, $hint);
+    }
+
+    /**
+     * Add a new path to the loader.
+     *
+     * @param  string  $path
+     * @return void
+     */
+    public function addPath($path)
+    {
+        $this->loader->addPath($path);
     }
 
     /**
@@ -441,7 +494,9 @@ class Translator extends NamespacedItemResolver implements TranslatorContract
     {
         $locales = array_filter([$locale ?: $this->locale, $this->fallback]);
 
-        return call_user_func($this->determineLocalesUsing ?: fn () => $locales, $locales);
+        $determined = call_user_func($this->determineLocalesUsing ?: fn () => $locales, $locales);
+
+        return array_values(array_unique($determined));
     }
 
     /**
@@ -520,7 +575,7 @@ class Translator extends NamespacedItemResolver implements TranslatorContract
      */
     public function setLocale($locale)
     {
-        if (str_contains($locale, '/') || str_contains($locale, '\\')) {
+        if (Str::contains($locale, ['/', '\\'])) {
             throw new InvalidArgumentException('Invalid characters present in locale.');
         }
 

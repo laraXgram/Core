@@ -49,7 +49,7 @@ class TranslationServiceProvider extends ServiceProvider implements DeferrablePr
      *
      * @return array
      */
-    public function provides(): array
+    public function provides()
     {
         return ['translator', 'translation.loader'];
     }
