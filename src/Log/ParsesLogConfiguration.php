@@ -31,7 +31,7 @@ trait ParsesLogConfiguration
     abstract protected function getFallbackChannelName();
 
     /**
-     * Parse the string level into a LaraGram Logger constant.
+     * Parse the string level into a Monolog constant.
      *
      * @param  array  $config
      * @return int
