@@ -77,6 +77,6 @@ class UniqueLock
             ? hash('xxh128', $job->displayName())
             : get_class($job);
 
-        return 'laravel_unique_job:'.$jobName.':'.$uniqueId;
+        return 'laragram_unique_job:'.$jobName.':'.$uniqueId;
     }
 }

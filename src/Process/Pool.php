@@ -37,7 +37,6 @@ class Pool
      *
      * @param  \LaraGram\Process\Factory  $factory
      * @param  callable  $callback
-     * @return void
      */
     public function __construct(Factory $factory, callable $callback)
     {
@@ -63,6 +62,8 @@ class Pool
      *
      * @param  callable|null  $output
      * @return \LaraGram\Process\InvokedProcessPool
+     *
+     * @throws \InvalidArgumentException
      */
     public function start(?callable $output = null)
     {
@@ -74,12 +75,13 @@ class Pool
                     if (! $pendingProcess instanceof PendingProcess) {
                         throw new InvalidArgumentException('Process pool must only contain pending processes.');
                     }
-                })->mapWithKeys(function ($pendingProcess, $key) use ($output) {
+                })
+                ->mapWithKeys(function ($pendingProcess, $key) use ($output) {
                     return [$key => $pendingProcess->start(output: $output ? function ($type, $buffer) use ($key, $output) {
                         $output($type, $buffer, $key);
                     } : null)];
                 })
-            ->all()
+                ->all()
         );
     }
 

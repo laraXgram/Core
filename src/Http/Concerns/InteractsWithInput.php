@@ -188,7 +188,7 @@ trait InteractsWithInput
     }
 
     /**
-     * Convert the given array of Symfony UploadedFiles to custom LaraGram UploadedFiles.
+     * Convert the given array of LaraGram UploadedFiles to custom LaraGram UploadedFiles.
      *
      * @param  array<string, \LaraGram\Http\Files\UploadedFile|\LaraGram\Http\Files\UploadedFile[]>  $files
      * @return array<string, \LaraGram\Http\Files\UploadedFile|\LaraGram\Http\Files\UploadedFile[]>

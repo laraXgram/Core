@@ -147,6 +147,6 @@ class GetAttrNode extends Node
         $this->nodes = $data['nodes'];
         $this->attributes = $data['attributes'];
         $this->attributes['is_null_coalesce'] ??= false;
-        $this->attributes['is_short_circuited'] ??= $data["\x00Symfony\Component\ExpressionLanguage\Node\GetAttrNode\x00isShortCircuited"] ?? false;
+        $this->attributes['is_short_circuited'] ??= $data["\x00LaraGram\Listening\Expression\Node\GetAttrNode\x00isShortCircuited"] ?? false;
     }
 }

@@ -155,7 +155,7 @@ class DebounceLock
             ? hash('xxh128', $job->displayName())
             : get_class($job);
 
-        return 'laravel_debounced_job:'.$jobName.':'.$debounceId;
+        return 'laragram_debounced_job:'.$jobName.':'.$debounceId;
     }
 
     /**

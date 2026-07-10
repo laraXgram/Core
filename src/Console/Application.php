@@ -209,7 +209,7 @@ class Application extends ExtendedApplication implements ApplicationContract
     }
 
     /**
-     * Alias for addCommand() since Symfony's add() method was deprecated.
+     * Alias for addCommand() since LaraGram's add() method was deprecated.
      *
      * @param  \LaraGram\Console\Command\Command  $command
      * @return \LaraGram\Console\Command\Command|null

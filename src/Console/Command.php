@@ -206,7 +206,7 @@ class Command extends BaseCommand
 
         // After parsing the signature we will spin through the arguments and options
         // and set them on this command. These will already be changed into proper
-        // instances of these "InputArgument" and "InputOption" Symfony classes.
+        // instances of these "InputArgument" and "InputOption" LaraGram classes.
         $this->getDefinition()->addArguments($arguments);
         $this->getDefinition()->addOptions($options);
     }

@@ -18,7 +18,7 @@ use LaraGram\JsonSchema\Types\Type;
 class JsonSchema
 {
     /**
-     * Build a type from a raw array of the Laravel-supported JSON Schema subset.
+     * Build a type from a raw array of the LaraGram-supported JSON Schema subset.
      *
      * @param  array<string, mixed>  $schema
      *

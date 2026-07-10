@@ -371,7 +371,7 @@ class Request extends BaseRequest implements Arrayable, ArrayAccess
         $currentAcceptHeader = $this->headers->get('Accept');
 
         if ($this->cachedAcceptHeader !== $currentAcceptHeader) {
-            // Flush acceptable content types so Symfony re-calculates them...
+            // Flush acceptable content types so LaraGram re-calculates them...
             $this->acceptableContentTypes = null;
             $this->cachedAcceptHeader = $currentAcceptHeader;
         }
@@ -424,7 +424,7 @@ class Request extends BaseRequest implements Arrayable, ArrayAccess
     }
 
     /**
-     * This method belongs to Symfony HttpFoundation and is not usually needed when using LaraGram.
+     * This method belongs to LaraGram HttpFoundation and is not usually needed when using LaraGram.
      *
      * Instead, you may use the "input" method.
      *
@@ -530,7 +530,7 @@ class Request extends BaseRequest implements Arrayable, ArrayAccess
     }
 
     /**
-     * Create an LaraGram request from a Symfony instance.
+     * Create an LaraGram request from a LaraGram instance.
      *
      * @param  \LaraGram\Http\BaseRequest  $request
      * @return static

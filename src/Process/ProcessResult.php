@@ -19,7 +19,6 @@ class ProcessResult implements ProcessResultContract
      * Create a new process result instance.
      *
      * @param  \LaraGram\Console\Process\Process  $process
-     * @return void
      */
     public function __construct(Process $process)
     {

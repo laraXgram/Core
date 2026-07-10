@@ -75,7 +75,7 @@ class HttpFoundationFactory implements HttpFoundationFactoryInterface
     }
 
     /**
-     * Creates Symfony UploadedFile instance from PSR-7 ones.
+     * Creates LaraGram UploadedFile instance from PSR-7 ones.
      */
     private function createUploadedFile(UploadedFileInterface $psrUploadedFile): UploadedFile
     {

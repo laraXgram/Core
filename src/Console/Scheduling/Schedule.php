@@ -18,7 +18,7 @@ use LaraGram\Support\Collection;
 use LaraGram\Support\ProcessUtils;
 use LaraGram\Support\Traits\Macroable;
 use RuntimeException;
-use LaraGram\Console\Command\Command as SymfonyCommand;
+use LaraGram\Console\Command\Command as LaraGramCommand;
 
 use function LaraGram\Support\enum_value;
 
@@ -170,7 +170,7 @@ class Schedule
      */
     public function command($command, array $parameters = [])
     {
-        if ($command instanceof SymfonyCommand) {
+        if ($command instanceof LaraGramCommand) {
             $command = get_class($command);
 
             $command = Container::getInstance()->make($command);

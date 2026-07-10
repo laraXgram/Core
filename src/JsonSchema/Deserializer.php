@@ -41,7 +41,7 @@ class Deserializer
     }
 
     /**
-     * Deserialize the Laravel-supported JSON Schema subset into a type.
+     * Deserialize the LaraGram-supported JSON Schema subset into a type.
      *
      * @param  array<string, mixed>  $schema
      *

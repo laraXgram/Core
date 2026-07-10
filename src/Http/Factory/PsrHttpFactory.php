@@ -90,7 +90,7 @@ class PsrHttpFactory implements HttpMessageFactoryInterface
     }
 
     /**
-     * Converts Symfony uploaded files array to the PSR one.
+     * Converts LaraGram uploaded files array to the PSR one.
      */
     private function getFiles(array $uploadedFiles): array
     {
@@ -112,7 +112,7 @@ class PsrHttpFactory implements HttpMessageFactoryInterface
     }
 
     /**
-     * Creates a PSR-7 UploadedFile instance from a Symfony one.
+     * Creates a PSR-7 UploadedFile instance from a LaraGram one.
      */
     private function createUploadedFile(UploadedFile $laragramUploadedFile): UploadedFileInterface
     {

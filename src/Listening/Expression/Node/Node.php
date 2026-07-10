@@ -26,7 +26,7 @@ class Node
             $attributes[] = \sprintf('%s: %s', $name, str_replace("\n", '', var_export($value, true)));
         }
 
-        $repr = [str_replace('Symfony\Component\ExpressionLanguage\Node\\', '', static::class).'('.implode(', ', $attributes)];
+        $repr = [str_replace('LaraGram\Listening\Expression\Node\\', '', static::class).'('.implode(', ', $attributes)];
 
         if (\count($this->nodes)) {
             foreach ($this->nodes as $node) {
