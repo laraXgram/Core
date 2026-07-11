@@ -98,4 +98,47 @@ return [
             'max_delay' => 5.0,
         ],
     ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Proxy Pool
+    |--------------------------------------------------------------------------
+    |
+    | Route every outgoing Bot-API call through a proxy. Provide a list of
+    | proxies and the bot automatically fails over to the next healthy one
+    | when the active proxy stops responding. Timeouts, retry count, and the
+    | selection strategy are all configurable.
+    |
+    | Supported proxy types are:
+    | http, https, socks4, socks4a, socks5, socks5h.
+    |
+    */
+
+    'proxy' => [
+
+        'enabled' => env('BOT_PROXY', false),
+
+        'connect_timeout' => 5,
+
+        'timeout' => 10,
+
+        'retry' => 2,
+
+        'strategy' => 'failover', // 'failover' (stable, first healthy) | 'round_robin' | 'random'
+
+        'retry_after' => 60,
+
+        'store' => env('BOT_PROXY_STORE', null),
+
+        'health' => [
+            'url' => env('API_ENDPOINT', 'https://api.telegram.org'),
+            'timeout' => 5,
+        ],
+
+        'list' => [
+            // 'primary'  => 'socks5://user:pass@127.0.0.1:1080',
+            // 'backup'   => 'http://10.0.0.2:8080',
+            // 'explicit' => ['type' => 'socks5', 'host' => '1.2.3.4', 'port' => 1080],
+        ],
+    ],
 ];

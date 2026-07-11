@@ -35,6 +35,7 @@ class DefaultProviders
             \LaraGram\Keyboard\KeyboardServiceProvider::class,
             \LaraGram\Pagination\PaginationServiceProvider::class,
             \LaraGram\Pipeline\PipelineServiceProvider::class,
+            \LaraGram\Request\Proxy\ProxyServiceProvider::class,
             \LaraGram\Queue\QueueServiceProvider::class,
             \LaraGram\Redis\RedisServiceProvider::class,
             \LaraGram\Session\SessionServiceProvider::class,

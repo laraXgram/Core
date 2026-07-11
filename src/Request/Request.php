@@ -45,6 +45,20 @@ class Request implements ProvidesListenContext
     protected $antiFloodScopes = null;
 
     /**
+     * Whether the proxy pool is bypassed for the next API call.
+     *
+     * @var bool
+     */
+    protected $bypassProxy = false;
+
+    /**
+     * A specific proxy id to force for the next API call.
+     *
+     * @var string|null
+     */
+    protected $forcedProxy = null;
+
+    /**
      * The user resolver callback.
      *
      * @var \Closure
@@ -752,6 +766,31 @@ class Request implements ProvidesListenContext
     }
 
     /**
+     * Send the next API call directly, bypassing the proxy pool.
+     *
+     * @return $this
+     */
+    public function withoutProxy(): static
+    {
+        $this->bypassProxy = true;
+
+        return $this;
+    }
+
+    /**
+     * Force a specific proxy (by id) for the next API call.
+     *
+     * @param  string  $id
+     * @return $this
+     */
+    public function withProxy(string $id): static
+    {
+        $this->forcedProxy = $id;
+
+        return $this;
+    }
+
+    /**
      * Intercept every Telegram API call to apply smart anti-flood throttling,
      * then delegate to the original Laraquest endpoint implementation.
      *
@@ -767,6 +806,12 @@ class Request implements ProvidesListenContext
         $scopes = $this->antiFloodScopes ?? [];
         $this->antiFloodScopes = null;
 
+        $proxyBypass = $this->bypassProxy;
+        $this->bypassProxy = false;
+
+        $forcedProxy = $this->forcedProxy;
+        $this->forcedProxy = null;
+
         $antiFlood = $bypass ? null : $this->antiFlood();
         $connection = null;
 
@@ -779,7 +824,11 @@ class Request implements ProvidesListenContext
             }
         }
 
-        $response = $this->rawEndpoint($method, $params);
+        $proxy = $proxyBypass ? null : $this->proxy();
+
+        $response = $proxy !== null
+            ? $this->sendThroughProxy($proxy, $method, $params, $forcedProxy)
+            : $this->rawEndpoint($method, $params);
 
         if ($antiFlood !== null) {
             try {
@@ -815,6 +864,72 @@ class Request implements ProvidesListenContext
             return $engine->enabled() ? $engine : null;
         } catch (\Throwable) {
             return null;
+        }
+    }
+
+    /**
+     * Resolve the active proxy manager, or null when it is unavailable/disabled.
+     *
+     * @return \LaraGram\Request\Proxy\ProxyManager|null
+     */
+    private function proxy()
+    {
+        if (! function_exists('app')) {
+            return null;
+        }
+
+        try {
+            $app = app();
+
+            if (! $app->bound('proxy')) {
+                return null;
+            }
+
+            $manager = $app->make('proxy');
+
+            return $manager->enabled() ? $manager : null;
+        } catch (\Throwable) {
+            return null;
+        }
+    }
+
+    /**
+     * Route a Telegram API call through the proxy pool, mirroring the transport
+     * preparation that Laraquest's own endpoint performs.
+     *
+     * @param  \LaraGram\Request\Proxy\ProxyManager  $proxy
+     * @param  string       $method
+     * @param  array        $params
+     * @param  string|null  $forced  A specific proxy id to force for this call.
+     * @return mixed
+     */
+    private function sendThroughProxy($proxy, string $method, array $params, ?string $forced)
+    {
+        $original = $params;
+
+        try {
+            $connection = $this->resolveConnection();
+            $mode = $this->resolveMode();
+
+            $this->perCallConnection = null;
+            $this->perCallMode = null;
+
+            $params = $this->applyDefaultParameters($method, $params);
+            $params = array_filter($params, fn ($v) => $v !== null);
+
+            foreach ($params as $key => $value) {
+                if (is_object($value) || is_array($value)) {
+                    $params[$key] = json_encode($value);
+                }
+            }
+
+            $token = $this->resolveToken($connection);
+            $apiServer = $this->resolveConfig()['api_server'];
+            $noResponse = $mode === \LaraGram\Laraquest\Mode::NO_RESPONSE_CURL->value;
+
+            return $proxy->dispatch($token, $apiServer, $method, $params, $noResponse, $forced);
+        } catch (\Throwable) {
+            return $this->rawEndpoint($method, $original);
         }
     }
 
