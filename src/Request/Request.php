@@ -254,27 +254,13 @@ class Request implements ProvidesListenContext
 
     /**
      * {@inheritdoc}
+     *
+     * For the Bot-API the scope is the current bot connection, preserved exactly
+     * as the engine read it before (the multi-bot middleware sets it per update).
      */
-    public function listenVerb(): string
+    public function listenScope(): ?string
     {
-        return $this->method();
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function listenValue(string $verb): ?string
-    {
-        return match ($verb) {
-            'COMMAND' => ($t = text()) !== null ? Str::replaceFirst('/', '', $t) : null,
-            'REFERRAL' => ($t = text()) !== null ? Str::replaceFirst('/start ', '', $t) : null,
-            'CALLBACK_DATA' => callback_query()->data ?? null,
-            default => text()
-                ?? callback_query()->data
-                ?? inline_query()->query
-                ?? chosen_inline_result()->query
-                ?? null,
-        };
+        return static::getDefaultConnection();
     }
 
     /**

@@ -12,6 +12,8 @@ use LaraGram\Pagination\Cursor;
 use LaraGram\Pagination\CursorPaginator;
 use LaraGram\Pagination\LengthAwarePaginator;
 use LaraGram\Pagination\Paginator;
+use LaraGram\Pagination\TelegramLengthAwarePaginator;
+use LaraGram\Pagination\TelegramPaginator;
 use LaraGram\Support\Collection;
 use LaraGram\Support\LazyCollection;
 use LaraGram\Support\SortDirection;
@@ -583,6 +585,39 @@ trait BuildsQueries
     {
         return Container::getInstance()->makeWith(CursorPaginator::class, [
             'items' => $items, 'perPage' => $perPage, 'cursor' => $cursor, 'options' => $options,
+        ]);
+    }
+
+    /**
+     * Create a new length-aware Telegram paginator instance.
+     *
+     * @param  \LaraGram\Support\Collection  $items
+     * @param  int  $total
+     * @param  int  $perPage
+     * @param  int  $currentPage
+     * @param  array  $options
+     * @return \LaraGram\Pagination\TelegramLengthAwarePaginator
+     */
+    protected function telegramPaginator($items, $total, $perPage, $currentPage, $options)
+    {
+        return Container::getInstance()->makeWith(TelegramLengthAwarePaginator::class, [
+            'items' => $items, 'total' => $total, 'perPage' => $perPage, 'currentPage' => $currentPage, 'options' => $options,
+        ]);
+    }
+
+    /**
+     * Create a new simple Telegram paginator instance.
+     *
+     * @param  \LaraGram\Support\Collection  $items
+     * @param  int  $perPage
+     * @param  int  $currentPage
+     * @param  array  $options
+     * @return \LaraGram\Pagination\TelegramPaginator
+     */
+    protected function simpleTelegramPaginator($items, $perPage, $currentPage, $options)
+    {
+        return Container::getInstance()->makeWith(TelegramPaginator::class, [
+            'items' => $items, 'perPage' => $perPage, 'currentPage' => $currentPage, 'options' => $options,
         ]);
     }
 

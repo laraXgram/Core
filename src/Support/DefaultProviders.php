@@ -33,6 +33,7 @@ class DefaultProviders
             \LaraGram\Foundation\Providers\FoundationServiceProvider::class,
             \LaraGram\Hashing\HashServiceProvider::class,
             \LaraGram\Keyboard\KeyboardServiceProvider::class,
+            \LaraGram\Pagination\PaginationServiceProvider::class,
             \LaraGram\Pipeline\PipelineServiceProvider::class,
             \LaraGram\Queue\QueueServiceProvider::class,
             \LaraGram\Redis\RedisServiceProvider::class,

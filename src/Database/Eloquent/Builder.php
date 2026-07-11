@@ -16,6 +16,8 @@ use LaraGram\Database\Query\Builder as QueryBuilder;
 use LaraGram\Database\RecordsNotFoundException;
 use LaraGram\Database\UniqueConstraintViolationException;
 use LaraGram\Pagination\Paginator;
+use LaraGram\Pagination\TelegramLengthAwarePaginator;
+use LaraGram\Pagination\TelegramPaginator;
 use LaraGram\Support\Arr;
 use LaraGram\Support\Collection as BaseCollection;
 use LaraGram\Support\Str;
@@ -1177,6 +1179,61 @@ class Builder implements BuilderContract
         $perPage = $perPage ?: $this->model->getPerPage();
 
         return $this->paginateUsingCursor($perPage, $columns, $cursorName, $cursor);
+    }
+
+    /**
+     * Paginate the given query into a length-aware Telegram paginator.
+     *
+     * Renders "previous / current‑page / next" navigation as an inline keyboard.
+     * The current page is read from the incoming callback query "paginate:<key>:<page>".
+     *
+     * @param  int|null|\Closure  $perPage
+     * @param  array|string  $columns
+     * @param  string  $key
+     * @param  int|null  $page
+     * @param  \Closure|int|null  $total
+     * @return \LaraGram\Pagination\TelegramLengthAwarePaginator<int, TModel>
+     */
+    public function telegramPaginate($perPage = null, $columns = ['*'], $key = 'page', $page = null, $total = null)
+    {
+        $page = $page ?: TelegramLengthAwarePaginator::resolveCurrentPage($key);
+
+        $total = value($total) ?? $this->toBase()->getCountForPagination();
+
+        $perPage = value($perPage, $total) ?: $this->model->getPerPage();
+
+        $results = $total
+            ? $this->forPage($page, $perPage)->get($columns)
+            : $this->model->newCollection();
+
+        return $this->telegramPaginator($results, $total, $perPage, $page, [
+            'pageName' => $key,
+        ]);
+    }
+
+    /**
+     * Paginate the given query into a simple Telegram paginator.
+     *
+     * More efficient than telegramPaginate() on large datasets since it never
+     * counts the total number of rows (no "current/last" indicator).
+     *
+     * @param  int|null  $perPage
+     * @param  array|string  $columns
+     * @param  string  $key
+     * @param  int|null  $page
+     * @return \LaraGram\Pagination\TelegramPaginator<int, TModel>
+     */
+    public function simpleTelegramPaginate($perPage = null, $columns = ['*'], $key = 'page', $page = null)
+    {
+        $page = $page ?: TelegramPaginator::resolveCurrentPage($key);
+
+        $perPage = $perPage ?: $this->model->getPerPage();
+
+        $this->offset(($page - 1) * $perPage)->limit($perPage + 1);
+
+        return $this->simpleTelegramPaginator($this->get($columns), $perPage, $page, [
+            'pageName' => $key,
+        ]);
     }
 
     /**
