@@ -1,0 +1,18 @@
+<?php
+
+namespace {{ namespace }};
+
+use Exception;
+use LaraGram\Http\Request;
+use LaraGram\Http\Response;
+
+class {{ class }} extends Exception
+{
+    /**
+     * Render the exception as an HTTP response.
+     */
+    public function render(Request $request): Response
+    {
+        //
+    }
+}
