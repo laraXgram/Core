@@ -3,6 +3,7 @@
 namespace LaraGram\Foundation\Console;
 
 use LaraGram\Console\Command;
+use LaraGram\Support\Collection;
 use LaraGram\Support\ServiceProvider;
 use LaraGram\Console\Attribute\AsCommand;
 use LaraGram\Console\Input\InputOption;
@@ -33,12 +34,15 @@ class OptimizeCommand extends Command
     {
         $this->components->info('Caching framework bootstrap, configuration, and metadata.');
 
-        $exceptions = array_unique(array_filter(array_map('trim', explode(',', $this->option('except') ?? ''))));
-        $exceptions = array_flip($exceptions);
+        $exceptions = Collection::wrap(explode(',', $this->option('except') ?? ''))
+            ->map(fn ($except) => trim($except))
+            ->filter()
+            ->unique()
+            ->flip();
 
-        $tasks = array_filter($this->getOptimizeTasks(), function ($command, $key) use ($exceptions) {
-            return !isset($exceptions[$command]) && !isset($exceptions[$key]);
-        }, ARRAY_FILTER_USE_BOTH);
+        $tasks = Collection::wrap($this->getOptimizeTasks())
+            ->reject(fn ($command, $key) => $exceptions->hasAny([$command, $key]))
+            ->toArray();
 
         foreach ($tasks as $description => $command) {
             $this->components->task($description, fn () => $this->callSilently($command) == 0);
@@ -55,10 +59,12 @@ class OptimizeCommand extends Command
     protected function getOptimizeTasks()
     {
         return [
-            'config'   => 'config:cache',
-            'events'   => 'event:cache',
-            'listens'  => 'listen:cache',
-            'template' => 'template:cache',
+            'config' => 'config:cache',
+            'events' => 'event:cache',
+            'routes' => 'route:cache',
+            'listens' => 'listen:cache',
+            'views' => 'view:cache',
+            'templates' => 'template:cache',
             ...ServiceProvider::$optimizeCommands,
         ];
     }

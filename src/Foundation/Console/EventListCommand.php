@@ -17,7 +17,9 @@ class EventListCommand extends Command
      *
      * @var string
      */
-    protected $signature = 'event:list {--event= : Filter the events by name}';
+    protected $signature = 'event:list
+                            {--event= : Filter the events by name}
+                            {--json : Output the events and listeners as JSON}';
 
     /**
      * The console command description.
@@ -43,15 +45,52 @@ class EventListCommand extends Command
         $events = $this->getEvents()->sortKeys();
 
         if ($events->isEmpty()) {
-            $this->components->info("Your application doesn't have any events matching the given criteria.");
+            if ($this->option('json')) {
+                $this->output->writeln('[]');
+            } else {
+                $this->components->info("Your application doesn't have any events matching the given criteria.");
+            }
 
             return;
         }
 
+        if ($this->option('json')) {
+            $this->displayJson($events);
+        } else {
+            $this->displayForCli($events);
+        }
+    }
+
+    /**
+     * Display events and their listeners in JSON.
+     *
+     * @param  \LaraGram\Support\Collection  $events
+     * @return void
+     */
+    protected function displayJson(Collection $events)
+    {
+        $data = $events->map(function ($listeners, $event) {
+            return [
+                'event' => strip_tags($event),
+                'listeners' => (new Collection($listeners))->map(fn ($listener) => strip_tags($listener))->values()->all(),
+            ];
+        })->values();
+
+        $this->output->writeln($data->toJson());
+    }
+
+    /**
+     * Display the events and their listeners for the CLI.
+     *
+     * @param  \LaraGram\Support\Collection  $events
+     * @return void
+     */
+    protected function displayForCli(Collection $events)
+    {
         $this->newLine();
 
         $events->each(function ($listeners, $event) {
-            $this->components->twoColumnDetail($this->appendEventInterfaces($event));
+            $this->components->twoColumnDetail($event);
             $this->components->bulletList($listeners);
         });
 
@@ -100,21 +139,6 @@ class EventListCommand extends Command
         }
 
         return $events;
-    }
-
-    /**
-     * Add the event implemented interfaces to the output.
-     *
-     * @param  string  $event
-     * @return string
-     */
-    protected function appendEventInterfaces($event)
-    {
-        if (! class_exists($event)) {
-            return $event;
-        }
-
-        return $event;
     }
 
     /**
@@ -184,6 +208,8 @@ class EventListCommand extends Command
      * Gets the raw version of event listeners from the event dispatcher.
      *
      * @return array
+     *
+     * @throws \LaraGram\Contracts\Container\BindingResolutionException
      */
     protected function getRawListeners()
     {
@@ -194,6 +220,8 @@ class EventListCommand extends Command
      * Get the event dispatcher.
      *
      * @return \LaraGram\Events\Dispatcher
+     *
+     * @throws \LaraGram\Contracts\Container\BindingResolutionException
      */
     public function getEventsDispatcher()
     {

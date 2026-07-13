@@ -30,14 +30,14 @@ class WebhookSetCommand extends Command
      */
     public function handle()
     {
-        $connection = $this->option('connection') ?? config('bot.default');
+        $connectionName = $this->option('connection') ?? config('bot.default');
 
         $result = app('request')
-            ->connection($connection)
+            ->connection($connectionName)
             ->setWebhook(
-                config('bot.connections.'.$connection.'.url'),
-                allowed_updates: ($allowed = config('bot.connections.'.$connection.'.allowed_updates')) == ['*'] ? null : $allowed,
-                secret_token: config('bot.connections.'.$connection.'.secret_token') ?? null
+                config("bot.connections.{$connectionName}.url"),
+                allowed_updates: ($allowed = config("bot.connections.{$connectionName}.allowed_updates")) == ['*'] ? null : $allowed,
+                secret_token: config("bot.connections.{$connectionName}.secret_token") ?? null
             );
 
         if (!$result['ok']){

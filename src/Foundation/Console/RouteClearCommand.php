@@ -6,22 +6,22 @@ use LaraGram\Console\Command;
 use LaraGram\Filesystem\Filesystem;
 use LaraGram\Console\Attribute\AsCommand;
 
-#[AsCommand(name: 'config:clear')]
-class ConfigClearCommand extends Command
+#[AsCommand(name: 'route:clear')]
+class RouteClearCommand extends Command
 {
     /**
      * The console command name.
      *
      * @var string
      */
-    protected $name = 'config:clear';
+    protected $name = 'route:clear';
 
     /**
      * The console command description.
      *
      * @var string
      */
-    protected $description = 'Remove the configuration cache file';
+    protected $description = 'Remove the route cache file';
 
     /**
      * The filesystem instance.
@@ -31,7 +31,7 @@ class ConfigClearCommand extends Command
     protected $files;
 
     /**
-     * Create a new config clear command instance.
+     * Create a new route clear command instance.
      *
      * @param  \LaraGram\Filesystem\Filesystem  $files
      */
@@ -49,8 +49,8 @@ class ConfigClearCommand extends Command
      */
     public function handle()
     {
-        $this->files->delete($this->laragram->getCachedConfigPath());
+        $this->files->delete($this->laragram->getCachedRoutesPath());
 
-        $this->components->info('Configuration cache cleared successfully.');
+        $this->components->info('Route cache cleared successfully.');
     }
 }

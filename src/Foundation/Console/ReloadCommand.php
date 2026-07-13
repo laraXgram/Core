@@ -8,22 +8,22 @@ use LaraGram\Support\ServiceProvider;
 use LaraGram\Console\Attribute\AsCommand;
 use LaraGram\Console\Input\InputOption;
 
-#[AsCommand(name: 'optimize:clear')]
-class OptimizeClearCommand extends Command
+#[AsCommand(name: 'reload')]
+class ReloadCommand extends Command
 {
     /**
      * The console command name.
      *
      * @var string
      */
-    protected $name = 'optimize:clear';
+    protected $name = 'reload';
 
     /**
      * The console command description.
      *
      * @var string
      */
-    protected $description = 'Remove the cached bootstrap files';
+    protected $description = 'Reload running services';
 
     /**
      * Execute the console command.
@@ -32,7 +32,7 @@ class OptimizeClearCommand extends Command
      */
     public function handle()
     {
-        $this->components->info('Clearing cached bootstrap files.');
+        $this->components->info('Reloading services.');
 
         $exceptions = Collection::wrap(explode(',', $this->option('except') ?? ''))
             ->map(fn ($except) => trim($except))
@@ -40,7 +40,7 @@ class OptimizeClearCommand extends Command
             ->unique()
             ->flip();
 
-        $tasks = Collection::wrap($this->getOptimizeClearTasks())
+        $tasks = Collection::wrap($this->getReloadTasks())
             ->reject(fn ($command, $key) => $exceptions->hasAny([$command, $key]))
             ->toArray();
 
@@ -52,22 +52,16 @@ class OptimizeClearCommand extends Command
     }
 
     /**
-     * Get the commands that should be run to clear the "optimization" files.
+     * Get the commands that should be reloaded.
      *
      * @return array
      */
-    public function getOptimizeClearTasks()
+    public function getReloadTasks()
     {
         return [
-            'config' => 'config:clear',
-            'cache' => 'cache:clear',
-            'compiled' => 'clear-compiled',
-            'events' => 'event:clear',
-            'routes' => 'route:clear',
-            'listens' => 'listen:clear',
-            'views' => 'view:clear',
-            'templates' => 'template:clear',
-            ...ServiceProvider::$optimizeClearCommands,
+            'queue' => 'queue:restart',
+            'schedule' => 'schedule:interrupt',
+            ...ServiceProvider::$reloadCommands,
         ];
     }
 

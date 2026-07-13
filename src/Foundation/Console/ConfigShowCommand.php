@@ -94,10 +94,10 @@ class ConfigShowCommand extends Command
     {
         return preg_replace_callback(
             '/(.*)\.(.*)$/', fn ($matches) => sprintf(
-                '<fg=gray>%s ⇁</> %s',
-                str_replace('.', ' ⇁ ', $matches[1]),
-                $matches[2]
-            ), $key
+            '<fg=gray>%s ⇁</> %s',
+            str_replace('.', ' ⇁ ', $matches[1]),
+            $matches[2]
+        ), $key
         );
     }
 

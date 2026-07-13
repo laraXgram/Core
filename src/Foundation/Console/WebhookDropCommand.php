@@ -30,11 +30,11 @@ class WebhookDropCommand extends Command
      */
     public function handle()
     {
-        $connection = $this->option('connection') ?? config('bot.default');
+        $connectionName = $this->option('connection') ?? config('bot.default');
 
         $result = app('request')
-            ->connection($connection)
-            ->setWebhook(config('bot.bot.url'), drop_pending_updates: true);
+            ->connection($connectionName)
+            ->setWebhook(config("bot.connections.{$connectionName}.url"), drop_pending_updates: true);
 
         if (!$result['ok']){
             $this->components->error($result['description']);

@@ -5,12 +5,19 @@ namespace LaraGram\Foundation\Console;
 use Closure;
 use LaraGram\Console\Command;
 use LaraGram\Console\ManuallyFailedException;
+use LaraGram\Support\Facades\Schedule;
+use LaraGram\Support\Traits\ForwardsCalls;
 use ReflectionFunction;
 use LaraGram\Console\Input\InputInterface;
 use LaraGram\Console\Output\OutputInterface;
 
+/**
+ * @mixin \LaraGram\Console\Scheduling\Event
+ */
 class ClosureCommand extends Command
 {
+    use ForwardsCalls;
+
     /**
      * The command callback.
      *
@@ -19,11 +26,17 @@ class ClosureCommand extends Command
     protected $callback;
 
     /**
+     * The console command description.
+     *
+     * @var string
+     */
+    protected $description = '';
+
+    /**
      * Create a new command instance.
      *
      * @param  string  $signature
      * @param  \Closure  $callback
-     * @return void
      */
     public function __construct($signature, Closure $callback)
     {
@@ -85,5 +98,30 @@ class ClosureCommand extends Command
         $this->setDescription($description);
 
         return $this;
+    }
+
+    /**
+     * Create a new scheduled event for the command.
+     *
+     * @param  array  $parameters
+     * @return \LaraGram\Console\Scheduling\Event
+     */
+    public function schedule($parameters = [])
+    {
+        return Schedule::command($this->name, $parameters);
+    }
+
+    /**
+     * Dynamically proxy calls to a new scheduled event.
+     *
+     * @param  string  $method
+     * @param  array  $parameters
+     * @return mixed
+     *
+     * @throws \BadMethodCallException
+     */
+    public function __call($method, $parameters)
+    {
+        return $this->forwardCallTo($this->schedule(), $method, $parameters);
     }
 }

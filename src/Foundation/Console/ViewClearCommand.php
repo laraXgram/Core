@@ -4,24 +4,25 @@ namespace LaraGram\Foundation\Console;
 
 use LaraGram\Console\Command;
 use LaraGram\Filesystem\Filesystem;
+use RuntimeException;
 use LaraGram\Console\Attribute\AsCommand;
 
-#[AsCommand(name: 'event:clear')]
-class EventClearCommand extends Command
+#[AsCommand(name: 'view:clear')]
+class ViewClearCommand extends Command
 {
     /**
      * The console command name.
      *
      * @var string
      */
-    protected $name = 'event:clear';
+    protected $name = 'view:clear';
 
     /**
      * The console command description.
      *
      * @var string
      */
-    protected $description = 'Clear all cached events and listeners';
+    protected $description = 'Clear all compiled view files';
 
     /**
      * The filesystem instance.
@@ -51,8 +52,24 @@ class EventClearCommand extends Command
      */
     public function handle()
     {
-        $this->files->delete($this->laragram->getCachedEventsPath());
+        $path = $this->laragram['config']['view.compiled'];
 
-        $this->components->info('Cached events cleared successfully.');
+        if (! $path) {
+            throw new RuntimeException('View path not found.');
+        }
+
+        $this->laragram['view.engine.resolver']
+            ->resolve('blade')
+            ->forgetCompiledOrNotExpired();
+
+        foreach ($this->files->glob("{$path}/*") as $view) {
+            if ($this->files->isDirectory($view)) {
+                $this->files->deleteDirectory($view);
+            } else {
+                $this->files->delete($view);
+            }
+        }
+
+        $this->components->info('Compiled views cleared successfully.');
     }
 }

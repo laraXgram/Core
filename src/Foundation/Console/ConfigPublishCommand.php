@@ -5,6 +5,7 @@ namespace LaraGram\Foundation\Console;
 use LaraGram\Console\Command;
 use LaraGram\Support\Collection;
 use LaraGram\Console\Attribute\AsCommand;
+use LaraGram\Support\Finder\Finder;
 
 use function LaraGram\Console\Prompts\select;
 
@@ -39,7 +40,7 @@ class ConfigPublishCommand extends Command
 
         if (is_null($this->argument('name')) && $this->option('all')) {
             foreach ($config as $key => $file) {
-                $this->publish($key, $file, $this->laragram->configPath() . 'ConfigPublishCommand.php/' .$key.'.php');
+                $this->publish($key, $file, $this->laragram->configPath().'/'.$key.'.php');
             }
 
             return;
@@ -47,7 +48,7 @@ class ConfigPublishCommand extends Command
 
         $name = (string) (is_null($this->argument('name')) ? select(
             label: 'Which configuration file would you like to publish?',
-            options: array_map(fn($path) => basename($path, '.php'), $config),
+            options: (new Collection($config))->map(fn (string $path) => basename($path, '.php'))->toArray(),
         ) : $this->argument('name'));
 
         if (! is_null($name) && ! isset($config[$name])) {
@@ -56,7 +57,7 @@ class ConfigPublishCommand extends Command
             return 1;
         }
 
-        $this->publish($name, $config[$name], $this->laragram->configPath() . 'ConfigPublishCommand.php/' .$name.'.php');
+        $this->publish($name, $config[$name], $this->laragram->configPath().'/'.$name.'.php');
     }
 
     /**
@@ -91,19 +92,12 @@ class ConfigPublishCommand extends Command
 
         $shouldMergeConfiguration = $this->laragram->shouldMergeFrameworkConfiguration();
 
-        $configDir = __DIR__ . '/../../../../config';
-        $stubDir = __DIR__ . '/../../../../config-stubs';
-        $files = scandir($configDir);
+        foreach (Finder::create()->files()->name('*.php')->in(__DIR__.'/../../../config') as $file) {
+            $name = basename($file->getRealPath(), '.php');
 
-        foreach ($files as $file) {
-            if (pathinfo($file, PATHINFO_EXTENSION) === 'php') {
-                $name = basename($file, '.php');
-                $stubPath = $stubDir . '/' . $name . '.php';
-
-                $config[$name] = ($shouldMergeConfiguration === true && file_exists($stubPath))
-                    ? $stubPath
-                    : $configDir . '/' . $file;
-            }
+            $config[$name] = ($shouldMergeConfiguration === true && file_exists($stubPath = (__DIR__.'/../../../config-stubs/'.$name.'.php')))
+                ? $stubPath
+                : $file->getRealPath();
         }
 
         return (new Collection($config))->sortKeys()->all();

@@ -32,7 +32,7 @@ class ExceptionMakeCommand extends GeneratorCommand
      *
      * @var string
      */
-    protected $type = 'Exceptions';
+    protected $type = 'Exception';
 
     /**
      * Get the stub file for the generator.
@@ -41,6 +41,12 @@ class ExceptionMakeCommand extends GeneratorCommand
      */
     protected function getStub()
     {
+        if ($this->option('render')) {
+            return $this->option('report')
+                ? __DIR__.'/stubs/exception-render-report.stub'
+                : __DIR__.'/stubs/exception-render.stub';
+        }
+
         return $this->option('report')
             ? __DIR__.'/stubs/exception-report.stub'
             : __DIR__.'/stubs/exception.stub';
@@ -82,6 +88,7 @@ class ExceptionMakeCommand extends GeneratorCommand
         }
 
         $input->setOption('report', confirm('Should the exception have a report method?', default: false));
+        $input->setOption('render', confirm('Should the exception have a render method?', default: false));
     }
 
     /**
@@ -93,6 +100,7 @@ class ExceptionMakeCommand extends GeneratorCommand
     {
         return [
             ['force', 'f', InputOption::VALUE_NONE, 'Create the class even if the exception already exists'],
+            ['render', null, InputOption::VALUE_NONE, 'Create the exception with an empty render method'],
             ['report', null, InputOption::VALUE_NONE, 'Create the exception with an empty report method'],
         ];
     }

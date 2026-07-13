@@ -6,29 +6,29 @@ use LaraGram\Console\GeneratorCommand;
 use LaraGram\Console\Attribute\AsCommand;
 use LaraGram\Console\Input\InputOption;
 
-#[AsCommand(name: 'make:interface')]
-class InterfaceMakeCommand extends GeneratorCommand
+#[AsCommand(name: 'make:request')]
+class RequestMakeCommand extends GeneratorCommand
 {
     /**
      * The console command name.
      *
      * @var string
      */
-    protected $name = 'make:interface';
+    protected $name = 'make:request';
 
     /**
      * The console command description.
      *
      * @var string
      */
-    protected $description = 'Create a new interface';
+    protected $description = 'Create a new form request class';
 
     /**
      * The type of class being generated.
      *
      * @var string
      */
-    protected $type = 'Interface';
+    protected $type = 'Request';
 
     /**
      * Get the stub file for the generator.
@@ -37,7 +37,20 @@ class InterfaceMakeCommand extends GeneratorCommand
      */
     protected function getStub()
     {
-        return __DIR__.'/stubs/interface.stub';
+        return $this->resolveStubPath('/stubs/request.stub');
+    }
+
+    /**
+     * Resolve the fully-qualified path to the stub.
+     *
+     * @param  string  $stub
+     * @return string
+     */
+    protected function resolveStubPath($stub)
+    {
+        return file_exists($customPath = $this->laragram->basePath(trim($stub, '/')))
+            ? $customPath
+            : __DIR__.$stub;
     }
 
     /**
@@ -48,11 +61,7 @@ class InterfaceMakeCommand extends GeneratorCommand
      */
     protected function getDefaultNamespace($rootNamespace)
     {
-        return match (true) {
-            is_dir(app_path('Contracts')) => $rootNamespace.'\\Contracts',
-            is_dir(app_path('Interfaces')) => $rootNamespace.'\\Interfaces',
-            default => $rootNamespace,
-        };
+        return $rootNamespace.'\Http\Requests';
     }
 
     /**
@@ -63,7 +72,7 @@ class InterfaceMakeCommand extends GeneratorCommand
     protected function getOptions()
     {
         return [
-            ['force', 'f', InputOption::VALUE_NONE, 'Create the interface even if the interface already exists'],
+            ['force', 'f', InputOption::VALUE_NONE, 'Create the class even if the request already exists'],
         ];
     }
 }

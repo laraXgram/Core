@@ -7,29 +7,29 @@ use LaraGram\Foundation\Inspiring;
 use LaraGram\Console\Attribute\AsCommand;
 use LaraGram\Console\Input\InputOption;
 
-#[AsCommand(name: 'make:template')]
-class TemplateMakeCommand extends GeneratorCommand
+#[AsCommand(name: 'make:view')]
+class ViewMakeCommand extends GeneratorCommand
 {
     /**
      * The console command description.
      *
      * @var string
      */
-    protected $description = 'Create a new template';
+    protected $description = 'Create a new view';
 
     /**
      * The name and signature of the console command.
      *
      * @var string
      */
-    protected $name = 'make:template';
+    protected $name = 'make:view';
 
     /**
      * The type of file being generated.
      *
      * @var string
      */
-    protected $type = 'Template';
+    protected $type = 'View';
 
     /**
      * Build the class with the given name.
@@ -51,20 +51,20 @@ class TemplateMakeCommand extends GeneratorCommand
     }
 
     /**
-     * Get the destination template path.
+     * Get the destination view path.
      *
      * @param  string  $name
      * @return string
      */
     protected function getPath($name)
     {
-        return $this->templatePath(
+        return $this->viewPath(
             $this->getNameInput().'.'.$this->option('extension'),
         );
     }
 
     /**
-     * Get the desired template name from the input.
+     * Get the desired view name from the input.
      *
      * @return string
      */
@@ -85,7 +85,7 @@ class TemplateMakeCommand extends GeneratorCommand
     protected function getStub()
     {
         return $this->resolveStubPath(
-            '/stubs/template.stub',
+            '/stubs/view.stub',
         );
     }
 
@@ -110,8 +110,8 @@ class TemplateMakeCommand extends GeneratorCommand
     protected function getOptions()
     {
         return [
-            ['extension', null, InputOption::VALUE_OPTIONAL, 'The extension of the generated template', 't8.php'],
-            ['force', 'f', InputOption::VALUE_NONE, 'Create the template even if the template already exists'],
+            ['extension', null, InputOption::VALUE_OPTIONAL, 'The extension of the generated view', 'blade.php'],
+            ['force', 'f', InputOption::VALUE_NONE, 'Create the view even if the view already exists'],
         ];
     }
 }

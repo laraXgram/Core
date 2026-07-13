@@ -61,7 +61,7 @@ class StorageLinkCommand extends Command
     protected function links()
     {
         return $this->laragram['config']['filesystems.links'] ??
-               [$this->laragram->publicPath('storage') => $this->laragram->storagePath('app/public')];
+            [public_path('storage') => storage_path('app/public')];
     }
 
     /**

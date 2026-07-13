@@ -2,7 +2,6 @@
 
 namespace LaraGram\Foundation\Console;
 
-use LaraGram\Console\Concerns\CreatesMatchingTest;
 use LaraGram\Console\GeneratorCommand;
 use LaraGram\Support\Collection;
 use LaraGram\Support\Str;
@@ -11,13 +10,12 @@ use LaraGram\Console\Input\InputInterface;
 use LaraGram\Console\Input\InputOption;
 use LaraGram\Console\Output\OutputInterface;
 
+use function LaraGram\Console\Prompts\confirm;
 use function LaraGram\Console\Prompts\multiselect;
 
 #[AsCommand(name: 'make:model')]
 class ModelMakeCommand extends GeneratorCommand
 {
-    use CreatesMatchingTest;
-
     /**
      * The console command name.
      *
@@ -47,7 +45,15 @@ class ModelMakeCommand extends GeneratorCommand
     public function handle()
     {
         if (parent::handle() === false && ! $this->option('force')) {
-            return false;
+            if (! $this->alreadyExists($this->getNameInput())) {
+                return false;
+            }
+
+            if (! confirm('Do you want to generate additional components for the model?')) {
+                return false;
+            } else {
+                $this->afterPromptingForMissingArguments($this->input, $this->output);
+            }
         }
 
         if ($this->option('all')) {
@@ -55,6 +61,8 @@ class ModelMakeCommand extends GeneratorCommand
             $this->input->setOption('seed', true);
             $this->input->setOption('migration', true);
             $this->input->setOption('controller', true);
+            $this->input->setOption('policy', true);
+            $this->input->setOption('resource', true);
         }
 
         if ($this->option('factory')) {
@@ -69,8 +77,14 @@ class ModelMakeCommand extends GeneratorCommand
             $this->createSeeder();
         }
 
-        if ($this->option('controller')) {
+        if ($this->option('controller') || $this->option('resource') || $this->option('api')) {
             $this->createController();
+        } elseif ($this->option('requests')) {
+            $this->createFormRequests();
+        }
+
+        if ($this->option('policy')) {
+            $this->createPolicy();
         }
     }
 
@@ -144,6 +158,39 @@ class ModelMakeCommand extends GeneratorCommand
     }
 
     /**
+     * Create the form requests for the model.
+     *
+     * @return void
+     */
+    protected function createFormRequests()
+    {
+        $request = Str::studly(class_basename($this->argument('name')));
+
+        $this->call('make:request', [
+            'name' => "Store{$request}Request",
+        ]);
+
+        $this->call('make:request', [
+            'name' => "Update{$request}Request",
+        ]);
+    }
+
+    /**
+     * Create a policy file for the model.
+     *
+     * @return void
+     */
+    protected function createPolicy()
+    {
+        $policy = Str::studly(class_basename($this->argument('name')));
+
+        $this->call('make:policy', [
+            'name' => "{$policy}Policy",
+            '--model' => $this->qualifyClass($this->getNameInput()),
+        ]);
+    }
+
+    /**
      * Get the stub file for the generator.
      *
      * @return string
@@ -170,8 +217,8 @@ class ModelMakeCommand extends GeneratorCommand
     protected function resolveStubPath($stub)
     {
         return file_exists($customPath = $this->laragram->basePath(trim($stub, '/')))
-                        ? $customPath
-                        : __DIR__.$stub;
+            ? $customPath
+            : __DIR__.$stub;
     }
 
     /**
@@ -182,7 +229,7 @@ class ModelMakeCommand extends GeneratorCommand
      */
     protected function getDefaultNamespace($rootNamespace)
     {
-        return is_dir($this->laragram->path('Models')) ? $rootNamespace.'\\Models' : $rootNamespace;
+        return is_dir(app_path('Models')) ? $rootNamespace.'\\Models' : $rootNamespace;
     }
 
     /**
@@ -246,8 +293,12 @@ class ModelMakeCommand extends GeneratorCommand
             ['force', null, InputOption::VALUE_NONE, 'Create the class even if the model already exists'],
             ['migration', 'm', InputOption::VALUE_NONE, 'Create a new migration file for the model'],
             ['morph-pivot', null, InputOption::VALUE_NONE, 'Indicates if the generated model should be a custom polymorphic intermediate table model'],
+            ['policy', null, InputOption::VALUE_NONE, 'Create a new policy for the model'],
             ['seed', 's', InputOption::VALUE_NONE, 'Create a new seeder for the model'],
             ['pivot', 'p', InputOption::VALUE_NONE, 'Indicates if the generated model should be a custom intermediate table model'],
+            ['resource', 'r', InputOption::VALUE_NONE, 'Indicates if the generated controller should be a resource controller'],
+            ['api', null, InputOption::VALUE_NONE, 'Indicates if the generated controller should be an API resource controller'],
+            ['requests', 'R', InputOption::VALUE_NONE, 'Create new form request classes and use them in the resource controller'],
         ];
     }
 
@@ -267,7 +318,10 @@ class ModelMakeCommand extends GeneratorCommand
         (new Collection(multiselect('Would you like any of the following?', [
             'seed' => 'Database Seeder',
             'factory' => 'Factory',
+            'requests' => 'Form Requests',
             'migration' => 'Migration',
+            'policy' => 'Policy',
+            'resource' => 'Resource Controller',
         ])))->each(fn ($option) => $input->setOption($option, true));
     }
 }

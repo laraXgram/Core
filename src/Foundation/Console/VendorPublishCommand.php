@@ -6,7 +6,14 @@ use LaraGram\Console\Command;
 use LaraGram\Filesystem\Filesystem;
 use LaraGram\Foundation\Events\VendorTagPublished;
 use LaraGram\Support\Arr;
+use LaraGram\Support\Tempora;
 use LaraGram\Support\ServiceProvider;
+use LaraGram\Support\Str;
+use LaraGram\Filesystem\Flysystem;
+use LaraGram\Filesystem\FlysystemLocalFilesystemAdapter as LocalAdapter;
+use LaraGram\Filesystem\MountManager;
+use LaraGram\Filesystem\UnixVisibility\PortableVisibilityConverter;
+use LaraGram\Filesystem\Visibility;
 use LaraGram\Console\Attribute\AsCommand;
 
 use function LaraGram\Console\Prompts\search;
@@ -39,7 +46,7 @@ class VendorPublishCommand extends Command
     /**
      * The time the command started.
      *
-     * @var \DateTimeInterface|null
+     * @var \LaraGram\Support\Tempora|null
      */
     protected $publishedAt;
 
@@ -73,7 +80,6 @@ class VendorPublishCommand extends Command
      * Create a new command instance.
      *
      * @param  \LaraGram\Filesystem\Filesystem  $files
-     * @return void
      */
     public function __construct(Filesystem $files)
     {
@@ -89,7 +95,7 @@ class VendorPublishCommand extends Command
      */
     public function handle()
     {
-        $this->publishedAt = \date('Y-m-d H:i:s');
+        $this->publishedAt = Tempora::now();
 
         $this->determineWhatShouldBePublished();
 
@@ -185,7 +191,7 @@ class VendorPublishCommand extends Command
      * Publishes the assets for a tag.
      *
      * @param  string  $tag
-     * @return mixed
+     * @return void
      */
     protected function publishTag($tag)
     {
@@ -264,13 +270,58 @@ class VendorPublishCommand extends Command
             if ($this->option('existing')) {
                 $this->components->twoColumnDetail(sprintf(
                     'File [%s] does not exist',
-                    str_replace($this->laragram->basePath() . 'VendorPublishCommand.php/', '', $to),
+                    str_replace(base_path().'/', '', $to),
                 ), '<fg=yellow;options=bold>SKIPPED</>');
             } else {
                 $this->components->twoColumnDetail(sprintf(
                     'File [%s] already exists',
-                    str_replace($this->laragram->basePath() . 'VendorPublishCommand.php/', '', realpath($to)),
+                    str_replace(base_path().'/', '', realpath($to)),
                 ), '<fg=yellow;options=bold>SKIPPED</>');
+            }
+        }
+    }
+
+    /**
+     * Publish the directory to the given directory.
+     *
+     * @param  string  $from
+     * @param  string  $to
+     * @return void
+     */
+    protected function publishDirectory($from, $to)
+    {
+        $visibility = PortableVisibilityConverter::fromArray([], Visibility::PUBLIC);
+
+        $this->moveManagedFiles($from, new MountManager([
+            'from' => new Flysystem(new LocalAdapter($from)),
+            'to' => new Flysystem(new LocalAdapter($to, $visibility)),
+        ]));
+
+        $this->status($from, $to, 'directory');
+    }
+
+    /**
+     * Move all the files in the given MountManager.
+     *
+     * @param  string  $from
+     * @param  \LaraGram\Filesystem\MountManager  $manager
+     * @return void
+     */
+    protected function moveManagedFiles($from, $manager)
+    {
+        foreach ($manager->listContents('from://', true)->sortByPath() as $file) {
+            $path = Str::after($file['path'], 'from://');
+
+            if (
+                $file['type'] === 'file'
+                && (
+                    (! $this->option('existing') && (! $manager->fileExists('to://'.$path) || $this->option('force')))
+                    || ($this->option('existing') && $manager->fileExists('to://'.$path))
+                )
+            ) {
+                $path = $this->ensureMigrationNameIsUpToDate($from, $path);
+
+                $manager->write('to://'.$path, $manager->read($file['path']));
             }
         }
     }
@@ -307,7 +358,7 @@ class VendorPublishCommand extends Command
             $path = realpath($path);
 
             if ($from === $path && preg_match('/\d{4}_(\d{2})_(\d{2})_(\d{6})_/', $to)) {
-                $this->publishedAt->modify('+1 second');
+                $this->publishedAt = $this->publishedAt->addSecond();
 
                 return preg_replace(
                     '/\d{4}_(\d{2})_(\d{2})_(\d{6})_/',
@@ -330,9 +381,9 @@ class VendorPublishCommand extends Command
      */
     protected function status($from, $to, $type)
     {
-        $from = str_replace($this->laragram->basePath() . 'VendorPublishCommand.php/', '', realpath($from));
+        $from = str_replace(base_path().'/', '', realpath($from));
 
-        $to = str_replace($this->laragram->basePath() . 'VendorPublishCommand.php/', '', realpath($to));
+        $to = str_replace(base_path().'/', '', realpath($to));
 
         $this->components->task(sprintf(
             'Copying %s [%s] to [%s]',

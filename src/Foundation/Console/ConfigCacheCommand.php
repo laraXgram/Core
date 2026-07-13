@@ -5,6 +5,7 @@ namespace LaraGram\Foundation\Console;
 use LaraGram\Console\Command;
 use LaraGram\Contracts\Console\Kernel as ConsoleKernelContract;
 use LaraGram\Filesystem\Filesystem;
+use LaraGram\Support\Arr;
 use LogicException;
 use LaraGram\Console\Attribute\AsCommand;
 use Throwable;
@@ -37,7 +38,6 @@ class ConfigCacheCommand extends Command
      * Create a new config cache command instance.
      *
      * @param  \LaraGram\Filesystem\Filesystem  $files
-     * @return void
      */
     public function __construct(Filesystem $files)
     {
@@ -70,6 +70,14 @@ class ConfigCacheCommand extends Command
         } catch (Throwable $e) {
             $this->files->delete($configPath);
 
+            foreach (Arr::dot($config) as $key => $value) {
+                try {
+                    eval(var_export($value, true).';');
+                } catch (Throwable $e) {
+                    throw new LogicException("Your configuration files could not be serialized because the value at \"{$key}\" is non-serializable.", 0, $e);
+                }
+            }
+
             throw new LogicException('Your configuration files are not serializable.', 0, $e);
         }
 
@@ -84,6 +92,8 @@ class ConfigCacheCommand extends Command
     protected function getFreshConfiguration()
     {
         $app = require $this->laragram->bootstrapPath('app.php');
+
+        $app->useStoragePath($this->laragram->storagePath());
 
         $app->make(ConsoleKernelContract::class)->bootstrap();
 

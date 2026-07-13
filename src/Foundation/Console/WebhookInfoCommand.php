@@ -30,10 +30,10 @@ class WebhookInfoCommand extends Command
      */
     public function handle(): void
     {
-        $connection = $this->option('connection') ?? config('bot.default');
+        $connectionName = $this->option('connection') ?? config('bot.default');
 
         $info = app('request')
-            ->connection($connection)
+            ->connection($connectionName)
             ->getWebhookInfo()['result'] ?? null;
 
         if ($info == null || $info["url"] == ''){

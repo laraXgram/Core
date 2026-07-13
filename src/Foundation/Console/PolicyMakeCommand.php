@@ -4,6 +4,7 @@ namespace LaraGram\Foundation\Console;
 
 use LaraGram\Console\GeneratorCommand;
 use LaraGram\Support\Str;
+use LogicException;
 use LaraGram\Console\Attribute\AsCommand;
 use LaraGram\Console\Input\InputInterface;
 use LaraGram\Console\Input\InputOption;
@@ -84,7 +85,11 @@ class PolicyMakeCommand extends GeneratorCommand
     {
         $config = $this->laragram['config'];
 
-        $guardProvider = $this->option('provider') ?: $config->get('auth.defaults.provider');
+        $guard = $this->option('guard') ?: $config->get('auth.defaults.guard');
+
+        if (is_null($guardProvider = $config->get('auth.guards.'.$guard.'.provider'))) {
+            throw new LogicException('The ['.$guard.'] guard is not defined in your "auth" configuration file.');
+        }
 
         if (! $config->get('auth.providers.'.$guardProvider.'.model')) {
             return 'App\\Models\\User';
@@ -194,7 +199,7 @@ class PolicyMakeCommand extends GeneratorCommand
         return [
             ['force', 'f', InputOption::VALUE_NONE, 'Create the class even if the policy already exists'],
             ['model', 'm', InputOption::VALUE_OPTIONAL, 'The model that the policy applies to'],
-            ['provider', 'g', InputOption::VALUE_OPTIONAL, 'The provider that the policy relies on'],
+            ['guard', 'g', InputOption::VALUE_OPTIONAL, 'The guard that the policy relies on'],
         ];
     }
 
@@ -213,7 +218,7 @@ class PolicyMakeCommand extends GeneratorCommand
 
         $model = suggest(
             'What model should this policy apply to? (Optional)',
-            $this->possibleModels(),
+            $this->findAvailableModels(),
         );
 
         if ($model) {

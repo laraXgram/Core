@@ -30,10 +30,10 @@ class WebhookDeleteCommand extends Command
      */
     public function handle()
     {
-        $connection = $this->option('connection') ?? config('bot.default');
+        $connectionName = $this->option('connection') ?? config('bot.default');
 
         $result = app('request')
-            ->connection($connection)
+            ->connection($connectionName)
             ->deleteWebhook();
 
         if (!$result['ok']){

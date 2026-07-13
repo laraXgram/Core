@@ -2,7 +2,6 @@
 
 namespace LaraGram\Foundation\Console;
 
-use LaraGram\Console\Concerns\CreatesMatchingTest;
 use LaraGram\Console\GeneratorCommand;
 use LaraGram\Support\Stringable;
 use LaraGram\Console\Attribute\AsCommand;
@@ -12,8 +11,6 @@ use LaraGram\Console\Input\InputOption;
 #[AsCommand(name: 'make:command')]
 class ConsoleMakeCommand extends GeneratorCommand
 {
-    use CreatesMatchingTest;
-
     /**
      * The console command name.
      *
