@@ -67,7 +67,6 @@ class Template implements ArrayAccess, Htmlable, Stringable, TemplateContract
      * @param  string  $template
      * @param  string  $path
      * @param  mixed  $data
-     * @return void
      */
     public function __construct(Factory $factory, Engine $engine, $template, $path, $data = [])
     {
@@ -309,8 +308,8 @@ class Template implements ArrayAccess, Htmlable, Stringable, TemplateContract
     protected function formatErrors($provider)
     {
         return $provider instanceof MessageProvider
-                        ? $provider->getMessageBag()
-                        : new MessageBag((array) $provider);
+            ? $provider->getMessageBag()
+            : new MessageBag((array) $provider);
     }
 
     /**
@@ -387,46 +386,46 @@ class Template implements ArrayAccess, Htmlable, Stringable, TemplateContract
     /**
      * Determine if a piece of data is bound.
      *
-     * @param  string  $key
+     * @param  string  $offset
      * @return bool
      */
-    public function offsetExists($key): bool
+    public function offsetExists($offset): bool
     {
-        return array_key_exists($key, $this->data);
+        return array_key_exists($offset, $this->data);
     }
 
     /**
      * Get a piece of bound data to the template.
      *
-     * @param  string  $key
+     * @param  string  $offset
      * @return mixed
      */
-    public function offsetGet($key): mixed
+    public function offsetGet($offset): mixed
     {
-        return $this->data[$key];
+        return $this->data[$offset];
     }
 
     /**
      * Set a piece of data on the template.
      *
-     * @param  string  $key
+     * @param  string  $offset
      * @param  mixed  $value
      * @return void
      */
-    public function offsetSet($key, $value): void
+    public function offsetSet($offset, $value): void
     {
-        $this->with($key, $value);
+        $this->with($offset, $value);
     }
 
     /**
      * Unset a piece of data from the template.
      *
-     * @param  string  $key
+     * @param  string  $offset
      * @return void
      */
-    public function offsetUnset($key): void
+    public function offsetUnset($offset): void
     {
-        unset($this->data[$key]);
+        unset($this->data[$offset]);
     }
 
     /**

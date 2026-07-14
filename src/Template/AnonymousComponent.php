@@ -23,7 +23,6 @@ class AnonymousComponent extends Component
      *
      * @param  string  $template
      * @param  array  $data
-     * @return void
      */
     public function __construct($template, $data)
     {

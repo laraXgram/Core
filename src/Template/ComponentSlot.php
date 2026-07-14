@@ -27,7 +27,6 @@ class ComponentSlot implements Htmlable, Stringable
      *
      * @param  string  $contents
      * @param  array  $attributes
-     * @return void
      */
     public function __construct($contents = '', $attributes = [])
     {
@@ -84,6 +83,8 @@ class ComponentSlot implements Htmlable, Stringable
      *
      * @param  callable|string|null  $callable
      * @return bool
+     *
+     * @throws \InvalidArgumentException
      */
     public function hasActualContent(callable|string|null $callable = null)
     {
@@ -92,10 +93,10 @@ class ComponentSlot implements Htmlable, Stringable
         }
 
         return filter_var(
-            $this->contents,
-            FILTER_CALLBACK,
-            ['options' => $callable ?? fn ($input) => trim(preg_replace("/<!--([\s\S]*?)-->/", '', $input))]
-        ) !== '';
+                $this->contents,
+                FILTER_CALLBACK,
+                ['options' => $callable ?? fn ($input) => trim(preg_replace("/<!--([\s\S]*?)-->/", '', $input))]
+            ) !== '';
     }
 
     /**

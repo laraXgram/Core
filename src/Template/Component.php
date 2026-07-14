@@ -6,6 +6,7 @@ use Closure;
 use LaraGram\Container\Container;
 use LaraGram\Contracts\Support\Htmlable;
 use LaraGram\Contracts\Template\Template as TemplateContract;
+use LaraGram\Filesystem\Filesystem;
 use LaraGram\Support\Collection;
 use ReflectionClass;
 use ReflectionMethod;
@@ -49,11 +50,11 @@ abstract class Component
     protected static $componentsResolver;
 
     /**
-     * The cache of Temple8 template names, keyed by contents.
+     * The cache of temple8 template names, keyed by contents.
      *
      * @var array<string, string>
      */
-    protected static $Temple8TemplateCache = [];
+    protected static $temple8TemplateCache = [];
 
     /**
      * The cache of public property names, keyed by class.
@@ -161,7 +162,7 @@ abstract class Component
         return $template instanceof Closure ? function (array $data = []) use ($template, $resolver) {
             return $resolver($template($data));
         }
-        : $resolver($template);
+            : $resolver($template);
     }
 
     /**
@@ -174,15 +175,15 @@ abstract class Component
     {
         $key = sprintf('%s::%s', static::class, $contents);
 
-        if (isset(static::$Temple8TemplateCache[$key])) {
-            return static::$Temple8TemplateCache[$key];
+        if (isset(static::$temple8TemplateCache[$key])) {
+            return static::$temple8TemplateCache[$key];
         }
 
         if ($this->factory()->exists($contents)) {
-            return static::$Temple8TemplateCache[$key] = $contents;
+            return static::$temple8TemplateCache[$key] = $contents;
         }
 
-        return static::$Temple8TemplateCache[$key] = $this->createTemple8TemplateFromString($this->factory(), $contents);
+        return static::$temple8TemplateCache[$key] = $this->createTemple8TemplateFromString($this->factory(), $contents);
     }
 
     /**
@@ -199,12 +200,14 @@ abstract class Component
             $directory = Container::getInstance()['config']->get('template.compiled')
         );
 
-        if (! is_file($templateFile = $directory.'/'.hash('xxh128', $contents).'.t8.php')) {
+        $templateFile = $directory.'/'.hash('xxh128', $contents).'.t8.php';
+
+        if (! is_file($templateFile) || filesize($templateFile) === 0) {
             if (! is_dir($directory)) {
                 mkdir($directory, 0755, true);
             }
 
-            file_put_contents($templateFile, $contents);
+            (new Filesystem)->replace($templateFile, $contents);
         }
 
         return '__components::'.basename($templateFile, '.t8.php');
@@ -288,8 +291,8 @@ abstract class Component
     protected function createVariableFromMethod(ReflectionMethod $method)
     {
         return $method->getNumberOfParameters() === 0
-                        ? $this->createInvokableVariable($method->getName())
-                        : Closure::fromCallable([$this, $method->getName()]);
+            ? $this->createInvokableVariable($method->getName())
+            : Closure::fromCallable([$this, $method->getName()]);
     }
 
     /**
@@ -314,7 +317,7 @@ abstract class Component
     protected function shouldIgnore($name)
     {
         return str_starts_with($name, '__') ||
-               in_array($name, $this->ignoredMethods());
+            in_array($name, $this->ignoredMethods());
     }
 
     /**
@@ -448,7 +451,7 @@ abstract class Component
      */
     public static function flushCache()
     {
-        static::$Temple8TemplateCache = [];
+        static::$temple8TemplateCache = [];
         static::$constructorParametersCache = [];
         static::$methodCache = [];
         static::$propertyCache = [];

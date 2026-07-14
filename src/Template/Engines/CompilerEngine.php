@@ -38,7 +38,6 @@ class CompilerEngine extends PhpEngine
      *
      * @param  \LaraGram\Template\Compilers\CompilerInterface  $compiler
      * @param  \LaraGram\Filesystem\Filesystem|null  $files
-     * @return void
      */
     public function __construct(CompilerInterface $compiler, ?Filesystem $files = null)
     {
@@ -53,6 +52,8 @@ class CompilerEngine extends PhpEngine
      * @param  string  $path
      * @param  array  $data
      * @return string
+     *
+     * @throws \LaraGram\Template\TemplateException
      */
     public function get($path, array $data = [])
     {

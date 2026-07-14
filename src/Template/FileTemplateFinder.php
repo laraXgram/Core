@@ -17,21 +17,21 @@ class FileTemplateFinder implements TemplateFinderInterface
     /**
      * The array of active template paths.
      *
-     * @var array
+     * @var string[]
      */
     protected $paths;
 
     /**
      * The array of templates that have been located.
      *
-     * @var array
+     * @var array<string, string>
      */
     protected $templates = [];
 
     /**
      * The namespace to file path hints.
      *
-     * @var array
+     * @var array<string, array>
      */
     protected $hints = [];
 
@@ -40,15 +40,14 @@ class FileTemplateFinder implements TemplateFinderInterface
      *
      * @var string[]
      */
-    protected $extensions = ['t8.php', 'php', 'css', 'html'];
+    protected $extensions = ['t8.php', 'php', 'html'];
 
     /**
      * Create a new file template loader instance.
      *
      * @param  \LaraGram\Filesystem\Filesystem  $files
-     * @param  array  $paths
-     * @param  array|null  $extensions
-     * @return void
+     * @param  string[]  $paths
+     * @param  string[]|null  $extensions
      */
     public function __construct(Filesystem $files, array $paths, ?array $extensions = null)
     {
@@ -61,22 +60,22 @@ class FileTemplateFinder implements TemplateFinderInterface
     }
 
     /**
-     * Get the fully qualified location of the template.
+     * Get the fully-qualified location of the template.
      *
-     * @param  string  $name
+     * @param  string  $template
      * @return string
      */
-    public function find($name)
+    public function find($template)
     {
-        if (isset($this->templates[$name])) {
-            return $this->templates[$name];
+        if (isset($this->templates[$template])) {
+            return $this->templates[$template];
         }
 
-        if ($this->hasHintInformation($name = trim($name))) {
-            return $this->templates[$name] = $this->findNamespacedTemplate($name);
+        if ($this->hasHintInformation($template = trim($template))) {
+            return $this->templates[$template] = $this->findNamespacedTemplate($template);
         }
 
-        return $this->templates[$name] = $this->findInPaths($name, $this->paths);
+        return $this->templates[$template] = $this->findInPaths($template, $this->paths);
     }
 
     /**
@@ -96,7 +95,7 @@ class FileTemplateFinder implements TemplateFinderInterface
      * Get the segments of a template with a named path.
      *
      * @param  string  $name
-     * @return array
+     * @return string[]
      *
      * @throws \InvalidArgumentException
      */
@@ -119,7 +118,7 @@ class FileTemplateFinder implements TemplateFinderInterface
      * Find the given template in the list of paths.
      *
      * @param  string  $name
-     * @param  array  $paths
+     * @param  string|string[]  $paths
      * @return string
      *
      * @throws \InvalidArgumentException
@@ -143,7 +142,7 @@ class FileTemplateFinder implements TemplateFinderInterface
      * Get an array of possible template files.
      *
      * @param  string  $name
-     * @return array
+     * @return string[]
      */
     protected function getPossibleTemplateFiles($name)
     {
@@ -187,7 +186,7 @@ class FileTemplateFinder implements TemplateFinderInterface
      * Add a namespace hint to the finder.
      *
      * @param  string  $namespace
-     * @param  string|array  $hints
+     * @param  string|string[]  $hints
      * @return void
      */
     public function addNamespace($namespace, $hints)
@@ -205,7 +204,7 @@ class FileTemplateFinder implements TemplateFinderInterface
      * Prepend a namespace hint to the finder.
      *
      * @param  string  $namespace
-     * @param  string|array  $hints
+     * @param  string|string[]  $hints
      * @return void
      */
     public function prependNamespace($namespace, $hints)
@@ -223,7 +222,7 @@ class FileTemplateFinder implements TemplateFinderInterface
      * Replace the namespace hints for the given namespace.
      *
      * @param  string  $namespace
-     * @param  string|array  $hints
+     * @param  string|string[]  $hints
      * @return void
      */
     public function replaceNamespace($namespace, $hints)
@@ -280,7 +279,7 @@ class FileTemplateFinder implements TemplateFinderInterface
     /**
      * Set the active template paths.
      *
-     * @param  array  $paths
+     * @param  string[]  $paths
      * @return $this
      */
     public function setPaths($paths)
@@ -293,7 +292,7 @@ class FileTemplateFinder implements TemplateFinderInterface
     /**
      * Get the active template paths.
      *
-     * @return array
+     * @return string[]
      */
     public function getPaths()
     {
@@ -303,7 +302,7 @@ class FileTemplateFinder implements TemplateFinderInterface
     /**
      * Get the templates that have been located.
      *
-     * @return array
+     * @return array<string, string>
      */
     public function getTemplates()
     {
@@ -313,7 +312,7 @@ class FileTemplateFinder implements TemplateFinderInterface
     /**
      * Get the namespace to file path hints.
      *
-     * @return array
+     * @return array<string, array>
      */
     public function getHints()
     {
@@ -323,7 +322,7 @@ class FileTemplateFinder implements TemplateFinderInterface
     /**
      * Get registered extensions.
      *
-     * @return array
+     * @return string[]
      */
     public function getExtensions()
     {

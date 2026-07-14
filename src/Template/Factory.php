@@ -110,7 +110,6 @@ class Factory implements FactoryContract
      * @param  \LaraGram\Template\Engines\EngineResolver  $engines
      * @param  \LaraGram\Template\TemplateFinderInterface  $finder
      * @param  \LaraGram\Contracts\Events\Dispatcher  $events
-     * @return void
      */
     public function __construct(EngineResolver $engines, TemplateFinderInterface $finder, Dispatcher $events)
     {
@@ -246,8 +245,8 @@ class Factory implements FactoryContract
         // with "raw|" for convenience and to let this know that it is a string.
         else {
             $result = str_starts_with($empty, 'raw|')
-                        ? substr($empty, 4)
-                        : $this->make($empty)->render();
+                ? substr($empty, 4)
+                : $this->make($empty)->render();
         }
 
         return $result;
@@ -347,7 +346,7 @@ class Factory implements FactoryContract
      * Add a piece of shared data to the environment.
      *
      * @param  array|string  $key
-     * @param  mixed|null  $value
+     * @param  mixed  $value
      * @return mixed
      */
     public function share($key, $value = null)

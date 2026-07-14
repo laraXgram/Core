@@ -2,10 +2,13 @@
 
 namespace LaraGram\Template;
 
+use BackedEnum;
 use LaraGram\Container\Container;
 use LaraGram\Support\Collection;
 use LaraGram\Support\Str;
 use LaraGram\Template\Compilers\ComponentTagCompiler;
+
+use function LaraGram\Support\enum_value;
 
 class DynamicComponent extends Component
 {
@@ -19,7 +22,7 @@ class DynamicComponent extends Component
     /**
      * The component tag compiler instance.
      *
-     * @var \LaraGram\Template\Compilers\Temple8TagCompiler
+     * @var \LaraGram\Template\Compilers\ComponentTagCompiler
      */
     protected static $compiler;
 
@@ -33,12 +36,11 @@ class DynamicComponent extends Component
     /**
      * Create a new component instance.
      *
-     * @param  string  $component
-     * @return void
+     * @param  \BackedEnum|string  $component
      */
-    public function __construct(string $component)
+    public function __construct(BackedEnum|string $component)
     {
-        $this->component = $component;
+        $this->component = (string) enum_value($component);
     }
 
     /**
@@ -95,8 +97,8 @@ EOF;
         }
 
         return '@props('.'[\''.implode('\',\'', (new Collection($bindings))->map(function ($dataKey) {
-            return Str::camel($dataKey);
-        })->all()).'\']'.')';
+                return Str::camel($dataKey);
+            })->all()).'\']'.')';
     }
 
     /**
@@ -133,12 +135,8 @@ EOF;
      */
     protected function classForComponent()
     {
-        if (isset(static::$componentClasses[$this->component])) {
-            return static::$componentClasses[$this->component];
-        }
-
-        return static::$componentClasses[$this->component] =
-                    $this->compiler()->componentClass($this->component);
+        return static::$componentClasses[$this->component] ?? static::$componentClasses[$this->component] =
+            $this->compiler()->componentClass($this->component);
     }
 
     /**
@@ -149,13 +147,13 @@ EOF;
      */
     protected function bindings(string $class)
     {
-        [$data, $attributes] = $this->compiler()->partitionDataAndAttributes($class, $this->attributes->getAttributes());
+        [$data] = $this->compiler()->partitionDataAndAttributes($class, $this->attributes->getAttributes());
 
         return array_keys($data->all());
     }
 
     /**
-     * Get an instance of the Temple8 tag compiler.
+     * Get an instance of the Blade tag compiler.
      *
      * @return \LaraGram\Template\Compilers\ComponentTagCompiler
      */

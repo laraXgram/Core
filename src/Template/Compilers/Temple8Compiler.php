@@ -20,6 +20,7 @@ class Temple8Compiler extends Compiler implements CompilerInterface
         Concerns\CompilesComments,
         Concerns\CompilesComponents,
         Concerns\CompilesConditionals,
+        Concerns\CompilesContexts,
         Concerns\CompilesEchos,
         Concerns\CompilesErrors,
         Concerns\CompilesFragments,

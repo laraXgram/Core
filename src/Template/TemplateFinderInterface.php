@@ -12,7 +12,7 @@ interface TemplateFinderInterface
     const HINT_PATH_DELIMITER = '::';
 
     /**
-     * Get the fully qualified location of the template.
+     * Get the fully-qualified location of the template.
      *
      * @param  string  $template
      * @return string
