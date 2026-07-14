@@ -3,6 +3,7 @@
 namespace LaraGram\Console\Prompts;
 
 use Closure;
+use LaraGram\Support\Collection;
 use LaraGram\Console\Prompts\Exceptions\FormRevertedException;
 
 class FormBuilder
@@ -10,7 +11,7 @@ class FormBuilder
     /**
      * Each step that should be executed.
      *
-     * @var array<int, \LaraGram\Console\Prompts\FormStep>
+     * @var array<int, FormStep>
      */
     protected array $steps = [];
 
@@ -111,10 +112,10 @@ class FormBuilder
     /**
      * Prompt the user to select an option.
      *
-     * @param  array<int|string, string>  $options
+     * @param  array<int|string, string>|Collection<int|string, string>  $options
      * @param  true|string  $required
      */
-    public function select(string $label, array $options, int|string|null $default = null, int $scroll = 5, mixed $validate = null, string $hint = '', bool|string $required = true, ?string $name = null, ?Closure $transform = null): self
+    public function select(string $label, array|Collection $options, int|string|null $default = null, int $scroll = 5, mixed $validate = null, string $hint = '', bool|string $required = true, ?string $name = null, ?Closure $transform = null): self
     {
         return $this->runPrompt(select(...), get_defined_vars());
     }
@@ -122,10 +123,10 @@ class FormBuilder
     /**
      * Prompt the user to select multiple options.
      *
-     * @param  array<int|string, string>  $options
-     * @param  array<int|string>  $default
+     * @param  array<int|string, string>|Collection<int|string, string>  $options
+     * @param  array<int|string>|Collection<int, int|string>  $default
      */
-    public function multiselect(string $label, array $options, array $default = [], int $scroll = 5, bool|string $required = false, mixed $validate = null, string $hint = 'Use the space bar to select options.', ?string $name = null, ?Closure $transform = null): self
+    public function multiselect(string $label, array|Collection $options, array|Collection $default = [], int $scroll = 5, bool|string $required = false, mixed $validate = null, string $hint = 'Use the space bar to select options.', ?string $name = null, ?Closure $transform = null): self
     {
         return $this->runPrompt(multiselect(...), get_defined_vars());
     }
@@ -149,9 +150,9 @@ class FormBuilder
     /**
      * Prompt the user for text input with auto-completion.
      *
-     * @param  array<string><int, string>|Closure(string): array<string>  $options
+     * @param  array<string>|Collection<int, string>|Closure(string): array<string>  $options
      */
-    public function suggest(string $label, array|Closure $options, string $placeholder = '', string $default = '', int $scroll = 5, bool|string $required = false, mixed $validate = null, string $hint = '', ?string $name = null, ?Closure $transform = null): self
+    public function suggest(string $label, array|Collection|Closure $options, string $placeholder = '', string $default = '', int $scroll = 5, bool|string $required = false, mixed $validate = null, string $hint = '', ?string $name = null, ?Closure $transform = null): self
     {
         return $this->runPrompt(suggest(...), get_defined_vars());
     }
@@ -180,7 +181,7 @@ class FormBuilder
     /**
      * Render a spinner while the given callback is executing.
      *
-     * @param  \Closure(): mixed  $callback
+     * @param  Closure(): mixed  $callback
      */
     public function spin(Closure $callback, string $message = '', ?string $name = null): self
     {
@@ -246,10 +247,10 @@ class FormBuilder
     /**
      * Display a table.
      *
-     * @param  array<int, string|array<int, string>><int, string|array<int, string>>  $headers
-     * @param  array<int, array<int, string>><int, array<int, string>>  $rows
+     * @param  array<int, string|array<int, string>>|Collection<int, string|array<int, string>>  $headers
+     * @param  array<int, array<int, string>>|Collection<int, array<int, string>>  $rows
      */
-    public function table(array $headers = [], array|null $rows = null, ?string $name = null): self
+    public function table(array|Collection $headers = [], array|Collection|null $rows = null, ?string $name = null): self
     {
         return $this->runPrompt(table(...), get_defined_vars(), true);
     }

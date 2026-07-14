@@ -2,13 +2,21 @@
 
 namespace LaraGram\Console\Prompts;
 
-class Note extends Prompt
+use LaraGram\Console\Prompts\Elements\ElementContract;
+
+class Callout extends Prompt
 {
     /**
-     * Create a new Note instance.
+     * Create a new Callout instance.
+     *
+     * @param  string|array<int, string|ElementContract>  $content
      */
-    public function __construct(public string $message, public ?string $type = null)
-    {
+    public function __construct(
+        public string $label,
+        public string|array $content,
+        public ?string $type = null,
+        public string $info = '',
+    ) {
         //
     }
 
@@ -21,7 +29,7 @@ class Note extends Prompt
     }
 
     /**
-     * Display the note.
+     * Display the callout.
      */
     public function prompt(): bool
     {

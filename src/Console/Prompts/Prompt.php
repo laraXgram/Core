@@ -16,7 +16,6 @@ abstract class Prompt
     use Concerns\Cursor;
     use Concerns\Erase;
     use Concerns\Events;
-    use Concerns\FakesInputOutput;
     use Concerns\Fallback;
     use Concerns\Interactivity;
     use Concerns\Themes;

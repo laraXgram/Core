@@ -3,9 +3,11 @@
 namespace LaraGram\Console\Prompts;
 
 use Closure;
+use LaraGram\Support\Collection;
 
 class SuggestPrompt extends Prompt
 {
+    use Concerns\HasInfo;
     use Concerns\Scrolling;
     use Concerns\Truncation;
     use Concerns\TypedValue;
@@ -13,7 +15,7 @@ class SuggestPrompt extends Prompt
     /**
      * The options for the suggest prompt.
      *
-     * @var array<string>|Closure(string): (array<string>)
+     * @var array<string>|Closure(string): (array<string>|Collection<int, string>)
      */
     public array|Closure $options;
 
@@ -27,11 +29,11 @@ class SuggestPrompt extends Prompt
     /**
      * Create a new SuggestPrompt instance.
      *
-     * @param  array<string>|Closure(string): (array<string>)  $options
+     * @param  array<string>|Collection<int, string>|Closure(string): (array<string>|Collection<int, string>)  $options
      */
     public function __construct(
         public string $label,
-        array|Closure $options,
+        array|Collection|Closure $options,
         public string $placeholder = '',
         public string $default = '',
         public int $scroll = 5,
@@ -39,8 +41,9 @@ class SuggestPrompt extends Prompt
         public mixed $validate = null,
         public string $hint = '',
         public ?Closure $transform = null,
+        public string|Closure $info = '',
     ) {
-        $this->options = $options;
+        $this->options = $options instanceof Collection ? $options->all() : $options;
 
         $this->initializeScrolling(null);
 
@@ -59,6 +62,18 @@ class SuggestPrompt extends Prompt
         });
 
         $this->trackTypedValue($default, ignore: fn ($key) => Key::oneOf([Key::HOME, Key::END, Key::CTRL_A, Key::CTRL_E], $key) && $this->highlighted !== null);
+    }
+
+    /**
+     * Get the value of the highlighted option.
+     */
+    public function highlightedValue(): ?string
+    {
+        if ($this->highlighted === null) {
+            return null;
+        }
+
+        return $this->matches()[$this->highlighted] ?? null;
     }
 
     /**
@@ -93,7 +108,7 @@ class SuggestPrompt extends Prompt
         if ($this->options instanceof Closure) {
             $matches = ($this->options)($this->value());
 
-            return $this->matches = array_values($matches);
+            return $this->matches = array_values($matches instanceof Collection ? $matches->all() : $matches);
         }
 
         return $this->matches = array_values(array_filter($this->options, function ($option) {

@@ -2,17 +2,19 @@
 
 namespace LaraGram\Console\Prompts\Themes\Default\Concerns;
 
+use LaraGram\Support\Collection;
+
 trait DrawsScrollbars
 {
     /**
      * Render a scrollbar beside the visible items.
      *
-     * @template T of array<int, string>
+     * @template T of array<int, string>|\LaraGram\Support\Collection<int, string>
      *
      * @param  T  $visible
      * @return T
      */
-    protected function scrollbar(array $visible, int $firstVisible, int $height, int $total, int $width, string $color = 'cyan'): array
+    protected function scrollbar(array|Collection $visible, int $firstVisible, int $height, int $total, int $width, string $color = 'cyan'): array|Collection
     {
         if ($height >= $total) {
             return $visible;
@@ -20,14 +22,14 @@ trait DrawsScrollbars
 
         $scrollPosition = $this->scrollPosition($firstVisible, $height, $total);
 
-        $lines = $visible;
+        $lines = $visible instanceof Collection ? $visible->all() : $visible;
 
         $result = array_map(fn ($line, $index) => match ($index) {
             $scrollPosition => preg_replace('/.$/', $this->{$color}('┃'), $this->pad($line, $width)) ?? '',
             default => preg_replace('/.$/', $this->gray('│'), $this->pad($line, $width)) ?? '',
         }, array_values($lines), range(0, count($lines) - 1));
 
-        return $result;
+        return $visible instanceof Collection ? new Collection($result) : $result; // @phpstan-ignore return.type (https://github.com/phpstan/phpstan/issues/11663)
     }
 
     /**

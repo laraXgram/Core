@@ -3,9 +3,11 @@
 namespace LaraGram\Console\Prompts;
 
 use Closure;
+use LaraGram\Support\Collection;
 
 class MultiSelectPrompt extends Prompt
 {
+    use Concerns\HasInfo;
     use Concerns\Scrolling;
 
     /**
@@ -32,21 +34,22 @@ class MultiSelectPrompt extends Prompt
     /**
      * Create a new MultiSelectPrompt instance.
      *
-     * @param  array<int|string, string>  $options
-     * @param  array<int|string>  $default
+     * @param  array<int|string, string>|Collection<int|string, string>  $options
+     * @param  array<int|string>|Collection<int, int|string>  $default
      */
     public function __construct(
         public string $label,
-        array $options,
-        array $default = [],
+        array|Collection $options,
+        array|Collection $default = [],
         public int $scroll = 5,
         public bool|string $required = false,
         public mixed $validate = null,
         public string $hint = '',
         public ?Closure $transform = null,
+        public string|Closure $info = '',
     ) {
-        $this->options = $options;
-        $this->default = $default;
+        $this->options = $options instanceof Collection ? $options->all() : $options;
+        $this->default = $default instanceof Collection ? $default->all() : $default;
         $this->values = $this->default;
 
         $this->initializeScrolling(0);
@@ -61,6 +64,22 @@ class MultiSelectPrompt extends Prompt
             Key::ENTER => $this->submit(),
             default => null,
         });
+    }
+
+    /**
+     * Get the value of the highlighted option.
+     */
+    public function highlightedValue(): int|string|null
+    {
+        if ($this->highlighted === null) {
+            return null;
+        }
+
+        if (array_is_list($this->options)) {
+            return $this->options[$this->highlighted] ?? null;
+        }
+
+        return array_keys($this->options)[$this->highlighted] ?? null;
     }
 
     /**
