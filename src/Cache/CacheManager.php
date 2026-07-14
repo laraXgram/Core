@@ -2,13 +2,14 @@
 
 namespace LaraGram\Cache;
 
+use Aws\DynamoDb\DynamoDbClient;
 use Closure;
 use LaraGram\Contracts\Cache\Factory as FactoryContract;
 use LaraGram\Contracts\Cache\Store;
 use LaraGram\Contracts\Events\Dispatcher as DispatcherContract;
 use LaraGram\Support\Arr;
 use LaraGram\Support\RebindsCallbacksToSelf;
-use InvalidArgumentException;;
+use InvalidArgumentException;
 use ReflectionException;
 use RuntimeException;
 
@@ -208,6 +209,56 @@ class CacheManager implements FactoryContract
             ),
             $config
         );
+    }
+
+    /**
+     * Create an instance of the DynamoDB cache driver.
+     *
+     * @param  array  $config
+     * @return \LaraGram\Cache\Repository
+     */
+    protected function createDynamodbDriver(array $config)
+    {
+        $client = $this->newDynamodbClient($config);
+
+        return $this->repository(
+            new DynamoDbStore(
+                $client,
+                $config['table'],
+                $config['attributes']['key'] ?? 'key',
+                $config['attributes']['value'] ?? 'value',
+                $config['attributes']['expiration'] ?? 'expires_at',
+                $this->getPrefix($config),
+                $this->getSerializableClasses($config),
+            ),
+            $config
+        );
+    }
+
+    /**
+     * Create new DynamoDb Client instance.
+     *
+     * @return \Aws\DynamoDb\DynamoDbClient
+     */
+    protected function newDynamodbClient(array $config)
+    {
+        $dynamoConfig = [
+            'region' => $config['region'],
+            'version' => 'latest',
+            'endpoint' => $config['endpoint'] ?? null,
+        ];
+
+        if (! empty($config['key']) && ! empty($config['secret'])) {
+            $dynamoConfig['credentials'] = Arr::only(
+                $config, ['key', 'secret']
+            );
+
+            if (! empty($config['token'])) {
+                $dynamoConfig['credentials']['token'] = $config['token'];
+            }
+        }
+
+        return new DynamoDbClient($dynamoConfig);
     }
 
     /**
