@@ -9,8 +9,6 @@ use LaraGram\Console\Attribute\AsCommand;
 #[AsCommand(name: 'install:api')]
 class ApiInstallCommand extends Command
 {
-    use InteractsWithComposerPackages;
-
     /**
      * The name and signature of the console command.
      *
