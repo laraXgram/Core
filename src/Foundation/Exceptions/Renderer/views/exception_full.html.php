@@ -13,24 +13,22 @@
     <body>
         <script>
             document.body.classList.add(
-                localStorage.getItem('symfony/profiler/theme') || (matchMedia('(prefers-color-scheme: dark)').matches ? 'theme-dark' : 'theme-light')
+                localStorage.getItem('laragram/theme') || (matchMedia('(prefers-color-scheme: dark)').matches ? 'theme-dark' : 'theme-light')
             );
         </script>
 
-        <?php if (class_exists(\Composer\InstalledVersions::class) && \Composer\InstalledVersions::isInstalled('symfony/http-kernel')) { ?>
-            <header>
-                <div class="container">
-                    <h1 class="logo"><?= $this->include('assets/images/symfony-logo.svg'); ?> LaraGram Exception</h1>
+        <header>
+            <div class="container">
+                <h1 class="logo"><?= $this->include('assets/images/laragram-logo.svg'); ?> LaraGram Exception</h1>
 
-                    <div class="help-link">
-                        <a href="https://symfony.com/doc/<?= preg_match('/^v?(\d+\.\d+)/', \Composer\InstalledVersions::getPrettyVersion('symfony/http-kernel') ?? \Composer\InstalledVersions::getPrettyVersion('symfony/symfony'), $m) ? $m[1] : 'current'; ?>/index.html">
-                            <span class="icon"><?= $this->include('assets/images/icon-book.svg'); ?></span>
-                            <span class="hidden-xs-down">LaraGram</span> Docs
-                        </a>
-                    </div>
+                <div class="help-link">
+                    <a href="https://github.com/laraxgram/core" target="_blank" rel="noreferrer noopener">
+                        <span class="icon"><?= $this->include('assets/images/icon-book.svg'); ?></span>
+                        <span class="hidden-xs-down">LaraGram</span> Docs
+                    </a>
                 </div>
-            </header>
-        <?php } ?>
+            </div>
+        </header>
 
         <?= $this->include('views/exception.html.php', $context); ?>
 

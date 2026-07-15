@@ -18,7 +18,7 @@
             <h1 class="break-long-words exception-message<?= mb_strlen($exceptionMessage) > 180 ? ' long' : ''; ?>"><?= $this->formatFileFromText(nl2br($exceptionMessage)); ?></h1>
 
             <div class="exception-illustration hidden-xs-down">
-                <?= $this->include('assets/images/symfony-ghost.svg.php'); ?>
+                <?= $this->include('assets/images/laragram-illustration.svg.php'); ?>
             </div>
         </div>
     </div>

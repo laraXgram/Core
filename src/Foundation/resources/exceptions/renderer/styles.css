@@ -3,6 +3,41 @@
 @import 'tippy.js/dist/tippy.css';
 @import 'tippy.js/animations/shift-away.css';
 
+/* ── LaraGram "Telegram mission control" theme ──────────────────────────
+   Remap Tailwind's neutral / blue / rose scales so every existing utility
+   (bg-neutral-900, text-blue-500, bg-rose-600 …) renders in the LaraGram
+   palette: blue-tinted ink, Telegram-blue accent, brand-red signal. */
+@theme {
+    --color-neutral-50:  #f3f5f9;
+    --color-neutral-100: #eef1f6;
+    --color-neutral-200: #e4e8f0;
+    --color-neutral-300: #d3dae4;
+    --color-neutral-400: #97a0b0;
+    --color-neutral-500: #6b7280;
+    --color-neutral-600: #46506a;
+    --color-neutral-700: #1e2635;
+    --color-neutral-800: #141926;
+    --color-neutral-900: #0f1420;
+    --color-neutral-950: #0a0d13;
+
+    --color-blue-100: #d7f0fb;
+    --color-blue-300: #7ec4ff;
+    --color-blue-400: #4cbbf0;
+    --color-blue-500: #2aabee;
+    --color-blue-600: #229ed9;
+    --color-blue-700: #1c7fb0;
+    --color-blue-800: #16607f;
+    --color-blue-900: #123f52;
+    --color-blue-950: #0d2733;
+
+    --color-rose-100: #ffe3e1;
+    --color-rose-200: #fbc9c6;
+    --color-rose-500: #f0473e;
+    --color-rose-600: #e5322d;
+    --color-rose-900: #4a1614;
+    --color-rose-950: #2e0d0c;
+}
+
 [x-cloak] {
     display: none !important;
 }
@@ -12,7 +47,32 @@ body {
     padding-right: env(safe-area-inset-right, 0px);
     padding-bottom: env(safe-area-inset-bottom, 0px);
     padding-left: env(safe-area-inset-left, 0px);
+    position: relative;
 }
+
+/* dot-grid + beam atmosphere behind the whole page */
+body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    background-image: radial-gradient(circle at 1px 1px, color-mix(in srgb, currentColor 8%, transparent) 1px, transparent 0);
+    background-size: 26px 26px;
+    -webkit-mask-image: radial-gradient(120% 70% at 50% -10%, #000 0%, transparent 70%);
+    mask-image: radial-gradient(120% 70% at 50% -10%, #000 0%, transparent 70%);
+}
+@media (prefers-color-scheme: dark) {
+    body::after {
+        content: "";
+        position: fixed;
+        inset: 0;
+        z-index: 0;
+        pointer-events: none;
+        background: radial-gradient(720px 380px at 50% -8%, rgba(42,171,238,.14), transparent 70%);
+    }
+}
+body > * { position: relative; z-index: 1; }
 
 .tippy-box[data-theme~='laragram'] {
     @apply max-w-7xl! rounded-md border text-xs shadow-md backdrop-blur-md overflow-x-auto;

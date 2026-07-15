@@ -1,4 +1,75 @@
-body { background-color: #fff; color: #222; font: 16px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; margin: 0; }
-.container { margin: 30px; max-width: 600px; }
-h1 { color: #dc3545; font-size: 24px; }
-h2 { font-size: 18px; }
+:root {
+    --ink: #0a0d13; --surface: #10141d; --surface-2: #141926;
+    --line: #1e2635; --line-soft: #1a212e;
+    --text: #eef1f7; --muted: #8b93a6; --faint: #5b6474;
+    --blue: #2aabee; --blue-2: #229ed9;
+    --red: #f0473e; --red-glow: rgba(240,71,62,.5);
+}
+@media (prefers-color-scheme: light) {
+    :root {
+        --ink: #f3f5f9; --surface: #ffffff; --surface-2: #f7f9fc;
+        --line: #e4e8f0; --line-soft: #eef1f6;
+        --text: #101521; --muted: #5c6675; --faint: #97a0b0;
+        --red-glow: rgba(240,71,62,.28);
+    }
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; }
+body {
+    background: var(--ink); color: var(--text);
+    font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    min-height: 100dvh; display: flex; align-items: center; justify-content: center;
+    padding: 24px; position: relative; overflow: hidden;
+}
+body::before {
+    content: ""; position: fixed; inset: 0; pointer-events: none;
+    background-image: radial-gradient(circle at 1px 1px, color-mix(in srgb, var(--muted) 20%, transparent) 1px, transparent 0);
+    background-size: 24px 24px;
+    -webkit-mask-image: radial-gradient(80% 60% at 50% 45%, #000 0%, transparent 75%);
+    mask-image: radial-gradient(80% 60% at 50% 45%, #000 0%, transparent 75%);
+    opacity: .45;
+}
+body::after {
+    content: ""; position: fixed; inset: 0; pointer-events: none;
+    background: radial-gradient(560px 320px at 50% 38%, var(--red-glow), transparent 70%);
+}
+.card {
+    position: relative; z-index: 1; width: 100%; max-width: 460px;
+    background: var(--surface); border: 1px solid var(--line);
+    border-radius: 18px; padding: 34px 34px 28px; overflow: hidden; text-align: center;
+    box-shadow: 0 1px 2px rgba(0,0,0,.2), 0 24px 60px -24px rgba(0,0,0,.55);
+}
+.card::before {
+    content: ""; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+    background: linear-gradient(90deg, transparent, var(--red), transparent); opacity: .9;
+}
+.top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 30px; }
+.brand { display: flex; align-items: center; gap: 9px; }
+.brand svg { width: 22px; height: 22px; }
+.brand span { font-size: 13.5px; font-weight: 650; letter-spacing: -.01em; }
+.brand span b { color: var(--blue); }
+.tag {
+    display: inline-flex; align-items: center; gap: 7px;
+    font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; font-size: 11px;
+    letter-spacing: .1em; text-transform: uppercase; color: var(--red);
+    border: 1px solid color-mix(in srgb, var(--red) 30%, var(--line)); border-radius: 7px; padding: 4px 9px;
+    background: color-mix(in srgb, var(--red) 8%, transparent);
+}
+.tag .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--red); box-shadow: 0 0 0 3px color-mix(in srgb, var(--red) 22%, transparent); }
+.code {
+    font-family: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
+    font-size: 88px; line-height: 1; font-weight: 700; letter-spacing: -.03em;
+    font-variant-numeric: tabular-nums; margin: 8px 0 4px;
+    background: linear-gradient(160deg, var(--text) 20%, var(--red) 150%);
+    -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+}
+h1 { font-size: 21px; font-weight: 680; letter-spacing: -.02em; margin-bottom: 12px; }
+p { margin: 0 auto; max-width: 40ch; color: var(--muted); font-size: 14px; line-height: 1.6; }
+.footer {
+    margin-top: 30px; padding-top: 18px; border-top: 1px solid var(--line-soft);
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 11.5px; color: var(--faint); letter-spacing: .03em;
+}
+.footer b { color: var(--muted); font-weight: 600; }
+.footer .sep { opacity: .4; }
