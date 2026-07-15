@@ -40,6 +40,7 @@ trait InteractWithUpdate
             isset($this->chat_join_request) => 'chat_join_request',
             isset($this->chat_boost) => 'chat_boost',
             isset($this->removed_chat_boost) => 'removed_chat_boost',
+            isset($this->subscription) => 'subscription',
             default => false
         };
     }
@@ -128,6 +129,8 @@ trait InteractWithUpdate
             isset($message->managed_bot_created) => 'managed_bot_created',
             isset($message->chat_owner_left) => 'chat_owner_left',
             isset($message->chat_owner_changed) => 'chat_owner_changed',
+            isset($message->community_chat_added) => 'community_chat_added',
+            isset($message->community_chat_removed) => 'community_chat_removed',
             default => throw new InvalidUpdateType('Unknown message type')
         };
     }

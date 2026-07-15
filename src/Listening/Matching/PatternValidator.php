@@ -73,6 +73,12 @@ class PatternValidator implements ValidatorInterface
             return $this->matchRichType($pattern);
         }
 
+        // Ephemeral message listeners - match any message carrying an
+        // ephemeral_message_id, independent of the content-derived verb.
+        if (in_array('EPHEMERAL', $listenMethods, true)) {
+            return isset(message()->ephemeral_message_id);
+        }
+
         // Entity listeners - match against message entities or caption entities,
         // independent of the content-derived primary verb (text or captioned media).
         if (in_array('ENTITIES', $listenMethods, true)) {

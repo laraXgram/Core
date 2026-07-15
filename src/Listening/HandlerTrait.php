@@ -647,6 +647,32 @@ trait HandlerTrait
         return $this->addListen(['MESSAGE', 'RICH_TYPE'], $type, $action);
     }
 
+    public function onSubscription(Closure|array|string $action)
+    {
+        return $this->addListen('UPDATE', 'subscription', $action);
+    }
+
+    public function onCommunityChatAdded(Closure|array|string $action)
+    {
+        return $this->addListen('MESSAGE', 'community_chat_added', $action);
+    }
+
+    public function onCommunityChatRemoved(Closure|array|string $action)
+    {
+        return $this->addListen('MESSAGE', 'community_chat_removed', $action);
+    }
+
+    public function onEphemeralMessage(Closure|array|string $action)
+    {
+        $placeholder = 'e_' . substr(md5('ephemeral_message'), 0, 8);
+
+        return $this->addListen(
+            ['TEXT', 'MESSAGE', 'DICE', 'MESSAGE_TYPE', 'COMMAND', 'REFERRAL', 'EPHEMERAL'],
+            "{{$placeholder}}",
+            $action
+        )->where($placeholder, '.*');
+    }
+
     public function onUrl(Closure|array|string $action)
     {
         return $this->addListen(['TEXT', 'MESSAGE', 'ENTITIES'], 'url', $action);

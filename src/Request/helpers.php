@@ -61,6 +61,7 @@ if (!function_exists('user')) {
             $request->purchased_paid_media != null => $request->purchased_paid_media->from,
             $request->chat_boost != null => $request->chat_boost->boost->source->user,
             $request->removed_chat_boost != null => $request->removed_chat_boost->source->user,
+            $request->subscription != null => $request->subscription->user,
             default => null
         };
     }
@@ -362,6 +363,17 @@ if (!function_exists('managed_bot')) {
          */
         $request = app('request');
         return $request->managed_bot;
+    }
+}
+
+if (!function_exists('subscription')) {
+    function subscription(): object|null
+    {
+        /**
+         * @var Request $request ;
+         */
+        $request = app('request');
+        return $request->subscription;
     }
 }
 
