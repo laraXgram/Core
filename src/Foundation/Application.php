@@ -1169,7 +1169,7 @@ class Application extends Container implements ApplicationContract, CachesConfig
      */
     public function handleBot(Request $request, int $type = self::BOT_MAIN_REQUEST, bool $catch = true): \LaraGram\Request\Response
     {
-        return $this[BotKernelContract::class]->handle(Request::createFromBase($request));
+        return $this[BotKernelContract::class]->handle(Request::createFromBase(["", $request->update(), $request->server()]));
     }
 
     /**
@@ -1179,7 +1179,7 @@ class Application extends Container implements ApplicationContract, CachesConfig
      */
     public function handleHttp(\LaraGram\Http\BaseRequest $request, int $type = self::HTTP_MAIN_REQUEST, bool $catch = true): \LaraGram\Http\BaseResponse
     {
-        return $this[HttpKernelContract::class]->handle(Request::createFromBase($request));
+        return $this[HttpKernelContract::class]->handle(HttpRequest::createFromBase($request));
     }
 
     /**
