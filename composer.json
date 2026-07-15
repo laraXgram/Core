@@ -84,13 +84,14 @@
             "LaraGram\\Support\\": [
                 "src/Macroable/",
                 "src/Collections/",
-                "src/Conditionable/"
+                "src/Conditionable/",
+                "src/Reflection/"
             ]
         }
     },
     "extra": {
         "branch-alias": {
-            "dev-master": "3.x-dev"
+            "dev-master": "4.x-dev"
         }
     },
     "suggest": {
