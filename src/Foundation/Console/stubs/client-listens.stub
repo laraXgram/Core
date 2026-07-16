@@ -1,0 +1,13 @@
+<?php
+
+use LaraGram\MTProto\Facades\Client;
+use LaraGram\MTProto\Foundation\ClientRequest;
+
+Client::onText('Hello', function (ClientRequest $request) {
+    $request->sendMessage(
+        peer: $request->message->peer_id->user_id,
+        message: "Hi"
+    );
+
+    $request->seen();
+});
