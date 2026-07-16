@@ -61,7 +61,7 @@ class SessionTableCommand extends MigrationGeneratorCommand
     {
         foreach ([
             join_paths($this->laragram->databasePath('migrations'), '*_*_*_*_create_'.$table.'_table.php'),
-//            join_paths($this->laragram->databasePath('migrations'), '0001_01_01_000000_create_users_table.php'),
+            join_paths($this->laragram->databasePath('migrations'), '0001_01_01_000000_create_users_table.php'),
         ] as $path) {
             if (count($this->files->glob($path)) !== 0) {
                 return true;
