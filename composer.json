@@ -14,7 +14,7 @@
         }
     ],
     "require": {
-        "php": "^8.2",
+        "php": "^8.5",
         "ext-ctype": "*",
         "ext-curl": "*",
         "ext-filter": "*",
