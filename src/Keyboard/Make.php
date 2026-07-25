@@ -66,7 +66,7 @@ class Make
      * @param int|string $icon_custom_emoji_id
      * @return array
      */
-    public static function loginUrl(string $text, string $url, string $forward_text = null, string $bot_username = null, bool $request_write_access = null, string $style = '', int|string $icon_custom_emoji_id = 0): array
+    public static function loginUrl(string $text, string $url, ?string $forward_text = null, ?string $bot_username = null, ?bool $request_write_access = null, string $style = '', int|string $icon_custom_emoji_id = 0): array
     {
         return [
             'text' => $text,
@@ -134,7 +134,7 @@ class Make
      * @param int|string|null $icon_custom_emoji_id
      * @return array
      */
-    public static function switchInlineQueryChosenChat(string $text, string $query = '', array $options = [], string $style = '', int|string $icon_custom_emoji_id = null): array
+    public static function switchInlineQueryChosenChat(string $text, string $query = '', array $options = [], string $style = '', int|string|null $icon_custom_emoji_id = null): array
     {
         return [
             'text' => $text,
@@ -219,7 +219,7 @@ class Make
      * @param int|string $icon_custom_emoji_id
      * @return array
      */
-    public static function requestUsers(string $text, int $id = null, int $max_quantity = 1, array $options = [], string $style = '', int|string $icon_custom_emoji_id = 0): array
+    public static function requestUsers(string $text, ?int $id = null, int $max_quantity = 1, array $options = [], string $style = '', int|string $icon_custom_emoji_id = 0): array
     {
         return [
             'text' => $text,
@@ -248,7 +248,7 @@ class Make
      * @param int|string $icon_custom_emoji_id
      * @return array
      */
-    public static function requestChat(string $text, int $id = null, array $options = [], string $style = '', int|string $icon_custom_emoji_id = 0): array
+    public static function requestChat(string $text, ?int $id = null, array $options = [], string $style = '', int|string $icon_custom_emoji_id = 0): array
     {
         return [
             'text' => $text,

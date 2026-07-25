@@ -1105,7 +1105,7 @@ class Str
             return $subject;
         }
 
-        $position = strpos($subject, $search);
+        $position = strpos($subject ?? "", $search);
 
         if ($position !== false) {
             return substr_replace($subject, $replace, $position, strlen($search));
