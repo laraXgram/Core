@@ -26,12 +26,12 @@ use LaraGram\Support\Arr;
 use LaraGram\Support\Collection;
 use LaraGram\Support\LazyCollection;
 use LaraGram\Support\Str;
+use LaraGram\Support\SortDirection;
 use LaraGram\Support\Traits\ForwardsCalls;
 use LaraGram\Support\Traits\Macroable;
 use InvalidArgumentException;
 use LogicException;
 use RuntimeException;
-use SortDirection;
 use UnitEnum;
 
 use function LaraGram\Support\enum_value;
