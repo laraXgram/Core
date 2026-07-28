@@ -486,7 +486,7 @@ if (! function_exists('logs')) {
 
 if (! function_exists('now')) {
     /**
-     * Create a new Carbon instance for the current time.
+     * Create a new Tempora instance for the current time.
      *
      * @param  \DateTimeZone|string|null  $tz
      * @return \LaraGram\Support\Tempora

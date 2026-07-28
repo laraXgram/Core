@@ -11,7 +11,7 @@ use LaraGram\Support\Str;
 class CacheTokenRepository implements TokenRepositoryInterface
 {
     /**
-     * The format of the stored Carbon object.
+     * The format of the stored Tempora object.
      */
     protected string $format = 'Y-m-d H:i:s';
 

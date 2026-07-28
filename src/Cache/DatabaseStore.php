@@ -148,7 +148,7 @@ class DatabaseStore implements CanFlushLocks, LockProvider, Store
 
         // If this cache expiration date is past the current time, we will remove this
         // item from the cache. Then we will return a null value since the cache is
-        // expired. We will use "Carbon" to make this comparison with the column.
+        // expired. We will use "Tempora" to make this comparison with the column.
         [$values, $expired] = $values->partition(function ($cache) use ($currentTime) {
             return $cache->expiration > $currentTime;
         });

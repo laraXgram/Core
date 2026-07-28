@@ -1533,7 +1533,7 @@ class Stringable implements JsonSerializable, ArrayAccess, BaseStringable
     }
 
     /**
-     * Get the underlying string value as a Carbon instance.
+     * Get the underlying string value as a Tempora instance.
      *
      * @param  string|null  $format
      * @param  string|null  $tz

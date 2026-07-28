@@ -341,7 +341,7 @@ trait InteractsWithData
     }
 
     /**
-     * Retrieve data from the instance as a Carbon instance.
+     * Retrieve data from the instance as a Tempora instance.
      *
      * @param  string  $key
      * @param  string|null  $format
@@ -366,7 +366,7 @@ trait InteractsWithData
     }
 
     /**
-     * Retrieve data from the instance as a CarbonInterval instance.
+     * Retrieve data from the instance as a cInterval instance.
      *
      * @param  string  $key
      * @param  \LaraGram\Tempora\Unit|string|null  $unit

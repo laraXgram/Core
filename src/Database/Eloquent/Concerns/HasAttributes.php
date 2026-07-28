@@ -3,11 +3,11 @@
 namespace LaraGram\Database\Eloquent\Concerns;
 
 use BackedEnum;
-use Brick\Math\BigDecimal;
-use Brick\Math\Exception\MathException as BrickMathException;
-use Brick\Math\RoundingMode;
-use Carbon\CarbonImmutable;
-use Carbon\CarbonInterface;
+use LaraGram\Support\Number\BigDecimal;
+use LaraGram\Support\Number\Exception\MathException as BrickMathException;
+use LaraGram\Support\Number\RoundingMode;
+use LaraGram\Tempora\TemporaImmutable;
+use LaraGram\Tempora\TemporaInterface;
 use DateTimeImmutable;
 use DateTimeInterface;
 use LaraGram\Contracts\Database\Eloquent\Castable;
@@ -31,7 +31,7 @@ use LaraGram\Database\Eloquent\MissingAttributeException;
 use LaraGram\Database\Eloquent\Relations\Relation;
 use LaraGram\Database\LazyLoadingViolationException;
 use LaraGram\Support\Arr;
-use LaraGram\Support\Carbon;
+use LaraGram\Support\Tempora;
 use LaraGram\Support\Collection;
 use LaraGram\Support\Collection as BaseCollection;
 use LaraGram\Support\Exceptions\MathException;
@@ -225,7 +225,7 @@ trait HasAttributes
     public function attributesToArray()
     {
         // If an attribute is a date, we will cast it to a string after converting it
-        // to a DateTime / Carbon instance. This is so we will get some consistent
+        // to a DateTime / Tempora instance. This is so we will get some consistent
         // formatting while accessing attributes vs. arraying / JSONing a model.
         $attributes = $this->addDateAttributesToArray(
             $attributes = $this->getArrayableAttributes()
@@ -1546,7 +1546,7 @@ trait HasAttributes
      * Return a timestamp as DateTime object with time set to 00:00:00.
      *
      * @param  mixed  $value
-     * @return \LaraGram\Support\Carbon
+     * @return \LaraGram\Support\Tempora
      */
     protected function asDate($value)
     {
@@ -1557,14 +1557,14 @@ trait HasAttributes
      * Return a timestamp as DateTime object.
      *
      * @param  mixed  $value
-     * @return \LaraGram\Support\Carbon
+     * @return \LaraGram\Support\Tempora
      */
     protected function asDateTime($value)
     {
-        // If this value is already a Carbon instance, we shall just return it as is.
-        // This prevents us having to re-instantiate a Carbon instance when we know
+        // If this value is already a Tempora instance, we shall just return it as is.
+        // This prevents us having to re-instantiate a Tempora instance when we know
         // it already is one, which wouldn't be fulfilled by the DateTime check.
-        if ($value instanceof CarbonInterface) {
+        if ($value instanceof TemporaInterface) {
             return Date::instance($value);
         }
 
@@ -1578,23 +1578,23 @@ trait HasAttributes
         }
 
         // If this value is an integer, we will assume it is a UNIX timestamp's value
-        // and format a Carbon object from this timestamp. This allows flexibility
+        // and format a Tempora object from this timestamp. This allows flexibility
         // when defining your date fields as they might be UNIX timestamps here.
         if (is_numeric($value)) {
             return Date::createFromTimestamp($value, date_default_timezone_get());
         }
 
         // If the value is in simply year, month, day format, we will instantiate the
-        // Carbon instances from that format. Again, this provides for simple date
-        // fields on the database, while still supporting Carbonized conversion.
+        // Tempora instances from that format. Again, this provides for simple date
+        // fields on the database, while still supporting Temporaized conversion.
         if ($this->isStandardDateFormat($value)) {
-            return Date::instance(Carbon::createFromFormat('Y-m-d', $value)->startOfDay());
+            return Date::instance(Tempora::createFromFormat('Y-m-d', $value)->startOfDay());
         }
 
         $format = $this->getDateFormat();
 
         // Finally, we will just assume this date is in the format used by default on
-        // the database connection and use that format to create the Carbon object
+        // the database connection and use that format to create the Tempora object
         // that is returned back out to the developers after we convert it here.
         try {
             $date = Date::createFromFormat($format, $value);
@@ -1649,8 +1649,8 @@ trait HasAttributes
     protected function serializeDate(DateTimeInterface $date)
     {
         return $date instanceof DateTimeImmutable ?
-            CarbonImmutable::instance($date)->toJSON() :
-            Carbon::instance($date)->toJSON();
+            TemporaImmutable::instance($date)->toJSON() :
+            Tempora::instance($date)->toJSON();
     }
 
     /**
