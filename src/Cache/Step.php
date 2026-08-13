@@ -42,7 +42,7 @@ class Step
      * @param  int|null $ttl
      * @return bool
      */
-    public function set(string $step, int $ttl = null): bool
+    public function set(string $step, ?int $ttl = null): bool
     {
         $this->forget();
 
