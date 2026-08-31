@@ -107,7 +107,7 @@ class CommanderServiceProvider extends ServiceProvider implements DeferrableProv
      */
     protected $commands = [
         'LangPublish' => LangPublishCommand::class,
-        'ViewCache' => TemplateCacheCommand::class,
+        'TemplateCache' => TemplateCacheCommand::class,
         'EnvironmentCommand' => EnvironmentCommand::class,
         'ClearCompiled' => ClearCompiledCommand::class,
         'DatabaseTableCommand' => DatabaseTableCommand::class,
