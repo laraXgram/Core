@@ -8,7 +8,7 @@ use LaraGram\Routing\Exceptions\RouteCircularReferenceException;
 class BaseRouteCollection implements \IteratorAggregate, \Countable
 {
     /**
-     * @var array<string, Route>
+     * @var array<string, BaseRoute>
      */
     private array $routes = [];
 
@@ -45,7 +45,7 @@ class BaseRouteCollection implements \IteratorAggregate, \Countable
      *
      * @see all()
      *
-     * @return \ArrayIterator<string, Route>
+     * @return \ArrayIterator<string, BaseRoute>
      */
     public function getIterator(): \ArrayIterator
     {
@@ -60,7 +60,7 @@ class BaseRouteCollection implements \IteratorAggregate, \Countable
         return \count($this->routes);
     }
 
-    public function add(string $name, Route $route, int $priority = 0): void
+    public function add(string $name, BaseRoute $route, int $priority = 0): void
     {
         unset($this->routes[$name], $this->priorities[$name], $this->aliases[$name]);
 
@@ -74,7 +74,7 @@ class BaseRouteCollection implements \IteratorAggregate, \Countable
     /**
      * Returns all routes in this collection.
      *
-     * @return array<string, Route>
+     * @return array<string, BaseRoute>
      */
     public function all(): array
     {
@@ -90,7 +90,7 @@ class BaseRouteCollection implements \IteratorAggregate, \Countable
     /**
      * Gets a route by name.
      */
-    public function get(string $name): ?Route
+    public function get(string $name): ?BaseRoute
     {
         $visited = [];
         while (null !== $alias = $this->aliases[$name] ?? null) {
