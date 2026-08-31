@@ -27,6 +27,7 @@ if (!function_exists('chat')) {
             $request->chat_boost != null => $request->chat_boost->chat,
             $request->removed_chat_boost != null => $request->removed_chat_boost->chat,
             $request->poll_answer != null => $request->poll_answer->voter_chat,
+            $request->stopped_message_generation != null => $request->stopped_message_generation->chat,
             default => null
         };
     }
@@ -62,6 +63,7 @@ if (!function_exists('user')) {
             $request->chat_boost != null => $request->chat_boost->boost->source->user,
             $request->removed_chat_boost != null => $request->removed_chat_boost->source->user,
             $request->subscription != null => $request->subscription->user,
+            $request->managed_bot != null => $request->managed_bot->user,
             default => null
         };
     }
@@ -374,6 +376,17 @@ if (!function_exists('subscription')) {
          */
         $request = app('request');
         return $request->subscription;
+    }
+}
+
+if (!function_exists('stopped_message_generation')) {
+    function stopped_message_generation(): object|null
+    {
+        /**
+         * @var Request $request ;
+         */
+        $request = app('request');
+        return $request->stopped_message_generation;
     }
 }
 

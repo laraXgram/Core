@@ -36,7 +36,8 @@ if (!function_exists('col')) {
             $text, $url = null, $callback_data = null, $web_app = null, $login_url = null, $switch_inline_query = null,
             $switch_inline_query_current_chat = null, $switch_inline_query_chosen_chat = null, $callback_game = null,
             $pay = null, $request_user = null, $request_chat = null, $request_contact = null, $request_location = null,
-            $request_poll = null, $copy_text = null, $icon_custom_emoji_id = null, $style = null
+            $request_poll = null, $copy_text = null, $icon_custom_emoji_id = null, $style = null,
+            $request_managed_bot = null, $disabled = null
     ): array
     {
         return array_filter(get_defined_vars(), function ($e) {

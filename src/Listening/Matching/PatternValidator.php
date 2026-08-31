@@ -73,6 +73,13 @@ class PatternValidator implements ValidatorInterface
             return $this->matchRichType($pattern);
         }
 
+        // Payment subscription state listeners (canceled / active / failed).
+        if (in_array('SUBSCRIPTION_STATE', $listenMethods, true)) {
+            $state = $request->subscription->state ?? null;
+
+            return $state !== null && in_array($state, explode('|', $pattern), true);
+        }
+
         // Ephemeral message listeners - match any message carrying an
         // ephemeral_message_id, independent of the content-derived verb.
         if (in_array('EPHEMERAL', $listenMethods, true)) {

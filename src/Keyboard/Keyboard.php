@@ -84,6 +84,21 @@ class Keyboard
     }
 
     /**
+     * Show the keyboard inside a reply interface, as if the user had manually
+     * selected the bot's message and tapped 'Reply'.
+     * Supported by both `replyKeyboardMarkup` and `inlineKeyboardMarkup`.
+     *
+     * @param bool $force_reply
+     * @return $this
+     */
+    public function withForceReply(bool $force_reply = true)
+    {
+        $this->keyboard['force_reply'] = $force_reply;
+
+        return $this;
+    }
+
+    /**
      * The option can be `is_persistent` | `resize_keyboard` | `one_time_keyboard` | `input_field_placeholder` | `selective`.
      *
      * @param string $key

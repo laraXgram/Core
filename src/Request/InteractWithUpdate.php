@@ -41,6 +41,7 @@ trait InteractWithUpdate
             isset($this->chat_boost) => 'chat_boost',
             isset($this->removed_chat_boost) => 'removed_chat_boost',
             isset($this->subscription) => 'subscription',
+            isset($this->stopped_message_generation) => 'stopped_message_generation',
             default => false
         };
     }
@@ -130,6 +131,7 @@ trait InteractWithUpdate
             isset($message->chat_owner_left) => 'chat_owner_left',
             isset($message->chat_owner_changed) => 'chat_owner_changed',
             isset($message->community_chat_added) => 'community_chat_added',
+            isset($message->community_chat_joined) => 'community_chat_joined',
             isset($message->community_chat_removed) => 'community_chat_removed',
             default => throw new InvalidUpdateType('Unknown message type')
         };
@@ -149,6 +151,7 @@ trait InteractWithUpdate
             isset($this->edited_channel_post->chat->type) => $this->edited_channel_post->chat->type,
             isset($this->business_message->chat->type) => $this->business_message->chat->type,
             isset($this->edited_business_message->chat->type) => $this->edited_business_message->chat->type,
+            isset($this->guest_message->chat->type) => $this->guest_message->chat->type,
             isset($this->deleted_business_messages->chat->type) => $this->deleted_business_messages->chat->type,
             isset($this->message_reaction->chat->type) => $this->message_reaction->chat->type,
             isset($this->message_reaction_count->chat->type) => $this->message_reaction_count->chat->type,
@@ -159,6 +162,7 @@ trait InteractWithUpdate
             isset($this->chat_join_request->chat->type) => $this->chat_join_request->chat->type,
             isset($this->chat_boost->chat->type) => $this->chat_boost->chat->type,
             isset($this->removed_chat_boost->chat->type) => $this->removed_chat_boost->chat->type,
+            isset($this->stopped_message_generation->chat->type) => $this->stopped_message_generation->chat->type,
             default => null
         };
     }
@@ -177,6 +181,7 @@ trait InteractWithUpdate
             isset($this->edited_channel_post->reply_to_message),
             isset($this->business_message->reply_to_message),
             isset($this->edited_business_message->reply_to_message),
+            isset($this->guest_message->reply_to_message),
             isset($this->callback_query->message->reply_to_message) => true,
             default => false
         };

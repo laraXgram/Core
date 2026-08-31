@@ -652,9 +652,25 @@ trait HandlerTrait
         return $this->addListen('UPDATE', 'subscription', $action);
     }
 
+    public function onSubscriptionState(string|array $state, Closure|array|string $action)
+    {
+        $state = is_array($state) ? implode('|', $state) : $state;
+        return $this->addListen(['UPDATE', 'SUBSCRIPTION_STATE'], $state, $action);
+    }
+
+    public function onStoppedMessageGeneration(Closure|array|string $action)
+    {
+        return $this->addListen('UPDATE', 'stopped_message_generation', $action);
+    }
+
     public function onCommunityChatAdded(Closure|array|string $action)
     {
         return $this->addListen('MESSAGE', 'community_chat_added', $action);
+    }
+
+    public function onCommunityChatJoined(Closure|array|string $action)
+    {
+        return $this->addListen('MESSAGE', 'community_chat_joined', $action);
     }
 
     public function onCommunityChatRemoved(Closure|array|string $action)

@@ -23,6 +23,7 @@ enum Type: string
             'message_reaction', 'message_reaction_count',
             'purchased_paid_media', 'chat_boost', 'removed_chat_boost',
             'managed_bot', 'subscription',
+            'stopped_message_generation',
         ],
         'message' => [
             'voice', 'video_note', 'video', 'sticker',
@@ -53,7 +54,8 @@ enum Type: string
             'suggested_post_declined', 'suggested_post_paid',
             'suggested_post_refunded', 'managed_bot_created',
             'chat_owner_left', 'chat_owner_changed',
-            'community_chat_added', 'community_chat_removed',
+            'community_chat_added', 'community_chat_joined',
+            'community_chat_removed',
         ],
     ];
 

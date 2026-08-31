@@ -171,6 +171,21 @@ class Make
     // TODO: add callbackGame button
 
     /**
+     * Mark an already built inline button as disabled, so pressing it does nothing.
+     * The disabled button is described by an empty `DisabledButton` object.
+     *
+     * @param array $button A button built by one of the other `Make` methods.
+     * @return array
+     */
+    public static function disabled(array $button): array
+    {
+        return [
+            ...$button,
+            'disabled' => new \stdClass()
+        ];
+    }
+
+    /**
      * Text of the button. If none of the optional fields are used, it will be sent as a message when the button is pressed.
      *
      * @param string $text
@@ -256,6 +271,33 @@ class Make
                 'request_id' => is_null($id) ? rand(1_000_000_000, 9_999_999_999) : $id,
                 ...$options
             ],
+            'style' => $style,
+            'icon_custom_emoji_id' => $icon_custom_emoji_id
+        ];
+    }
+
+    /**
+     * Pressing the button will ask the user to create and share a bot that will be managed by the current bot.
+     * Information about the created bot is delivered through the `managed_bot` update and a `managed_bot_created` service message.
+     * Available for bots that can manage bots, in private chats only.
+     *
+     * @param string $text
+     * @param int|null $id The `request_id` must be a 32-bit number, if empty a random number will be generated for each request.
+     * @param string|null $suggested_name Suggested name for the bot.
+     * @param string|null $suggested_username Suggested username for the bot.
+     * @param string $style Must be one of “danger” (red), “success” (green) or “primary” (blue). If omitted, then an app-specific style is used.
+     * @param int|string $icon_custom_emoji_id
+     * @return array
+     */
+    public static function requestManagedBot(string $text, ?int $id = null, ?string $suggested_name = null, ?string $suggested_username = null, string $style = '', int|string $icon_custom_emoji_id = 0): array
+    {
+        return [
+            'text' => $text,
+            'request_managed_bot' => array_filter([
+                'request_id' => is_null($id) ? rand(1_000_000_000, 9_999_999_999) : $id,
+                'suggested_name' => $suggested_name,
+                'suggested_username' => $suggested_username,
+            ], fn ($value) => !is_null($value)),
             'style' => $style,
             'icon_custom_emoji_id' => $icon_custom_emoji_id
         ];
