@@ -4,9 +4,58 @@ namespace LaraGram\Keyboard;
 
 class Keyboard
 {
+    /**
+     * Language codes whose script is written right-to-left.
+     *
+     * @var array<int, string>
+     */
+    public static array $rightToLeftLocales = [
+        'ar',   // Arabic
+        'arc',  // Aramaic
+        'azb',  // South Azerbaijani
+        'bal',  // Balochi
+        'bqi',  // Bakhtiari
+        'ckb',  // Central Kurdish (Sorani)
+        'dv',   // Divehi
+        'fa',   // Persian
+        'glk',  // Gilaki
+        'he',   // Hebrew
+        'iw',   // Hebrew (legacy code)
+        'ji',   // Yiddish (legacy code)
+        'khw',  // Khowar
+        'ks',   // Kashmiri
+        'ku',   // Kurdish
+        'lrc',  // Northern Luri
+        'mzn',  // Mazanderani
+        'nqo',  // N'Ko
+        'pnb',  // Western Punjabi
+        'prd',  // Parsi-Dari
+        'ps',   // Pashto
+        'sd',   // Sindhi
+        'skr',  // Saraiki
+        'syr',  // Syriac
+        'ug',   // Uyghur
+        'ur',   // Urdu
+        'yi',   // Yiddish
+    ];
+
+    /**
+     * Whether keyboards default to right-to-left when the application locale is
+     * written in a right-to-left script.
+     *
+     * @var bool
+     */
+    public static bool $autoRightToLeft = true;
+
     protected $type;
     protected $keyboard = [];
-    protected $rtl = false;
+
+    /**
+     * Explicit direction for this keyboard, or null to follow the locale.
+     *
+     * @var bool|null
+     */
+    protected ?bool $rtl = null;
 
     /**
      * This object represents a custom keyboard with reply options.
@@ -276,15 +325,64 @@ class Keyboard
     }
 
     /**
-     * Reverse columns for right to left keyboards
+     * Reverse the columns of every row, for right to left keyboards.
+     *
+     * @param bool $rtl
+     * @return $this
+     */
+    public function rightToLeft(bool $rtl = true)
+    {
+        $this->rtl = $rtl;
+
+        return $this;
+    }
+
+    /**
+     * Keep the columns in their declared order, overriding the locale default.
      *
      * @return $this
      */
-    public function rightToLeft()
+    public function leftToRight()
     {
-        $this->rtl = true;
+        $this->rtl = false;
 
         return $this;
+    }
+
+    /**
+     * Determine whether this keyboard renders right-to-left.
+     *
+     * @return bool
+     */
+    public function isRightToLeft(): bool
+    {
+        return $this->rtl ?? static::localeIsRightToLeft();
+    }
+
+    /**
+     * Determine whether the current application locale is written right-to-left.
+     *
+     * @return bool
+     */
+    public static function localeIsRightToLeft(): bool
+    {
+        if (! static::$autoRightToLeft || ! function_exists('app')) {
+            return false;
+        }
+
+        try {
+            $locale = app()->getLocale();
+        } catch (\Throwable) {
+            return false;
+        }
+
+        if (! is_string($locale) || $locale === '') {
+            return false;
+        }
+
+        $language = strtolower(preg_split('/[-_.@]/', $locale, 2)[0]);
+
+        return in_array($language, static::$rightToLeftLocales, true);
     }
 
     /**
@@ -295,14 +393,19 @@ class Keyboard
      */
     public function get(bool $array = false)
     {
-        if ($this->rtl) {
-            $this->keyboard = array_reverse($this->keyboard);
+        $keyboard = $this->keyboard;
+
+        if ($this->isRightToLeft() && isset($keyboard[$this->type]) && is_array($keyboard[$this->type])) {
+            $keyboard[$this->type] = array_map(
+                fn ($row) => is_array($row) ? array_values(array_reverse($row)) : $row,
+                array_values($keyboard[$this->type])
+            );
         }
 
         if ($array) {
-            return $this->keyboard;
+            return $keyboard;
         }
 
-        return json_encode($this->keyboard);
+        return json_encode($keyboard);
     }
 }
