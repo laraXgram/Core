@@ -34,6 +34,7 @@ class Temple8Compiler extends Compiler implements CompilerInterface
         Concerns\CompilesTranslations,
         Concerns\CompilesUseStatements,
         Concerns\CompilesKeyboards,
+        Concerns\CompilesRichMessages,
         Concerns\CompilesInputs,
         ReflectsClosures;
 
