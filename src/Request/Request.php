@@ -59,6 +59,13 @@ class Request implements ProvidesListenContext
     protected $forcedProxy = null;
 
     /**
+     * The callback that intercepts every Telegram API call instead of sending it.
+     *
+     * @var (\Closure(string, array, string|null, static): mixed)|null
+     */
+    protected static $interceptor = null;
+
+    /**
      * The user resolver callback.
      *
      * @var \Closure
@@ -791,6 +798,69 @@ class Request implements ProvidesListenContext
     }
 
     /**
+     * Call any Telegram API method by name.
+     *
+     * @param  string  $method
+     * @param  array   $params
+     * @return mixed
+     */
+    public function call(string $method, array $params = []): mixed
+    {
+        return $this->endpoint($method, $params);
+    }
+
+    /**
+     * Intercept every Telegram API call with the given callback instead of sending it.
+     *
+     * @param  (callable(string, array, string|null, static): mixed)|null  $callback
+     * @return void
+     */
+    public static function interceptUsing(?callable $callback): void
+    {
+        static::$interceptor = $callback === null ? null : Closure::fromCallable($callback);
+    }
+
+    /**
+     * Determine if Telegram API calls are currently being intercepted.
+     *
+     * @return bool
+     */
+    public static function isIntercepting(): bool
+    {
+        return static::$interceptor !== null;
+    }
+
+    /**
+     * Hand the API call to the interceptor, resetting all per-call state.
+     *
+     * @param  string  $method
+     * @param  array   $params
+     * @return mixed
+     */
+    protected function sendToInterceptor(string $method, array $params): mixed
+    {
+        try {
+            $connection = $this->resolveConnection();
+        } catch (\Throwable) {
+            $connection = null;
+        }
+
+        $this->bypassAntiFlood = false;
+        $this->antiFloodScopes = null;
+        $this->bypassProxy = false;
+        $this->forcedProxy = null;
+        $this->perCallConnection = null;
+        $this->perCallMode = null;
+
+        return (static::$interceptor)(
+            $method,
+            array_filter($params, fn ($value) => $value !== null),
+            $connection,
+            $this
+        );
+    }
+
+    /**
      * Intercept every Telegram API call to apply smart anti-flood throttling,
      * then delegate to the original Laraquest endpoint implementation.
      *
@@ -800,6 +870,10 @@ class Request implements ProvidesListenContext
      */
     protected function endpoint(string $method, array $params): mixed
     {
+        if (static::$interceptor !== null) {
+            return $this->sendToInterceptor($method, $params);
+        }
+
         $bypass = $this->bypassAntiFlood;
         $this->bypassAntiFlood = false;
 
