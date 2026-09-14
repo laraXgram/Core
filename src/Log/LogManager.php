@@ -388,6 +388,20 @@ class LogManager implements LoggerInterface
     }
 
     /**
+     * Create an instance of any handler available in the LaraGram logger (the "laragram" driver).
+     *
+     * @param  array  $config
+     * @return \LaraGram\Log\LoggerInterface
+     *
+     * @throws \InvalidArgumentException
+     * @throws \LaraGram\Contracts\Container\BindingResolutionException
+     */
+    protected function createLaragramDriver(array $config)
+    {
+        return $this->createMonologDriver($config);
+    }
+
+    /**
      * Create an instance of any handler available in Monolog.
      *
      * @param  array  $config

@@ -164,7 +164,7 @@ class HandleExceptions
         }
 
         $config->set('logging.channels.null', [
-            'driver' => 'monolog',
+            'driver' => 'laragram',
             'handler' => NullHandler::class,
         ]);
     }
