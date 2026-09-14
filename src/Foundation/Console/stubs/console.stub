@@ -2,8 +2,8 @@
 
 namespace {{ namespace }};
 
-use LaraGram\Console\Attributes\Description;
-use LaraGram\Console\Attributes\Signature;
+use LaraGram\Console\Attribute\Description;
+use LaraGram\Console\Attribute\Signature;
 use LaraGram\Console\Command;
 
 #[Signature('{{ command }}')]
