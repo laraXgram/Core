@@ -653,6 +653,53 @@ class Middleware
     }
 
     /**
+     * Configure where guests are redirected by the "auth" middleware.
+     *
+     * @param  callable|string  $redirect
+     * @return $this
+     */
+    public function redirectGuestsTo(callable|string $redirect)
+    {
+        return $this->redirectTo(guests: $redirect);
+    }
+
+    /**
+     * Configure where users are redirected by the "guest" middleware.
+     *
+     * @param  callable|string  $redirect
+     * @return $this
+     */
+    public function redirectUsersTo(callable|string $redirect)
+    {
+        return $this->redirectTo(users: $redirect);
+    }
+
+    /**
+     * Configure where users are redirected by the authentication and guest middleware.
+     *
+     * @param  callable|string|null  $guests
+     * @param  callable|string|null  $users
+     * @return $this
+     */
+    public function redirectTo(callable|string|null $guests = null, callable|string|null $users = null)
+    {
+        $guests = is_string($guests) ? fn () => $guests : $guests;
+        $users = is_string($users) ? fn () => $users : $users;
+
+        if ($guests) {
+            \LaraGram\Auth\Middleware\Authenticate::redirectUsing($guests);
+            \LaraGram\Session\Middleware\AuthenticateSession::redirectUsing($guests);
+            \LaraGram\Auth\AuthenticationException::redirectUsing($guests);
+        }
+
+        if ($users) {
+            \LaraGram\Auth\Middleware\RedirectIfAuthenticated::redirectUsing($users);
+        }
+
+        return $this;
+    }
+
+    /**
      * Configure the trusted proxies for the application.
      *
      * @param  array<int, string>|string|null  $at
@@ -758,6 +805,11 @@ class Middleware
     {
         $aliases = [
             'auth.session' => \LaraGram\Session\Middleware\AuthenticateSession::class,
+            'route.auth' => \LaraGram\Auth\Middleware\Authenticate::class,
+            'route.auth.basic' => \LaraGram\Auth\Middleware\AuthenticateWithBasicAuth::class,
+            'route.guest' => \LaraGram\Auth\Middleware\RedirectIfAuthenticated::class,
+            'route.password.confirm' => \LaraGram\Auth\Middleware\RequirePassword::class,
+            'route.verified' => \LaraGram\Auth\Middleware\EnsureEmailIsVerified::class,
             'cache.headers' => \LaraGram\Http\Middleware\SetCacheHeaders::class,
             'precognitive' => \LaraGram\Foundation\Http\Middleware\HandlePrecognitiveRequests::class,
             'signed' => \LaraGram\Routing\Middleware\ValidateSignature::class,

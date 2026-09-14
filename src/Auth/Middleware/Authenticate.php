@@ -116,6 +116,10 @@ class Authenticate implements AuthenticatesRequests
         if (static::$redirectToCallback) {
             return call_user_func(static::$redirectToCallback, $request);
         }
+
+        if (\LaraGram\Support\Facades\Route::has('login')) {
+            return route('login');
+        }
     }
 
     /**
