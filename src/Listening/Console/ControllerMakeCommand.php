@@ -3,18 +3,17 @@
 namespace LaraGram\Listening\Console;
 
 use LaraGram\Console\Attribute\AsCommand;
-use LaraGram\Console\Concerns\CreatesMatchingTest;
 use LaraGram\Console\GeneratorCommand;
 use LaraGram\Console\Input\InputInterface;
 use LaraGram\Console\Input\InputOption;
 use LaraGram\Console\Output\OutputInterface;
+use LaraGram\Routing\Console\ControllerMakeCommand as WebControllerMakeCommand;
 use function LaraGram\Console\Prompts\select;
+use function LaraGram\Console\Prompts\suggest;
 
 #[AsCommand(name: 'make:controller')]
-class ControllerMakeCommand extends GeneratorCommand
+class ControllerMakeCommand extends WebControllerMakeCommand
 {
-    use CreatesMatchingTest;
-
     /**
      * The console command name.
      *
@@ -27,14 +26,65 @@ class ControllerMakeCommand extends GeneratorCommand
      *
      * @var string
      */
-    protected $description = 'Create a new controller class';
+    protected $description = 'Create a new bot controller class (use --web for an HTTP controller)';
 
     /**
-     * The type of class being generated.
+     * The options that only apply to HTTP controllers.
      *
-     * @var string
+     * @var array<int, string>
      */
-    protected $type = 'Controller';
+    protected $webOptions = ['web', 'api', 'type', 'model', 'parent', 'resource', 'requests', 'singleton', 'creatable'];
+
+    /**
+     * Execute the console command.
+     *
+     * @return bool|null
+     */
+    public function handle()
+    {
+        if ($this->generatesWebController()) {
+            $this->ensureWebBaseControllerExists();
+        }
+
+        return parent::handle();
+    }
+
+    /**
+     * Determine if an HTTP controller should be generated.
+     *
+     * @return bool
+     */
+    protected function generatesWebController()
+    {
+        foreach ($this->webOptions as $option) {
+            if ($this->input->hasOption($option) && $this->option($option)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Create the application's base HTTP controller when it does not exist yet.
+     *
+     * @return void
+     */
+    protected function ensureWebBaseControllerExists()
+    {
+        $rootNamespace = $this->rootNamespace();
+        $path = $this->getPath("{$rootNamespace}Http\Controllers\Controller");
+
+        if ($this->files->exists($path)) {
+            return;
+        }
+
+        $this->makeDirectory($path);
+
+        $this->files->put($path, str_replace(
+            '{{ namespace }}', $rootNamespace.'Http\Controllers', $this->files->get(__DIR__.'/stubs/controller.base.stub')
+        ));
+    }
 
     /**
      * Get the stub file for the generator.
@@ -43,15 +93,13 @@ class ControllerMakeCommand extends GeneratorCommand
      */
     protected function getStub()
     {
-        $stub = null;
-
-        if ($this->option('invokable')) {
-            $stub = '/stubs/controller.invokable.stub';
+        if ($this->generatesWebController()) {
+            return parent::getStub();
         }
 
-        $stub ??= '/stubs/controller.plain.stub';
-
-        return $this->resolveStubPath($stub);
+        return $this->resolveStubPath($this->option('invokable')
+            ? '/stubs/controller.invokable.stub'
+            : '/stubs/controller.plain.stub');
     }
 
     /**
@@ -62,7 +110,13 @@ class ControllerMakeCommand extends GeneratorCommand
      */
     protected function resolveStubPath($stub)
     {
-        return file_exists($customPath = $this->laragram->basePath(trim($stub, '/')))
+        if ($this->generatesWebController()) {
+            return parent::resolveStubPath($stub);
+        }
+
+        $customStub = 'stubs/bot.'.basename($stub);
+
+        return file_exists($customPath = $this->laragram->basePath($customStub))
                         ? $customPath
                         : __DIR__.$stub;
     }
@@ -75,7 +129,9 @@ class ControllerMakeCommand extends GeneratorCommand
      */
     protected function getDefaultNamespace($rootNamespace)
     {
-        return $rootNamespace.'\Controllers';
+        return $this->generatesWebController()
+            ? parent::getDefaultNamespace($rootNamespace)
+            : $rootNamespace.'\Controllers';
     }
 
     /**
@@ -88,14 +144,16 @@ class ControllerMakeCommand extends GeneratorCommand
      */
     protected function buildClass($name)
     {
+        if ($this->generatesWebController()) {
+            return parent::buildClass($name);
+        }
+
         $rootNamespace = $this->rootNamespace();
         $controllerNamespace = $this->getNamespace($name);
 
         $replace = [];
 
-        $baseControllerExists = file_exists($this->getPath("{$rootNamespace}Controllers\Controller"));
-
-        if ($baseControllerExists) {
+        if (file_exists($this->getPath("{$rootNamespace}Controllers\Controller"))) {
             $replace["use {$controllerNamespace}\Controller;\n"] = '';
         } else {
             $replace[' extends Controller'] = '';
@@ -103,7 +161,7 @@ class ControllerMakeCommand extends GeneratorCommand
         }
 
         return str_replace(
-            array_keys($replace), array_values($replace), parent::buildClass($name)
+            array_keys($replace), array_values($replace), GeneratorCommand::buildClass($name)
         );
     }
 
@@ -114,10 +172,9 @@ class ControllerMakeCommand extends GeneratorCommand
      */
     protected function getOptions()
     {
-        return [
-            ['force', null, InputOption::VALUE_NONE, 'Create the class even if the controller already exists'],
-            ['invokable', 'i', InputOption::VALUE_NONE, 'Generate a single method, invokable controller class'],
-        ];
+        return array_merge([
+            ['web', null, InputOption::VALUE_NONE, 'Generate an HTTP controller in app/Http/Controllers'],
+        ], parent::getOptions());
     }
 
     /**
@@ -134,12 +191,31 @@ class ControllerMakeCommand extends GeneratorCommand
         }
 
         $type = select('Which type of controller would you like?', [
-            'empty' => 'Empty',
-            'invokable' => 'Invokable',
+            'bot' => 'Bot',
+            'bot-invokable' => 'Bot (invokable)',
+            'web' => 'Web',
+            'resource' => 'Web resource',
+            'singleton' => 'Web singleton',
+            'api' => 'Web API',
+            'web-invokable' => 'Web (invokable)',
         ]);
 
-        if ($type !== 'empty') {
-            $input->setOption($type, true);
+        match ($type) {
+            'bot' => null,
+            'bot-invokable' => $input->setOption('invokable', true),
+            'web-invokable' => [$input->setOption('web', true), $input->setOption('invokable', true)],
+            default => $input->setOption($type, true),
+        };
+
+        if (in_array($type, ['api', 'resource', 'singleton'])) {
+            $model = suggest(
+                "What model is this $type controller for? (Optional)",
+                $this->findAvailableModels()
+            );
+
+            if ($model) {
+                $input->setOption('model', $model);
+            }
         }
     }
 }

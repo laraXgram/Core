@@ -149,11 +149,10 @@ class ModelMakeCommand extends GeneratorCommand
 
         $this->call('make:controller', array_filter([
             'name' => "{$controller}Controller",
+            '--web' => true,
             '--model' => $this->option('resource') || $this->option('api') ? $modelName : null,
             '--api' => $this->option('api'),
             '--requests' => $this->option('requests') || $this->option('all'),
-            '--test' => $this->option('test'),
-            '--pest' => $this->option('pest'),
         ]));
     }
 

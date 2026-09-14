@@ -532,7 +532,16 @@ class Kernel implements KernelContract
             $this->router->middlewareGroup($key, $middleware);
         }
 
-        foreach (array_merge($this->routeMiddleware, $this->middlewareAliases) as $key => $middleware) {
+        $aliases = array_merge($this->routeMiddleware, $this->middlewareAliases);
+
+        // Aliases are shared with the bot kernel; "route.*" aliases are the web versions (e.g. "route.throttle" for "throttle").
+        foreach ($aliases as $key => $middleware) {
+            if (str_starts_with($key, 'route.')) {
+                $aliases[substr($key, 6)] = $middleware;
+            }
+        }
+
+        foreach ($aliases as $key => $middleware) {
             $this->router->aliasMiddleware($key, $middleware);
         }
     }

@@ -85,6 +85,9 @@ class StubPublishCommand extends Command
             realpath(__DIR__.'/../../Routing/Console/stubs/controller.singleton.stub') => 'controller.singleton.stub',
             realpath(__DIR__.'/../../Routing/Console/stubs/controller.stub') => 'controller.stub',
             realpath(__DIR__.'/../../Routing/Console/stubs/middleware.stub') => 'middleware.stub',
+            realpath(__DIR__.'/../../Listening/Console/stubs/controller.invokable.stub') => 'bot.controller.invokable.stub',
+            realpath(__DIR__.'/../../Listening/Console/stubs/controller.plain.stub') => 'bot.controller.plain.stub',
+            realpath(__DIR__.'/../../Listening/Console/stubs/middleware.stub') => 'bot.middleware.stub',
         ];
 
         $this->laragram['events']->dispatch($event = new PublishingStubs($stubs));

@@ -2,11 +2,12 @@
 
 namespace LaraGram\Listening\Console;
 
-use LaraGram\Console\GeneratorCommand;
 use LaraGram\Console\Attribute\AsCommand;
+use LaraGram\Console\Input\InputOption;
+use LaraGram\Routing\Console\MiddlewareMakeCommand as WebMiddlewareMakeCommand;
 
 #[AsCommand(name: 'make:middleware')]
-class MiddlewareMakeCommand extends GeneratorCommand
+class MiddlewareMakeCommand extends WebMiddlewareMakeCommand
 {
     /**
      * The console command name.
@@ -20,24 +21,7 @@ class MiddlewareMakeCommand extends GeneratorCommand
      *
      * @var string
      */
-    protected $description = 'Create a new Bot middleware class';
-
-    /**
-     * The type of class being generated.
-     *
-     * @var string
-     */
-    protected $type = 'Middleware';
-
-    /**
-     * Get the stub file for the generator.
-     *
-     * @return string
-     */
-    protected function getStub()
-    {
-        return $this->resolveStubPath('/stubs/middleware.stub');
-    }
+    protected $description = 'Create a new bot middleware class (use --web for an HTTP middleware)';
 
     /**
      * Resolve the fully-qualified path to the stub.
@@ -47,7 +31,11 @@ class MiddlewareMakeCommand extends GeneratorCommand
      */
     protected function resolveStubPath($stub)
     {
-        return file_exists($customPath = $this->laragram->basePath(trim($stub, '/')))
+        if ($this->option('web')) {
+            return parent::resolveStubPath($stub);
+        }
+
+        return file_exists($customPath = $this->laragram->basePath('stubs/bot.'.basename($stub)))
             ? $customPath
             : __DIR__.$stub;
     }
@@ -60,6 +48,20 @@ class MiddlewareMakeCommand extends GeneratorCommand
      */
     protected function getDefaultNamespace($rootNamespace)
     {
-        return $rootNamespace.'\Middleware';
+        return $this->option('web')
+            ? parent::getDefaultNamespace($rootNamespace)
+            : $rootNamespace.'\Middleware';
+    }
+
+    /**
+     * Get the console command options.
+     *
+     * @return array
+     */
+    protected function getOptions()
+    {
+        return array_merge([
+            ['web', null, InputOption::VALUE_NONE, 'Generate an HTTP middleware in app/Http/Middleware'],
+        ], parent::getOptions());
     }
 }

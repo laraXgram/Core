@@ -7,6 +7,7 @@ use Closure;
 use Exception;
 use LaraGram\Contracts\Queue\QueueableCollection;
 use LaraGram\Contracts\Queue\QueueableEntity;
+use LaraGram\Contracts\Listening\PathListenable;
 use LaraGram\Contracts\Routing\UrlRoutable;
 use LaraGram\Contracts\Support\Arrayable;
 use LaraGram\Contracts\Support\CanBeEscapedWhenCastToString;
@@ -38,7 +39,7 @@ use Stringable;
 
 use function LaraGram\Support\enum_value;
 
-abstract class Model implements Arrayable, ArrayAccess, CanBeEscapedWhenCastToString, Jsonable, JsonSerializable, QueueableEntity, Stringable, UrlRoutable
+abstract class Model implements Arrayable, ArrayAccess, CanBeEscapedWhenCastToString, Jsonable, JsonSerializable, PathListenable, QueueableEntity, Stringable, UrlRoutable
 {
     use Concerns\HasAttributes,
         Concerns\HasEvents,
@@ -2446,6 +2447,76 @@ abstract class Model implements Arrayable, ArrayAccess, CanBeEscapedWhenCastToSt
     public function resolveSoftDeletableChildRouteBinding($childType, $value, $field)
     {
         return $this->resolveChildRouteBindingQuery($childType, $value, $field)->withTrashed()->first();
+    }
+
+    /**
+     * Get the value of the model's listen key.
+     *
+     * @return mixed
+     */
+    public function getListenKey()
+    {
+        return $this->getRouteKey();
+    }
+
+    /**
+     * Get the listen key for the model.
+     *
+     * @return string
+     */
+    public function getListenKeyName()
+    {
+        return $this->getRouteKeyName();
+    }
+
+    /**
+     * Retrieve the model for a bound listen value.
+     *
+     * @param  mixed  $value
+     * @param  string|null  $field
+     * @return \LaraGram\Database\Eloquent\Model|null
+     */
+    public function resolveListenBinding($value, $field = null)
+    {
+        return $this->resolveRouteBinding($value, $field);
+    }
+
+    /**
+     * Retrieve the model for a bound listen value, including soft deleted models.
+     *
+     * @param  mixed  $value
+     * @param  string|null  $field
+     * @return \LaraGram\Database\Eloquent\Model|null
+     */
+    public function resolveSoftDeletableListenBinding($value, $field = null)
+    {
+        return $this->resolveSoftDeletableRouteBinding($value, $field);
+    }
+
+    /**
+     * Retrieve the child model for a bound listen value.
+     *
+     * @param  string  $childType
+     * @param  mixed  $value
+     * @param  string|null  $field
+     * @return \LaraGram\Database\Eloquent\Model|null
+     */
+    public function resolveChildListenBinding($childType, $value, $field)
+    {
+        return $this->resolveChildRouteBinding($childType, $value, $field);
+    }
+
+    /**
+     * Retrieve the child model for a bound listen value, including soft deleted models.
+     *
+     * @param  string  $childType
+     * @param  mixed  $value
+     * @param  string|null  $field
+     * @return \LaraGram\Database\Eloquent\Model|null
+     */
+    public function resolveSoftDeletableChildListenBinding($childType, $value, $field)
+    {
+        return $this->resolveSoftDeletableChildRouteBinding($childType, $value, $field);
     }
 
     /**

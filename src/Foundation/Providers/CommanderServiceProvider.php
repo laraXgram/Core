@@ -88,6 +88,8 @@ use LaraGram\Foundation\Console\TemplateMakeCommand;
 use LaraGram\Foundation\Console\TraitMakeCommand;
 use LaraGram\Foundation\Console\UpCommand;
 use LaraGram\Foundation\Console\VendorPublishCommand;
+use LaraGram\Foundation\Console\TemplateCacheCommand;
+use LaraGram\Foundation\Console\TemplateClearCommand;
 use LaraGram\Foundation\Console\ViewCacheCommand;
 use LaraGram\Foundation\Console\ViewClearCommand;
 use LaraGram\Foundation\Console\ViewMakeCommand;
@@ -113,8 +115,8 @@ use LaraGram\Queue\Console\RetryBatchCommand as QueueRetryBatchCommand;
 use LaraGram\Queue\Console\RetryCommand as QueueRetryCommand;
 use LaraGram\Queue\Console\TableCommand;
 use LaraGram\Queue\Console\WorkCommand as QueueWorkCommand;
-use LaraGram\Routing\Console\ControllerMakeCommand;
-use LaraGram\Routing\Console\MiddlewareMakeCommand;
+use LaraGram\Listening\Console\ControllerMakeCommand;
+use LaraGram\Listening\Console\MiddlewareMakeCommand;
 use LaraGram\Session\Console\SessionTableCommand;
 use LaraGram\Support\ServiceProvider;
 
@@ -189,6 +191,8 @@ class CommanderServiceProvider extends ServiceProvider implements DeferrableProv
         'StorageLink' => StorageLinkCommand::class,
         'StorageUnlink' => StorageUnlinkCommand::class,
         'Up' => UpCommand::class,
+        'TemplateCache' => TemplateCacheCommand::class,
+        'TemplateClear' => TemplateClearCommand::class,
         'ViewCache' => ViewCacheCommand::class,
         'ViewClear' => ViewClearCommand::class,
         'WebhookDeleteCommand' => WebhookDeleteCommand::class,
