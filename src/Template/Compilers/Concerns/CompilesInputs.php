@@ -277,7 +277,9 @@ trait CompilesInputs
 
         if (in_array($directive, $this->allowedInputsDirectives)) {
             if ($expression !== null && $expression !== '') {
-                return "<?php \$__t8__$directive = {$expression}; ?>";
+                $value = $this->inputDirectiveValue($expression);
+
+                return "<?php \$__t8__$directive = {$value}; ?>";
             }
 
             return "<?php ob_start(); ?>";
@@ -286,9 +288,31 @@ trait CompilesInputs
         return null;
     }
 
+    /**
+     * Turn the argument of an input directive into a PHP expression.
+     *
+     * A bare word such as the "html" of @parse_mode(html) is meant as text,
+     * not as a constant, so it is quoted. Everything else is passed through.
+     *
+     * @param  string  $expression
+     * @return string
+     */
+    protected function inputDirectiveValue(string $expression): string
+    {
+        $expression = trim($expression);
+
+        if (preg_match('/^[A-Za-z][A-Za-z0-9_\-]*$/', $expression)
+            && ! in_array(strtolower($expression), ['true', 'false', 'null'], true)) {
+            return "'".$expression."'";
+        }
+
+        return $expression;
+    }
+
     public function compileMethod($expression)
     {
-        $method = str_replace(['(', ')', '("', '")', '(\'', '\')', ], '', $expression);
-        return "<?php \$__t8__method = $method ?>";
+        $method = trim($this->stripParentheses($expression ?? ''));
+
+        return "<?php \$__t8__method = {$method}; ?>";
     }
 }

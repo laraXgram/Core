@@ -54,7 +54,7 @@ trait CompilesRichMessages
      */
     public function compileRichPhoto($expression)
     {
-        return $this->richMedia('photo', $expression);
+        return $this->richMedia('photo', $expression, 'richPhoto');
     }
 
     /**
@@ -65,7 +65,7 @@ trait CompilesRichMessages
      */
     public function compileRichVideo($expression)
     {
-        return $this->richMedia('video', $expression);
+        return $this->richMedia('video', $expression, 'richVideo');
     }
 
     /**
@@ -76,7 +76,7 @@ trait CompilesRichMessages
      */
     public function compileRichAnimation($expression)
     {
-        return $this->richMedia('animation', $expression);
+        return $this->richMedia('animation', $expression, 'richAnimation');
     }
 
     /**
@@ -87,7 +87,7 @@ trait CompilesRichMessages
      */
     public function compileRichAudio($expression)
     {
-        return $this->richMedia('audio', $expression);
+        return $this->richMedia('audio', $expression, 'richAudio');
     }
 
     /**
@@ -98,7 +98,7 @@ trait CompilesRichMessages
      */
     public function compileRichVoice($expression)
     {
-        return $this->richMedia('voice_note', $expression);
+        return $this->richMedia('voice_note', $expression, 'richVoice');
     }
 
     /**
@@ -109,7 +109,7 @@ trait CompilesRichMessages
      */
     public function compileRichDocument($expression)
     {
-        return $this->richMedia('document', $expression);
+        return $this->richMedia('document', $expression, 'richDocument');
     }
 
     /**
@@ -123,7 +123,7 @@ trait CompilesRichMessages
      */
     public function compileRichMedia($expression)
     {
-        return "<?php echo \$__rich_message->media{$this->richArguments($expression)}; ?>";
+        return $this->richEcho('richMedia', 'media', $this->richArguments($expression));
     }
 
     /**
@@ -134,7 +134,7 @@ trait CompilesRichMessages
      */
     public function compileRichTable($expression)
     {
-        return $this->richAppend('table', $expression);
+        return $this->richEcho('richTable', 'buildTable', $this->richArguments($expression));
     }
 
     /**
@@ -145,7 +145,7 @@ trait CompilesRichMessages
      */
     public function compileRichList($expression)
     {
-        return $this->richAppend('list', $expression);
+        return $this->richEcho('richList', 'buildList', $this->richArguments($expression));
     }
 
     /**
@@ -156,7 +156,7 @@ trait CompilesRichMessages
      */
     public function compileRichChecklist($expression)
     {
-        return $this->richAppend('checklist', $expression);
+        return $this->richEcho('richChecklist', 'buildChecklist', $this->richArguments($expression));
     }
 
     /**
@@ -170,7 +170,7 @@ trait CompilesRichMessages
     {
         $options = $this->richOptions($expression, $draft);
 
-        return "<?php \$__rich_message = (new \\LaraGram\\Template\\Rich\\RichMessage())"
+        return '<?php $__rich_message = \\LaraGram\\Template\\Rich\\RichMessage::begin()'
             .$options.'; ob_start(); ?>';
     }
 
@@ -185,19 +185,21 @@ trait CompilesRichMessages
      */
     protected function closeRichMessage(string $method)
     {
-        return "<?php \$__rich_message->append(ob_get_clean());"
+        return '<?php $__rich_message = \\LaraGram\\Template\\Rich\\RichMessage::end()'
+            .'->append(ob_get_clean());'
             ." \$__t8__rich_message = \$__rich_message->toArray();"
             ." \$__t8__method = \$__t8__method ?? '{$method}'; ?>";
     }
 
     /**
-     * Build the PHP that appends a media block to the current rich message.
+     * Build the PHP that writes a media block into the message being built.
      *
      * @param  string  $type
      * @param  string|null  $expression
+     * @param  string  $directive
      * @return string
      */
-    protected function richMedia(string $type, $expression)
+    protected function richMedia(string $type, $expression, string $directive)
     {
         $arguments = $this->stripParentheses($expression ?? '');
 
@@ -205,37 +207,25 @@ trait CompilesRichMessages
             ? "type: '{$type}'"
             : $this->injectMediaType($arguments, $type);
 
-        return $this->richStatement("\$__rich_message->attach({$arguments})");
+        return $this->richEcho($directive, 'buildAttachment', "({$arguments})");
     }
 
     /**
-     * Build the PHP that appends the result of a builder call to the message.
+     * Build the PHP that echoes a builder call into the surrounding markup.
      *
+     * The call is echoed rather than appended to the message, so a directive
+     * lands exactly where it was written, even when the markup around it is
+     * produced by a loop, a condition, an include or a component.
+     *
+     * @param  string  $directive
      * @param  string  $method
-     * @param  string|null  $expression
+     * @param  string  $arguments
      * @return string
      */
-    protected function richAppend(string $method, $expression)
+    protected function richEcho(string $directive, string $method, string $arguments)
     {
-        return $this->richStatement(
-            "\$__rich_message->{$method}{$this->richArguments($expression)}"
-        );
-    }
-
-    /**
-     * Wrap a builder call so it lands after the markup written before it.
-     *
-     * The @rich block buffers its markup, so anything the builder appends
-     * directly has to be preceded by a flush of that buffer, otherwise it would
-     * jump ahead of the text the author already wrote.
-     *
-     * @param  string  $statement
-     * @return string
-     */
-    protected function richStatement(string $statement)
-    {
-        return '<?php $__rich_message->append(ob_get_clean()); '
-            .$statement.'; ob_start(); ?>';
+        return "<?php echo \\LaraGram\\Template\\Rich\\RichMessage::current('{$directive}')"
+            ."->{$method}{$arguments}; ?>";
     }
 
     /**

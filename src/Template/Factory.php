@@ -10,6 +10,7 @@ use LaraGram\Support\Arr;
 use LaraGram\Support\Traits\Macroable;
 use LaraGram\Template\Engines\EngineResolver;
 use InvalidArgumentException;
+use LaraGram\Template\Rich\RichMessage;
 
 class Factory implements FactoryContract
 {
@@ -513,6 +514,8 @@ class Factory implements FactoryContract
         $this->flushStacks();
         $this->flushComponents();
         $this->flushFragments();
+
+        RichMessage::flush();
     }
 
     /**

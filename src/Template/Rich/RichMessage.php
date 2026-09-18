@@ -82,6 +82,77 @@ class RichMessage
     }
 
     /**
+     * The rich messages currently being built, innermost last.
+     *
+     * @var array<int, static>
+     */
+    protected static array $open = [];
+
+    /**
+     * Start building a message the rich directives can append to.
+     *
+     * The instance is kept on a stack instead of a local template variable so
+     * the directives keep working inside includes, components and layouts,
+     * which each render in a scope of their own.
+     *
+     * @return static
+     */
+    public static function begin(): static
+    {
+        $message = new static();
+
+        static::$open[] = $message;
+
+        return $message;
+    }
+
+    /**
+     * Finish the message that is currently being built.
+     *
+     * @return static
+     *
+     * @throws \LaraGram\Template\Rich\Exceptions\RichMessageException
+     */
+    public static function end(): static
+    {
+        if (static::$open === []) {
+            throw new RichMessageException('@endrich was reached without an open @rich block.');
+        }
+
+        return array_pop(static::$open);
+    }
+
+    /**
+     * Get the message that is currently being built.
+     *
+     * @param  string|null  $directive
+     * @return static
+     *
+     * @throws \LaraGram\Template\Rich\Exceptions\RichMessageException
+     */
+    public static function current(?string $directive = null): static
+    {
+        if (static::$open === []) {
+            throw new RichMessageException(
+                ($directive ? "@{$directive} may" : 'Rich message directives may')
+                .' only be used inside a @rich or @richDraft block.'
+            );
+        }
+
+        return static::$open[array_key_last(static::$open)];
+    }
+
+    /**
+     * Forget every message left open by a failed render.
+     *
+     * @return void
+     */
+    public static function flush(): void
+    {
+        static::$open = [];
+    }
+
+    /**
      * Append raw markup.
      *
      * @param  string  $markup
@@ -205,6 +276,35 @@ class RichMessage
         ?string $id = null,
         array $options = [],
     ): static {
+        return $this->append($this->buildAttachment(
+            $file, $type, $caption, $credit, $spoiler, $id, $options
+        ));
+    }
+
+    /**
+     * Build a media block without appending it to the message.
+     *
+     * The file is registered either way; only the markup is handed back, so
+     * the caller decides where in the message it lands.
+     *
+     * @param  mixed  $file
+     * @param  string  $type
+     * @param  string|null  $caption
+     * @param  string|null  $credit
+     * @param  bool  $spoiler
+     * @param  string|null  $id
+     * @param  array<string, mixed>  $options
+     * @return string
+     */
+    public function buildAttachment(
+        mixed $file,
+        string $type,
+        ?string $caption = null,
+        ?string $credit = null,
+        bool $spoiler = false,
+        ?string $id = null,
+        array $options = [],
+    ): string {
         $source = $this->bag->add($file, $type, $id, $options);
         $tag = MediaBag::tagFor($type);
 
@@ -222,9 +322,7 @@ class RichMessage
             $attributes .= ' spoiler';
         }
 
-        return $this->append(
-            $tag === 'img' ? "<img{$attributes}/>" : "<{$tag}{$attributes}></{$tag}>"
-        );
+        return $tag === 'img' ? "<img{$attributes}/>" : "<{$tag}{$attributes}></{$tag}>";
     }
 
     /**
@@ -326,6 +424,21 @@ class RichMessage
      */
     public function list(iterable $items, bool $ordered = false, ?string $type = null, ?int $start = null, bool $reversed = false): static
     {
+        return $this->append($this->buildList($items, $ordered, $type, $start, $reversed));
+    }
+
+    /**
+     * Build a list without appending it to the message.
+     *
+     * @param  iterable<mixed>  $items
+     * @param  bool  $ordered
+     * @param  string|null  $type  Ordered list label style: a, A, i, I or 1.
+     * @param  int|null  $start
+     * @param  bool  $reversed
+     * @return string
+     */
+    public function buildList(iterable $items, bool $ordered = false, ?string $type = null, ?int $start = null, bool $reversed = false): string
+    {
         $tag = $ordered ? 'ol' : 'ul';
         $open = '<'.$tag;
 
@@ -349,7 +462,7 @@ class RichMessage
             $html .= '<li>'.static::escape((string) $item).'</li>';
         }
 
-        return $this->append($html.'</'.$tag.'>');
+        return $html.'</'.$tag.'>';
     }
 
     /**
@@ -360,6 +473,17 @@ class RichMessage
      */
     public function checklist(iterable $items): static
     {
+        return $this->append($this->buildChecklist($items));
+    }
+
+    /**
+     * Build a checklist without appending it to the message.
+     *
+     * @param  iterable<string, bool>  $items
+     * @return string
+     */
+    public function buildChecklist(iterable $items): string
+    {
         $html = '<ul>';
 
         foreach ($items as $label => $checked) {
@@ -367,7 +491,7 @@ class RichMessage
                 .static::escape((string) $label).'</li>';
         }
 
-        return $this->append($html.'</ul>');
+        return $html.'</ul>';
     }
 
     /**
@@ -391,6 +515,32 @@ class RichMessage
         bool $compact = false,
         ?string $caption = null,
     ): static {
+        return $this->append($this->buildTable(
+            $rows, $headers, $align, $bordered, $striped, $compact, $caption
+        ));
+    }
+
+    /**
+     * Build a table without appending it to the message.
+     *
+     * @param  iterable<int, iterable<mixed>>  $rows
+     * @param  array<int, string>  $headers
+     * @param  array<int, string>  $align  Per-column alignment: left, center or right.
+     * @param  bool  $bordered
+     * @param  bool  $striped
+     * @param  bool  $compact
+     * @param  string|null  $caption
+     * @return string
+     */
+    public function buildTable(
+        iterable $rows,
+        array $headers = [],
+        array $align = [],
+        bool $bordered = false,
+        bool $striped = false,
+        bool $compact = false,
+        ?string $caption = null,
+    ): string {
         $html = '<table'
             .($bordered ? ' bordered' : '')
             .($striped ? ' striped' : '')
@@ -423,7 +573,7 @@ class RichMessage
             $html .= '</tr>';
         }
 
-        return $this->append($html.'</table>');
+        return $html.'</table>';
     }
 
     /**
