@@ -12,17 +12,19 @@ final class Back
         public ?string $label = null,
         public ?string $callbackData = null,
         public ?string $command = null,
+        public ?string $onFirst = null,
     ) {
     }
 
     /**
      * Build a back control (unset arguments inherit from the level below).
      *
-     * @param  string|null  $mode          reply | inline | command | text | none
+     * @param  string|null  $mode          auto | reply | inline | command | text | none
      * @param  string|null  $label         Button text / matched text.
      * @param  string|null  $callbackData  Callback data for inline mode.
      * @param  string|null  $command       Command that triggers back.
      * @param  bool|null    $enabled
+     * @param  string|null  $onFirst       hide | cancel, on the first question.
      * @return self
      */
     public static function make(
@@ -31,8 +33,9 @@ final class Back
         ?string $callbackData = null,
         ?string $command = null,
         ?bool $enabled = null,
+        ?string $onFirst = null,
     ): self {
-        return new self($enabled, $mode, $label, $callbackData, $command);
+        return new self($enabled, $mode, $label, $callbackData, $command, $onFirst);
     }
 
     /**
@@ -63,6 +66,7 @@ final class Back
             label: $question?->label ?? $global?->label ?? $default->label,
             callbackData: $question?->callbackData ?? $global?->callbackData ?? $default->callbackData,
             command: $question?->command ?? $global?->command ?? $default->command,
+            onFirst: $question?->onFirst ?? $global?->onFirst ?? $default->onFirst,
         );
     }
 
@@ -76,11 +80,25 @@ final class Back
     {
         return new self(
             enabled: true,
-            mode: 'reply',
+            mode: 'auto',
             label: 'Back',
             callbackData: 'conversation:back',
             command: null,
+            onFirst: 'hide',
         );
+    }
+
+    /**
+     * Determine whether this control is drawn as a button.
+     *
+     * The command and text modes are matched against what the user types, so
+     * they add nothing to the keyboard.
+     *
+     * @return bool
+     */
+    public function injects(): bool
+    {
+        return (bool) $this->enabled && ! in_array($this->mode, ['command', 'text', 'none'], true);
     }
 
     /**
@@ -128,12 +146,14 @@ final class Back
         $keyboard = $this->normalize($existing);
 
         // Modes that never inject a button.
-        if (! $this->enabled || in_array($this->mode, ['command', 'text', 'none'], true)) {
+        if (! $this->injects()) {
             return $keyboard === null ? null : json_encode($keyboard);
         }
 
         // Attach the back button to whatever keyboard the question already has.
-        $inject = $this->mode;
+        // Without a keyboard, an inline button is used: a reply keyboard would
+        // stay on the user's screen long after the conversation is over.
+        $inject = $this->mode === 'auto' ? 'inline' : $this->mode;
 
         if ($keyboard !== null) {
             if (isset($keyboard['inline_keyboard'])) {

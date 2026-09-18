@@ -63,4 +63,34 @@ return [
 
     'forget_after_complete' => true,
 
+    /*
+    |--------------------------------------------------------------------------
+    | Answer Feedback
+    |--------------------------------------------------------------------------
+    |
+    | The message sent when an answer is rejected: true sends the validation
+    | error, a string sends that text, and false sends nothing. The second
+    | message is sent when an update matches none of a question's options.
+    |
+    */
+
+    'retry_message' => true,
+
+    'invalid_choice' => 'Please choose one of the options.',
+
+    /*
+    |--------------------------------------------------------------------------
+    | Keyboard Clean Up
+    |--------------------------------------------------------------------------
+    |
+    | Once a conversation is over, the inline keyboard of its last prompt is
+    | taken back. A reply keyboard needs a message of its own to be removed,
+    | which is only sent when the text below is not null.
+    |
+    */
+
+    'clear_keyboard' => true,
+
+    'keyboard_cleared_text' => null,
+
 ];

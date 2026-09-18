@@ -36,6 +36,13 @@ final class QuestionAccessor
                 'promptMedia' => $this->promptMedia,
                 'back'        => $this->back,
                 'priority'    => $this->priority,
+                'choices'     => $this->choices,
+                'template'    => $this->template,
+                'condition'   => $this->condition,
+                'transform'   => $this->transform,
+                'default'     => $this->default,
+                'skipLabel'   => $this->skipLabel,
+                'retry'       => $this->retry,
             ];
         };
 
@@ -59,6 +66,13 @@ final class QuestionAccessor
             promptMedia: $attributes['promptMedia'],
             back: $attributes['back'],
             priority: $attributes['priority'],
+            choices: $attributes['choices'],
+            template: $attributes['template'],
+            condition: $attributes['condition'],
+            transform: $attributes['transform'],
+            default: $attributes['default'],
+            skipLabel: $attributes['skipLabel'],
+            retry: $attributes['retry'],
         );
     }
 }

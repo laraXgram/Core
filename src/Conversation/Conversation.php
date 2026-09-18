@@ -127,6 +127,108 @@ abstract class Conversation
     }
 
     /**
+     * The parameters the conversation was started with.
+     *
+     * @var array<string, mixed>
+     */
+    protected array $parameters = [];
+
+    /**
+     * Set the parameters the conversation was started with.
+     *
+     * @param  array<string, mixed>  $parameters
+     * @return $this
+     */
+    public function withParameters(array $parameters): static
+    {
+        $this->parameters = $parameters;
+
+        return $this;
+    }
+
+    /**
+     * Get the parameters the conversation was started with.
+     *
+     * @return array<string, mixed>
+     */
+    public function parameters(): array
+    {
+        return $this->parameters;
+    }
+
+    /**
+     * Get one of the parameters the conversation was started with.
+     *
+     * @param  string  $key
+     * @param  mixed  $default
+     * @return mixed
+     */
+    public function parameter(string $key, mixed $default = null): mixed
+    {
+        return $this->parameters[$key] ?? $default;
+    }
+
+    /**
+     * Get the message sent when an answer is rejected.
+     *
+     * A string is sent as it is, true sends the first validation error, and
+     * false or null sends nothing. Override this or declare a $retryMessage
+     * property; questions may override it again with retry().
+     *
+     * @return string|bool|null
+     */
+    public function retryMessage(): string|bool|null
+    {
+        return $this->retryMessage ?? config('conversation.retry_message', true);
+    }
+
+    /**
+     * Determine what happens to the keyboard of the last prompt once the
+     * conversation is over.
+     *
+     * True takes an inline keyboard back and, for a reply keyboard, sends the
+     * configured message that removes it; a string is used as that message;
+     * false leaves the keyboard alone.
+     *
+     * @return string|bool
+     */
+    public function clearKeyboard(): string|bool
+    {
+        return $this->clearKeyboard ?? config('conversation.clear_keyboard', true);
+    }
+
+    /**
+     * Steer the conversation to another question from a hook or callback.
+     *
+     * @param  string  $question
+     * @return \LaraGram\Conversation\Flow
+     */
+    protected function goTo(string $question): Flow
+    {
+        return Flow::goTo($question);
+    }
+
+    /**
+     * Complete the conversation early from a hook or callback.
+     *
+     * @return \LaraGram\Conversation\Flow
+     */
+    protected function finish(): Flow
+    {
+        return Flow::finish();
+    }
+
+    /**
+     * Ask the current question again from a hook or callback.
+     *
+     * @return \LaraGram\Conversation\Flow
+     */
+    protected function repeat(): Flow
+    {
+        return Flow::repeat();
+    }
+
+    /**
      * Called once when the conversation begins.
      */
     public function onStart(Request $request): void
@@ -142,13 +244,17 @@ abstract class Conversation
 
     /**
      * Called when a question receives a valid answer.
+     *
+     * Return a {@see Flow} to steer the conversation from here.
+     *
+     * @return \LaraGram\Conversation\Flow|null
      */
-    public function onAnswer(Request $request, Question $question, Answer $answer): void
+    public function onAnswer(Request $request, Question $question, Answer $answer)
     {
     }
 
     /**
-     * Called when a question is skipped via its skip command.
+     * Called when a question is skipped via its skip command or skip button.
      */
     public function onSkip(Request $request, Question $question): void
     {
@@ -157,9 +263,12 @@ abstract class Conversation
     /**
      * Called when the user goes back to the previous question.
      *
-     * $question is the previous question being re-asked.
+     * $question is the previous question being re-asked. Return a {@see Flow}
+     * to go somewhere else instead.
+     *
+     * @return \LaraGram\Conversation\Flow|null
      */
-    public function onBack(Request $request, Question $question): void
+    public function onBack(Request $request, Question $question)
     {
     }
 

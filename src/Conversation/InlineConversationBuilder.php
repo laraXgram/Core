@@ -2,6 +2,7 @@
 
 namespace LaraGram\Conversation;
 
+use BadMethodCallException;
 use Closure;
 use LaraGram\Support\SerializableClosure\SerializableClosure;
 
@@ -36,13 +37,69 @@ class InlineConversationBuilder
     protected bool $started = false;
 
     /**
+     * The single question declared with Conversation::ask(), if any.
+     *
+     * @var array{prompt: string|\Closure, name: string}|null
+     */
+    protected ?array $single = null;
+
+    /**
+     * The builder calls forwarded to that single question.
+     *
+     * @var array<int, array{0: string, 1: array}>
+     */
+    protected array $questionCalls = [];
+
+    /**
      * @param  \LaraGram\Conversation\ConversationManager  $manager
-     * @param  \Closure  $builder
+     * @param  \Closure|null  $builder
      */
     public function __construct(
         protected ConversationManager $manager,
-        protected Closure $builder,
+        protected ?Closure $builder = null,
     ) {
+    }
+
+    /**
+     * Declare the single question of a one-question conversation.
+     *
+     * Every method the question understands may then be called on the builder
+     * itself: validate(), choices(), template(), optional(), and so on.
+     *
+     * @param  string|\Closure  $prompt
+     * @param  string  $name
+     * @return $this
+     */
+    public function question(string|Closure $prompt, string $name = 'answer'): static
+    {
+        $this->single = ['prompt' => $prompt, 'name' => $name];
+
+        return $this;
+    }
+
+    /**
+     * Forward an unknown method to the single question being built.
+     *
+     * @param  string  $method
+     * @param  array  $arguments
+     * @return $this
+     *
+     * @throws \BadMethodCallException
+     */
+    public function __call(string $method, array $arguments): static
+    {
+        if ($this->single === null) {
+            throw new BadMethodCallException(
+                "Method [{$method}] is only available on a conversation started with Conversation::ask()."
+            );
+        }
+
+        $this->questionCalls[] = [$method, array_map(
+            static fn ($argument) => $argument instanceof Closure ? new SerializableClosure($argument) : $argument,
+            $arguments
+        )];
+
+        return $this;
     }
 
     public function onStart(Closure $callback): static
@@ -160,6 +217,33 @@ class InlineConversationBuilder
     }
 
     /**
+     * Set the message sent when an answer is rejected (false sends none).
+     *
+     * @param  string|bool|null  $message
+     * @return $this
+     */
+    public function retryMessage(string|bool|null $message): static
+    {
+        $this->settings['retryMessage'] = $message;
+
+        return $this;
+    }
+
+    /**
+     * Decide what happens to the keyboard of the last prompt once the
+     * conversation is over.
+     *
+     * @param  string|bool  $clear
+     * @return $this
+     */
+    public function clearKeyboard(string|bool $clear = true): static
+    {
+        $this->settings['clearKeyboard'] = $clear;
+
+        return $this;
+    }
+
+    /**
      * Label the conversation (used in events; defaults to "inline").
      */
     public function name(string $name): static
@@ -240,9 +324,37 @@ class InlineConversationBuilder
 
         return [
             'name'     => $this->settings['name'] ?? 'inline',
-            'builder'  => $wrap($this->builder),
+            'builder'  => $wrap($this->resolveBuilder()),
             'hooks'    => $hooks,
             'settings' => $this->settings,
         ];
+    }
+
+    /**
+     * Get the closure declaring the conversation's questions.
+     *
+     * @return \Closure
+     */
+    protected function resolveBuilder(): Closure
+    {
+        if ($this->builder !== null) {
+            return $this->builder;
+        }
+
+        $single = $this->single;
+        $calls = $this->questionCalls;
+
+        return static function (Questioner $questioner) use ($single, $calls) {
+            $question = $questioner->ask($single['prompt'])->name($single['name']);
+
+            foreach ($calls as [$method, $arguments]) {
+                $question->{$method}(...array_map(
+                    static fn ($argument) => $argument instanceof SerializableClosure
+                        ? $argument->getClosure()
+                        : $argument,
+                    $arguments
+                ));
+            }
+        };
     }
 }

@@ -2,6 +2,8 @@
 
 namespace LaraGram\Conversation;
 
+use Closure;
+
 /**
  * Collects the questions that make up a conversation.
  */
@@ -17,12 +19,69 @@ class Questioner
     /**
      * Declare a new question.
      *
-     * @param  string  $prompt
+     * The prompt may be a closure receiving the answers given so far, or be
+     * left out entirely when the question renders itself with a template.
+     *
+     * @param  string|\Closure|null  $prompt
      * @return \LaraGram\Conversation\Question
      */
-    public function ask(string $prompt): Question
+    public function ask(string|Closure|null $prompt = null): Question
     {
         return $this->questions[] = new Question($prompt);
+    }
+
+    /**
+     * Declare a question that offers a fixed set of options.
+     *
+     * @param  string|\Closure|null  $prompt
+     * @param  array<int|string, string>|\Closure  $options
+     * @return \LaraGram\Conversation\Question
+     */
+    public function choose(string|Closure|null $prompt, array|Closure $options): Question
+    {
+        return $this->ask($prompt)->choices($options);
+    }
+
+    /**
+     * Declare a yes or no question, answered with a boolean.
+     *
+     * @param  string|\Closure|null  $prompt
+     * @param  string  $yes
+     * @param  string  $no
+     * @return \LaraGram\Conversation\Question
+     */
+    public function confirm(string|Closure|null $prompt, string $yes = 'Yes', string $no = 'No'): Question
+    {
+        return $this->ask($prompt)->confirm($yes, $no);
+    }
+
+    /**
+     * Declare a question whose prompt is rendered by a template.
+     *
+     * @param  string  $template
+     * @param  array<string, mixed>  $data
+     * @return \LaraGram\Conversation\Question
+     */
+    public function template(string $template, array $data = []): Question
+    {
+        return $this->ask()->template($template, $data);
+    }
+
+    /**
+     * Get the index of the question with the given name.
+     *
+     * @param  string  $name
+     * @return int|null
+     */
+    public function indexOf(string $name): ?int
+    {
+        foreach ($this->questions as $index => $question) {
+            if (QuestionAccessor::compile($question)->name === $name) {
+                return $index;
+            }
+        }
+
+        return null;
     }
 
     /**

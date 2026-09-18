@@ -114,14 +114,34 @@ class InlineConversation extends Conversation
         return $this->settings['priority'] ?? null;
     }
 
+    /**
+     * @return string|bool|null
+     */
+    public function retryMessage(): string|bool|null
+    {
+        return array_key_exists('retryMessage', $this->settings)
+            ? $this->settings['retryMessage']
+            : parent::retryMessage();
+    }
+
+    /**
+     * @return string|bool
+     */
+    public function clearKeyboard(): string|bool
+    {
+        return array_key_exists('clearKeyboard', $this->settings)
+            ? $this->settings['clearKeyboard']
+            : parent::clearKeyboard();
+    }
+
     public function onStart(Request $request): void
     {
         $this->fire('onStart', $request);
     }
 
-    public function onBack(Request $request, Question $question): void
+    public function onBack(Request $request, Question $question)
     {
-        $this->fire('onBack', $request, $question);
+        return $this->fire('onBack', $request, $question);
     }
 
     public function onAsk(Request $request, Question $question): void
@@ -129,9 +149,9 @@ class InlineConversation extends Conversation
         $this->fire('onAsk', $request, $question);
     }
 
-    public function onAnswer(Request $request, Question $question, Answer $answer): void
+    public function onAnswer(Request $request, Question $question, Answer $answer)
     {
-        $this->fire('onAnswer', $request, $question, $answer);
+        return $this->fire('onAnswer', $request, $question, $answer);
     }
 
     public function onSkip(Request $request, Question $question): void
@@ -161,10 +181,10 @@ class InlineConversation extends Conversation
      * @param  mixed  ...$arguments
      * @return void
      */
-    protected function fire(string $hook, ...$arguments): void
+    protected function fire(string $hook, ...$arguments): mixed
     {
-        if (isset($this->hooks[$hook])) {
-            ($this->hooks[$hook])(...$arguments);
-        }
+        return isset($this->hooks[$hook])
+            ? ($this->hooks[$hook])(...$arguments)
+            : null;
     }
 }

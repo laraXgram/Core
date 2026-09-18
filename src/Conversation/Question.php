@@ -10,9 +10,9 @@ use Closure;
 class Question
 {
     /**
-     * The prompt text shown to the user.
+     * The prompt shown to the user, or a closure building it from the answers.
      *
-     * @var string
+     * @var string|\Closure|null
      */
     protected $prompt;
 
@@ -124,14 +124,303 @@ class Question
     protected ?Priority $priority = null;
 
     /**
+     * The options offered by the question, if any.
+     *
+     * @var \LaraGram\Conversation\Choices|null
+     */
+    protected ?Choices $choices = null;
+
+    /**
+     * The template rendering the prompt, if any.
+     *
+     * @var array{template: string, data: array, source: string}|null
+     */
+    protected ?array $template = null;
+
+    /**
+     * The condition deciding whether the question is asked.
+     *
+     * @var \Closure|null
+     */
+    protected $condition = null;
+
+    /**
+     * The callback converting the answer before it is stored.
+     *
+     * @var \Closure|null
+     */
+    protected $transform = null;
+
+    /**
+     * The value stored when the question is skipped.
+     *
+     * @var mixed
+     */
+    protected $default = null;
+
+    /**
+     * The label of the button that skips the question, if any.
+     *
+     * @var string|null
+     */
+    protected $skipLabel = null;
+
+    /**
+     * The message sent when an answer is rejected.
+     *
+     * @var string|\Closure|null
+     */
+    protected $retry = null;
+
+    /**
      * Create a new question.
      *
-     * @param  string  $prompt
+     * @param  string|\Closure|null  $prompt
      * @return void
      */
-    public function __construct(string $prompt)
+    public function __construct(string|Closure|null $prompt = null)
     {
         $this->prompt = $prompt;
+    }
+
+    /**
+     * Set the prompt, or a closure building it from the answers so far.
+     *
+     * @param  string|\Closure  $prompt
+     * @return $this
+     */
+    public function prompt(string|Closure $prompt): static
+    {
+        $this->prompt = $prompt;
+
+        return $this;
+    }
+
+    /**
+     * Offer a fixed set of options, presented as a keyboard.
+     *
+     * The array maps the value that is stored to the label the user sees; a
+     * plain list uses each item as both. A closure receives the answers given
+     * so far and returns that array.
+     *
+     * @param  array<int|string, string>|\Closure  $options
+     * @param  int|null  $columns
+     * @return $this
+     */
+    public function choices(array|Closure $options, ?int $columns = null): static
+    {
+        $this->choices = new Choices($options, columns: $columns ?? 2);
+
+        if ($this->type === 'text') {
+            $this->type = 'any';
+        }
+
+        return $this;
+    }
+
+    /**
+     * Present the options as an inline keyboard (the default).
+     *
+     * @return $this
+     */
+    public function asInline(): static
+    {
+        $this->choices = $this->requireChoices(__FUNCTION__)->with(['layout' => 'inline']);
+
+        return $this;
+    }
+
+    /**
+     * Present the options as a reply keyboard.
+     *
+     * @return $this
+     */
+    public function asReply(): static
+    {
+        $this->choices = $this->requireChoices(__FUNCTION__)->with(['layout' => 'reply']);
+
+        return $this;
+    }
+
+    /**
+     * Set how many option buttons sit in a keyboard row.
+     *
+     * @param  int  $columns
+     * @return $this
+     */
+    public function columns(int $columns): static
+    {
+        $this->choices = $this->requireChoices(__FUNCTION__)->with(['columns' => $columns]);
+
+        return $this;
+    }
+
+    /**
+     * Let the user select several options, until the "done" button is tapped.
+     *
+     * The answer is an array of the selected values.
+     *
+     * @param  string  $done
+     * @param  int|null  $min
+     * @param  int|null  $max
+     * @return $this
+     */
+    public function multiple(string $done = 'Done', ?int $min = null, ?int $max = null): static
+    {
+        $this->choices = $this->requireChoices(__FUNCTION__)->with([
+            'multiple' => true, 'done' => $done, 'min' => $min, 'max' => $max,
+        ]);
+
+        return $this;
+    }
+
+    /**
+     * Ask for a yes or no, storing the answer as a boolean.
+     *
+     * @param  string  $yes
+     * @param  string  $no
+     * @return $this
+     */
+    public function confirm(string $yes = 'Yes', string $no = 'No'): static
+    {
+        return $this->choices(['1' => $yes, '0' => $no], columns: 2)
+            ->transform(fn ($value) => (bool) $value);
+    }
+
+    /**
+     * Render the prompt with a template.
+     *
+     * The template builds the whole message - text, parse mode, keyboard,
+     * media, rich message - and the back or skip buttons are added to the
+     * keyboard it produces.
+     *
+     * @param  string  $template
+     * @param  array<string, mixed>  $data
+     * @param  string  $source  name | path | inline
+     * @return $this
+     */
+    public function template(string $template, array $data = [], string $source = 'name'): static
+    {
+        $this->template = ['template' => $template, 'data' => $data, 'source' => $source];
+
+        return $this;
+    }
+
+    /**
+     * Ask the question only when the given condition passes.
+     *
+     * The closure receives the answers given so far.
+     *
+     * @param  \Closure  $condition
+     * @return $this
+     */
+    public function when(Closure $condition): static
+    {
+        $this->condition = $condition;
+
+        return $this;
+    }
+
+    /**
+     * Ask the question unless the given condition passes.
+     *
+     * @param  \Closure  $condition
+     * @return $this
+     */
+    public function unless(Closure $condition): static
+    {
+        $this->condition = static fn (AnswersBag $answers) => ! $condition($answers);
+
+        return $this;
+    }
+
+    /**
+     * Convert the answer before it is stored.
+     *
+     * @param  \Closure  $callback
+     * @return $this
+     */
+    public function transform(Closure $callback): static
+    {
+        $this->transform = $callback;
+
+        return $this;
+    }
+
+    /**
+     * Cast the answer to the given type before it is stored.
+     *
+     * @param  string  $type  int | float | bool | string | array
+     * @return $this
+     */
+    public function cast(string $type): static
+    {
+        return $this->transform(static fn ($value) => match ($type) {
+            'int', 'integer' => (int) $value,
+            'float', 'double' => (float) $value,
+            'bool', 'boolean' => filter_var($value, FILTER_VALIDATE_BOOL),
+            'string' => (string) $value,
+            'array' => (array) $value,
+            default => $value,
+        });
+    }
+
+    /**
+     * Set the value stored when the question is skipped.
+     *
+     * @param  mixed  $value
+     * @return $this
+     */
+    public function default(mixed $value): static
+    {
+        $this->default = $value;
+
+        return $this;
+    }
+
+    /**
+     * Let the question be skipped with a button, storing the default value.
+     *
+     * @param  string  $label
+     * @param  mixed  $default
+     * @return $this
+     */
+    public function optional(string $label = 'Skip', mixed $default = null): static
+    {
+        $this->skipLabel = $label;
+        $this->default = $default;
+
+        return $this;
+    }
+
+    /**
+     * Set the message sent when an answer is rejected.
+     *
+     * The closure receives the validation errors and the attempt number.
+     *
+     * @param  string|\Closure  $message
+     * @return $this
+     */
+    public function retry(string|Closure $message): static
+    {
+        $this->retry = $message;
+
+        return $this;
+    }
+
+    /**
+     * Get the question's options, failing when it has none.
+     *
+     * @param  string  $method
+     * @return \LaraGram\Conversation\Choices
+     *
+     * @throws \LogicException
+     */
+    protected function requireChoices(string $method): Choices
+    {
+        return $this->choices ?? throw new \LogicException(
+            "The [{$method}] method may only be used after choices() has been called."
+        );
     }
 
     /**
