@@ -11,6 +11,7 @@ use LaraGram\Laraquest\Mode;
 use LaraGram\Request\Request;
 use ReflectionMethod;
 use Throwable;
+use LaraGram\Laraquest\Exceptions\TelegramApiException;
 
 class Sender
 {
@@ -254,6 +255,8 @@ class Sender
         for ($attempt = 0; ; $attempt++) {
             try {
                 $response = $this->request($options)->call($method, $parameters);
+            } catch (TelegramApiException $e) {
+                $response = $e->response();
             } catch (Throwable $e) {
                 report($e);
 
@@ -264,21 +267,22 @@ class Sender
 
             // Anything but an explicit Bot API error counts as delivered (for
             // example an intercepted call that returns no response at all).
-            if (! is_array($response) || ($response['ok'] ?? true) !== false) {
+            if (($this->field($response, 'ok') ?? true) !== false) {
                 return ['sent', $response, $chatId];
             }
 
-            $code = (int) ($response['error_code'] ?? 0);
-            $description = (string) ($response['description'] ?? '');
+            $code = (int) ($this->field($response, 'error_code') ?? 0);
+            $description = (string) ($this->field($response, 'description') ?? '');
+            $parameters = (array) ($this->field($response, 'parameters') ?? []);
 
             if ($code === 429 && $attempt < $retries) {
-                $this->wait((float) ($response['parameters']['retry_after'] ?? 1));
+                $this->wait((float) ($parameters['retry_after'] ?? 1));
 
                 continue;
             }
 
-            if (! $migrated && isset($response['parameters']['migrate_to_chat_id'])) {
-                $to = $response['parameters']['migrate_to_chat_id'];
+            if (! $migrated && isset($parameters['migrate_to_chat_id'])) {
+                $to = $parameters['migrate_to_chat_id'];
 
                 $this->chats(fn ($chats) => $chats->migrate($bot, $chatId, $to));
 
@@ -333,12 +337,17 @@ class Sender
     protected function passesMembershipChecks(Recipient $recipient, array $options): bool
     {
         foreach ((array) ($options['checks'] ?? []) as $check) {
-            $response = $this->request($options)->call('getChatMember', [
-                'chat_id' => $check['chat'],
-                'user_id' => $recipient->chat_id,
-            ]);
+            try {
+                $response = $this->request($options)->call('getChatMember', [
+                    'chat_id' => $check['chat'],
+                    'user_id' => $recipient->chat_id,
+                ]);
+            } catch (TelegramApiException $e) {
+                $response = $e->response();
+            }
 
-            $member = is_array($response) && is_array($response['result'] ?? null) ? $response['result'] : [];
+            $result = $this->field($response, 'result');
+            $member = is_array($result) ? $result : [];
             $status = $member['status'] ?? 'left';
 
             $present = in_array($status, $check['statuses'] ?? ChatCriteria::PRESENT, true)
@@ -394,6 +403,22 @@ class Sender
     }
 
     /**
+     * Read a field of a Bot API response, whatever shape it arrived in.
+     *
+     * @param  mixed  $response
+     * @param  string  $key
+     * @return mixed
+     */
+    protected function field(mixed $response, string $key): mixed
+    {
+        if (is_array($response) || $response instanceof \ArrayAccess) {
+            return $response[$key] ?? null;
+        }
+
+        return null;
+    }
+
+    /**
      * Extract the identifiers of the messages a call sent.
      *
      * @param  mixed  $response
@@ -401,7 +426,7 @@ class Sender
      */
     protected function messageIds(mixed $response): array
     {
-        $result = is_array($response) ? ($response['result'] ?? null) : null;
+        $result = $this->field($response, 'result');
 
         if (! is_array($result)) {
             return [];

@@ -4,6 +4,7 @@ namespace LaraGram\Auth\Status;
 
 use LaraGram\Contracts\Auth\StatusProvider;
 use LaraGram\Support\Facades\Request;
+use LaraGram\Laraquest\Exceptions\TelegramApiException;
 
 class LiveStatusProvider implements StatusProvider
 {
@@ -29,7 +30,12 @@ class LiveStatusProvider implements StatusProvider
             return $this->resolved[$key];
         }
 
-        $response = Request::getChatMember($chatId, $userId);
+        try {
+            $response = Request::getChatMember($chatId, $userId);
+        } catch (TelegramApiException $e) {
+            // A membership that cannot be read is simply unknown, never fatal.
+            $response = $e->response();
+        }
 
         return $this->resolved[$key] = $this->extractStatus($response);
     }

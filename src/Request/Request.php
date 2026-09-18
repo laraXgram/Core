@@ -4,7 +4,9 @@ namespace LaraGram\Request;
 
 use Closure;
 use LaraGram\Laraquest\Updates as UpdatesTrait;
+use LaraGram\Laraquest\Exceptions\TelegramApiException;
 use LaraGram\Laraquest\Methode as MethodeTrait;
+use LaraGram\Laraquest\Response as LaraquestResponse;
 use LaraGram\Listening\Contracts\ProvidesListenContext;
 use LaraGram\Listening\Type;
 use LaraGram\Request\Files\FileBag;
@@ -895,12 +897,14 @@ class Request implements ProvidesListenContext
      *
      * @param  string  $method
      * @param  array   $params
-     * @return mixed
+     * @return \LaraGram\Laraquest\Response|array
+     *
+     * @throws \LaraGram\Laraquest\Exceptions\TelegramApiException
      */
     protected function endpoint(string $method, array $params): mixed
     {
         if (static::$interceptor !== null) {
-            return $this->sendToInterceptor($method, $params);
+            return $this->normalizeResponse($this->sendToInterceptor($method, $params), $method, $params);
         }
 
         $bypass = $this->bypassAntiFlood;
@@ -929,19 +933,74 @@ class Request implements ProvidesListenContext
 
         $proxy = $proxyBypass ? null : $this->proxy();
 
-        $response = $proxy !== null
-            ? $this->sendThroughProxy($proxy, $method, $params, $forcedProxy)
-            : $this->rawEndpoint($method, $params);
+        try {
+            $response = $proxy !== null
+                ? $this->sendThroughProxy($proxy, $method, $params, $forcedProxy)
+                : $this->rawEndpoint($method, $params);
+        } catch (TelegramApiException $e) {
+            $this->report($antiFlood, $connection, $method, $params, $e->response(), $scopes);
 
-        if ($antiFlood !== null) {
-            try {
-                $antiFlood->report($connection, $method, $params, $response, $scopes);
-            } catch (\Throwable) {
-                // Reporting must never affect the response returned to the caller.
-            }
+            throw $e;
         }
 
+        $response = $this->normalizeResponse($response, $method, $params);
+
+        $this->report($antiFlood, $connection, $method, $params, $response, $scopes);
+
         return $response;
+    }
+
+    /**
+     * Hand a response to the anti-flood engine, if one is active.
+     *
+     * @param  \LaraGram\Request\AntiFlood\AntiFlood|null  $antiFlood
+     * @param  string|null  $connection
+     * @param  string  $method
+     * @param  array  $params
+     * @param  mixed  $response
+     * @param  array  $scopes
+     * @return void
+     */
+    private function report($antiFlood, $connection, string $method, array $params, mixed $response, array $scopes): void
+    {
+        if ($antiFlood === null) {
+            return;
+        }
+
+        try {
+            $antiFlood->report($connection, $method, $params, $response, $scopes);
+        } catch (\Throwable) {
+            // Reporting must never affect the response returned to the caller.
+        }
+    }
+
+    /**
+     * Shape whatever a transport returned like a Bot API response.
+     *
+     * @param  mixed  $response
+     * @param  string  $method
+     * @param  array  $params
+     * @return \LaraGram\Laraquest\Response|array
+     */
+    private function normalizeResponse(mixed $response, string $method = '', array $params = []): mixed
+    {
+        if (class_exists(LaraquestResponse::class)) {
+            return LaraquestResponse::make($response, $method, $params);
+        }
+
+        if (is_array($response)) {
+            return $response;
+        }
+
+        if (is_object($response)) {
+            return (array) json_decode(json_encode($response), true);
+        }
+
+        if (is_string($response) && ($decoded = json_decode($response, true)) !== null) {
+            return is_array($decoded) ? $decoded : ['ok' => true, 'result' => $decoded];
+        }
+
+        return ['ok' => true, 'result' => $response === null ? true : $response];
     }
 
     /**

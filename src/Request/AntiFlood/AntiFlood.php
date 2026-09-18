@@ -97,7 +97,7 @@ class AntiFlood
             return;
         }
 
-        if (! is_array($response)) {
+        if (! is_array($response) && ! $response instanceof \ArrayAccess) {
             return;
         }
 
