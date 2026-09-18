@@ -36,6 +36,7 @@ class Temple8Compiler extends Compiler implements CompilerInterface
         Concerns\CompilesKeyboards,
         Concerns\CompilesRichMessages,
         Concerns\CompilesInputs,
+        Concerns\CompilesPagination,
         ReflectsClosures;
 
     /**
@@ -128,6 +129,20 @@ class Temple8Compiler extends Compiler implements CompilerInterface
     protected $footer = [];
 
     /**
+     * Indicates if the template being compiled extends a layout.
+     *
+     * @var bool
+     */
+    protected $extendsLayout = false;
+
+    /**
+     * The marker that flags a template as a component of another template.
+     *
+     * @var string
+     */
+    public const COMPONENT_MARKER = '<!-- !component! -->';
+
+    /**
      * Array to temporarily store the raw blocks found in the template.
      *
      * @var array
@@ -184,9 +199,11 @@ class Temple8Compiler extends Compiler implements CompilerInterface
         if (! is_null($this->cachePath)) {
             $contents = $this->compileString($this->files->get($this->getPath()));
 
-            if (!str_contains($contents, '<!-- !component! -->')){
+            if ($this->sendsItsOwnMessage($contents)) {
                 $contents = $this->appendMethodCall($contents);
-            };
+            }
+
+            $contents = $this->removeComponentMarker($contents);
 
             if (! empty($this->getPath())) {
                 $contents = $this->appendFilePath($contents);
@@ -198,6 +215,31 @@ class Temple8Compiler extends Compiler implements CompilerInterface
 
             $this->files->put($compiledPath, $contents);
         }
+    }
+
+    /**
+     * Determine whether the compiled template sends a message of its own.
+     *
+     * @param  string  $contents
+     * @return bool
+     */
+    protected function sendsItsOwnMessage(string $contents): bool
+    {
+        return ! str_contains($contents, static::COMPONENT_MARKER)
+            && ! $this->extendsLayout;
+    }
+
+    /**
+     * Remove the marker that flags a template as a component.
+     *
+     * @param  string  $contents
+     * @return string
+     */
+    protected function removeComponentMarker(string $contents): string
+    {
+        return preg_replace(
+            '/[ \t]*'.preg_quote(static::COMPONENT_MARKER, '/').'\R?/', '', $contents
+        );
     }
 
     /**
@@ -338,7 +380,7 @@ class Temple8Compiler extends Compiler implements CompilerInterface
         // If there are any footer lines that need to get added to a template we will
         // add them here at the end of the template. This gets used mainly for the
         // template inheritance via the extends keyword that should be appended.
-        if (count($this->footer) > 0) {
+        if ($this->extendsLayout = count($this->footer) > 0) {
             $result = $this->addFooters($result);
         }
 

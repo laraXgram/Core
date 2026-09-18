@@ -3,15 +3,38 @@
 namespace LaraGram\Pagination\Concerns;
 
 use Closure;
+use InvalidArgumentException;
+use LaraGram\Pagination\UrlWindow;
 
 trait BuildsTelegramNavigation
 {
+    /**
+     * The prefix every navigation callback_data value starts with.
+     *
+     * @var string
+     */
+    public const PREFIX = 'paginate';
+
+    /**
+     * The maximum size of a Telegram callback_data value, in bytes.
+     *
+     * @var int
+     */
+    public const CALLBACK_DATA_LIMIT = 64;
+
     /**
      * The current page resolver callback (isolated from the web paginators).
      *
      * @var \Closure|null
      */
     protected static $telegramCurrentPageResolver;
+
+    /**
+     * The resolver returning the callback query of the current update.
+     *
+     * @var \Closure|null
+     */
+    protected static $telegramCallbackResolver;
 
     /**
      * The template factory resolver callback.
@@ -21,11 +44,18 @@ trait BuildsTelegramNavigation
     protected static $templateFactoryResolver;
 
     /**
+     * The template compiler resolver callback.
+     *
+     * @var \Closure|null
+     */
+    protected static $templateCompilerResolver;
+
+    /**
      * The prefix used for every navigation callback_data value.
      *
      * @var string
      */
-    protected $callbackPrefix = 'paginate';
+    protected $callbackPrefix = self::PREFIX;
 
     /**
      * The label used for the "previous page" button.
@@ -40,6 +70,34 @@ trait BuildsTelegramNavigation
      * @var string|null
      */
     protected $nextText;
+
+    /**
+     * The heading shown above the results by the default template.
+     *
+     * @var string|null
+     */
+    protected $heading;
+
+    /**
+     * The callback turning an item into a line of the message.
+     *
+     * @var \Closure|null
+     */
+    protected $formatter;
+
+    /**
+     * The method used to send the first page.
+     *
+     * @var string
+     */
+    protected $sendMethod = 'sendMessage';
+
+    /**
+     * The method used when the reader navigates to another page.
+     *
+     * @var string
+     */
+    protected $editMethod = 'editMessageText';
 
     /**
      * The default template used to render the paginated message.
@@ -73,8 +131,8 @@ trait BuildsTelegramNavigation
      * Get / set the callback key identifying this dataset.
      *
      * The key is embedded in every callback_data value and is what the
-     * current-page resolver matches against. Keep it short (callback_data is
-     * limited to 64 bytes) and unique per listener.
+     * current-page resolver and the onPaginate listen match against. Keep it
+     * short (callback_data is limited to 64 bytes) and unique per screen.
      *
      * @param  string|null  $key
      * @return ($key is null ? string : $this)
@@ -88,6 +146,17 @@ trait BuildsTelegramNavigation
         $this->pageName = $key;
 
         return $this;
+    }
+
+    /**
+     * Get the listen pattern matching the navigation of the given key.
+     *
+     * @param  string  $key
+     * @return string
+     */
+    public static function listenPattern($key = 'page')
+    {
+        return static::PREFIX.':'.$key.':{page}';
     }
 
     /**
@@ -137,14 +206,244 @@ trait BuildsTelegramNavigation
     }
 
     /**
+     * The format of the page indicator button, false when it is disabled.
+     *
+     * @var string|false|null
+     */
+    protected $indicator;
+
+    /**
+     * Whether the keyboard is forced right-to-left, left-to-right, or neither.
+     *
+     * @var bool|null
+     */
+    protected $rightToLeft;
+
+    /**
+     * Get / set the format of the page indicator button.
+     *
+     * The format may use the {current}, {last}, {total}, {from}, {to} and
+     * {perPage} placeholders. A simple paginator shows "{current}" unless it is
+     * told otherwise; a numbered one marks the current page instead, and only
+     * shows an indicator when one is set here.
+     *
+     * @param  string|null  $format
+     * @return ($format is null ? string|false|null : $this)
+     */
+    public function indicator($format = null)
+    {
+        if (is_null($format)) {
+            return $this->indicator;
+        }
+
+        $this->indicator = $format;
+
+        return $this;
+    }
+
+    /**
+     * Remove the page indicator button from the keyboard.
+     *
+     * @return $this
+     */
+    public function withoutIndicator()
+    {
+        $this->indicator = false;
+
+        return $this;
+    }
+
+    /**
+     * Get the text of the page indicator button, if it has one.
+     *
+     * @return string|null
+     */
+    public function resolvedIndicator()
+    {
+        $format = $this->indicator ?? ($this->hasKnownLastPage() ? null : '{current}');
+
+        if ($format === false || is_null($format)) {
+            return null;
+        }
+
+        $values = ['{current}' => $this->currentPage(), '{perPage}' => $this->perPage()];
+
+        foreach (['last' => 'lastPage', 'total' => 'total', 'from' => 'firstItem', 'to' => 'lastItem'] as $name => $method) {
+            $values['{'.$name.'}'] = method_exists($this, $method) ? $this->{$method}() : '';
+        }
+
+        return strtr($format, $values);
+    }
+
+    /**
+     * Force the navigation keyboard to read right-to-left.
+     *
+     * Without this, the keyboard follows the locale of the application, like
+     * every other keyboard built by LaraGram.
+     *
+     * @param  bool  $rightToLeft
+     * @return $this
+     */
+    public function rightToLeft($rightToLeft = true)
+    {
+        $this->rightToLeft = $rightToLeft;
+
+        return $this;
+    }
+
+    /**
+     * Force the navigation keyboard to read left-to-right.
+     *
+     * @return $this
+     */
+    public function leftToRight()
+    {
+        return $this->rightToLeft(false);
+    }
+
+    /**
+     * Get the forced direction of the keyboard, if any.
+     *
+     * @return bool|null
+     */
+    public function direction()
+    {
+        return $this->rightToLeft;
+    }
+
+    /**
+     * Get / set the heading shown above the results.
+     *
+     * @param  string|null  $heading
+     * @return ($heading is null ? string|null : $this)
+     */
+    public function heading($heading = null)
+    {
+        if (is_null($heading)) {
+            return $this->heading;
+        }
+
+        $this->heading = $heading;
+
+        return $this;
+    }
+
+    /**
+     * Set the callback turning an item into a line of the message.
+     *
+     * @param  \Closure  $callback
+     * @return $this
+     */
+    public function formatUsing(Closure $callback)
+    {
+        $this->formatter = $callback;
+
+        return $this;
+    }
+
+    /**
+     * Format a single item for the message.
+     *
+     * @param  mixed  $item
+     * @param  int|string|null  $key
+     * @return string
+     */
+    public function format($item, $key = null)
+    {
+        if ($this->formatter) {
+            return (string) call_user_func($this->formatter, $item, $key);
+        }
+
+        if (is_scalar($item) || $item instanceof \Stringable) {
+            return (string) $item;
+        }
+
+        return (string) ($item->title ?? $item->name ?? $item->id ?? json_encode($item));
+    }
+
+    /**
+     * Set the methods used to send the first page and to move between pages.
+     *
+     * @param  string|null  $send
+     * @param  string|null  $edit
+     * @return $this
+     */
+    public function methods($send = null, $edit = null)
+    {
+        if (! is_null($send)) {
+            $this->sendMethod = $send;
+        }
+
+        if (! is_null($edit)) {
+            $this->editMethod = $edit;
+        }
+
+        return $this;
+    }
+
+    /**
+     * Get the Bot API method the paginated message should be sent with.
+     *
+     * The first page is sent, and every page after it edits the message the
+     * button was tapped on, so the screen stays in place.
+     *
+     * @return string
+     */
+    public function method()
+    {
+        return $this->isNavigating() ? $this->editMethod : $this->sendMethod;
+    }
+
+    /**
+     * Determine if the current update is a tap on this paginator's keyboard.
+     *
+     * @return bool
+     */
+    public function isNavigating()
+    {
+        $data = static::callbackQuery()['data'] ?? null;
+
+        return is_string($data) && preg_match(
+            '/^'.preg_quote($this->callbackPrefix, '/').':'.preg_quote($this->pageName, '/').':\d+$/', $data
+        ) === 1;
+    }
+
+    /**
+     * Get the identifier of the message being paginated, if any.
+     *
+     * @return int|null
+     */
+    public function messageId()
+    {
+        if (! $this->isNavigating()) {
+            return null;
+        }
+
+        $messageId = static::callbackQuery()['message_id'] ?? null;
+
+        return is_null($messageId) ? null : (int) $messageId;
+    }
+
+    /**
      * Build the callback_data value for the given page number.
      *
      * @param  int  $page
      * @return string
+     *
+     * @throws \InvalidArgumentException
      */
     public function callbackData($page)
     {
-        return $this->callbackPrefix.':'.$this->pageName.':'.$page;
+        $data = $this->callbackPrefix.':'.$this->pageName.':'.$page;
+
+        if (strlen($data) > static::CALLBACK_DATA_LIMIT) {
+            throw new InvalidArgumentException(
+                "The pagination key [{$this->pageName}] is too long: Telegram limits callback data to "
+                .static::CALLBACK_DATA_LIMIT.' bytes.'
+            );
+        }
+
+        return $data;
     }
 
     /**
@@ -220,7 +519,7 @@ trait BuildsTelegramNavigation
             return [];
         }
 
-        $window = \LaraGram\Pagination\UrlWindow::make($this);
+        $window = UrlWindow::make($this);
 
         return array_filter([
             $window['first'],
@@ -232,6 +531,29 @@ trait BuildsTelegramNavigation
     }
 
     /**
+     * Get the page numbers shown on the keyboard, in order.
+     *
+     * Separators are dropped: a keyboard has no room for them, and the first
+     * and last page are always within reach through their own buttons.
+     *
+     * @return array<int, int>
+     */
+    public function pages()
+    {
+        $pages = [];
+
+        foreach ($this->elements() as $element) {
+            if (is_array($element)) {
+                $pages = array_merge($pages, array_keys($element));
+            }
+        }
+
+        sort($pages);
+
+        return array_values(array_unique($pages));
+    }
+
+    /**
      * Get the resolved "previous" button label.
      *
      * @return string
@@ -239,6 +561,16 @@ trait BuildsTelegramNavigation
     public function resolvedPreviousText()
     {
         return $this->previousText ?? $this->translate('pagination.previous', '« Previous');
+    }
+
+    /**
+     * Get the resolved "next" button label.
+     *
+     * @return string
+     */
+    public function resolvedNextText()
+    {
+        return $this->nextText ?? $this->translate('pagination.next', 'Next »');
     }
 
     /**
@@ -264,16 +596,6 @@ trait BuildsTelegramNavigation
     }
 
     /**
-     * Get the resolved "next" button label.
-     *
-     * @return string
-     */
-    public function resolvedNextText()
-    {
-        return $this->nextText ?? $this->translate('pagination.next', 'Next');
-    }
-
-    /**
      * Determine if the paginator knows its last page.
      *
      * @return bool
@@ -284,66 +606,27 @@ trait BuildsTelegramNavigation
     }
 
     /**
-     * The compiled keyboard templates, keyed by "path:mtime".
-     *
-     * @var array<string, string>
-     */
-    protected static $compiledKeyboards = [];
-
-    /**
      * Render the navigation keyboard from the keyboard template.
      *
      * The layout lives in a publishable template (default: the core
-     * "pagination::keyboard"), which is a plain Temple8 @keyboard block. It is
-     * evaluated on its own (never dispatched), and the reply_markup it builds is
-     * captured and returned as JSON.
+     * "pagination::keyboard"), which is a plain Temple8 @keyboard block. The
+     * template is compiled and cached like any other, then evaluated on its own
+     * so the reply_markup it builds can be captured instead of sent.
      *
      * @return string  The reply_markup JSON.
      */
     public function keyboard()
     {
-        $factory = static::templateFactory();
-
-        $name = $this->keyboardTemplate ?? ($this->hasKnownLastPage()
+        $template = static::templateFactory()->make($this->keyboardTemplate ?? ($this->hasKnownLastPage()
             ? static::$defaultKeyboardTemplate
-            : static::$defaultSimpleKeyboardTemplate);
+            : static::$defaultSimpleKeyboardTemplate), [
+                'paginator' => $this,
+                'elements' => $this->elements(),
+            ]);
 
-        $template = $factory->make($name, [
-            'paginator' => $this,
-            'elements' => $this->elements(),
-        ]);
-
-        $path = $template->getPath();
-        $cacheKey = $path.':'.@filemtime($path);
-
-        $php = static::$compiledKeyboards[$cacheKey]
-            ??= app('temple8.compiler')->compileString(app('files')->get($path));
-
-        return trim((string) static::evaluateKeyboard($php, $template->gatherData()));
-    }
-
-    /**
-     * Evaluate compiled keyboard PHP in isolation and capture its reply_markup.
-     *
-     * @param  string  $__php
-     * @param  array  $__data
-     * @return string
-     */
-    protected static function evaluateKeyboard($__php, array $__data)
-    {
-        return (static function () use ($__php, $__data) {
-            extract($__data);
-
-            ob_start();
-
-            try {
-                eval('?>'.$__php);
-            } finally {
-                ob_end_clean();
-            }
-
-            return $__t8__reply_markup ?? '';
-        })();
+        return trim((string) static::evaluateKeyboard(
+            static::compiledKeyboardPath($template->getPath()), $template->gatherData()
+        ));
     }
 
     /**
@@ -367,6 +650,47 @@ trait BuildsTelegramNavigation
         $this->keyboardTemplate = $template;
 
         return $this;
+    }
+
+    /**
+     * Compile the keyboard template if needed and get its compiled path.
+     *
+     * @param  string  $path
+     * @return string
+     */
+    protected static function compiledKeyboardPath($path)
+    {
+        $compiler = static::templateCompiler();
+
+        if ($compiler->isExpired($path)) {
+            $compiler->compile($path);
+        }
+
+        return $compiler->getCompiledPath($path);
+    }
+
+    /**
+     * Evaluate a compiled keyboard template and capture its reply_markup.
+     *
+     * @param  string  $__path
+     * @param  array  $__data
+     * @return string
+     */
+    protected static function evaluateKeyboard($__path, array $__data)
+    {
+        return (static function () use ($__path, $__data) {
+            extract($__data);
+
+            ob_start();
+
+            try {
+                include $__path;
+            } finally {
+                ob_end_clean();
+            }
+
+            return $__t8__reply_markup ?? '';
+        })();
     }
 
     /**
@@ -421,6 +745,31 @@ trait BuildsTelegramNavigation
     }
 
     /**
+     * Get the template compiler instance from the resolver.
+     *
+     * @return \LaraGram\Template\Compilers\Temple8Compiler
+     */
+    public static function templateCompiler()
+    {
+        if (isset(static::$templateCompilerResolver)) {
+            return call_user_func(static::$templateCompilerResolver);
+        }
+
+        return app('temple8.compiler');
+    }
+
+    /**
+     * Set the template compiler resolver callback.
+     *
+     * @param  \Closure  $resolver
+     * @return void
+     */
+    public static function templateCompilerResolver(Closure $resolver)
+    {
+        static::$templateCompilerResolver = $resolver;
+    }
+
+    /**
      * Set the Telegram current page resolver callback.
      *
      * @param  \Closure  $resolver
@@ -429,6 +778,31 @@ trait BuildsTelegramNavigation
     public static function telegramCurrentPageResolver(Closure $resolver)
     {
         static::$telegramCurrentPageResolver = $resolver;
+    }
+
+    /**
+     * Set the resolver returning the callback query of the current update.
+     *
+     * @param  \Closure  $resolver
+     * @return void
+     */
+    public static function telegramCallbackResolver(Closure $resolver)
+    {
+        static::$telegramCallbackResolver = $resolver;
+    }
+
+    /**
+     * Get the callback query of the current update, if any.
+     *
+     * @return array{data?: string|null, message_id?: int|null}
+     */
+    protected static function callbackQuery()
+    {
+        if (! isset(static::$telegramCallbackResolver)) {
+            return [];
+        }
+
+        return (array) call_user_func(static::$telegramCallbackResolver);
     }
 
     /**

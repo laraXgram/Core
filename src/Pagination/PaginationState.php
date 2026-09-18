@@ -47,12 +47,12 @@ class PaginationState
      */
     protected static function resolveTelegramUsing($app)
     {
-        $templateFactory = fn () => $app['template'];
+        $callback = fn () => static::callbackQuery($app);
 
         $currentPage = function ($key = 'page') use ($app) {
-            $data = static::callbackQueryData($app);
+            $data = static::callbackQuery($app)['data'] ?? null;
 
-            if ($data !== null && preg_match('/^paginate:'.preg_quote($key, '/').':(\d+)$/', $data, $matches)) {
+            if ($data !== null && preg_match('/^'.TelegramPaginator::PREFIX.':'.preg_quote($key, '/').':(\d+)$/', $data, $matches)) {
                 return max(1, (int) $matches[1]);
             }
 
@@ -60,23 +60,30 @@ class PaginationState
         };
 
         foreach ([TelegramPaginator::class, TelegramLengthAwarePaginator::class] as $paginator) {
-            $paginator::templateFactoryResolver($templateFactory);
+            $paginator::templateFactoryResolver(fn () => $app['template']);
+            $paginator::templateCompilerResolver(fn () => $app['temple8.compiler']);
             $paginator::telegramCurrentPageResolver($currentPage);
+            $paginator::telegramCallbackResolver($callback);
         }
     }
 
     /**
-     * Get the callback query data from the current update, if any.
+     * Get the callback query of the current update, if any.
      *
      * @param  \LaraGram\Contracts\Foundation\Application  $app
-     * @return string|null
+     * @return array{data: string|null, message_id: int|null}
      */
-    protected static function callbackQueryData($app)
+    protected static function callbackQuery($app)
     {
         try {
-            return $app['request']->callback_query->data ?? null;
+            $query = $app['request']->callback_query ?? null;
         } catch (\Throwable) {
-            return null;
+            return ['data' => null, 'message_id' => null];
         }
+
+        return [
+            'data' => $query->data ?? null,
+            'message_id' => $query->message->message_id ?? null,
+        ];
     }
 }

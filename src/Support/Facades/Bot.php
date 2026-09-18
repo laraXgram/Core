@@ -54,6 +54,7 @@ namespace LaraGram\Support\Facades;
  * @method static \LaraGram\Listening\Listen onChosenInlineResult(callable|array|string $action)
  * @method static \LaraGram\Listening\Listen onCallbackQuery(callable|array|string $action)
  * @method static \LaraGram\Listening\Listen onCallbackQueryData(string $pattern, callable|array|string $action)
+ * @method static \LaraGram\Listening\Listen onPaginate(string $key, callable|array|string $action)
  * @method static \LaraGram\Listening\Listen onShippingQuery(callable|array|string $action)
  * @method static \LaraGram\Listening\Listen onPreCheckoutQuery(callable|array|string $action)
  * @method static \LaraGram\Listening\Listen onPollAnswer(callable|array|string $action)

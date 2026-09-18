@@ -47,6 +47,30 @@ trait CompilesKeyboards
     }
 
     /**
+     * Compile the @keyboardDirection directive.
+     *
+     * The keyboard follows the locale of the application by default; this
+     * forces it one way or the other.
+     *
+     * @param  string  $expression
+     * @return string
+     */
+    public function compileKeyboardDirection($expression)
+    {
+        $direction = trim($this->stripParentheses($expression ?? ''));
+
+        if ($direction === '' || strtolower(trim($direction, '\'"')) === 'rtl') {
+            return "<?php \$__t8__kb->rightToLeft(); ?>";
+        }
+
+        if (strtolower(trim($direction, '\'"')) === 'ltr') {
+            return "<?php \$__t8__kb->leftToRight(); ?>";
+        }
+
+        return "<?php \$__t8__kb->rightToLeft((bool) {$direction}); ?>";
+    }
+
+    /**
      * Compile the @row directive.
      *
      * @param  string|null  $expression

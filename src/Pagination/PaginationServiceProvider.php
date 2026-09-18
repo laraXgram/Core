@@ -20,11 +20,11 @@ class PaginationServiceProvider extends ServiceProvider
         if ($this->app->runningInConsole()) {
             $this->publishes([
                 __DIR__.'/resources/views' => $this->app->resourcePath('views/vendor/pagination'),
-            ], 'laragram-pagination');
+            ], ['laragram-pagination', 'pagination-views']);
 
             $this->publishes([
                 __DIR__.'/resources/templates' => $this->app->basePath('app/templates/vendor/pagination'),
-            ], 'laragram-pagination');
+            ], ['laragram-pagination', 'pagination-templates']);
         }
     }
 

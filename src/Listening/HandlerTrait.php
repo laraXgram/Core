@@ -3,6 +3,7 @@
 namespace LaraGram\Listening;
 
 use Closure;
+use LaraGram\Pagination\TelegramPaginator;
 use LaraGram\Support\Str;
 
 trait HandlerTrait
@@ -283,6 +284,15 @@ trait HandlerTrait
     public function onCallbackQueryData(string $pattern, Closure|array|string $action)
     {
         return $this->addListen('CALLBACK_DATA', $pattern, $action);
+    }
+
+    /**
+     * Listen for a tap on the navigation keyboard of a Telegram paginator.
+     */
+    public function onPaginate(string $key, Closure|array|string $action)
+    {
+        return $this->addListen('CALLBACK_DATA', TelegramPaginator::listenPattern($key), $action)
+            ->where('page', '[0-9]+');
     }
 
     public function onMessageType(array|string $type, Closure|array|string $action)
