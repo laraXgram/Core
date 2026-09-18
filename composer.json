@@ -21,7 +21,7 @@
         "ext-hash": "*",
         "ext-intl": "*",
         "ext-mbstring": "*",
-        "laraxgram/laraquest": "^1",
+        "laraxgram/laraquest": "^2",
         "laraxgram/tempora": "^1",
         "laraxgram/watchdog": "^1"
     },
