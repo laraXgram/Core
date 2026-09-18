@@ -41,4 +41,14 @@ trait Dispatchable
             return event(new static(...$arguments));
         }
     }
+
+    /**
+     * Broadcast the event with the given arguments.
+     *
+     * @return \LaraGram\Broadcasting\PendingBroadcast
+     */
+    public static function broadcast()
+    {
+        return broadcast(new static(...func_get_args()));
+    }
 }

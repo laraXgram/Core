@@ -21,6 +21,7 @@ class DefaultProviders
         $this->providers = $providers ?: [
             \LaraGram\Request\AntiFlood\AntiFloodServiceProvider::class,
             \LaraGram\Auth\AuthServiceProvider::class,
+            \LaraGram\Broadcasting\BroadcastServiceProvider::class,
             \LaraGram\Bus\BusServiceProvider::class,
             \LaraGram\Cache\CacheServiceProvider::class,
             \LaraGram\Foundation\Providers\ConsoleSupportServiceProvider::class,

@@ -27,6 +27,7 @@
     },
     "replace": {
         "laraxgram/auth": "self.version",
+        "laraxgram/broadcasting": "self.version",
         "laraxgram/bus": "self.version",
         "laraxgram/cache": "self.version",
         "laraxgram/collections": "self.version",

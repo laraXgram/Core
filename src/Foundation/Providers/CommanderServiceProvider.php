@@ -2,6 +2,13 @@
 
 namespace LaraGram\Foundation\Providers;
 
+use LaraGram\Broadcasting\Console\CancelCommand as BroadcastCancelCommand;
+use LaraGram\Broadcasting\Console\ChannelListCommand;
+use LaraGram\Broadcasting\Console\ChannelMakeCommand;
+use LaraGram\Broadcasting\Console\TablesCommand as BroadcastTablesCommand;
+use LaraGram\Broadcasting\Console\InstallCommand as BroadcastingInstallCommand;
+use LaraGram\Broadcasting\Console\RecallCommand as BroadcastRecallCommand;
+use LaraGram\Broadcasting\Console\StatusCommand as BroadcastStatusCommand;
 use LaraGram\Cache\Console\CacheTableCommand;
 use LaraGram\Cache\Console\ClearCommand as CacheClearCommand;
 use LaraGram\Cache\Console\ForgetCommand as CacheForgetCommand;
@@ -129,8 +136,12 @@ class CommanderServiceProvider extends ServiceProvider implements DeferrableProv
      */
     protected $commands = [
         'About' => AboutCommand::class,
+        'BroadcastCancel' => BroadcastCancelCommand::class,
+        'BroadcastRecall' => BroadcastRecallCommand::class,
+        'BroadcastStatus' => BroadcastStatusCommand::class,
         'CacheClear' => CacheClearCommand::class,
         'CacheForget' => CacheForgetCommand::class,
+        'ChannelList' => ChannelListCommand::class,
         'ClearCompiled' => ClearCompiledCommand::class,
         'ConfigCache' => ConfigCacheCommand::class,
         'ConfigClear' => ConfigClearCommand::class,
@@ -208,8 +219,10 @@ class CommanderServiceProvider extends ServiceProvider implements DeferrableProv
      */
     protected $devCommands = [
         'ApiInstall' => ApiInstallCommand::class,
+        'BroadcastingInstall' => BroadcastingInstallCommand::class,
         'CacheTable' => CacheTableCommand::class,
         'CastMake' => CastMakeCommand::class,
+        'ChannelMake' => ChannelMakeCommand::class,
         'ClassMake' => ClassMakeCommand::class,
         'ComponentMake' => ComponentMakeCommand::class,
         'ConfigMake' => ConfigMakeCommand::class,
@@ -245,6 +258,7 @@ class CommanderServiceProvider extends ServiceProvider implements DeferrableProv
         'SessionTable' => SessionTableCommand::class,
         'Serve' => ServeCommand::class,
         'StubPublish' => StubPublishCommand::class,
+        'BroadcastTables' => BroadcastTablesCommand::class,
         'TemplateMakeCommand' => TemplateMakeCommand::class,
         'TraitMake' => TraitMakeCommand::class,
         'VendorPublish' => VendorPublishCommand::class,

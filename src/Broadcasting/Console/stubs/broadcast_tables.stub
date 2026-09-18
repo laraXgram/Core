@@ -1,0 +1,69 @@
+<?php
+
+use LaraGram\Database\Migrations\Migration;
+use LaraGram\Database\Schema\Blueprint;
+use LaraGram\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    /**
+     * Run the migrations.
+     */
+    public function up(): void
+    {
+        Schema::create('{{table}}', function (Blueprint $table) {
+            $table->id();
+            $table->string('bot', 64);
+            $table->bigInteger('chat_id');
+            $table->string('type', 16);
+            $table->string('title')->nullable();
+            $table->string('username')->nullable();
+            $table->string('first_name')->nullable();
+            $table->string('last_name')->nullable();
+            $table->string('language_code', 16)->nullable();
+            $table->boolean('reachable')->default(true);
+            $table->string('unreachable_reason')->nullable();
+            $table->string('tags')->nullable();
+            $table->timestamp('last_seen_at')->nullable();
+            $table->timestamps();
+
+            $table->unique(['bot', 'chat_id']);
+            $table->index(['bot', 'reachable', 'type']);
+            $table->index(['bot', 'language_code']);
+        });
+
+        Schema::create('{{members_table}}', function (Blueprint $table) {
+            $table->id();
+            $table->string('bot', 64);
+            $table->bigInteger('chat_id');
+            $table->bigInteger('user_id');
+            $table->string('status', 16);
+            $table->timestamp('last_seen_at')->nullable();
+            $table->timestamps();
+
+            $table->unique(['bot', 'chat_id', 'user_id']);
+            $table->index(['bot', 'user_id', 'status']);
+        });
+
+        Schema::create('{{targets_table}}', function (Blueprint $table) {
+            $table->id();
+            $table->string('broadcast_id', 64);
+            $table->string('bot', 64);
+            $table->bigInteger('chat_id');
+            $table->text('message_ids')->nullable();
+            $table->timestamp('created_at')->nullable();
+
+            $table->unique(['broadcast_id', 'chat_id']);
+        });
+    }
+
+    /**
+     * Reverse the migrations.
+     */
+    public function down(): void
+    {
+        Schema::dropIfExists('{{targets_table}}');
+        Schema::dropIfExists('{{members_table}}');
+        Schema::dropIfExists('{{table}}');
+    }
+};

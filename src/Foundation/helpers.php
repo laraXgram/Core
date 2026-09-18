@@ -1,6 +1,9 @@
 <?php
 
+use LaraGram\Broadcasting\PendingBroadcast;
+use LaraGram\Broadcasting\SkippedPendingBroadcast;
 use LaraGram\Container\Container;
+use LaraGram\Contracts\Broadcasting\Factory as BroadcastFactory;
 use LaraGram\Contracts\Auth\Access\Gate;
 use LaraGram\Contracts\Auth\Guard;
 use LaraGram\Contracts\Auth\Factory as AuthFactory;
@@ -205,6 +208,52 @@ if (! function_exists('bcrypt')) {
     function bcrypt($value, $options = [])
     {
         return app('hash')->driver('bcrypt')->make($value, $options);
+    }
+}
+
+if (! function_exists('broadcast')) {
+    /**
+     * Begin broadcasting an event.
+     *
+     * @param  mixed  $event
+     */
+    function broadcast($event = null): PendingBroadcast
+    {
+        return app(BroadcastFactory::class)->event($event);
+    }
+}
+
+if (! function_exists('broadcast_if')) {
+    /**
+     * Begin broadcasting an event if the given condition is true.
+     *
+     * @param  bool  $boolean
+     * @param  mixed  $event
+     */
+    function broadcast_if($boolean, $event = null): PendingBroadcast
+    {
+        if ($boolean) {
+            return app(BroadcastFactory::class)->event(value($event));
+        } else {
+            return new SkippedPendingBroadcast;
+        }
+    }
+}
+
+if (! function_exists('broadcast_unless')) {
+    /**
+     * Begin broadcasting an event unless the given condition is true.
+     *
+     * @param  bool  $boolean
+     * @param  mixed  $event
+     */
+    function broadcast_unless($boolean, $event = null): PendingBroadcast
+    {
+        if (! $boolean) {
+            return app(BroadcastFactory::class)->event(value($event));
+        } else {
+            return new SkippedPendingBroadcast;
+        }
     }
 }
 

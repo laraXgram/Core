@@ -146,6 +146,7 @@ abstract class Facade
             'Auth' => Auth::class,
             'Benchmark' => Benchmark::class,
             'Blade' => Blade::class,
+            'Broadcast' => Broadcast::class,
             'Bot' => Bot::class,
             'Bus' => Bus::class,
             'Cache' => Cache::class,

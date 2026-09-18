@@ -1,0 +1,34 @@
+<?php
+
+use LaraGram\Support\Facades\Broadcast;
+
+/*
+|--------------------------------------------------------------------------
+| Telegram Audiences
+|--------------------------------------------------------------------------
+|
+| The built-in audiences (users, groups, supergroups, channels, chats) are
+| read from the chats recorded by the TrackChats bot middleware. Register
+| your own audiences here and send to them with Broadcast::to('name').
+|
+*/
+
+// Broadcast::audience('admins', fn () => [123456789]);
+
+// Broadcast::audience('language.{code}', function (string $bot, string $code) {
+//     return App\Models\User::where('language_code', $code)->select(['id', 'user_id']);
+// });
+
+/*
+|--------------------------------------------------------------------------
+| WebSocket Channels
+|--------------------------------------------------------------------------
+|
+| Private and presence channels used by the "redis" broadcaster (Mini Apps
+| and web pages listening through a WebSocket server) are authorized here.
+|
+*/
+
+// Broadcast::channel('App.Models.User.{id}', function ($user, $id) {
+//     return (int) $user->id === (int) $id;
+// });

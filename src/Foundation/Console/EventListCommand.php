@@ -4,6 +4,7 @@ namespace LaraGram\Foundation\Console;
 
 use Closure;
 use LaraGram\Console\Command;
+use LaraGram\Contracts\Broadcasting\ShouldBroadcast;
 use LaraGram\Contracts\Queue\ShouldQueue;
 use LaraGram\Support\Collection;
 use ReflectionFunction;
@@ -71,7 +72,7 @@ class EventListCommand extends Command
     {
         $data = $events->map(function ($listeners, $event) {
             return [
-                'event' => strip_tags($event),
+                'event' => strip_tags($this->appendEventInterfaces($event)),
                 'listeners' => (new Collection($listeners))->map(fn ($listener) => strip_tags($listener))->values()->all(),
             ];
         })->values();
@@ -90,7 +91,7 @@ class EventListCommand extends Command
         $this->newLine();
 
         $events->each(function ($listeners, $event) {
-            $this->components->twoColumnDetail($event);
+            $this->components->twoColumnDetail($this->appendEventInterfaces($event));
             $this->components->bulletList($listeners);
         });
 
@@ -139,6 +140,27 @@ class EventListCommand extends Command
         }
 
         return $events;
+    }
+
+    /**
+     * Add the event implemented interfaces to the output.
+     *
+     * @param  string  $event
+     * @return string
+     */
+    protected function appendEventInterfaces($event)
+    {
+        if (! class_exists($event)) {
+            return $event;
+        }
+
+        $interfaces = class_implements($event);
+
+        if (in_array(ShouldBroadcast::class, $interfaces)) {
+            $event .= ' <fg=bright-blue>(ShouldBroadcast)</>';
+        }
+
+        return $event;
     }
 
     /**

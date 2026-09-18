@@ -7,6 +7,7 @@ use Closure;
 use Exception;
 use LaraGram\Contracts\Queue\QueueableCollection;
 use LaraGram\Contracts\Queue\QueueableEntity;
+use LaraGram\Contracts\Broadcasting\HasBroadcastChannel;
 use LaraGram\Contracts\Listening\PathListenable;
 use LaraGram\Contracts\Routing\UrlRoutable;
 use LaraGram\Contracts\Support\Arrayable;
@@ -39,7 +40,7 @@ use Stringable;
 
 use function LaraGram\Support\enum_value;
 
-abstract class Model implements Arrayable, ArrayAccess, CanBeEscapedWhenCastToString, Jsonable, JsonSerializable, PathListenable, QueueableEntity, Stringable, UrlRoutable
+abstract class Model implements Arrayable, ArrayAccess, CanBeEscapedWhenCastToString, HasBroadcastChannel, Jsonable, JsonSerializable, PathListenable, QueueableEntity, Stringable, UrlRoutable
 {
     use Concerns\HasAttributes,
         Concerns\HasEvents,
@@ -243,6 +244,13 @@ abstract class Model implements Arrayable, ArrayAccess, CanBeEscapedWhenCastToSt
      * @var (callable(self, string))|null
      */
     protected static $missingAttributeViolationCallback;
+
+    /**
+     * Indicates if broadcasting is currently enabled.
+     *
+     * @var bool
+     */
+    protected static $isBroadcasting = true;
 
     /**
      * The Eloquent query builder class to use for the model.
@@ -490,6 +498,27 @@ abstract class Model implements Arrayable, ArrayAccess, CanBeEscapedWhenCastToSt
         static::$bootedCallbacks = [];
         static::$classAttributes = [];
         static::$globalScopes = [];
+    }
+
+    /**
+     * Execute a callback without broadcasting any model events for all model types.
+     *
+     * @template TReturn
+     *
+     * @param  callable(): TReturn  $callback
+     * @return TReturn
+     */
+    public static function withoutBroadcasting(callable $callback)
+    {
+        $isBroadcasting = static::$isBroadcasting;
+
+        static::$isBroadcasting = false;
+
+        try {
+            return $callback();
+        } finally {
+            static::$isBroadcasting = $isBroadcasting;
+        }
     }
 
     /**
@@ -2457,6 +2486,26 @@ abstract class Model implements Arrayable, ArrayAccess, CanBeEscapedWhenCastToSt
     public function getListenKey()
     {
         return $this->getRouteKey();
+    }
+
+    /**
+     * Get the broadcast channel route definition that is associated with the given entity.
+     *
+     * @return string
+     */
+    public function broadcastChannelRoute()
+    {
+        return str_replace('\\', '.', get_class($this)).'.{'.Str::camel(class_basename($this)).'}';
+    }
+
+    /**
+     * Get the broadcast channel name that is associated with the given entity.
+     *
+     * @return string
+     */
+    public function broadcastChannel()
+    {
+        return str_replace('\\', '.', get_class($this)).'.'.$this->getKey();
     }
 
     /**

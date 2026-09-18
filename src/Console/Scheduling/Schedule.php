@@ -162,6 +162,19 @@ class Schedule
     }
 
     /**
+     * Add a Telegram broadcast to the schedule.
+     *
+     * @param  \LaraGram\Broadcasting\Telegram\TelegramBroadcast|\Closure  $broadcast
+     * @return \LaraGram\Console\Scheduling\CallbackEvent
+     */
+    public function broadcast($broadcast)
+    {
+        return $this->call(function () use ($broadcast) {
+            ($broadcast instanceof Closure ? Container::getInstance()->call($broadcast) : $broadcast)->queue();
+        })->name('broadcast');
+    }
+
+    /**
      * Add a new Commander command event to the schedule.
      *
      * @param  \LaraGram\Console\Command\Command|string  $command

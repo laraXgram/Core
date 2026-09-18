@@ -16,6 +16,7 @@ use LaraGram\Http\Middleware\PrefersJsonResponses;
 use LaraGram\Http\Request;
 use LaraGram\Support\Collection;
 use LaraGram\Support\Facades\Bot;
+use LaraGram\Support\Facades\Broadcast;
 use LaraGram\Support\Facades\Event;
 use LaraGram\Support\Facades\Route;
 use LaraGram\Support\Facades\View;
@@ -117,6 +118,26 @@ class ApplicationBuilder
         }
 
         $this->pendingProviders[AppEventServiceProvider::class] = true;
+
+        return $this;
+    }
+
+    /**
+     * Register the broadcasting services for the application.
+     *
+     * @param  string  $channels
+     * @param  array  $attributes
+     * @return $this
+     */
+    public function withBroadcasting(string $channels, array $attributes = [])
+    {
+        $this->app->booted(function () use ($channels, $attributes) {
+            Broadcast::routes(! empty($attributes) ? $attributes : null);
+
+            if (file_exists($channels)) {
+                require $channels;
+            }
+        });
 
         return $this;
     }

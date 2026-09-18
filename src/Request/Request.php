@@ -821,6 +821,35 @@ class Request implements ProvidesListenContext
     }
 
     /**
+     * Run the callback and record the Telegram API calls it makes instead of sending them.
+     *
+     * Each recorded call receives a successful response, so code that inspects
+     * the result keeps working. The previous interceptor is restored afterwards.
+     *
+     * @param  callable  $callback
+     * @return array<int, array{method: string, parameters: array, connection: string|null}>
+     */
+    public static function recordCalls(callable $callback): array
+    {
+        $calls = [];
+        $previous = static::$interceptor;
+
+        static::$interceptor = function (string $method, array $parameters, ?string $connection) use (&$calls) {
+            $calls[] = ['method' => $method, 'parameters' => $parameters, 'connection' => $connection];
+
+            return ['ok' => true, 'result' => true];
+        };
+
+        try {
+            $callback();
+        } finally {
+            static::$interceptor = $previous;
+        }
+
+        return $calls;
+    }
+
+    /**
      * Determine if Telegram API calls are currently being intercepted.
      *
      * @return bool

@@ -189,6 +189,7 @@ class AboutCommand extends Command
         ]);
 
         static::addToSection('Drivers', fn () => array_filter([
+            'Broadcasting' => config('broadcasting.default'),
             'Cache' => function ($json) {
                 $cacheStore = config('cache.default');
 

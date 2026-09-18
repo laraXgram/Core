@@ -6,6 +6,8 @@ use Closure;
 use Exception;
 use LaraGram\Bus\UniqueLock;
 use LaraGram\Container\Container;
+use LaraGram\Contracts\Broadcasting\Factory as BroadcastFactory;
+use LaraGram\Contracts\Broadcasting\ShouldBroadcast;
 use LaraGram\Contracts\Cache\Repository as Cache;
 use LaraGram\Contracts\Container\Container as ContainerContract;
 use LaraGram\Contracts\Events\Dispatcher as DispatcherContract;
@@ -317,6 +319,10 @@ class Dispatcher implements DispatcherContract
      */
     protected function invokeListeners($event, $payload, $halt = false)
     {
+        if ($this->shouldBroadcast($payload)) {
+            $this->broadcastEvent($payload[0]);
+        }
+
         $responses = [];
 
         foreach ($this->getListeners($event) as $listener) {
@@ -356,6 +362,42 @@ class Dispatcher implements DispatcherContract
         }
 
         return [$event, Arr::wrap($payload)];
+    }
+
+    /**
+     * Determine if the payload has a broadcastable event.
+     *
+     * @return bool
+     */
+    protected function shouldBroadcast(array $payload)
+    {
+        return isset($payload[0]) &&
+               $payload[0] instanceof ShouldBroadcast &&
+               $this->broadcastWhen($payload[0]);
+    }
+
+    /**
+     * Check if the event should be broadcasted by the condition.
+     *
+     * @param  mixed  $event
+     * @return bool
+     */
+    protected function broadcastWhen($event)
+    {
+        return method_exists($event, 'broadcastWhen')
+            ? $event->broadcastWhen()
+            : true;
+    }
+
+    /**
+     * Broadcast the given event class.
+     *
+     * @param  \LaraGram\Contracts\Broadcasting\ShouldBroadcast  $event
+     * @return void
+     */
+    protected function broadcastEvent($event)
+    {
+        $this->container->make(BroadcastFactory::class)->queue($event);
     }
 
     /**
