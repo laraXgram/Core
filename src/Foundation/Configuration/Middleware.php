@@ -479,7 +479,6 @@ class Middleware
     {
         $middleware = [
             'bot' => array_values(array_filter([
-                \LaraGram\Foundation\Bot\Middleware\HandleMultiBotUpdate::class,
                 \LaraGram\Foundation\Bot\Middleware\InvokeDeferredCallbacks::class,
                 \LaraGram\Listening\Middleware\SubstituteBindings::class,
             ])),

@@ -1633,7 +1633,7 @@ class ConversationManager
     {
         return chat()?->id
             ?? callback_query()?->from->id
-            ?? user()->id;
+            ?? user()?->id;
     }
 
     /**
@@ -1663,7 +1663,7 @@ class ConversationManager
      */
     protected function stateKey(): string
     {
-        return $this->prefix().':'.user()->id;
+        return $this->prefix().':'.$this->owner();
     }
 
     /**
@@ -1673,7 +1673,25 @@ class ConversationManager
      */
     protected function answersKey(): string
     {
-        return $this->prefix().':answers:'.user()->id;
+        return $this->prefix().':answers:'.$this->owner();
+    }
+
+    /**
+     * Get the owner segment of the cache keys.
+     *
+     * When several bots share the application (the 'auto' connection) the user
+     * is scoped to the bot, so one user's conversations in different bots never
+     * collide.
+     *
+     * @return string
+     */
+    protected function owner(): string
+    {
+        $id = user()->id;
+
+        return $this->config->get('bot.default') === 'auto' && ! is_null($bot = $this->request()->botConnection())
+            ? $bot.':'.$id
+            : (string) $id;
     }
 
     /**

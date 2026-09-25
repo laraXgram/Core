@@ -134,12 +134,12 @@ class PatternValidator implements ValidatorInterface
 
                 if ($pattern == 'add_member') {
                     return isset($message->new_chat_members)
-                        && $message->new_chat_members[0]->id != $message->from->id;
+                        && $message->new_chat_members[0]->id != ($message->from->id ?? null);
                 }
 
                 if ($pattern == 'join_member') {
                     return isset($message->new_chat_members)
-                        && $message->new_chat_members[0]->id == $message->from->id;
+                        && $message->new_chat_members[0]->id == ($message->from->id ?? null);
                 }
 
                 return isset($message->{$pattern});
@@ -313,12 +313,12 @@ class PatternValidator implements ValidatorInterface
             'MESSAGE' => (function () use ($request, $pattern) {
                 if ($pattern === 'add_member') {
                     return isset($request->message->new_chat_members)
-                        && $request->message->new_chat_members[0]->id != $request->message->from->id;
+                        && $request->message->new_chat_members[0]->id != ($request->message->from->id ?? null);
                 }
 
                 if ($pattern === 'join_member') {
                     return isset($request->message->new_chat_members)
-                        && $request->message->new_chat_members[0]->id == $request->message->from->id;
+                        && $request->message->new_chat_members[0]->id == ($request->message->from->id ?? null);
                 }
 
                 // Support pipe-separated types (e.g. "photo|voice|document")

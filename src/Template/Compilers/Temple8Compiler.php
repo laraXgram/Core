@@ -268,7 +268,7 @@ class Temple8Compiler extends Compiler implements CompilerInterface
     protected function appendMethodCall(string $contents): string
     {
         if (!preg_match('/\$__t8__chat_id/', $contents)) {
-            $contents = "<?php \$__t8__chat_id = user()->id; ?>\n" . $contents;
+            $contents = "<?php \$__t8__chat_id = user()?->id ?? chat()?->id; ?>\n" . $contents;
         }
 
         preg_match_all('/\$\__t8__([a-zA-Z_]+)/', $contents, $varMatches);

@@ -9,6 +9,8 @@ use LaraGram\Contracts\Bot\Kernel as KernelContract;
 use LaraGram\Foundation\Events\Terminating;
 use LaraGram\Foundation\Bot\Events\RequestHandled;
 use LaraGram\Listening\Listener;
+use LaraGram\Request\ConnectionResolver;
+use LaraGram\Request\Exceptions\UnresolvableConnectionException;
 use LaraGram\Request\Response;
 use LaraGram\Listening\Pipeline;
 use LaraGram\Support\Facades\Facade;
@@ -162,6 +164,8 @@ class Kernel implements KernelContract
 
         $this->bootstrap();
 
+        $this->bindBotConnection($request);
+
         if ($this->app->bound('auth')) {
             $this->app['auth']->shouldUse('bot');
         }
@@ -172,6 +176,33 @@ class Kernel implements KernelContract
             ->send($request)
             ->through($this->app->shouldSkipMiddleware() ? [] : $this->middleware)
             ->then($this->dispatchToListener());
+    }
+
+    /**
+     * Bind the bot connection the update belongs to onto the request.
+     *
+     * This happens before any middleware or listen matching, so listens scoped
+     * with forConnections() and every API call made while handling the update
+     * use this update's bot. A connection bound by the caller is kept as is.
+     *
+     * @param  \LaraGram\Request\Request  $request
+     * @return void
+     *
+     * @throws \LaraGram\Request\Exceptions\UnresolvableConnectionException
+     */
+    protected function bindBotConnection($request)
+    {
+        if ($request->getBoundConnection() !== null) {
+            return;
+        }
+
+        $resolver = $this->app->make(ConnectionResolver::class);
+
+        if (! is_null($connection = $resolver->resolve($request))) {
+            $request->useConnection($connection);
+        } elseif ($resolver->isAuto()) {
+            throw UnresolvableConnectionException::forUpdate($request->update_id);
+        }
     }
 
     /**

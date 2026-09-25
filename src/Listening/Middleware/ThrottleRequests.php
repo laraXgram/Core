@@ -205,7 +205,7 @@ class ThrottleRequests
         if ($user = $request->user()) {
             return $this->formatIdentifier($user->getAuthIdentifier());
         } elseif ($request->listen()) {
-            return $this->formatIdentifier(user()->id);
+            return $this->formatIdentifier(user()?->id ?? chat()?->id);
         }
 
         throw new RuntimeException('Unable to generate the request signature. Route unavailable.');

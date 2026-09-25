@@ -363,7 +363,7 @@ class BroadcastManager implements FactoryContract
         $bot = $config->get('broadcasting.connections.'.$this->getTelegramConnection().'.bot') ?: $config->get('bot.default');
 
         if (empty($bot) || $bot === 'auto') {
-            $bot = \LaraGram\Laraquest\ConnectionRegistry::getDefaultConnection() ?? array_key_first((array) $config->get('bot.connections', []));
+            $bot = \LaraGram\Request\Request::getDefaultConnection() ?? array_key_first((array) $config->get('bot.connections', []));
         }
 
         return (string) $bot;

@@ -241,9 +241,7 @@ class Listen
     {
         $this->container = $this->container ?: new Container;
 
-        if (isset($this->action['connection'])){
-            app('request')->connection($this->action['connection']);
-        }
+        [$request, $previous] = $this->bindActionConnection();
 
         try {
             if ($this->isControllerAction()) {
@@ -253,7 +251,38 @@ class Listen
             return $this->runCallable();
         } catch (RequestResponseException $e) {
             return $e->getResponse();
+        } finally {
+            $request?->useConnection($previous);
         }
+    }
+
+    /**
+     * Bind the listen's explicit connection to the request while its action runs.
+     *
+     * Returns the rebound request and its previous connection, or a null request
+     * when the listen does not pin a connection ('auto' keeps the update's own).
+     *
+     * @return array{0: \LaraGram\Request\Request|null, 1: string|null}
+     */
+    protected function bindActionConnection()
+    {
+        $connection = $this->action['connection'] ?? null;
+
+        if (blank($connection) || $connection === 'auto') {
+            return [null, null];
+        }
+
+        $request = app('request');
+
+        if (! method_exists($request, 'useConnection')) {
+            return [null, null];
+        }
+
+        $previous = $request->getBoundConnection();
+
+        $request->useConnection($connection);
+
+        return [$request, $previous];
     }
 
     /**

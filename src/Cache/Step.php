@@ -32,7 +32,24 @@ class Step
      */
     protected function key(): string
     {
-        return user()->id.':step';
+        return $this->owner().':step';
+    }
+
+    /**
+     * Get the owner segment of the cache keys.
+     *
+     * When several bots share the application (the 'auto' connection) the user
+     * is scoped to the bot, so one user's steps in different bots never collide.
+     *
+     * @return string
+     */
+    protected function owner(): string
+    {
+        $id = user()->id;
+
+        return config('bot.default') === 'auto' && ! is_null($bot = bot_connection())
+            ? $bot.':'.$id
+            : (string) $id;
     }
 
     /**
@@ -123,7 +140,7 @@ class Step
 
     private function getSequenceKey(): string
     {
-        return user()->id . ':sequence';
+        return $this->owner().':sequence';
     }
 
     /**

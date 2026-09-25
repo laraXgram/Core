@@ -383,7 +383,7 @@ class Recipients
     protected function currentBot(): ?string
     {
         try {
-            $connection = \LaraGram\Laraquest\ConnectionRegistry::getDefaultConnection();
+            $connection = \LaraGram\Request\Request::getDefaultConnection();
 
             return $connection !== 'auto' ? $connection : null;
         } catch (Throwable) {

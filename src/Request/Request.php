@@ -3,6 +3,7 @@
 namespace LaraGram\Request;
 
 use Closure;
+use LaraGram\Laraquest\ConnectionRegistry;
 use LaraGram\Laraquest\Updates as UpdatesTrait;
 use LaraGram\Laraquest\Exceptions\TelegramApiException;
 use LaraGram\Laraquest\Methode as MethodeTrait;
@@ -278,12 +279,58 @@ class Request implements ProvidesListenContext
     /**
      * {@inheritdoc}
      *
-     * For the Bot-API the scope is the current bot connection, preserved exactly
-     * as the engine read it before (the multi-bot middleware sets it per update).
+     * For the Bot-API the scope is the bot connection handling this update,
+     * which the kernel binds to the request before any listen is matched.
      */
     public function listenScope(): ?string
     {
-        return static::getDefaultConnection();
+        return $this->botConnection();
+    }
+
+    /**
+     * Get the name of the bot connection handling this update.
+     *
+     * @return string|null
+     */
+    public function botConnection(): ?string
+    {
+        if (($connection = $this->getBoundConnection()) !== null) {
+            return $connection;
+        }
+
+        $default = ConnectionRegistry::getDefaultConnection();
+
+        return $default === null || $default === '' || $default === 'auto' ? null : $default;
+    }
+
+    /**
+     * Get the default connection, preferring the one bound to the current update.
+     *
+     * The connection of an update lives on its own request instance instead of
+     * shared static state, so concurrent or consecutive updates of different
+     * bots in one process never see each other's connection.
+     *
+     * @return string|null
+     */
+    public static function getDefaultConnection(): ?string
+    {
+        return static::current()?->getBoundConnection() ?? ConnectionRegistry::getDefaultConnection();
+    }
+
+    /**
+     * Get the request of the update being handled, if any.
+     *
+     * @return static|null
+     */
+    protected static function current(): ?self
+    {
+        try {
+            $request = function_exists('app') && app()->bound('request') ? app('request') : null;
+        } catch (\Throwable) {
+            return null;
+        }
+
+        return $request instanceof self ? $request : null;
     }
 
     /**
@@ -620,7 +667,7 @@ class Request implements ProvidesListenContext
 
         return sha1(implode('|', array_merge(
             $listen->methods(),
-            [$listen->pattern(), user()->id]
+            [$listen->pattern(), $this->botConnection(), user()?->id ?? chat()?->id]
         )));
     }
 

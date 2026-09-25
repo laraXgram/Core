@@ -670,7 +670,7 @@ class Handler implements ExceptionHandlerContract
     {
         try {
             return array_filter([
-                'userId' => user()->id,
+                'userId' => user()?->id,
             ]);
         } catch (Throwable) {
             return [];

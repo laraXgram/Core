@@ -362,7 +362,7 @@ class TelegramBroadcaster extends Broadcaster
         }
 
         try {
-            if (($current = \LaraGram\Laraquest\ConnectionRegistry::getDefaultConnection()) && $current !== 'auto') {
+            if (($current = \LaraGram\Request\Request::getDefaultConnection()) && $current !== 'auto') {
                 return $current;
             }
         } catch (Throwable) {

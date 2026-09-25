@@ -228,7 +228,7 @@ class ListenCollection extends AbstractListenCollection
      */
     public function matchesNonFallback(ProvidesListenContext $request): bool
     {
-        $currentConnection = Request::getDefaultConnection();
+        $currentConnection = $request->listenScope();
 
         if (Listener::$enableStepListensPriorityRegister) {
             $candidates = array_values(array_filter($this->getListens(), function ($l) use ($request, $currentConnection) {
@@ -343,7 +343,7 @@ class ListenCollection extends AbstractListenCollection
      */
     public function getByName($name)
     {
-        $currentConnection = \LaraGram\Request\Request::getDefaultConnection();
+        $currentConnection = Request::getDefaultConnection();
 
         if ($currentConnection !== null) {
             $connectionKey = $name . '@' . $currentConnection;
