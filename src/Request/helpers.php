@@ -2,7 +2,26 @@
 
 use LaraGram\Request\Request;
 
+if (!function_exists('bot_connection')) {
+    /**
+     * Get the name of the bot connection handling the current update.
+     *
+     * @return string|null
+     */
+    function bot_connection(): string|null
+    {
+        $request = app('request');
+
+        return $request instanceof Request ? $request->botConnection() : null;
+    }
+}
+
 if (!function_exists('chat')) {
+    /**
+     * Get the chat the current update happened in.
+     *
+     * @return object|null
+     */
     function chat(): object|null
     {
         /**
@@ -10,30 +29,38 @@ if (!function_exists('chat')) {
          */
         $request = app('request');
         return match (true) {
-            $request->message != null => $request->message->chat,
-            $request->callback_query != null => $request->callback_query->message->chat,
-            $request->edited_message != null => $request->edited_message->chat,
-            $request->channel_post != null => $request->channel_post->chat,
-            $request->edited_channel_post != null => $request->edited_channel_post->chat,
-            $request->business_message != null => $request->business_message->chat,
-            $request->edited_business_message != null => $request->edited_business_message->chat,
-            $request->guest_message != null => $request->guest_message->chat,
-            $request->deleted_business_messages != null => $request->deleted_business_messages->chat,
-            $request->message_reaction != null => $request->message_reaction->chat,
-            $request->message_reaction_count != null => $request->message_reaction_count->chat,
-            $request->my_chat_member != null => $request->my_chat_member->chat,
-            $request->chat_member != null => $request->chat_member->chat,
-            $request->chat_join_request != null => $request->chat_join_request->chat,
-            $request->chat_boost != null => $request->chat_boost->chat,
-            $request->removed_chat_boost != null => $request->removed_chat_boost->chat,
-            $request->poll_answer != null => $request->poll_answer->voter_chat,
-            $request->stopped_message_generation != null => $request->stopped_message_generation->chat,
+            $request->message != null => $request->message->chat ?? null,
+            $request->edited_message != null => $request->edited_message->chat ?? null,
+            $request->channel_post != null => $request->channel_post->chat ?? null,
+            $request->edited_channel_post != null => $request->edited_channel_post->chat ?? null,
+            $request->business_message != null => $request->business_message->chat ?? null,
+            $request->edited_business_message != null => $request->edited_business_message->chat ?? null,
+            $request->guest_message != null => $request->guest_message->chat ?? null,
+            $request->deleted_business_messages != null => $request->deleted_business_messages->chat ?? null,
+            $request->callback_query != null => $request->callback_query->message->chat ?? null,
+            $request->message_reaction != null => $request->message_reaction->chat ?? null,
+            $request->message_reaction_count != null => $request->message_reaction_count->chat ?? null,
+            $request->my_chat_member != null => $request->my_chat_member->chat ?? null,
+            $request->chat_member != null => $request->chat_member->chat ?? null,
+            $request->chat_join_request != null => $request->chat_join_request->chat ?? null,
+            $request->chat_boost != null => $request->chat_boost->chat ?? null,
+            $request->removed_chat_boost != null => $request->removed_chat_boost->chat ?? null,
+            $request->poll_answer != null => $request->poll_answer->voter_chat ?? null,
+            $request->stopped_message_generation != null => $request->stopped_message_generation->chat ?? null,
             default => null
         };
     }
 }
 
 if (!function_exists('user')) {
+    /**
+     * Get the user who caused the current update.
+     *
+     * Messages sent on behalf of a chat (channel posts, anonymous admins) and
+     * updates without an acting user return null.
+     *
+     * @return object|null
+     */
     function user(): object|null
     {
         /**
@@ -41,51 +68,58 @@ if (!function_exists('user')) {
          */
         $request = app('request');
         return match (true) {
-            $request->message != null => $request->message->from,
-            $request->edited_message != null => $request->edited_message->from,
-            $request->channel_post != null => $request->channel_post->from,
-            $request->edited_channel_post != null => $request->edited_channel_post->from,
-            $request->business_connection != null => $request->business_connection->user,
-            $request->business_message != null => $request->business_message->from,
-            $request->edited_business_message != null => $request->edited_business_message->from,
-            $request->guest_message != null => $request->guest_message->from,
-            $request->message_reaction != null => $request->message_reaction->user,
-            $request->inline_query != null => $request->inline_query->from,
-            $request->chosen_inline_result != null => $request->chosen_inline_result->from,
-            $request->callback_query != null => $request->callback_query->from,
-            $request->shipping_query != null => $request->shipping_query->from,
-            $request->pre_checkout_query != null => $request->pre_checkout_query->from,
-            $request->poll_answer != null => $request->poll_answer->user,
-            $request->my_chat_member != null => $request->my_chat_member->from,
-            $request->chat_member != null => $request->chat_member->from,
-            $request->chat_join_request != null => $request->chat_join_request->from,
-            $request->purchased_paid_media != null => $request->purchased_paid_media->from,
-            $request->chat_boost != null => $request->chat_boost->boost->source->user,
-            $request->removed_chat_boost != null => $request->removed_chat_boost->source->user,
-            $request->subscription != null => $request->subscription->user,
-            $request->managed_bot != null => $request->managed_bot->user,
+            $request->message != null => $request->message->from ?? null,
+            $request->edited_message != null => $request->edited_message->from ?? null,
+            $request->channel_post != null => $request->channel_post->from ?? null,
+            $request->edited_channel_post != null => $request->edited_channel_post->from ?? null,
+            $request->business_connection != null => $request->business_connection->user ?? null,
+            $request->business_message != null => $request->business_message->from ?? null,
+            $request->edited_business_message != null => $request->edited_business_message->from ?? null,
+            $request->guest_message != null => $request->guest_message->from ?? null,
+            $request->message_reaction != null => $request->message_reaction->user ?? null,
+            $request->inline_query != null => $request->inline_query->from ?? null,
+            $request->chosen_inline_result != null => $request->chosen_inline_result->from ?? null,
+            $request->callback_query != null => $request->callback_query->from ?? null,
+            $request->shipping_query != null => $request->shipping_query->from ?? null,
+            $request->pre_checkout_query != null => $request->pre_checkout_query->from ?? null,
+            $request->purchased_paid_media != null => $request->purchased_paid_media->from ?? null,
+            $request->poll_answer != null => $request->poll_answer->user ?? null,
+            $request->my_chat_member != null => $request->my_chat_member->from ?? null,
+            $request->chat_member != null => $request->chat_member->from ?? null,
+            $request->chat_join_request != null => $request->chat_join_request->from ?? null,
+            $request->chat_boost != null => $request->chat_boost->boost->source->user ?? null,
+            $request->removed_chat_boost != null => $request->removed_chat_boost->source->user ?? null,
+            $request->subscription != null => $request->subscription->user ?? null,
+            $request->managed_bot != null => $request->managed_bot->user ?? null,
             default => null
         };
     }
 }
 
 if (!function_exists('text')) {
+    /**
+     * Get the text of the current message, or its caption for media messages.
+     *
+     * @return string|null
+     */
     function text(): string|null
     {
         /**
          * @var Request $request ;
          */
         $request = app('request');
-        return match (true) {
-            $request->message != null && isset($request->message->text) => $request->message->text,
-            $request->edited_message != null => $request->edited_message->text,
-            $request->channel_post != null => $request->channel_post->caption,
-            $request->edited_channel_post != null => $request->edited_channel_post->caption,
-            $request->business_message != null => $request->business_message->text,
-            $request->edited_business_message != null => $request->edited_business_message->text,
-            $request->guest_message != null => $request->guest_message->text,
+        $message = match (true) {
+            $request->message != null => $request->message,
+            $request->edited_message != null => $request->edited_message,
+            $request->channel_post != null => $request->channel_post,
+            $request->edited_channel_post != null => $request->edited_channel_post,
+            $request->business_message != null => $request->business_message,
+            $request->edited_business_message != null => $request->edited_business_message,
+            $request->guest_message != null => $request->guest_message,
             default => null
         };
+
+        return $message->text ?? $message->caption ?? null;
     }
 }
 
@@ -101,6 +135,14 @@ if (!function_exists('update_id')) {
 }
 
 if (!function_exists('message')) {
+    /**
+     * Get the message of the current update.
+     *
+     * For a callback query this is the message its button is attached to, which
+     * is absent for inline-mode messages.
+     *
+     * @return object|null
+     */
     function message(): object|null
     {
         /**
@@ -115,7 +157,7 @@ if (!function_exists('message')) {
             $request->business_message != null => $request->business_message,
             $request->edited_business_message != null => $request->edited_business_message,
             $request->guest_message != null => $request->guest_message,
-            $request->callback_query != null => $request->callback_query->message,
+            $request->callback_query != null => $request->callback_query->message ?? null,
             default => null
         };
     }
@@ -132,9 +174,10 @@ if (!function_exists('edited_message')) {
             $request->edited_message != null => $request->edited_message,
             $request->edited_channel_post != null => $request->edited_channel_post,
             $request->edited_business_message != null => $request->edited_business_message,
-            $request->callback_query != null => $request->callback_query->message,
+            $request->callback_query != null => $request->callback_query->message ?? null,
             default => null
-        };    }
+        };
+    }
 }
 
 if (!function_exists('business_connection')) {
@@ -555,24 +598,18 @@ if (!function_exists('mention_user_by_id')) {
 if (!function_exists('mention_reply_user')) {
     function mention_reply_user($parse_mode = 'markdownv2'): false|string
     {
-        $message = message();
-        return match(strtolower($parse_mode)) {
-            'markdown', 'markdownv2' => "[{$message->reply_to_message->from->first_name}](tg://user?id={$message->reply_to_message->from->id})",
-            'html' => "<a href=\"tg://user?id={$message->reply_to_message->from->id}\">{$message->reply_to_message->from->first_name}</a>",
-            default =>  false
-        };
+        $user = message()?->reply_to_message->from ?? null;
+
+        return $user === null ? false : mention_user_by_id($user->id, $user->first_name, $parse_mode);
     }
 }
 
 if (!function_exists('mention_sender_user')) {
     function mention_sender_user($parse_mode = 'markdownv2'): false|string
     {
-        $message = message();
-        return match(strtolower($parse_mode)) {
-            'markdown', 'markdownv2' => "[{$message->from->first_name}](tg://user?id={$message->from->id})",
-            'html' => "<a href=\"tg://user?id={$message->from->id}\">{$message->from->first_name}</a>",
-            default =>  false
-        };
+        $user = message()?->from ?? null;
+
+        return $user === null ? false : mention_user_by_id($user->id, $user->first_name, $parse_mode);
     }
 }
 
@@ -580,8 +617,16 @@ if (!function_exists('self_delete')) {
     function self_delete($methods = ['*']): void
     {
         $request = app('request');
-        if ($methods === ['*'] || in_array($request->method(), \LaraGram\Support\Arr::wrap($methods))) {
-            $request->mode(LaraGram\Laraquest\Mode::NO_RESPONSE_CURL)->deleteMessage(chat()->id, message()->message_id);
+
+        if ($methods !== ['*'] && ! in_array($request->method(), \LaraGram\Support\Arr::wrap($methods))) {
+            return;
+        }
+
+        $chatId = chat()->id ?? null;
+        $messageId = message()->message_id ?? null;
+
+        if ($chatId !== null && $messageId !== null) {
+            $request->mode(LaraGram\Laraquest\Mode::NO_RESPONSE_CURL)->deleteMessage($chatId, $messageId);
         }
     }
 }
