@@ -56,9 +56,6 @@ if (!function_exists('user')) {
     /**
      * Get the user who caused the current update.
      *
-     * Messages sent on behalf of a chat (channel posts, anonymous admins) and
-     * updates without an acting user return null.
-     *
      * @return object|null
      */
     function user(): object|null
@@ -92,6 +89,36 @@ if (!function_exists('user')) {
             $request->subscription != null => $request->subscription->user ?? null,
             $request->managed_bot != null => $request->managed_bot->user ?? null,
             default => null
+        };
+    }
+}
+
+if (!function_exists('sender')) {
+    /**
+     * @return object|null
+     */
+    function sender(): object|null
+    {
+        /**
+         * @var Request $request ;
+         */
+        $request = app('request');
+        $message = match (true) {
+            $request->message != null => $request->message,
+            $request->edited_message != null => $request->edited_message,
+            $request->channel_post != null => $request->channel_post,
+            $request->edited_channel_post != null => $request->edited_channel_post,
+            $request->business_message != null => $request->business_message,
+            $request->edited_business_message != null => $request->edited_business_message,
+            $request->guest_message != null => $request->guest_message,
+            default => null
+        };
+
+        return match (true) {
+            $message !== null => $message->sender_chat ?? $message->from ?? null,
+            $request->message_reaction != null => $request->message_reaction->user ?? $request->message_reaction->actor_chat ?? null,
+            $request->poll_answer != null => $request->poll_answer->user ?? $request->poll_answer->voter_chat ?? null,
+            default => user()
         };
     }
 }
@@ -598,18 +625,26 @@ if (!function_exists('mention_user_by_id')) {
 if (!function_exists('mention_reply_user')) {
     function mention_reply_user($parse_mode = 'markdownv2'): false|string
     {
-        $user = message()?->reply_to_message->from ?? null;
+        $reply = message()?->reply_to_message ?? null;
 
-        return $user === null ? false : mention_user_by_id($user->id, $user->first_name, $parse_mode);
+        if ($reply === null || isset($reply->sender_chat) || ! isset($reply->from)) {
+            return false;
+        }
+
+        return mention_user_by_id($reply->from->id, $reply->from->first_name, $parse_mode);
     }
 }
 
 if (!function_exists('mention_sender_user')) {
     function mention_sender_user($parse_mode = 'markdownv2'): false|string
     {
-        $user = message()?->from ?? null;
+        $message = message();
 
-        return $user === null ? false : mention_user_by_id($user->id, $user->first_name, $parse_mode);
+        if ($message === null || isset($message->sender_chat) || ! isset($message->from)) {
+            return false;
+        }
+
+        return mention_user_by_id($message->from->id, $message->from->first_name, $parse_mode);
     }
 }
 

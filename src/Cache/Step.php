@@ -45,7 +45,7 @@ class Step
      */
     protected function owner(): string
     {
-        $id = user()->id;
+        $id = sender()->id;
 
         return config('bot.default') === 'auto' && ! is_null($bot = bot_connection())
             ? $bot.':'.$id

@@ -1687,7 +1687,7 @@ class ConversationManager
      */
     protected function owner(): string
     {
-        $id = user()->id;
+        $id = sender()->id;
 
         return $this->config->get('bot.default') === 'auto' && ! is_null($bot = $this->request()->botConnection())
             ? $bot.':'.$id

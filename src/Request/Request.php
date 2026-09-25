@@ -667,7 +667,7 @@ class Request implements ProvidesListenContext
 
         return sha1(implode('|', array_merge(
             $listen->methods(),
-            [$listen->pattern(), $this->botConnection(), user()?->id ?? chat()?->id]
+            [$listen->pattern(), $this->botConnection(), sender()?->id ?? chat()?->id]
         )));
     }
 
