@@ -939,6 +939,87 @@ class Request implements ProvidesListenContext
     }
 
     /**
+     * Send a Telegram API call, announcing it with the ApiCallSending and
+     * ApiCallCompleted events when anything listens for them.
+     *
+     * @param  string  $method
+     * @param  array   $params
+     * @return \LaraGram\Laraquest\Response|array
+     *
+     * @throws \LaraGram\Laraquest\Exceptions\TelegramApiException
+     */
+    protected function endpoint(string $method, array $params): mixed
+    {
+        $events = $this->apiCallEvents();
+
+        if ($events === null) {
+            return $this->sendApiCall($method, $params);
+        }
+
+        $intercepted = static::$interceptor !== null;
+
+        try {
+            $connection = $this->resolveConnection();
+        } catch (\Throwable) {
+            $connection = null;
+        }
+
+        $parameters = array_filter($params, fn ($value) => $value !== null);
+
+        $events->dispatch(new Events\ApiCallSending($method, $parameters, $connection, $intercepted));
+
+        $startedAt = hrtime(true);
+
+        try {
+            $response = $this->sendApiCall($method, $params);
+        } catch (\Throwable $e) {
+            $events->dispatch(new Events\ApiCallCompleted(
+                $method, $parameters, $connection,
+                $e instanceof TelegramApiException ? $e->response() : null,
+                (hrtime(true) - $startedAt) / 1e6, $e, $intercepted
+            ));
+
+            throw $e;
+        }
+
+        $events->dispatch(new Events\ApiCallCompleted(
+            $method, $parameters, $connection, $response,
+            (hrtime(true) - $startedAt) / 1e6, null, $intercepted
+        ));
+
+        return $response;
+    }
+
+    /**
+     * Resolve the event dispatcher when something listens for API calls.
+     *
+     * @return \LaraGram\Contracts\Events\Dispatcher|null
+     */
+    private function apiCallEvents()
+    {
+        if (! function_exists('app')) {
+            return null;
+        }
+
+        try {
+            $app = app();
+
+            if (! $app->bound('events')) {
+                return null;
+            }
+
+            $events = $app->make('events');
+
+            return $events->hasListeners(Events\ApiCallSending::class)
+                || $events->hasListeners(Events\ApiCallCompleted::class)
+                    ? $events
+                    : null;
+        } catch (\Throwable) {
+            return null;
+        }
+    }
+
+    /**
      * Intercept every Telegram API call to apply smart anti-flood throttling,
      * then delegate to the original Laraquest endpoint implementation.
      *
@@ -948,7 +1029,7 @@ class Request implements ProvidesListenContext
      *
      * @throws \LaraGram\Laraquest\Exceptions\TelegramApiException
      */
-    protected function endpoint(string $method, array $params): mixed
+    protected function sendApiCall(string $method, array $params): mixed
     {
         if (static::$interceptor !== null) {
             return $this->normalizeResponse($this->sendToInterceptor($method, $params), $method, $params);
