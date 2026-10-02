@@ -4,6 +4,8 @@ namespace LaraGram\Console;
 
 use Closure;
 use LaraGram\Console\Events\CommanderStarting;
+use LaraGram\Console\Events\CommandFinished;
+use LaraGram\Console\Events\CommandStarting;
 use LaraGram\Contracts\Console\Application as ApplicationContract;
 use LaraGram\Contracts\Container\Container;
 use LaraGram\Contracts\Events\Dispatcher;
@@ -12,11 +14,14 @@ use ReflectionClass;
 use LaraGram\Console\Attribute\AsCommand;
 use LaraGram\Console\Command\Command as LaraGramCommand;
 use LaraGram\Console\Exception\CommandNotFoundException;
+use LaraGram\Console\Input\ArgvInput;
 use LaraGram\Console\Input\ArrayInput;
 use LaraGram\Console\Input\InputDefinition;
 use LaraGram\Console\Input\InputOption;
+use LaraGram\Console\Input\InputInterface;
 use LaraGram\Console\Input\StringInput;
 use LaraGram\Console\Output\BufferedOutput;
+use LaraGram\Console\Output\OutputInterface;
 
 use function LaraGram\Support\commander_binary;
 use function LaraGram\Support\php_binary;
@@ -77,6 +82,32 @@ class Application extends ExtendedApplication implements ApplicationContract
         $this->events->dispatch(new CommanderStarting($this));
 
         $this->bootstrap();
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @return int
+     */
+    public function run(?InputInterface $input = null, ?OutputInterface $output = null): int
+    {
+        $commandName = $this->getCommandName(
+            $input = $input ?: new ArgvInput
+        );
+
+        $this->events->dispatch(
+            new CommandStarting(
+                (string) $commandName, $input, $output = $output ?: new BufferedConsoleOutput
+            )
+        );
+
+        $exitCode = parent::run($input, $output);
+
+        $this->events->dispatch(
+            new CommandFinished((string) $commandName, $input, $output, $exitCode)
+        );
+
+        return $exitCode;
     }
 
     /**
