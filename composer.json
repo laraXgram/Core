@@ -14,7 +14,7 @@
         }
     ],
     "require": {
-        "php": "^8.5",
+        "php": "^8.3",
         "ext-ctype": "*",
         "ext-curl": "*",
         "ext-filter": "*",
@@ -66,6 +66,7 @@
     },
     "autoload": {
         "files": [
+            "src/Support/polyfills.php",
             "src/Collections/functions.php",
             "src/Collections/helpers.php",
             "src/Events/functions.php",

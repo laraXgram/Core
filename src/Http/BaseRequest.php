@@ -92,85 +92,43 @@ class BaseRequest
     /**
      * Custom parameters.
      */
-    public ParameterBag $attributes {
-        set {
-            trigger_deprecation('laraxgram/http-request', '8.1', 'Directly setting property "attributes" of "%s" is deprecated; pass attributes as a constructor argument or call "initialize()" instead.', static::class);
-
-            $this->attributes = $value;
-        }
-    }
+    public ParameterBag $attributes;
 
     /**
      * Request body parameters ($_POST).
      *
      * @see getPayload() for portability between content types
      */
-    public InputBag $request {
-        set {
-            trigger_deprecation('laraxgram/http-request', '8.1', 'Directly setting property "request" of "%s" is deprecated; pass the POST data as a constructor argument or call "initialize()" instead.', static::class);
-
-            $this->request = $value;
-        }
-    }
+    public InputBag $request;
 
     /**
      * Query string parameters ($_GET).
      *
      * @var InputBag<string>
      */
-    public InputBag $query {
-        set {
-            trigger_deprecation('laraxgram/http-request', '8.1', 'Directly setting property "query" of "%s" is deprecated; pass query parameters as a constructor argument or call "initialize()" instead.', static::class);
-
-            $this->query = $value;
-        }
-    }
+    public InputBag $query;
 
     /**
      * Server and execution environment parameters ($_SERVER).
      */
-    public ServerBag $server {
-        set {
-            trigger_deprecation('laraxgram/http-request', '8.1', 'Directly setting property "server" of "%s" is deprecated; pass server parameters as a constructor argument or call "initialize()" instead.', static::class);
-
-            $this->server = $value;
-        }
-    }
+    public ServerBag $server;
 
     /**
      * Uploaded files ($_FILES).
      */
-    public FileBag $files {
-        set {
-            trigger_deprecation('laraxgram/http-request', '8.1', 'Directly setting property "files" of "%s" is deprecated; pass files as a constructor argument or call "initialize()" instead.', static::class);
-
-            $this->files = $value;
-        }
-    }
+    public FileBag $files;
 
     /**
      * Cookies ($_COOKIE).
      *
      * @var InputBag<string>
      */
-    public InputBag $cookies {
-        set {
-            trigger_deprecation('laraxgram/http-request', '8.1', 'Directly setting property "cookies" of "%s" is deprecated; pass cookies as a constructor argument or call "initialize()" instead.', static::class);
-
-            $this->cookies = $value;
-        }
-    }
+    public InputBag $cookies;
 
     /**
      * Headers (taken from the $_SERVER).
      */
-    public HeaderBag $headers {
-        set {
-            trigger_deprecation('laraxgram/http-request', '8.1', 'Directly setting property "headers" of "%s" is deprecated; pass header parameters as a constructor argument or call "initialize()" instead.', static::class);
-
-            $this->headers = $value;
-        }
-    }
+    public HeaderBag $headers;
 
     /**
      * @var string|resource|false|null
@@ -307,6 +265,17 @@ class BaseRequest
     {
         if (!\in_array($_SERVER['REQUEST_METHOD'] ?? null, ['PUT', 'DELETE', 'PATCH', 'QUERY'], true)) {
             return self::createRequestFromFactory($_GET, $_POST, [], $_COOKIE, $_FILES, $_SERVER);
+        }
+
+        if (!\function_exists('request_parse_body')) {
+            $request = self::createRequestFromFactory($_GET, $_POST, [], $_COOKIE, $_FILES, $_SERVER);
+
+            if (str_starts_with($request->headers->get('CONTENT_TYPE', ''), 'application/x-www-form-urlencoded')) {
+                parse_str($request->getContent(), $data);
+                $request->request = new InputBag($data);
+            }
+
+            return $request;
         }
 
         try {
@@ -2238,10 +2207,6 @@ class BaseRequest
 
     private static function setProperty(self $request, string $name, mixed $value): void
     {
-        static $cache;
-
-        $r = $cache[$name] ??= new \ReflectionProperty(self::class, $name);
-
-        $r->setRawValue($request, $value);
+        $request->{$name} = $value;
     }
 }

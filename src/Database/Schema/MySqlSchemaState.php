@@ -5,7 +5,6 @@ namespace LaraGram\Database\Schema;
 use Exception;
 use LaraGram\Database\Connection;
 use LaraGram\Support\Str;
-use Pdo\Mysql;
 use LaraGram\Console\Process\Exception\ProcessFailedException;
 use LaraGram\Console\Process\Process;
 
@@ -118,20 +117,19 @@ class MySqlSchemaState extends SchemaState
             ? ' --socket="${:LARAGRAM_LOAD_SOCKET}"'
             : ' --host="${:LARAGRAM_LOAD_HOST}" --port="${:LARAGRAM_LOAD_PORT}"';
 
-        if (isset($config['options'][Mysql::ATTR_SSL_CA])) {
+        if (isset($config['options'][$this->sslOption('SSL_CA')])) {
             $value .= ' --ssl-ca="${:LARAGRAM_LOAD_SSL_CA}"';
         }
 
-        if (isset($config['options'][Mysql::ATTR_SSL_CERT])) {
+        if (isset($config['options'][$this->sslOption('SSL_CERT')])) {
             $value .= ' --ssl-cert="${:LARAGRAM_LOAD_SSL_CERT}"';
         }
 
-        if (isset($config['options'][Mysql::ATTR_SSL_KEY])) {
+        if (isset($config['options'][$this->sslOption('SSL_KEY')])) {
             $value .= ' --ssl-key="${:LARAGRAM_LOAD_SSL_KEY}"';
         }
 
-        /** @phpstan-ignore classConstant.notFound */
-        if (($config['options'][Mysql::ATTR_SSL_VERIFY_SERVER_CERT] ?? null) === false) {
+        if (($config['options'][$this->sslOption('SSL_VERIFY_SERVER_CERT')] ?? null) === false) {
             if (version_compare($versionInfo['version'], '5.7.11', '>=') && ! $versionInfo['isMariaDb']) {
                 $value .= ' --ssl-mode=DISABLED';
             } else {
@@ -159,9 +157,9 @@ class MySqlSchemaState extends SchemaState
             'LARAGRAM_LOAD_USER' => $config['username'],
             'LARAGRAM_LOAD_PASSWORD' => $config['password'] ?? '',
             'LARAGRAM_LOAD_DATABASE' => $config['database'],
-            'LARAGRAM_LOAD_SSL_CA' => $config['options'][Mysql::ATTR_SSL_CA] ?? '',
-            'LARAGRAM_LOAD_SSL_CERT' => $config['options'][Mysql::ATTR_SSL_CERT] ?? '',
-            'LARAGRAM_LOAD_SSL_KEY' => $config['options'][Mysql::ATTR_SSL_KEY] ?? '',
+            'LARAGRAM_LOAD_SSL_CA' => $config['options'][$this->sslOption('SSL_CA')] ?? '',
+            'LARAGRAM_LOAD_SSL_CERT' => $config['options'][$this->sslOption('SSL_CERT')] ?? '',
+            'LARAGRAM_LOAD_SSL_KEY' => $config['options'][$this->sslOption('SSL_KEY')] ?? '',
         ];
     }
 
@@ -227,5 +225,18 @@ class MySqlSchemaState extends SchemaState
             'version' => $version,
             'isMariaDb' => $isMariaDb,
         ];
+    }
+
+    /**
+     * Get the PDO MySQL attribute for the given SSL option.
+     *
+     * @param  string  $name
+     * @return int
+     */
+    protected function sslOption(string $name): int
+    {
+        return PHP_VERSION_ID >= 80400
+            ? constant('Pdo\Mysql::ATTR_'.$name)
+            : constant('PDO::MYSQL_ATTR_'.$name);
     }
 }

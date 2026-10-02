@@ -78,7 +78,7 @@ class VarCloner extends AbstractCloner
                         if ('' === $v) {
                             continue 2;
                         }
-                        if (0 === $i && class_exists($v, false) && new \ReflectionClass($v)->isUserDefined()) {
+                        if (0 === $i && class_exists($v, false) && (new \ReflectionClass($v))->isUserDefined()) {
                             $stub = new ClassDumpStub($v);
                             $a = $stub->value;
                             $stub->value = null;

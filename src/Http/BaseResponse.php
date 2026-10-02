@@ -91,13 +91,7 @@ class BaseResponse
         'etag' => true,
     ];
 
-    public ResponseHeaderBag $headers {
-        set {
-            trigger_deprecation('laraxgram/http-request', '8.1', 'Directly setting property "headers" of "%s" is deprecated; pass the header bag as a constructor argument instead.', static::class);
-
-            $this->headers = $value;
-        }
-    }
+    public ResponseHeaderBag $headers;
 
     /**
      * Status codes translation table.
@@ -1308,10 +1302,6 @@ class BaseResponse
 
     private static function setHeaders(self $response, ResponseHeaderBag $headers): void
     {
-        static $r;
-
-        $r ??= new \ReflectionProperty(self::class, 'headers');
-
-        $r->setRawValue($response, $headers);
+        $response->headers = $headers;
     }
 }
