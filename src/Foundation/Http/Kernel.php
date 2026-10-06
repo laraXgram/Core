@@ -12,6 +12,7 @@ use LaraGram\Foundation\Http\Events\RequestHandled;
 use LaraGram\Routing\Pipeline;
 use LaraGram\Routing\Router;
 use LaraGram\Support\Tempora;
+use LaraGram\Support\Facades\Facade;
 use LaraGram\Support\Facades\HttpRequest;
 use LaraGram\Support\InteractsWithTime;
 use InvalidArgumentException;
@@ -174,6 +175,8 @@ class Kernel implements KernelContract
         }
 
         $this->app->instance('redirect', $this->app['http.redirect']);
+
+        Facade::clearResolvedInstance('redirect');
 
         return (new Pipeline($this->app))
             ->send($request)

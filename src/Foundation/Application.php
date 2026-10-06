@@ -1666,7 +1666,7 @@ class Application extends Container implements ApplicationContract, CachesConfig
                      'queue' => [\LaraGram\Queue\QueueManager::class, \LaraGram\Contracts\Queue\Factory::class, \LaraGram\Contracts\Queue\Monitor::class],
                      'queue.connection' => [\LaraGram\Contracts\Queue\Queue::class],
                      'queue.failer' => [\LaraGram\Queue\Failed\FailedJobProviderInterface::class],
-                     'redirect' => [\LaraGram\Listening\Redirector::class],
+                     'listener.redirect' => [\LaraGram\Listening\Redirector::class],
                      'http.redirect' => [\LaraGram\Routing\Redirector::class],
                      'redis' => [\LaraGram\Redis\RedisManager::class, \LaraGram\Contracts\Redis\Factory::class],
                      'redis.connection' => [\LaraGram\Redis\Connections\Connection::class, \LaraGram\Contracts\Redis\Connection::class],

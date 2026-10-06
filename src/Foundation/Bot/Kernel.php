@@ -170,7 +170,9 @@ class Kernel implements KernelContract
             $this->app['auth']->shouldUse('bot');
         }
 
-        $this->app->forgetInstance('redirect');
+        $this->app->instance('redirect', $this->app['listener.redirect']);
+
+        Facade::clearResolvedInstance('redirect');
 
         return (new Pipeline($this->app))
             ->send($request)

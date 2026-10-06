@@ -112,7 +112,7 @@ class ListeningServiceProvider extends ServiceProvider
      */
     protected function registerRedirector()
     {
-        $this->app->singleton('redirect', function ($app) {
+        $this->app->singleton('listener.redirect', function ($app) {
             $redirector = new Redirector($app['listener.path']);
 
             if (isset($app['cache'])) {
@@ -121,6 +121,10 @@ class ListeningServiceProvider extends ServiceProvider
 
             return $redirector;
         });
+
+        // "redirect" follows the request being handled: the bot kernel binds it
+        // to "listener.redirect" and the HTTP kernel to "http.redirect".
+        $this->app->singleton('redirect', fn ($app) => $app['listener.redirect']);
     }
 
     /**
@@ -131,7 +135,7 @@ class ListeningServiceProvider extends ServiceProvider
     protected function registerResponseFactory()
     {
         $this->app->singleton(ResponseFactoryContract::class, function ($app) {
-            return new ResponseFactory($app[TemplateFactoryContract::class], $app['redirect']);
+            return new ResponseFactory($app[TemplateFactoryContract::class], $app['listener.redirect']);
         });
     }
 
