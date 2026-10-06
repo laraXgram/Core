@@ -8,6 +8,16 @@ use RuntimeException;
 class MediaFile
 {
     /**
+     * Seconds to wait for getFile; a local Bot API server downloads the file before it answers.
+     */
+    private const GET_FILE_TIMEOUT = 120;
+
+    /**
+     * Seconds to wait for a file download from the Bot API server.
+     */
+    private const DOWNLOAD_TIMEOUT = 300;
+
+    /**
      * Cached file path retrieved from Telegram's getFile API.
      *
      * @var string|null
@@ -332,7 +342,7 @@ class MediaFile
     {
         $filePath = $this->resolveFilePath();
 
-        if ($this->isLocalServer()) {
+        if ($this->isLocalServer() && str_starts_with($filePath, '/')) {
             return 'file://' . $filePath;
         }
 
@@ -352,12 +362,10 @@ class MediaFile
     {
         $filePath = $this->resolveFilePath();
 
-        // Build fetch path directly to avoid a redundant resolveFilePath() call inside url()
-        $fetchPath = $this->isLocalServer()
-            ? $filePath
-            : rtrim($this->apiServer, '/') . '/file/bot' . $this->token . '/' . $filePath;
-
-        $content = file_get_contents($fetchPath);
+        // A local Bot API server (--local) answers with an absolute path on this machine.
+        $content = $this->isLocalServer() && str_starts_with($filePath, '/')
+            ? (is_readable($filePath) ? file_get_contents($filePath) : false)
+            : $this->fetch(rtrim($this->apiServer, '/') . '/file/bot' . $this->token . '/' . $filePath, self::DOWNLOAD_TIMEOUT);
 
         if ($content === false) {
             return false;
@@ -383,8 +391,9 @@ class MediaFile
             return $this->cachedFilePath;
         }
 
-        $response = file_get_contents(
-            rtrim($this->apiServer, '/') . '/bot' . $this->token . '/getFile?file_id=' . urlencode($this->fileId())
+        $response = $this->fetch(
+            rtrim($this->apiServer, '/') . '/bot' . $this->token . '/getFile?file_id=' . urlencode($this->fileId()),
+            self::GET_FILE_TIMEOUT
         );
 
         if ($response === false) {
@@ -400,6 +409,31 @@ class MediaFile
         $this->cachedFilePath = $data['result']['file_path'];
 
         return $this->cachedFilePath;
+    }
+
+    /**
+     * Fetch a URL with bounded timeouts, so a stalled connection cannot hang the caller.
+     *
+     * @param string $url
+     * @param int $timeout
+     * @return string|false
+     */
+    private function fetch(string $url, int $timeout): string|false
+    {
+        $curl = curl_init($url);
+
+        curl_setopt_array($curl, [
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_FOLLOWLOCATION => true,
+            CURLOPT_CONNECTTIMEOUT => 10,
+            CURLOPT_TIMEOUT => $timeout,
+        ]);
+
+        $body = curl_exec($curl);
+        $status = curl_getinfo($curl, CURLINFO_RESPONSE_CODE);
+
+        // getFile answers errors with a JSON body, which resolveFilePath() reports.
+        return is_string($body) && ($status < 400 || str_contains($url, '/getFile?')) ? $body : false;
     }
 
     /**
