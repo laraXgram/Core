@@ -25,6 +25,7 @@ use LaraGram\Queue\CallQueuedClosure;
 use LaraGram\Routing\Router;
 use LaraGram\Support\Facades\Date;
 use LaraGram\Support\Facades\Route;
+use LaraGram\Support\HtmlString;
 use LaraGram\Support\Uri;
 use LaraGram\Validation\Factory as ValidationFactory;
 use LaraGram\Contracts\View\Factory as ViewFactory;
@@ -180,7 +181,7 @@ if (! function_exists('back')) {
      */
     function back($status = 302, $headers = [], $fallback = false): RedirectResponse
     {
-        return app('redirect')->back($status, $headers, $fallback);
+        return app('http.redirect')->back($status, $headers, $fallback);
     }
 }
 
@@ -373,6 +374,34 @@ if (! function_exists('cookie')) {
     }
 }
 
+if (! function_exists('csrf_field')) {
+    /**
+     * Generate a CSRF token form field.
+     */
+    function csrf_field(): HtmlString
+    {
+        return new HtmlString('<input type="hidden" name="_token" value="'.csrf_token().'" autocomplete="off">');
+    }
+}
+
+if (! function_exists('csrf_token')) {
+    /**
+     * Get the CSRF token value.
+     *
+     * @throws \RuntimeException
+     */
+    function csrf_token(): ?string
+    {
+        $session = app('session');
+
+        if (isset($session)) {
+            return $session->token();
+        }
+
+        throw new RuntimeException('Application session store not set.');
+    }
+}
+
 if (! function_exists('database_path')) {
     /**
      * Get the database path.
@@ -533,6 +562,18 @@ if (! function_exists('logs')) {
     }
 }
 
+if (! function_exists('method_field')) {
+    /**
+     * Generate a form field to spoof the HTTP verb used by forms.
+     *
+     * @param  string  $method
+     */
+    function method_field($method): HtmlString
+    {
+        return new HtmlString('<input type="hidden" name="_method" value="'.$method.'">');
+    }
+}
+
 if (! function_exists('now')) {
     /**
      * Create a new Tempora instance for the current time.
@@ -543,6 +584,22 @@ if (! function_exists('now')) {
     function now($tz = null)
     {
         return Date::now($tz);
+    }
+}
+
+if (! function_exists('old')) {
+    /**
+     * Retrieve an old input item.
+     *
+     * Reads the HTTP request: the "request" binding is the bot update.
+     *
+     * @param  string|null  $key
+     * @param  \LaraGram\Database\Eloquent\Model|string|array|null  $default
+     * @return string|array|null
+     */
+    function old($key = null, $default = null)
+    {
+        return app('http.request')->old($key, $default);
     }
 }
 
@@ -605,16 +662,25 @@ if (! function_exists('public_path')) {
 
 if (! function_exists('redirect')) {
     /**
-     * Get an instance of the redirector for the active request type.
+     * Get an instance of the redirector, or a redirect response to the given path.
      *
-     * Resolves the Listening\Redirector under the bot kernel and the
-     * Routing\Redirector under the HTTP kernel.
+     * Without a path, resolves the Listening\Redirector under the bot kernel
+     * and the Routing\Redirector under the HTTP kernel. A path is always a
+     * web redirect.
      *
-     * @return \LaraGram\Listening\Redirector|\LaraGram\Routing\Redirector
+     * @param  string|null  $to
+     * @param  int  $status
+     * @param  array  $headers
+     * @param  bool|null  $secure
+     * @return ($to is null ? \LaraGram\Listening\Redirector|\LaraGram\Routing\Redirector : \LaraGram\Http\RedirectResponse)
      */
-    function redirect()
+    function redirect($to = null, $status = 302, $headers = [], $secure = null)
     {
-        return app('redirect');
+        if (is_null($to)) {
+            return app('redirect');
+        }
+
+        return app('http.redirect')->to($to, $status, $headers, $secure);
     }
 }
 
@@ -876,6 +942,22 @@ if (! function_exists('template_path')) {
     }
 }
 
+if (! function_exists('to_action')) {
+    /**
+     * Create a new redirect response to a controller action.
+     *
+     * @param  string|array  $action
+     * @param  mixed  $parameters
+     * @param  int  $status
+     * @param  array  $headers
+     * @return \LaraGram\Http\RedirectResponse
+     */
+    function to_action($action, $parameters = [], $status = 302, $headers = [])
+    {
+        return app('http.redirect')->action($action, $parameters, $status, $headers);
+    }
+}
+
 if (! function_exists('to_listen')) {
     /**
      * Create a new redirect response to a named listen.
@@ -886,7 +968,7 @@ if (! function_exists('to_listen')) {
      */
     function to_listen($listen, $parameters = [])
     {
-        return redirect()->listen($listen, $parameters);
+        return app('listener.redirect')->listen($listen, $parameters);
     }
 }
 
@@ -896,11 +978,13 @@ if (! function_exists('to_route')) {
      *
      * @param  \BackedEnum|string  $route
      * @param  mixed  $parameters
+     * @param  int  $status
+     * @param  array  $headers
      * @return \LaraGram\Http\RedirectResponse
      */
-    function to_route($route, $parameters = [])
+    function to_route($route, $parameters = [], $status = 302, $headers = [])
     {
-        return redirect()->route($route, $parameters);
+        return app('http.redirect')->route($route, $parameters, $status, $headers);
     }
 }
 
