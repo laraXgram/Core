@@ -2,6 +2,8 @@
 
 namespace LaraGram\Request\Files;
 
+use LaraGram\Image\Image;
+use LaraGram\Image\ImageException;
 use LaraGram\Support\Facades\Storage;
 use RuntimeException;
 
@@ -360,12 +362,7 @@ class MediaFile
      */
     public function download(string $path, ?string $disk = null): bool
     {
-        $filePath = $this->resolveFilePath();
-
-        // A local Bot API server (--local) answers with an absolute path on this machine.
-        $content = $this->isLocalServer() && str_starts_with($filePath, '/')
-            ? (is_readable($filePath) ? file_get_contents($filePath) : false)
-            : $this->fetch(rtrim($this->apiServer, '/') . '/file/bot' . $this->token . '/' . $filePath, self::DOWNLOAD_TIMEOUT);
+        $content = $this->contents();
 
         if ($content === false) {
             return false;
@@ -376,6 +373,37 @@ class MediaFile
         }
 
         return Storage::put($path, $content);
+    }
+
+    /**
+     * Create an image instance from the file contents.
+     *
+     * The file is downloaded lazily, when the image is first processed or read.
+     *
+     * @return \LaraGram\Image\Image
+     */
+    public function image(): Image
+    {
+        return new Image(
+            fn () => $this->contents() ?: throw new ImageException("Unable to download the image for file_id: {$this->fileId()}"),
+        );
+    }
+
+    /**
+     * Download the raw file contents from the Bot API server.
+     *
+     * @return string|false
+     *
+     * @throws RuntimeException
+     */
+    private function contents(): string|false
+    {
+        $filePath = $this->resolveFilePath();
+
+        // A local Bot API server (--local) answers with an absolute path on this machine.
+        return $this->isLocalServer() && str_starts_with($filePath, '/')
+            ? (is_readable($filePath) ? file_get_contents($filePath) : false)
+            : $this->fetch(rtrim($this->apiServer, '/') . '/file/bot' . $this->token . '/' . $filePath, self::DOWNLOAD_TIMEOUT);
     }
 
     /**

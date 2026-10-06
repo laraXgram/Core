@@ -11,6 +11,7 @@ use LaraGram\Contracts\Filesystem\Filesystem as FilesystemContract;
 use LaraGram\Http\File;
 use LaraGram\Http\Request;
 use LaraGram\Http\UploadedFile;
+use LaraGram\Image\Image;
 use LaraGram\Support\Str;
 use LaraGram\Support\Traits\Conditionable;
 use LaraGram\Support\Traits\Macroable;
@@ -293,6 +294,14 @@ class FilesystemAdapter implements CloudFilesystemContract
     public function download($path, $name = null, array $headers = [])
     {
         return $this->response($path, $name, $headers, 'attachment');
+    }
+
+    /**
+     * Create an image instance from a file in storage.
+     */
+    public function image(string $path): Image
+    {
+        return new Image(fn () => $this->get($path));
     }
 
     /**

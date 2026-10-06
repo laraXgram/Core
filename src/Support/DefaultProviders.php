@@ -31,6 +31,7 @@ class DefaultProviders
             \LaraGram\Database\DatabaseServiceProvider::class,
             \LaraGram\Encryption\EncryptionServiceProvider::class,
             \LaraGram\Filesystem\FilesystemServiceProvider::class,
+            \LaraGram\Image\ImageServiceProvider::class,
             \LaraGram\Foundation\Providers\FoundationServiceProvider::class,
             \LaraGram\Hashing\HashServiceProvider::class,
             \LaraGram\Keyboard\KeyboardServiceProvider::class,

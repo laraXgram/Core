@@ -44,6 +44,7 @@ namespace LaraGram\Support\Facades;
  * @method static bool directoryExists(string $path)
  * @method static bool directoryMissing(string $path)
  * @method static array|null json(string $path, int $flags = 0)
+ * @method static \LaraGram\Image\Image image(string $path)
  * @method static string|false checksum(string $path, array $options = [])
  * @method static string|false mimeType(string $path)
  * @method static string url(string $path)

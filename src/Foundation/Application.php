@@ -1659,6 +1659,7 @@ class Application extends Container implements ApplicationContract, CachesConfig
                      'hash' => [\LaraGram\Hashing\HashManager::class],
                      'hash.driver' => [\LaraGram\Contracts\Hashing\Hasher::class],
                      'http.request' => [\LaraGram\Http\Request::class],
+                     'image' => [\LaraGram\Image\ImageManager::class],
                      'keyboard' => [\LaraGram\Keyboard\Keyboard::class],
                      'listener' => [\LaraGram\Listening\Listener::class, \LaraGram\Contracts\Listening\Registrar::class, \LaraGram\Contracts\Listening\BindingRegistrar::class],
                      'listener.path' => [\LaraGram\Listening\PathGenerator::class, \LaraGram\Contracts\Listening\PathGenerator::class],

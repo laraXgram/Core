@@ -3,6 +3,7 @@
 namespace LaraGram\Request;
 
 use Closure;
+use LaraGram\Image\Image;
 use LaraGram\Laraquest\ConnectionRegistry;
 use LaraGram\Laraquest\Updates as UpdatesTrait;
 use LaraGram\Laraquest\Exceptions\TelegramApiException;
@@ -743,6 +744,24 @@ class Request implements ProvidesListenContext
         $bag = FileBag::fromMessage($message, $token, $cfg['api_server']);
 
         return $bag->isEmpty() ? null : $bag;
+    }
+
+    /**
+     * Retrieve the image attached to the current update as an image instance.
+     *
+     * Photos resolve to their largest size; documents are accepted when they have an image MIME type.
+     *
+     * @return \LaraGram\Image\Image|null
+     */
+    public function image(): ?Image
+    {
+        $file = $this->file()?->last();
+
+        if (is_null($file) || (! $file->isPhoto() && ! str_starts_with((string) $file->mimeType(), 'image/'))) {
+            return null;
+        }
+
+        return $file->image();
     }
 
     /**

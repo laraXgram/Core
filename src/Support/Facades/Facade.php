@@ -166,6 +166,7 @@ abstract class Facade
             'Hash' => Hash::class,
             'Http' => Http::class,
             'HttpRequest' => HttpRequest::class,
+            'Image' => Image::class,
             'Js' => Js::class,
             'Lang' => Lang::class,
             'Log' => Log::class,

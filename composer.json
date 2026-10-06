@@ -45,6 +45,7 @@
         "laraxgram/filesystem": "self.version",
         "laraxgram/hashing": "self.version",
         "laraxgram/http": "self.version",
+        "laraxgram/image": "self.version",
         "laraxgram/jsonschema": "self.version",
         "laraxgram/keyboard": "self.version",
         "laraxgram/listening": "self.version",
@@ -99,13 +100,16 @@
     "suggest": {
         "ext-apcu": "Required to use the APC cache driver.",
         "ext-fileinfo": "Required to use the Filesystem class.",
+        "ext-gd": "Required to use the GD image driver.",
+        "ext-imagick": "Required to use the Imagick image driver.",
         "ext-memcached": "Required to use the memcache cache driver.",
         "ext-pcntl": "Required to use all features of the queue worker and console signal trapping.",
         "ext-pdo": "Required to use all database features.",
         "ext-posix": "Required to use all features of the queue worker.",
         "ext-redis": "Required to use the Redis cache and queue drivers (^4.0|^5.0|^6.0).",
         "ext-gmp": "*",
-        "ext-bcmath": "*"
+        "ext-bcmath": "*",
+        "intervention/image": "Required to use the image processing features (^4.0)."
     },
     "config": {
         "sort-packages": true
