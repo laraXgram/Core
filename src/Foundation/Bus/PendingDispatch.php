@@ -2,14 +2,21 @@
 
 namespace LaraGram\Foundation\Bus;
 
+use LaraGram\Bus\DebounceLock;
 use LaraGram\Bus\UniqueLock;
 use LaraGram\Container\Container;
 use LaraGram\Contracts\Bus\Dispatcher;
 use LaraGram\Contracts\Cache\Repository as Cache;
+use LaraGram\Contracts\Queue\PreparesForDispatch;
 use LaraGram\Contracts\Queue\ShouldBeUnique;
+use LaraGram\Queue\Attributes\DebounceFor;
+use LaraGram\Queue\Attributes\ReadsQueueAttributes;
+use LogicException;
 
 class PendingDispatch
 {
+    use ReadsQueueAttributes;
+
     /**
      * The job.
      *
@@ -156,12 +163,50 @@ class PendingDispatch
      */
     protected function shouldDispatch()
     {
+        if ($this->job instanceof PreparesForDispatch &&
+            $this->job->prepareForDispatch() === false) {
+            return false;
+        }
+
         if (! $this->job instanceof ShouldBeUnique) {
             return true;
         }
 
         return (new UniqueLock(Container::getInstance()->make(Cache::class)))
             ->acquire($this->job);
+    }
+
+    /**
+     * Acquire a debounce lock for the job and set its delay.
+     *
+     * A debounced job waits for its quiet period before it runs, and every
+     * dispatch within that period takes the lock over, so only the last one
+     * is left to run.
+     *
+     * @return void
+     *
+     * @throws \LogicException
+     */
+    protected function acquireDebounceLock()
+    {
+        $debounceFor = $this->getAttributeValue($this->job, DebounceFor::class, 'debounceFor');
+
+        if ($debounceFor === null) {
+            return;
+        }
+
+        if ($this->job instanceof ShouldBeUnique) {
+            throw new LogicException('A debounced job cannot also implement ShouldBeUnique.');
+        }
+
+        $result = (new DebounceLock(Container::getInstance()->make(Cache::class)))
+            ->acquire($this->job, $debounceFor);
+
+        $this->job->debounceOwner = $result['owner'];
+
+        if (is_null($this->job->delay)) {
+            $this->job->delay = $result['maxWaitExceeded'] ? 0 : $debounceFor;
+        }
     }
 
     /**
@@ -187,7 +232,11 @@ class PendingDispatch
     {
         if (! $this->shouldDispatch()) {
             return;
-        } elseif ($this->afterResponse) {
+        }
+
+        $this->acquireDebounceLock();
+
+        if ($this->afterResponse) {
             app(Dispatcher::class)->dispatchAfterResponse($this->job);
         } else {
             app(Dispatcher::class)->dispatch($this->job);

@@ -4,6 +4,7 @@ namespace LaraGram\Events;
 
 use Closure;
 use Exception;
+use LaraGram\Bus\DebounceLock;
 use LaraGram\Bus\UniqueLock;
 use LaraGram\Container\Container;
 use LaraGram\Contracts\Broadcasting\Factory as BroadcastFactory;
@@ -20,6 +21,7 @@ use LaraGram\Contracts\Queue\ShouldQueue;
 use LaraGram\Contracts\Queue\ShouldQueueAfterCommit;
 use LaraGram\Queue\Attributes\Backoff;
 use LaraGram\Queue\Attributes\Connection;
+use LaraGram\Queue\Attributes\DebounceFor;
 use LaraGram\Queue\Attributes\Delay;
 use LaraGram\Queue\Attributes\DeleteWhenMissingModels;
 use LaraGram\Queue\Attributes\FailOnTimeout;
@@ -38,6 +40,7 @@ use LaraGram\Support\Traits\ReflectsClosures;
 use ReflectionClass;
 
 use function LaraGram\Support\enum_value;
+use LogicException;
 
 class Dispatcher implements DispatcherContract
 {
@@ -661,6 +664,12 @@ class Dispatcher implements DispatcherContract
     {
         [$listener, $job] = $this->createListenerAndJob($class, $method, $arguments);
 
+        $debounceFor = $this->getAttributeValue($listener, DebounceFor::class, 'debounceFor');
+
+        if (! is_null($debounceFor) && $job->shouldBeUnique) {
+            throw new LogicException('A debounced listener cannot also implement ShouldBeUnique.');
+        }
+
         if ($job->shouldBeUnique &&
             ! (new UniqueLock($this->container->make(Cache::class)))->acquire($job)) {
             return;
@@ -684,6 +693,19 @@ class Dispatcher implements DispatcherContract
 
         if (is_null($queue)) {
             $queue = $this->resolveQueueFromQueueRoute($listener) ?? null;
+        }
+
+        // A debounced listener waits for its quiet period, and every event
+        // dispatched within that period takes the lock over, so only the
+        // last one is left to handle.
+        if (! is_null($debounceFor)) {
+            $debounce = (new DebounceLock($this->container->make(Cache::class)))->acquire(
+                $job, $debounceFor, $this->getAttributeInstance($listener, DebounceFor::class)?->maxWait
+            );
+
+            $job->debounceOwner = $debounce['owner'];
+
+            $delay ??= $debounce['maxWaitExceeded'] ? 0 : $debounceFor;
         }
 
         is_null($delay)

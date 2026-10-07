@@ -2,6 +2,7 @@
 
 namespace LaraGram\Foundation\Events;
 
+use LaraGram\Contracts\Events\ShouldBeDiscovered;
 use LaraGram\Support\Collection;
 use LaraGram\Support\Finder\Finder;
 use LaraGram\Support\Reflector;
@@ -69,6 +70,11 @@ class DiscoverEvents
             }
 
             if (! $listener->isInstantiable()) {
+                continue;
+            }
+
+            if ($listener->implementsInterface(ShouldBeDiscovered::class) &&
+                ! $listener->getName()::shouldBeDiscovered()) {
                 continue;
             }
 
