@@ -31,8 +31,11 @@ class StartApiServerCommand extends Command
      */
     public function handle()
     {
-        if (empty(config('bot.api_server.api_id')) || empty('bot.api_server.api_hash'))
+        if (empty(config('bot.api_server.api_id')) || empty(config('bot.api_server.api_hash'))) {
             $this->components->error("api_id or api_hash not set in [ config.bot ].");
+
+            return self::FAILURE;
+        }
 
         if (!file_exists($this->option('dir')))
             mkdir($this->option('dir'), recursive: true);
@@ -47,6 +50,10 @@ class StartApiServerCommand extends Command
             usleep(500 * 1000);
         }
 
+        if (!$process->isSuccessful()) {
+            $this->components->error('Bot API Server [' . $this->option('binary') . '] exited with code ' . $process->getExitCode() . '.');
+        }
+
         return $process->getExitCode();
     }
 
@@ -57,7 +64,7 @@ class StartApiServerCommand extends Command
      */
     protected function startProcess()
     {
-        $process = new Process($this->apiServerCommand());
+        $process = new Process($this->apiServerCommand(), timeout: null);
 
         $this->trap(fn () => [SIGTERM, SIGINT, SIGHUP, SIGUSR1, SIGUSR2, SIGQUIT], function ($signal) use ($process) {
             if ($process->isRunning()) {
@@ -67,7 +74,7 @@ class StartApiServerCommand extends Command
             exit;
         });
 
-        $process->start();
+        $process->start(fn ($type, $buffer) => $this->output->write($buffer));
 
         return $process;
     }
@@ -75,7 +82,7 @@ class StartApiServerCommand extends Command
     public function apiServerCommand()
     {
         $command = [
-            'telegram-bot-api',
+            $this->option('binary'),
             '--local',
             '--http-ip-address=' . $this->option('host'),
             '--http-port=' . $this->option('port'),
@@ -88,9 +95,9 @@ class StartApiServerCommand extends Command
         $BOT_API_SERVER_STAT_IP = config('bot.api_server.stat.ip');
         $BOT_API_SERVER_STAT_PORT = config('bot.api_server.stat.port');
 
-        if (!empty($BOT_API_SERVER_LOG_DIR)) $command[] = $BOT_API_SERVER_LOG_DIR;
-        if (!empty($BOT_API_SERVER_STAT_IP))  $command[] = $BOT_API_SERVER_STAT_IP;
-        if (!empty($BOT_API_SERVER_STAT_PORT)) $command[] = $BOT_API_SERVER_STAT_PORT;
+        if (!empty($BOT_API_SERVER_LOG_DIR)) $command[] = '--log=' . $BOT_API_SERVER_LOG_DIR;
+        if (!empty($BOT_API_SERVER_STAT_IP))  $command[] = '--http-stat-ip-address=' . $BOT_API_SERVER_STAT_IP;
+        if (!empty($BOT_API_SERVER_STAT_PORT)) $command[] = '--http-stat-port=' . $BOT_API_SERVER_STAT_PORT;
 
         return $command;
     }
@@ -103,6 +110,7 @@ class StartApiServerCommand extends Command
     protected function getOptions()
     {
         return [
+            ['binary', null, InputOption::VALUE_OPTIONAL, 'Specify the bot API server binary (e.g. telegram-bot-api or laragram-server).', config('bot.api_server.binary') ?? 'telegram-bot-api'],
             ['host', null, InputOption::VALUE_OPTIONAL, "Specify the host IP address for the bot API server", config('bot.api_server.ip') ?? '127.0.0.1'],
             ['port', null, InputOption::VALUE_OPTIONAL, 'Specify the port for the bot API server.', config('bot.api_server.port') ?? 8081],
             ['dir', null, InputOption::VALUE_OPTIONAL, 'Specify the directory path for the API server.', config('bot.api_server.dir') ?? app('path.storage') . 'app/apiserver'],
