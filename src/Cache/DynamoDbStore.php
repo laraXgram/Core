@@ -2,8 +2,8 @@
 
 namespace LaraGram\Cache;
 
-use Aws\DynamoDb\DynamoDbClient;
-use Aws\DynamoDb\Exception\DynamoDbException;
+use LaraGram\Filesystem\Aws\DynamoDb\DynamoDbClient;
+use LaraGram\Filesystem\Aws\DynamoDb\DynamoDbException;
 use LaraGram\Contracts\Cache\LockProvider;
 use LaraGram\Contracts\Cache\Store;
 use LaraGram\Support\Arr;
@@ -34,7 +34,7 @@ class DynamoDbStore implements LockProvider, Store
     /**
      * Create a new store instance.
      *
-     * @param  \Aws\DynamoDb\DynamoDbClient  $dynamo  The DynamoDB client instance.
+     * @param  \LaraGram\Filesystem\Aws\DynamoDb\DynamoDbClient  $dynamo  The DynamoDB client instance.
      * @param  string  $table  The table name.
      * @param  string  $keyAttribute  The name of the attribute that should hold the key.
      * @param  string  $valueAttribute  The name of the attribute that should hold the value.
@@ -231,7 +231,7 @@ class DynamoDbStore implements LockProvider, Store
      * @param  int  $seconds
      * @return bool
      *
-     * @throws \Aws\DynamoDb\Exception\DynamoDbException
+     * @throws \LaraGram\Filesystem\Aws\DynamoDb\DynamoDbException
      */
     public function add($key, $value, $seconds)
     {
@@ -278,7 +278,7 @@ class DynamoDbStore implements LockProvider, Store
      * @param  mixed  $value
      * @return int|false
      *
-     * @throws \Aws\DynamoDb\Exception\DynamoDbException
+     * @throws \LaraGram\Filesystem\Aws\DynamoDb\DynamoDbException
      */
     public function increment($key, $value = 1)
     {
@@ -325,7 +325,7 @@ class DynamoDbStore implements LockProvider, Store
      * @param  mixed  $value
      * @return int|false
      *
-     * @throws \Aws\DynamoDb\Exception\DynamoDbException
+     * @throws \LaraGram\Filesystem\Aws\DynamoDb\DynamoDbException
      */
     public function decrement($key, $value = 1)
     {
@@ -601,7 +601,7 @@ class DynamoDbStore implements LockProvider, Store
     /**
      * Get the DynamoDb Client instance.
      *
-     * @return \Aws\DynamoDb\DynamoDbClient
+     * @return \LaraGram\Filesystem\Aws\DynamoDb\DynamoDbClient
      */
     public function getClient()
     {

@@ -325,7 +325,11 @@ abstract class AwsClient
             $xml = @simplexml_load_string($body);
 
             if ($xml !== false) {
-                $error = isset($xml->Error) ? $xml->Error : $xml;
+                $error = match (true) {
+                    isset($xml->Error) => $xml->Error,
+                    isset($xml->Errors->Error) => $xml->Errors->Error,
+                    default => $xml,
+                };
 
                 $code ??= isset($error->Code) ? (string) $error->Code : null;
                 $message = isset($error->Message) ? (string) $error->Message : null;

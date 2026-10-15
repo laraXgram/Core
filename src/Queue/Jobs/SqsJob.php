@@ -2,7 +2,7 @@
 
 namespace LaraGram\Queue\Jobs;
 
-use Aws\Sqs\SqsClient;
+use LaraGram\Filesystem\Aws\Sqs\SqsClient;
 use LaraGram\Container\Container;
 use LaraGram\Contracts\Queue\Job as JobContract;
 use LaraGram\Support\Arr;
@@ -12,7 +12,7 @@ class SqsJob extends Job implements JobContract
     /**
      * The Amazon SQS client instance.
      *
-     * @var \Aws\Sqs\SqsClient
+     * @var \LaraGram\Filesystem\Aws\Sqs\SqsClient
      */
     protected $sqs;
 
@@ -41,7 +41,7 @@ class SqsJob extends Job implements JobContract
      * Create a new job instance.
      *
      * @param  \LaraGram\Container\Container  $container
-     * @param  \Aws\Sqs\SqsClient  $sqs
+     * @param  \LaraGram\Filesystem\Aws\Sqs\SqsClient  $sqs
      * @param  array  $job
      * @param  string  $connectionName
      * @param  string  $queue
@@ -172,7 +172,7 @@ class SqsJob extends Job implements JobContract
     /**
      * Get the underlying SQS client instance.
      *
-     * @return \Aws\Sqs\SqsClient
+     * @return \LaraGram\Filesystem\Aws\Sqs\SqsClient
      */
     public function getSqs()
     {

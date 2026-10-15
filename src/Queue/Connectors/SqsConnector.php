@@ -2,8 +2,8 @@
 
 namespace LaraGram\Queue\Connectors;
 
-use Aws\Credentials\CredentialProvider;
-use Aws\Sqs\SqsClient;
+use LaraGram\Filesystem\Aws\CredentialProvider;
+use LaraGram\Filesystem\Aws\Sqs\SqsClient;
 use LaraGram\Queue\SqsQueue;
 use LaraGram\Support\Arr;
 use InvalidArgumentException;
@@ -62,15 +62,17 @@ class SqsConnector implements ConnectorInterface
 
         $options = is_array($credentials) ? Arr::except($credentials, ['provider']) : [];
 
+        $timeout = (float) ($options['timeout'] ?? 1.0);
+
         $resolved = match ($provider) {
-            'ecs' => CredentialProvider::ecsCredentials($options),
-            'instance' => CredentialProvider::instanceProfile($options),
+            'ecs' => CredentialProvider::ecs($timeout),
+            'instance' => CredentialProvider::instanceProfile($timeout),
             default => throw new InvalidArgumentException(
                 "Invalid credential provider [{$provider}]."
             ),
         };
 
-        return CredentialProvider::memoize($resolved);
+        return CredentialProvider::memoize(CredentialProvider::chain($resolved));
     }
 
     /**

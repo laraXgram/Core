@@ -2,7 +2,7 @@
 
 namespace LaraGram\Queue;
 
-use Aws\Sqs\SqsClient;
+use LaraGram\Filesystem\Aws\Sqs\SqsClient;
 use LaraGram\Contracts\Queue\ClearableQueue;
 use LaraGram\Contracts\Queue\Queue as QueueContract;
 use LaraGram\Queue\Jobs\SqsJob;
@@ -29,7 +29,7 @@ class SqsQueue extends Queue implements QueueContract, ClearableQueue
     /**
      * The Amazon SQS instance.
      *
-     * @var \Aws\Sqs\SqsClient
+     * @var \LaraGram\Filesystem\Aws\Sqs\SqsClient
      */
     protected $sqs;
 
@@ -64,7 +64,7 @@ class SqsQueue extends Queue implements QueueContract, ClearableQueue
     /**
      * Create a new Amazon SQS queue instance.
      *
-     * @param  \Aws\Sqs\SqsClient  $sqs
+     * @param  \LaraGram\Filesystem\Aws\Sqs\SqsClient  $sqs
      * @param  string  $default
      * @param  string  $prefix
      * @param  string  $suffix
@@ -497,7 +497,7 @@ class SqsQueue extends Queue implements QueueContract, ClearableQueue
     /**
      * Get the underlying SQS instance.
      *
-     * @return \Aws\Sqs\SqsClient
+     * @return \LaraGram\Filesystem\Aws\Sqs\SqsClient
      */
     public function getSqs()
     {

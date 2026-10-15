@@ -2,7 +2,7 @@
 
 namespace LaraGram\Cache;
 
-use Aws\DynamoDb\DynamoDbClient;
+use LaraGram\Filesystem\Aws\DynamoDb\DynamoDbClient;
 use Closure;
 use LaraGram\Contracts\Cache\Factory as FactoryContract;
 use LaraGram\Contracts\Cache\Store;
@@ -238,7 +238,7 @@ class CacheManager implements FactoryContract
     /**
      * Create new DynamoDb Client instance.
      *
-     * @return \Aws\DynamoDb\DynamoDbClient
+     * @return \LaraGram\Filesystem\Aws\DynamoDb\DynamoDbClient
      */
     protected function newDynamodbClient(array $config)
     {

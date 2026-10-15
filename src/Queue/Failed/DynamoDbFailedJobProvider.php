@@ -2,7 +2,7 @@
 
 namespace LaraGram\Queue\Failed;
 
-use Aws\DynamoDb\DynamoDbClient;
+use LaraGram\Filesystem\Aws\DynamoDb\DynamoDbClient;
 use DateTimeInterface;
 use Exception;
 use LaraGram\Support\Tempora;
@@ -14,7 +14,7 @@ class DynamoDbFailedJobProvider implements FailedJobProviderInterface
     /**
      * The DynamoDB client instance.
      *
-     * @var \Aws\DynamoDb\DynamoDbClient
+     * @var \LaraGram\Filesystem\Aws\DynamoDb\DynamoDbClient
      */
     protected $dynamo;
 
@@ -35,7 +35,7 @@ class DynamoDbFailedJobProvider implements FailedJobProviderInterface
     /**
      * Create a new DynamoDb failed job provider.
      *
-     * @param  \Aws\DynamoDb\DynamoDbClient  $dynamo
+     * @param  \LaraGram\Filesystem\Aws\DynamoDb\DynamoDbClient  $dynamo
      * @param  string  $applicationName
      * @param  string  $table
      */

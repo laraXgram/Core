@@ -2,7 +2,7 @@
 
 namespace LaraGram\Queue;
 
-use Aws\DynamoDb\DynamoDbClient;
+use LaraGram\Filesystem\Aws\DynamoDb\DynamoDbClient;
 use LaraGram\Contracts\Debug\ExceptionHandler;
 use LaraGram\Contracts\Events\Dispatcher as EventDispatcher;
 use LaraGram\Contracts\Support\DeferrableProvider;
