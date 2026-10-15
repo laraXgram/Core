@@ -216,7 +216,7 @@ class MediaFile
      */
     public function largest(): static
     {
-        return !empty($this->siblings) ? end($this->siblings) : $this;
+        return !empty($this->siblings) ? $this->siblings[array_key_last($this->siblings)] : $this;
     }
 
     /**
