@@ -2,7 +2,7 @@
 
 namespace LaraGram\Filesystem;
 
-use Aws\S3\S3Client;
+use LaraGram\Filesystem\Aws\S3\S3Client;
 use League\Flysystem\PhpseclibV3\SftpAdapter;
 use League\Flysystem\PhpseclibV3\SftpConnectionProvider;
 
@@ -248,10 +248,6 @@ class FilesystemManager implements FactoryContract
      */
     public function createS3Driver(array $config)
     {
-        if (! class_exists(S3Client::class)) {
-            throw new InvalidArgumentException('S3Client is not available. Please install aws/aws-sdk-php.');
-        }
-
         $s3Config = $this->formatS3Config($config);
 
         $root = (string) ($s3Config['root'] ?? '');

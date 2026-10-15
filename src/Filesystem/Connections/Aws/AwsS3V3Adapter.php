@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace LaraGram\Filesystem\Connections\Aws;
 
-use Aws\Api\DateTimeResult;
-use Aws\S3\S3ClientInterface;
 use DateTimeInterface;
 use Generator;
+use LaraGram\Filesystem\Aws\DateTimeResult;
+use LaraGram\Filesystem\Aws\S3\S3Client;
 use LaraGram\Filesystem\Config;
 use LaraGram\Filesystem\DirectoryAttributes;
 use LaraGram\Filesystem\FileAttributes;
@@ -99,7 +99,7 @@ class AwsS3V3Adapter implements FilesystemAdapter, PublicUrlGenerator, ChecksumP
     private MimeTypeDetector $mimeTypeDetector;
 
     public function __construct(
-        private S3ClientInterface $client,
+        private S3Client $client,
         private string $bucket,
         string $prefix = '',
         ?VisibilityConverter $visibility = null,

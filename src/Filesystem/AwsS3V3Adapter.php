@@ -2,7 +2,7 @@
 
 namespace LaraGram\Filesystem;
 
-use Aws\S3\S3Client;
+use LaraGram\Filesystem\Aws\S3\S3Client;
 use LaraGram\Contracts\Filesystem\FilesystemOperator;
 use LaraGram\Contracts\Filesystem\FilesystemAdapter as FilesystemAdapterContract;
 use LaraGram\Support\Traits\Conditionable;
@@ -14,7 +14,7 @@ class AwsS3V3Adapter extends FilesystemAdapter
     /**
      * The AWS S3 client.
      *
-     * @var \Aws\S3\S3Client
+     * @var \LaraGram\Filesystem\Aws\S3\S3Client
      */
     protected $client;
 
@@ -24,7 +24,7 @@ class AwsS3V3Adapter extends FilesystemAdapter
      * @param  \LaraGram\Contracts\Filesystem\FilesystemOperator  $driver
      * @param  \LaraGram\Contracts\Filesystem\FilesystemAdapter  $adapter
      * @param  array  $config
-     * @param  \Aws\S3\S3Client  $client
+     * @param  \LaraGram\Filesystem\Aws\S3\S3Client  $client
      */
     public function __construct(FilesystemOperator $driver, FilesystemAdapterContract $adapter, array $config, S3Client $client)
     {
@@ -133,7 +133,7 @@ class AwsS3V3Adapter extends FilesystemAdapter
     /**
      * Get the underlying S3 client.
      *
-     * @return \Aws\S3\S3Client
+     * @return \LaraGram\Filesystem\Aws\S3\S3Client
      */
     public function getClient()
     {
