@@ -102,6 +102,7 @@
     "suggest": {
         "ext-apcu": "Required to use the APC cache driver.",
         "ext-fileinfo": "Required to use the Filesystem class.",
+        "ext-exif": "Required to orient JPEG images using their EXIF data with the GD image driver.",
         "ext-gd": "Required to use the GD image driver.",
         "ext-imagick": "Required to use the Imagick image driver.",
         "ext-memcached": "Required to use the memcache cache driver.",
@@ -110,8 +111,7 @@
         "ext-posix": "Required to use all features of the queue worker.",
         "ext-redis": "Required to use the Redis cache and queue drivers (^4.0|^5.0|^6.0).",
         "ext-gmp": "*",
-        "ext-bcmath": "*",
-        "intervention/image": "Required to use the image processing features (^4.0)."
+        "ext-bcmath": "*"
     },
     "config": {
         "sort-packages": true

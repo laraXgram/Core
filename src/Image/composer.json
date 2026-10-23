@@ -24,8 +24,10 @@
         "laraxgram/support": "^4.0"
     },
     "suggest": {
+        "ext-exif": "Required to orient JPEG images using their EXIF data with the GD driver.",
         "ext-fileinfo": "Required to use the Image class.",
-        "intervention/image": "Required to use the GD and Imagick image drivers (^4.0)."
+        "ext-gd": "Required to use the GD image driver.",
+        "ext-imagick": "Required to use the Imagick image driver."
     },
     "minimum-stability": "dev",
     "autoload": {
