@@ -1,0 +1,46 @@
+{
+    "name": "laraxgram/cache",
+    "description": "The LaraGram Cache package.",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "laraXgram",
+            "email": "laraxgram@gmail.com"
+        }
+    ],
+    "homepage": "https://laraxgram.github.io",
+    "support": {
+        "issues": "https://github.com/laraxgram/core/issues",
+        "source": "https://github.com/laraxgram/core"
+    },
+    "require": {
+        "php": "^8.3",
+        "laraxgram/collections": "^4.0",
+        "laraxgram/contracts": "^4.0",
+        "laraxgram/macroable": "^4.0",
+        "laraxgram/support": "^4.0"
+    },
+    "suggest": {
+        "ext-apcu": "Required to use the APC cache driver.",
+        "ext-filter": "Required to use the DynamoDb cache driver.",
+        "ext-memcached": "Required to use the memcache cache driver.",
+        "laraxgram/console": "Required to use the cache commands (^4.0).",
+        "laraxgram/database": "Required to use the database cache driver (^4.0).",
+        "laraxgram/filesystem": "Required to use the file cache driver (^4.0).",
+        "laraxgram/redis": "Required to use the redis cache driver (^4.0)."
+    },
+    "minimum-stability": "dev",
+    "autoload": {
+        "psr-4": {
+            "LaraGram\\Cache\\": ""
+        }
+    },
+    "config": {
+        "sort-packages": true
+    },
+    "extra": {
+        "branch-alias": {
+            "dev-master": "4.x-dev"
+        }
+    }
+}

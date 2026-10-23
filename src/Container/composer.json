@@ -1,0 +1,43 @@
+{
+    "name": "laraxgram/container",
+    "description": "The LaraGram Container package.",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "laraXgram",
+            "email": "laraxgram@gmail.com"
+        }
+    ],
+    "homepage": "https://laraxgram.github.io",
+    "support": {
+        "issues": "https://github.com/laraxgram/core/issues",
+        "source": "https://github.com/laraxgram/core"
+    },
+    "require": {
+        "php": "^8.3",
+        "laraxgram/contracts": "^4.0",
+        "laraxgram/reflection": "^4.0"
+    },
+    "suggest": {
+        "laraxgram/auth": "Required to use the Auth attribute (^4.0).",
+        "laraxgram/cache": "Required to use the Cache attribute (^4.0).",
+        "laraxgram/config": "Required to use the Config attribute (^4.0).",
+        "laraxgram/database": "Required to use the DB attribute (^4.0).",
+        "laraxgram/filesystem": "Required to use the Storage attribute (^4.0).",
+        "laraxgram/log": "Required to use the Log or Context attributes (^4.0)."
+    },
+    "minimum-stability": "dev",
+    "autoload": {
+        "psr-4": {
+            "LaraGram\\Container\\": ""
+        }
+    },
+    "config": {
+        "sort-packages": true
+    },
+    "extra": {
+        "branch-alias": {
+            "dev-master": "4.x-dev"
+        }
+    }
+}

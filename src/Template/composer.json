@@ -1,0 +1,42 @@
+{
+    "name": "laraxgram/template",
+    "description": "The LaraGram Template package.",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "laraXgram",
+            "email": "laraxgram@gmail.com"
+        }
+    ],
+    "homepage": "https://laraxgram.github.io",
+    "support": {
+        "issues": "https://github.com/laraxgram/core/issues",
+        "source": "https://github.com/laraxgram/core"
+    },
+    "require": {
+        "php": "^8.3",
+        "ext-tokenizer": "*",
+        "laraxgram/collections": "^4.0",
+        "laraxgram/conditionable": "^4.0",
+        "laraxgram/container": "^4.0",
+        "laraxgram/contracts": "^4.0",
+        "laraxgram/filesystem": "^4.0",
+        "laraxgram/macroable": "^4.0",
+        "laraxgram/reflection": "^4.0",
+        "laraxgram/support": "^4.0"
+    },
+    "minimum-stability": "dev",
+    "autoload": {
+        "psr-4": {
+            "LaraGram\\Template\\": ""
+        }
+    },
+    "config": {
+        "sort-packages": true
+    },
+    "extra": {
+        "branch-alias": {
+            "dev-master": "4.x-dev"
+        }
+    }
+}

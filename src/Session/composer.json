@@ -1,0 +1,44 @@
+{
+    "name": "laraxgram/session",
+    "description": "The LaraGram Session package.",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "laraXgram",
+            "email": "laraxgram@gmail.com"
+        }
+    ],
+    "homepage": "https://laraxgram.github.io",
+    "support": {
+        "issues": "https://github.com/laraxgram/core/issues",
+        "source": "https://github.com/laraxgram/core"
+    },
+    "require": {
+        "php": "^8.3",
+        "ext-ctype": "*",
+        "ext-session": "*",
+        "laraxgram/collections": "^4.0",
+        "laraxgram/contracts": "^4.0",
+        "laraxgram/filesystem": "^4.0",
+        "laraxgram/http": "^4.0",
+        "laraxgram/support": "^4.0"
+    },
+    "suggest": {
+        "laraxgram/console": "Required to use the session:table command (^4.0).",
+        "laraxgram/database": "Required to use the database session driver (^4.0)."
+    },
+    "minimum-stability": "dev",
+    "autoload": {
+        "psr-4": {
+            "LaraGram\\Session\\": ""
+        }
+    },
+    "config": {
+        "sort-packages": true
+    },
+    "extra": {
+        "branch-alias": {
+            "dev-master": "4.x-dev"
+        }
+    }
+}

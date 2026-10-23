@@ -1,0 +1,50 @@
+{
+    "name": "laraxgram/listening",
+    "description": "The LaraGram Listening package.",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "laraXgram",
+            "email": "laraxgram@gmail.com"
+        }
+    ],
+    "homepage": "https://laraxgram.github.io",
+    "support": {
+        "issues": "https://github.com/laraxgram/core/issues",
+        "source": "https://github.com/laraxgram/core"
+    },
+    "require": {
+        "php": "^8.3",
+        "laraxgram/collections": "^4.0",
+        "laraxgram/conditionable": "^4.0",
+        "laraxgram/container": "^4.0",
+        "laraxgram/contracts": "^4.0",
+        "laraxgram/macroable": "^4.0",
+        "laraxgram/pipeline": "^4.0",
+        "laraxgram/reflection": "^4.0",
+        "laraxgram/request": "^4.0",
+        "laraxgram/support": "^4.0"
+    },
+    "suggest": {
+        "laraxgram/cache": "Required to use the throttle middleware and redirects (^4.0).",
+        "laraxgram/console": "Required to use the make commands (^4.0).",
+        "laraxgram/database": "Required to use implicit model binding (^4.0).",
+        "laraxgram/redis": "Required to use the Redis throttle middleware (^4.0).",
+        "laraxgram/routing": "Required to use the make commands (^4.0).",
+        "laraxgram/template": "Required to use template responses (^4.0)."
+    },
+    "minimum-stability": "dev",
+    "autoload": {
+        "psr-4": {
+            "LaraGram\\Listening\\": ""
+        }
+    },
+    "config": {
+        "sort-packages": true
+    },
+    "extra": {
+        "branch-alias": {
+            "dev-master": "4.x-dev"
+        }
+    }
+}

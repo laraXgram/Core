@@ -1,0 +1,49 @@
+{
+    "name": "laraxgram/request",
+    "description": "The LaraGram Request package.",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "laraXgram",
+            "email": "laraxgram@gmail.com"
+        }
+    ],
+    "homepage": "https://laraxgram.github.io",
+    "support": {
+        "issues": "https://github.com/laraxgram/core/issues",
+        "source": "https://github.com/laraxgram/core"
+    },
+    "require": {
+        "php": "^8.3",
+        "ext-filter": "*",
+        "laraxgram/collections": "^4.0",
+        "laraxgram/conditionable": "^4.0",
+        "laraxgram/contracts": "^4.0",
+        "laraxgram/laraquest": "^2",
+        "laraxgram/listening": "^4.0",
+        "laraxgram/macroable": "^4.0",
+        "laraxgram/support": "^4.0"
+    },
+    "suggest": {
+        "laraxgram/cache": "Required to use redirect responses (^4.0).",
+        "laraxgram/filesystem": "Required to guess the extensions of uploaded media files (^4.0).",
+        "laraxgram/image": "Required to use the image methods of media files (^4.0)."
+    },
+    "minimum-stability": "dev",
+    "autoload": {
+        "psr-4": {
+            "LaraGram\\Request\\": ""
+        },
+        "files": [
+            "helpers.php"
+        ]
+    },
+    "config": {
+        "sort-packages": true
+    },
+    "extra": {
+        "branch-alias": {
+            "dev-master": "4.x-dev"
+        }
+    }
+}

@@ -1,0 +1,40 @@
+{
+    "name": "laraxgram/conversation",
+    "description": "The LaraGram Conversation package.",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "laraXgram",
+            "email": "laraxgram@gmail.com"
+        }
+    ],
+    "homepage": "https://laraxgram.github.io",
+    "support": {
+        "issues": "https://github.com/laraxgram/core/issues",
+        "source": "https://github.com/laraxgram/core"
+    },
+    "require": {
+        "php": "^8.3",
+        "laraxgram/cache": "^4.0",
+        "laraxgram/contracts": "^4.0",
+        "laraxgram/keyboard": "^4.0",
+        "laraxgram/request": "^4.0",
+        "laraxgram/support": "^4.0",
+        "laraxgram/template": "^4.0",
+        "laraxgram/validation": "^4.0"
+    },
+    "minimum-stability": "dev",
+    "autoload": {
+        "psr-4": {
+            "LaraGram\\Conversation\\": ""
+        }
+    },
+    "config": {
+        "sort-packages": true
+    },
+    "extra": {
+        "branch-alias": {
+            "dev-master": "4.x-dev"
+        }
+    }
+}

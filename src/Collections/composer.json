@@ -1,0 +1,44 @@
+{
+    "name": "laraxgram/collections",
+    "description": "The LaraGram Collections package.",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "laraXgram",
+            "email": "laraxgram@gmail.com"
+        }
+    ],
+    "homepage": "https://laraxgram.github.io",
+    "support": {
+        "issues": "https://github.com/laraxgram/core/issues",
+        "source": "https://github.com/laraxgram/core"
+    },
+    "require": {
+        "php": "^8.3",
+        "laraxgram/conditionable": "^4.0",
+        "laraxgram/contracts": "^4.0",
+        "laraxgram/macroable": "^4.0"
+    },
+    "suggest": {
+        "laraxgram/http": "Required to convert collections to API resources and to use the dump method (^4.0)."
+    },
+    "minimum-stability": "dev",
+    "autoload": {
+        "psr-4": {
+            "LaraGram\\Support\\": ""
+        },
+        "files": [
+            "polyfills.php",
+            "functions.php",
+            "helpers.php"
+        ]
+    },
+    "config": {
+        "sort-packages": true
+    },
+    "extra": {
+        "branch-alias": {
+            "dev-master": "4.x-dev"
+        }
+    }
+}

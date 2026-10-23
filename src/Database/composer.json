@@ -1,0 +1,50 @@
+{
+    "name": "laraxgram/database",
+    "description": "The LaraGram Database package.",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "laraXgram",
+            "email": "laraxgram@gmail.com"
+        }
+    ],
+    "homepage": "https://laraxgram.github.io",
+    "support": {
+        "issues": "https://github.com/laraxgram/core/issues",
+        "source": "https://github.com/laraxgram/core"
+    },
+    "require": {
+        "php": "^8.3",
+        "ext-pdo": "*",
+        "laraxgram/collections": "^4.0",
+        "laraxgram/conditionable": "^4.0",
+        "laraxgram/container": "^4.0",
+        "laraxgram/contracts": "^4.0",
+        "laraxgram/macroable": "^4.0",
+        "laraxgram/support": "^4.0"
+    },
+    "suggest": {
+        "ext-filter": "Required to use the Postgres database driver.",
+        "fakerphp/faker": "Required to use the eloquent factory builder (^1.24).",
+        "laraxgram/broadcasting": "Required to broadcast model events (^4.0).",
+        "laraxgram/console": "Required to use the database commands (^4.0).",
+        "laraxgram/events": "Required to use the observers with Eloquent (^4.0).",
+        "laraxgram/filesystem": "Required to use the migrations (^4.0).",
+        "laraxgram/http": "Required to convert Eloquent models to API resources (^4.0).",
+        "laraxgram/pagination": "Required to paginate the result set (^4.0)."
+    },
+    "minimum-stability": "dev",
+    "autoload": {
+        "psr-4": {
+            "LaraGram\\Database\\": ""
+        }
+    },
+    "config": {
+        "sort-packages": true
+    },
+    "extra": {
+        "branch-alias": {
+            "dev-master": "4.x-dev"
+        }
+    }
+}

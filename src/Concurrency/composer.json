@@ -1,0 +1,40 @@
+{
+    "name": "laraxgram/concurrency",
+    "description": "The LaraGram Concurrency package.",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "laraXgram",
+            "email": "laraxgram@gmail.com"
+        }
+    ],
+    "homepage": "https://laraxgram.github.io",
+    "support": {
+        "issues": "https://github.com/laraxgram/core/issues",
+        "source": "https://github.com/laraxgram/core"
+    },
+    "require": {
+        "php": "^8.3",
+        "laraxgram/console": "^4.0",
+        "laraxgram/contracts": "^4.0",
+        "laraxgram/process": "^4.0",
+        "laraxgram/support": "^4.0"
+    },
+    "suggest": {
+        "spatie/fork": "Required to use the 'fork' concurrency driver (^1.2)."
+    },
+    "minimum-stability": "dev",
+    "autoload": {
+        "psr-4": {
+            "LaraGram\\Concurrency\\": ""
+        }
+    },
+    "config": {
+        "sort-packages": true
+    },
+    "extra": {
+        "branch-alias": {
+            "dev-master": "4.x-dev"
+        }
+    }
+}

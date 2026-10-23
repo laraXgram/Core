@@ -1,0 +1,53 @@
+{
+    "name": "laraxgram/queue",
+    "description": "The LaraGram Queue package.",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "laraXgram",
+            "email": "laraxgram@gmail.com"
+        }
+    ],
+    "homepage": "https://laraxgram.github.io",
+    "support": {
+        "issues": "https://github.com/laraxgram/core/issues",
+        "source": "https://github.com/laraxgram/core"
+    },
+    "require": {
+        "php": "^8.3",
+        "laraxgram/bus": "^4.0",
+        "laraxgram/collections": "^4.0",
+        "laraxgram/console": "^4.0",
+        "laraxgram/container": "^4.0",
+        "laraxgram/contracts": "^4.0",
+        "laraxgram/database": "^4.0",
+        "laraxgram/filesystem": "^4.0",
+        "laraxgram/pipeline": "^4.0",
+        "laraxgram/reflection": "^4.0",
+        "laraxgram/support": "^4.0"
+    },
+    "suggest": {
+        "ext-filter": "Required to use the SQS queue worker.",
+        "ext-mbstring": "Required to use the database failed job providers.",
+        "ext-pcntl": "Required to use all features of the queue worker.",
+        "ext-pdo": "Required to use the database queue worker.",
+        "ext-posix": "Required to use all features of the queue worker.",
+        "laraxgram/cache": "Required to use the rate limiting job middleware (^4.0).",
+        "laraxgram/redis": "Required to use the Redis queue driver (^4.0).",
+        "pda/pheanstalk": "Required to use the Beanstalk queue driver (^7.0 || ^8.0)."
+    },
+    "minimum-stability": "dev",
+    "autoload": {
+        "psr-4": {
+            "LaraGram\\Queue\\": ""
+        }
+    },
+    "config": {
+        "sort-packages": true
+    },
+    "extra": {
+        "branch-alias": {
+            "dev-master": "4.x-dev"
+        }
+    }
+}

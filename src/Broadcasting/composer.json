@@ -1,0 +1,49 @@
+{
+    "name": "laraxgram/broadcasting",
+    "description": "The LaraGram Broadcasting package.",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "laraXgram",
+            "email": "laraxgram@gmail.com"
+        }
+    ],
+    "homepage": "https://laraxgram.github.io",
+    "support": {
+        "issues": "https://github.com/laraxgram/core/issues",
+        "source": "https://github.com/laraxgram/core"
+    },
+    "require": {
+        "php": "^8.3",
+        "laraxgram/bus": "^4.0",
+        "laraxgram/collections": "^4.0",
+        "laraxgram/container": "^4.0",
+        "laraxgram/contracts": "^4.0",
+        "laraxgram/log": "^4.0",
+        "laraxgram/queue": "^4.0",
+        "laraxgram/reflection": "^4.0",
+        "laraxgram/request": "^4.0",
+        "laraxgram/support": "^4.0",
+        "laraxgram/template": "^4.0"
+    },
+    "suggest": {
+        "laraxgram/console": "Required to use the broadcasting commands (^4.0).",
+        "laraxgram/database": "Required to use the database broadcast audience store (^4.0).",
+        "laraxgram/redis": "Required to use the Redis broadcaster and audience store (^4.0).",
+        "laraxgram/routing": "Required to use the broadcast authorization controller (^4.0)."
+    },
+    "minimum-stability": "dev",
+    "autoload": {
+        "psr-4": {
+            "LaraGram\\Broadcasting\\": ""
+        }
+    },
+    "config": {
+        "sort-packages": true
+    },
+    "extra": {
+        "branch-alias": {
+            "dev-master": "4.x-dev"
+        }
+    }
+}

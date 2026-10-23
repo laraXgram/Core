@@ -1,0 +1,48 @@
+{
+    "name": "laraxgram/auth",
+    "description": "The LaraGram Auth package.",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "laraXgram",
+            "email": "laraxgram@gmail.com"
+        }
+    ],
+    "homepage": "https://laraxgram.github.io",
+    "support": {
+        "issues": "https://github.com/laraxgram/core/issues",
+        "source": "https://github.com/laraxgram/core"
+    },
+    "require": {
+        "php": "^8.3",
+        "ext-hash": "*",
+        "laraxgram/collections": "^4.0",
+        "laraxgram/contracts": "^4.0",
+        "laraxgram/http": "^4.0",
+        "laraxgram/macroable": "^4.0",
+        "laraxgram/queue": "^4.0",
+        "laraxgram/request": "^4.0",
+        "laraxgram/support": "^4.0"
+    },
+    "suggest": {
+        "laraxgram/cache": "Required to use the cache password reset token repository (^4.0).",
+        "laraxgram/console": "Required to use the auth:clear-resets command (^4.0).",
+        "laraxgram/database": "Required to use the database and Eloquent user providers (^4.0).",
+        "laraxgram/listening": "Required to use the authorization listen middleware (^4.0).",
+        "laraxgram/session": "Required to use the session based guard (^4.0)."
+    },
+    "minimum-stability": "dev",
+    "autoload": {
+        "psr-4": {
+            "LaraGram\\Auth\\": ""
+        }
+    },
+    "config": {
+        "sort-packages": true
+    },
+    "extra": {
+        "branch-alias": {
+            "dev-master": "4.x-dev"
+        }
+    }
+}

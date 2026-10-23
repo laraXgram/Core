@@ -1,0 +1,51 @@
+{
+    "name": "laraxgram/console",
+    "description": "The LaraGram Console package.",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "laraXgram",
+            "email": "laraxgram@gmail.com"
+        }
+    ],
+    "homepage": "https://laraxgram.github.io",
+    "support": {
+        "issues": "https://github.com/laraxgram/core/issues",
+        "source": "https://github.com/laraxgram/core"
+    },
+    "require": {
+        "php": "^8.3",
+        "ext-mbstring": "*",
+        "laraxgram/collections": "^4.0",
+        "laraxgram/contracts": "^4.0",
+        "laraxgram/macroable": "^4.0",
+        "laraxgram/reflection": "^4.0",
+        "laraxgram/support": "^4.0"
+    },
+    "suggest": {
+        "ext-pcntl": "Required to use signal trapping.",
+        "laraxgram/bus": "Required to use the scheduled job dispatcher (^4.0).",
+        "laraxgram/container": "Required to use the scheduler (^4.0).",
+        "laraxgram/filesystem": "Required to use the generator command (^4.0).",
+        "laraxgram/http": "Required to use the HTTP pings of scheduled tasks (^4.0).",
+        "laraxgram/queue": "Required to use closures for scheduled jobs (^4.0)."
+    },
+    "minimum-stability": "dev",
+    "autoload": {
+        "psr-4": {
+            "LaraGram\\Console\\": ""
+        },
+        "files": [
+            "Prompts/helpers.php",
+            "Prompts/Convertor/Functions.php"
+        ]
+    },
+    "config": {
+        "sort-packages": true
+    },
+    "extra": {
+        "branch-alias": {
+            "dev-master": "4.x-dev"
+        }
+    }
+}

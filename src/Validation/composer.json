@@ -1,0 +1,46 @@
+{
+    "name": "laraxgram/validation",
+    "description": "The LaraGram Validation package.",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "laraXgram",
+            "email": "laraxgram@gmail.com"
+        }
+    ],
+    "homepage": "https://laraxgram.github.io",
+    "support": {
+        "issues": "https://github.com/laraxgram/core/issues",
+        "source": "https://github.com/laraxgram/core"
+    },
+    "require": {
+        "php": "^8.3",
+        "ext-filter": "*",
+        "ext-mbstring": "*",
+        "laraxgram/collections": "^4.0",
+        "laraxgram/conditionable": "^4.0",
+        "laraxgram/container": "^4.0",
+        "laraxgram/contracts": "^4.0",
+        "laraxgram/http": "^4.0",
+        "laraxgram/macroable": "^4.0",
+        "laraxgram/support": "^4.0",
+        "laraxgram/translation": "^4.0"
+    },
+    "suggest": {
+        "laraxgram/database": "Required to use the database presence verifier (^4.0)."
+    },
+    "minimum-stability": "dev",
+    "autoload": {
+        "psr-4": {
+            "LaraGram\\Validation\\": ""
+        }
+    },
+    "config": {
+        "sort-packages": true
+    },
+    "extra": {
+        "branch-alias": {
+            "dev-master": "4.x-dev"
+        }
+    }
+}
