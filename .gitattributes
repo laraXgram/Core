@@ -8,6 +8,7 @@
 *.neon.dist linguist-language=neon
 
 /.github export-ignore
+/bin export-ignore
 .editorconfig export-ignore
 .gitattributes export-ignore
 .gitignore export-ignore
