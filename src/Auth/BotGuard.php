@@ -40,7 +40,7 @@ class BotGuard implements Guard
 
         $telegramUser = user();
 
-        if (! is_null($telegramUser) && isset($telegramUser->id)) {
+        if (isset($telegramUser->id)) {
             $this->user = $this->provider->retrieveByUserId($telegramUser->id);
         }
 

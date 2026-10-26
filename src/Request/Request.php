@@ -9,6 +9,7 @@ use LaraGram\Laraquest\Updates as UpdatesTrait;
 use LaraGram\Laraquest\Exceptions\TelegramApiException;
 use LaraGram\Laraquest\Methode as MethodeTrait;
 use LaraGram\Laraquest\Response as LaraquestResponse;
+use LaraGram\Laraquest\Updates\Update;
 use LaraGram\Listening\Contracts\ProvidesListenContext;
 use LaraGram\Listening\Type;
 use LaraGram\Request\Files\FileBag;
@@ -113,6 +114,13 @@ class Request implements ProvidesListenContext
      * @var FileBag|null
      */
     private ?FileBag $fileBag = null;
+
+    /**
+     * The update as typed objects, built on first access.
+     *
+     * @var \LaraGram\Laraquest\Updates\Update|null
+     */
+    private ?Update $typedUpdate = null;
 
     public function __construct(array $request = [], array $server = [])
     {
@@ -418,6 +426,8 @@ class Request implements ProvidesListenContext
     {
         $this->getInputSource()->add($input);
 
+        $this->typedUpdate = null;
+
         return $this;
     }
 
@@ -444,6 +454,8 @@ class Request implements ProvidesListenContext
     public function replace(array $input)
     {
         $this->getInputSource()->replace($input);
+
+        $this->typedUpdate = null;
 
         return $this;
     }
@@ -1250,17 +1262,32 @@ class Request implements ProvidesListenContext
      */
     public function __isset($key): bool
     {
-        return !is_null($this->__get($key));
+        return isset($this->typedUpdate()->{$key});
     }
 
     /**
-     * Get an input element from the request.
+     * Get a field of the update.
+     *
+     * Object fields are typed (`$request->message->chat` is a Chat), and a
+     * field the update does not carry is an empty object of its type, so
+     * helpers such as `->isEmpty()` and `->has()` work on any update. Test for
+     * a field with isset(), filled() or `??`, not with `=== null`.
      *
      * @param string $name
      * @return mixed
      */
     public function __get($name)
     {
-        return $this?->update()?->get($name);
+        return $this->typedUpdate()->{$name};
+    }
+
+    /**
+     * Get the update as typed objects.
+     *
+     * @return \LaraGram\Laraquest\Updates\Update
+     */
+    protected function typedUpdate(): Update
+    {
+        return $this->typedUpdate ??= Update::make((array) ($this->getInputSource()?->all() ?? []));
     }
 }

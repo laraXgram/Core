@@ -231,7 +231,7 @@ class ConversationManager
     public function handle(Request $request): bool
     {
         // Updates without a user (e.g. polls) can't own conversation state.
-        if (user() === null) {
+        if (blank(user())) {
             return false;
         }
 
@@ -503,7 +503,7 @@ class ConversationManager
      */
     public function prefersConversation(Request $request): bool
     {
-        if (user() === null) {
+        if (blank(user())) {
             return false;
         }
 
@@ -554,7 +554,7 @@ class ConversationManager
      */
     public function interruptIfActive(Request $request): void
     {
-        if (user() === null || ! $this->active()) {
+        if (blank(user()) || ! $this->active()) {
             return;
         }
 
@@ -1439,7 +1439,7 @@ class ConversationManager
     {
         $callback = callback_query();
 
-        if ($callback === null || ! isset($callback->id)) {
+        if (blank($callback) || ! isset($callback->id)) {
             return;
         }
 

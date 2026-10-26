@@ -64,13 +64,13 @@ class TypeMatcher
             return [true, $text, 'text'];
         }
 
-        if (($callback = callback_query()) !== null) {
+        if (filled($callback = callback_query())) {
             return [true, $callback->data ?? null, 'callback'];
         }
 
         $message = message();
 
-        return [$message !== null, $message, 'message'];
+        return [filled($message), $message, 'message'];
     }
 
     /**
@@ -94,7 +94,7 @@ class TypeMatcher
     {
         $callback = callback_query();
 
-        return [$callback !== null, $callback->data ?? null, 'callback'];
+        return [filled($callback), $callback->data ?? null, 'callback'];
     }
 
     /**
@@ -107,7 +107,7 @@ class TypeMatcher
     {
         $message = message();
 
-        if ($message === null || ! isset($message->{$field}) || $message->{$field} === null) {
+        if (blank($message) || ! isset($message->{$field})) {
             return [false, null, $field];
         }
 

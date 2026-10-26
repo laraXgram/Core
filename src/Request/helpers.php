@@ -1,5 +1,8 @@
 <?php
 
+use LaraGram\Laraquest\Updates\Chat;
+use LaraGram\Laraquest\Updates\Message;
+use LaraGram\Laraquest\Updates\User;
 use LaraGram\Request\Request;
 
 if (!function_exists('bot_connection')) {
@@ -29,25 +32,25 @@ if (!function_exists('chat')) {
          */
         $request = app('request');
         return match (true) {
-            $request->message != null => $request->message->chat ?? null,
-            $request->edited_message != null => $request->edited_message->chat ?? null,
-            $request->channel_post != null => $request->channel_post->chat ?? null,
-            $request->edited_channel_post != null => $request->edited_channel_post->chat ?? null,
-            $request->business_message != null => $request->business_message->chat ?? null,
-            $request->edited_business_message != null => $request->edited_business_message->chat ?? null,
-            $request->guest_message != null => $request->guest_message->chat ?? null,
-            $request->deleted_business_messages != null => $request->deleted_business_messages->chat ?? null,
-            $request->callback_query != null => $request->callback_query->message->chat ?? null,
-            $request->message_reaction != null => $request->message_reaction->chat ?? null,
-            $request->message_reaction_count != null => $request->message_reaction_count->chat ?? null,
-            $request->my_chat_member != null => $request->my_chat_member->chat ?? null,
-            $request->chat_member != null => $request->chat_member->chat ?? null,
-            $request->chat_join_request != null => $request->chat_join_request->chat ?? null,
-            $request->chat_boost != null => $request->chat_boost->chat ?? null,
-            $request->removed_chat_boost != null => $request->removed_chat_boost->chat ?? null,
-            $request->poll_answer != null => $request->poll_answer->voter_chat ?? null,
-            $request->stopped_message_generation != null => $request->stopped_message_generation->chat ?? null,
-            default => null
+            isset($request->message) => $request->message->chat,
+            isset($request->edited_message) => $request->edited_message->chat,
+            isset($request->channel_post) => $request->channel_post->chat,
+            isset($request->edited_channel_post) => $request->edited_channel_post->chat,
+            isset($request->business_message) => $request->business_message->chat,
+            isset($request->edited_business_message) => $request->edited_business_message->chat,
+            isset($request->guest_message) => $request->guest_message->chat,
+            isset($request->deleted_business_messages) => $request->deleted_business_messages->chat,
+            isset($request->callback_query) => $request->callback_query->message->chat,
+            isset($request->message_reaction) => $request->message_reaction->chat,
+            isset($request->message_reaction_count) => $request->message_reaction_count->chat,
+            isset($request->my_chat_member) => $request->my_chat_member->chat,
+            isset($request->chat_member) => $request->chat_member->chat,
+            isset($request->chat_join_request) => $request->chat_join_request->chat,
+            isset($request->chat_boost) => $request->chat_boost->chat,
+            isset($request->removed_chat_boost) => $request->removed_chat_boost->chat,
+            isset($request->poll_answer) => $request->poll_answer->voter_chat,
+            isset($request->stopped_message_generation) => $request->stopped_message_generation->chat,
+            default => Chat::missing()
         };
     }
 }
@@ -65,30 +68,30 @@ if (!function_exists('user')) {
          */
         $request = app('request');
         return match (true) {
-            $request->message != null => $request->message->from ?? null,
-            $request->edited_message != null => $request->edited_message->from ?? null,
-            $request->channel_post != null => $request->channel_post->from ?? null,
-            $request->edited_channel_post != null => $request->edited_channel_post->from ?? null,
-            $request->business_connection != null => $request->business_connection->user ?? null,
-            $request->business_message != null => $request->business_message->from ?? null,
-            $request->edited_business_message != null => $request->edited_business_message->from ?? null,
-            $request->guest_message != null => $request->guest_message->from ?? null,
-            $request->message_reaction != null => $request->message_reaction->user ?? null,
-            $request->inline_query != null => $request->inline_query->from ?? null,
-            $request->chosen_inline_result != null => $request->chosen_inline_result->from ?? null,
-            $request->callback_query != null => $request->callback_query->from ?? null,
-            $request->shipping_query != null => $request->shipping_query->from ?? null,
-            $request->pre_checkout_query != null => $request->pre_checkout_query->from ?? null,
-            $request->purchased_paid_media != null => $request->purchased_paid_media->from ?? null,
-            $request->poll_answer != null => $request->poll_answer->user ?? null,
-            $request->my_chat_member != null => $request->my_chat_member->from ?? null,
-            $request->chat_member != null => $request->chat_member->from ?? null,
-            $request->chat_join_request != null => $request->chat_join_request->from ?? null,
-            $request->chat_boost != null => $request->chat_boost->boost->source->user ?? null,
-            $request->removed_chat_boost != null => $request->removed_chat_boost->source->user ?? null,
-            $request->subscription != null => $request->subscription->user ?? null,
-            $request->managed_bot != null => $request->managed_bot->user ?? null,
-            default => null
+            isset($request->message) => $request->message->from,
+            isset($request->edited_message) => $request->edited_message->from,
+            isset($request->channel_post) => $request->channel_post->from,
+            isset($request->edited_channel_post) => $request->edited_channel_post->from,
+            isset($request->business_connection) => $request->business_connection->user,
+            isset($request->business_message) => $request->business_message->from,
+            isset($request->edited_business_message) => $request->edited_business_message->from,
+            isset($request->guest_message) => $request->guest_message->from,
+            isset($request->message_reaction) => $request->message_reaction->user,
+            isset($request->inline_query) => $request->inline_query->from,
+            isset($request->chosen_inline_result) => $request->chosen_inline_result->from,
+            isset($request->callback_query) => $request->callback_query->from,
+            isset($request->shipping_query) => $request->shipping_query->from,
+            isset($request->pre_checkout_query) => $request->pre_checkout_query->from,
+            isset($request->purchased_paid_media) => $request->purchased_paid_media->from,
+            isset($request->poll_answer) => $request->poll_answer->user,
+            isset($request->my_chat_member) => $request->my_chat_member->from,
+            isset($request->chat_member) => $request->chat_member->from,
+            isset($request->chat_join_request) => $request->chat_join_request->from,
+            isset($request->chat_boost) => $request->chat_boost->boost->source->user,
+            isset($request->removed_chat_boost) => $request->removed_chat_boost->source->user,
+            isset($request->subscription) => $request->subscription->user,
+            isset($request->managed_bot) => $request->managed_bot->user,
+            default => User::missing()
         };
     }
 }
@@ -104,20 +107,20 @@ if (!function_exists('sender')) {
          */
         $request = app('request');
         $message = match (true) {
-            $request->message != null => $request->message,
-            $request->edited_message != null => $request->edited_message,
-            $request->channel_post != null => $request->channel_post,
-            $request->edited_channel_post != null => $request->edited_channel_post,
-            $request->business_message != null => $request->business_message,
-            $request->edited_business_message != null => $request->edited_business_message,
-            $request->guest_message != null => $request->guest_message,
+            isset($request->message) => $request->message,
+            isset($request->edited_message) => $request->edited_message,
+            isset($request->channel_post) => $request->channel_post,
+            isset($request->edited_channel_post) => $request->edited_channel_post,
+            isset($request->business_message) => $request->business_message,
+            isset($request->edited_business_message) => $request->edited_business_message,
+            isset($request->guest_message) => $request->guest_message,
             default => null
         };
 
         return match (true) {
-            $message !== null => $message->sender_chat ?? $message->from ?? null,
-            $request->message_reaction != null => $request->message_reaction->user ?? $request->message_reaction->actor_chat ?? null,
-            $request->poll_answer != null => $request->poll_answer->user ?? $request->poll_answer->voter_chat ?? null,
+            $message !== null => isset($message->sender_chat) ? $message->sender_chat : $message->from,
+            isset($request->message_reaction) => isset($request->message_reaction->user) ? $request->message_reaction->user : $request->message_reaction->actor_chat,
+            isset($request->poll_answer) => isset($request->poll_answer->user) ? $request->poll_answer->user : $request->poll_answer->voter_chat,
             default => user()
         };
     }
@@ -136,13 +139,13 @@ if (!function_exists('text')) {
          */
         $request = app('request');
         $message = match (true) {
-            $request->message != null => $request->message,
-            $request->edited_message != null => $request->edited_message,
-            $request->channel_post != null => $request->channel_post,
-            $request->edited_channel_post != null => $request->edited_channel_post,
-            $request->business_message != null => $request->business_message,
-            $request->edited_business_message != null => $request->edited_business_message,
-            $request->guest_message != null => $request->guest_message,
+            isset($request->message) => $request->message,
+            isset($request->edited_message) => $request->edited_message,
+            isset($request->channel_post) => $request->channel_post,
+            isset($request->edited_channel_post) => $request->edited_channel_post,
+            isset($request->business_message) => $request->business_message,
+            isset($request->edited_business_message) => $request->edited_business_message,
+            isset($request->guest_message) => $request->guest_message,
             default => null
         };
 
@@ -177,15 +180,15 @@ if (!function_exists('message')) {
          */
         $request = app('request');
         return match (true) {
-            $request->message != null => $request->message,
-            $request->edited_message != null => $request->edited_message,
-            $request->channel_post != null => $request->channel_post,
-            $request->edited_channel_post != null => $request->edited_channel_post,
-            $request->business_message != null => $request->business_message,
-            $request->edited_business_message != null => $request->edited_business_message,
-            $request->guest_message != null => $request->guest_message,
-            $request->callback_query != null => $request->callback_query->message ?? null,
-            default => null
+            isset($request->message) => $request->message,
+            isset($request->edited_message) => $request->edited_message,
+            isset($request->channel_post) => $request->channel_post,
+            isset($request->edited_channel_post) => $request->edited_channel_post,
+            isset($request->business_message) => $request->business_message,
+            isset($request->edited_business_message) => $request->edited_business_message,
+            isset($request->guest_message) => $request->guest_message,
+            isset($request->callback_query) => $request->callback_query->message,
+            default => Message::missing()
         };
     }
 }
@@ -198,11 +201,11 @@ if (!function_exists('edited_message')) {
          */
         $request = app('request');
         return match (true) {
-            $request->edited_message != null => $request->edited_message,
-            $request->edited_channel_post != null => $request->edited_channel_post,
-            $request->edited_business_message != null => $request->edited_business_message,
-            $request->callback_query != null => $request->callback_query->message ?? null,
-            default => null
+            isset($request->edited_message) => $request->edited_message,
+            isset($request->edited_channel_post) => $request->edited_channel_post,
+            isset($request->edited_business_message) => $request->edited_business_message,
+            isset($request->callback_query) => $request->callback_query->message,
+            default => Message::missing()
         };
     }
 }
@@ -640,7 +643,7 @@ if (!function_exists('mention_sender_user')) {
     {
         $message = message();
 
-        if ($message === null || isset($message->sender_chat) || ! isset($message->from)) {
+        if (blank($message) || isset($message->sender_chat) || ! isset($message->from)) {
             return false;
         }
 

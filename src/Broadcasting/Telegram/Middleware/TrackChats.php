@@ -60,13 +60,13 @@ class TrackChats
         $chats = $this->app->make(BroadcastStore::class);
 
         // The bot was added, removed, blocked or unblocked: always record it.
-        if ($request->my_chat_member !== null) {
+        if (isset($request->my_chat_member)) {
             $this->trackBotMembership($chats, $bot, $request->my_chat_member);
 
             return;
         }
 
-        if ($request->chat_member !== null) {
+        if (isset($request->chat_member)) {
             $this->trackMemberUpdate($chats, $bot, $request->chat_member);
         }
 
@@ -168,11 +168,11 @@ class TrackChats
     protected function chat(Request $request): ?object
     {
         return match (true) {
-            $request->message !== null => $request->message->chat,
-            $request->edited_message !== null => $request->edited_message->chat,
-            $request->channel_post !== null => $request->channel_post->chat,
-            $request->callback_query !== null => $request->callback_query->message->chat ?? null,
-            $request->chat_member !== null => $request->chat_member->chat,
+            isset($request->message) => $request->message->chat,
+            isset($request->edited_message) => $request->edited_message->chat,
+            isset($request->channel_post) => $request->channel_post->chat,
+            isset($request->callback_query) => $request->callback_query->message->chat,
+            isset($request->chat_member) => $request->chat_member->chat,
             default => null,
         };
     }
