@@ -86,6 +86,7 @@ use LaraGram\Foundation\Console\RouteClearCommand;
 use LaraGram\Foundation\Console\RouteListCommand;
 use LaraGram\Foundation\Console\RuleMakeCommand;
 use LaraGram\Foundation\Console\ScopeMakeCommand;
+use LaraGram\Foundation\Console\PollCommand;
 use LaraGram\Foundation\Console\ServeCommand;
 use LaraGram\Foundation\Console\StartApiServerCommand;
 use LaraGram\Foundation\Console\StorageLinkCommand;
@@ -197,6 +198,7 @@ class CommanderServiceProvider extends ServiceProvider implements DeferrableProv
         'ScheduleInterrupt' => ScheduleInterruptCommand::class,
         'SchedulePause' => SchedulePauseCommand::class,
         'ScheduleResume' => ScheduleResumeCommand::class,
+        'Poll' => PollCommand::class,
         'ShowModel' => ShowModelCommand::class,
         'StartApiServerCommand' => StartApiServerCommand::class,
         'StorageLink' => StorageLinkCommand::class,

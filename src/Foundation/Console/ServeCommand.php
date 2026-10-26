@@ -71,6 +71,13 @@ class ServeCommand extends Command
     protected $serverRunningHasBeenDisplayed = false;
 
     /**
+     * The long polling process, when bot updates are polled.
+     *
+     * @var \LaraGram\Console\Process\Process|null
+     */
+    protected $poller = null;
+
+    /**
      * The environment variables that should be passed from host machine to the PHP server process.
      *
      * @var string[]
@@ -134,7 +141,14 @@ class ServeCommand extends Command
 
         $process = $this->startProcess($hasEnvironment);
 
+        $this->startPoller($hasEnvironment);
+
         while ($process->isRunning()) {
+            // Checking the poller also forwards its output.
+            if ($this->poller !== null && ! $this->poller->isRunning()) {
+                $this->poller = null;
+            }
+
             if ($hasEnvironment) {
                 clearstatcache(false, $environmentFile);
             }
@@ -149,14 +163,19 @@ class ServeCommand extends Command
                 $this->components->info('Environment modified. Restarting server...');
 
                 $process->stop(5);
+                $this->stopPoller();
 
                 $this->serverRunningHasBeenDisplayed = false;
 
                 $process = $this->startProcess($hasEnvironment);
+
+                $this->startPoller($hasEnvironment);
             }
 
             usleep(500 * 1000);
         }
+
+        $this->stopPoller();
 
         $status = $process->getExitCode();
 
@@ -177,18 +196,15 @@ class ServeCommand extends Command
      */
     protected function startProcess($hasEnvironment)
     {
-        $process = new Process($this->serverCommand(), public_path(), (new Collection($_ENV))->mapWithKeys(function ($value, $key) use ($hasEnvironment) {
-            if ($this->option('no-reload') || !$hasEnvironment) {
-                return [$key => $value];
-            }
-
-            return $this->shouldPassThroughEnvironmentVariable($key) ? [$key => $value] : [$key => false];
-        })->merge(['PHP_CLI_SERVER_WORKERS' => $this->phpServerWorkers])->all());
+        $process = new Process($this->serverCommand(), public_path(), $this->environmentVariables($hasEnvironment)
+            ->merge(['PHP_CLI_SERVER_WORKERS' => $this->phpServerWorkers])->all());
 
         $this->trap(fn() => [SIGTERM, SIGINT, SIGHUP, SIGUSR1, SIGUSR2, SIGQUIT], function ($signal) use ($process) {
             if ($process->isRunning()) {
                 $process->stop(10, $signal);
             }
+
+            $this->stopPoller();
 
             exit;
         });
@@ -196,6 +212,59 @@ class ServeCommand extends Command
         $process->start($this->handleProcessOutput());
 
         return $process;
+    }
+
+    /**
+     * Start polling bot updates next to the server, when asked to.
+     *
+     * @param bool $hasEnvironment
+     * @return void
+     */
+    protected function startPoller($hasEnvironment)
+    {
+        if (!$this->option('polling')) {
+            return;
+        }
+
+        $this->poller = new Process([
+            php_binary(),
+            $this->laragram->basePath('laragram'),
+            'poll',
+            $this->output->isDecorated() ? '--ansi' : '--no-ansi',
+        ], $this->laragram->basePath(), $this->environmentVariables($hasEnvironment)->all(), null, null);
+
+        $this->poller->start(fn($type, $buffer) => $this->output->write($buffer));
+    }
+
+    /**
+     * Stop polling bot updates.
+     *
+     * @return void
+     */
+    protected function stopPoller()
+    {
+        if ($this->poller?->isRunning()) {
+            $this->poller->stop(35, SIGTERM);
+        }
+
+        $this->poller = null;
+    }
+
+    /**
+     * Get the environment variables passed to the server and poller processes.
+     *
+     * @param bool $hasEnvironment
+     * @return \LaraGram\Support\Collection
+     */
+    protected function environmentVariables($hasEnvironment)
+    {
+        return (new Collection($_ENV))->mapWithKeys(function ($value, $key) use ($hasEnvironment) {
+            if ($this->option('no-reload') || !$hasEnvironment) {
+                return [$key => $value];
+            }
+
+            return $this->shouldPassThroughEnvironmentVariable($key) ? [$key => $value] : [$key => false];
+        });
     }
 
     /**
@@ -441,6 +510,7 @@ class ServeCommand extends Command
             ['port', null, InputOption::VALUE_OPTIONAL, 'Specify the port for the development server.', Env::get('SERVER_PORT')],
             ['tries', null, InputOption::VALUE_OPTIONAL, 'The max number of ports to attempt to serve from', 10],
             ['no-reload', null, InputOption::VALUE_NONE, 'Do not reload the development server on .env file changes'],
+            ['polling', null, InputOption::VALUE_NONE, 'Also receive bot updates with long polling instead of a webhook'],
         ];
     }
 }

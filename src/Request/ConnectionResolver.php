@@ -18,6 +18,21 @@ class ConnectionResolver
     public const SERVER_VARIABLE = 'LARAGRAM_BOT_CONNECTION';
 
     /**
+     * The header naming the connection of an update forwarded over HTTP (by
+     * `poll --forward`), trusted only together with a valid signature header.
+     *
+     * @var string
+     */
+    public const FORWARDED_HEADER = 'X-LaraGram-Bot-Connection';
+
+    /**
+     * The header carrying the signature of a forwarded update's connection.
+     *
+     * @var string
+     */
+    public const SIGNATURE_HEADER = 'X-LaraGram-Bot-Signature';
+
+    /**
      * The custom resolver callback, consulted before the built-in detection.
      *
      * @var (\Closure(\LaraGram\Request\Request, array<string, array>): (string|null))|null
@@ -40,8 +55,9 @@ class ConnectionResolver
      *
      * With a fixed default connection that connection is returned. With 'auto'
      * the update is claimed by the connection it was provably sent to, in order:
-     * an explicit server variable, the webhook secret token, the webhook URL.
-     * Null is returned when no single connection can be told apart.
+     * an explicit server variable, a forwarded connection signed with the
+     * application key (`poll --forward`), the webhook secret token, the webhook
+     * URL. Null is returned when no single connection can be told apart.
      *
      * @param  \LaraGram\Request\Request  $request
      * @return string|null
@@ -63,6 +79,10 @@ class ConnectionResolver
             return $name;
         }
 
+        if ($this->isConfigured($name = $this->forwardedConnection($request), $connections)) {
+            return $name;
+        }
+
         if (count($connections) === 1) {
             return (string) array_key_first($connections);
         }
@@ -74,6 +94,40 @@ class ConnectionResolver
         }
 
         return count($candidates) === 1 ? (string) array_key_first($candidates) : null;
+    }
+
+    /**
+     * Sign the connection of a forwarded update, for the signature header.
+     *
+     * @param  string  $connection
+     * @param  int|string  $updateId
+     * @return string|null
+     */
+    public function signature(string $connection, int|string $updateId): ?string
+    {
+        $key = (string) $this->config->get('app.key');
+
+        return $key === '' ? null : hash_hmac('sha256', $connection.'|'.$updateId, $key);
+    }
+
+    /**
+     * Get the connection a forwarded update was signed for.
+     *
+     * @param  \LaraGram\Request\Request  $request
+     * @return string|null
+     */
+    protected function forwardedConnection(Request $request): ?string
+    {
+        $server = $request->server();
+
+        $name = $server->get('HTTP_'.strtoupper(str_replace('-', '_', static::FORWARDED_HEADER)));
+        $signature = $server->get('HTTP_'.strtoupper(str_replace('-', '_', static::SIGNATURE_HEADER)));
+
+        if (! is_string($name) || ! is_string($signature) || is_null($expected = $this->signature($name, (string) $request->update_id))) {
+            return null;
+        }
+
+        return hash_equals($expected, $signature) ? $name : null;
     }
 
     /**
