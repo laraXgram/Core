@@ -1282,6 +1282,43 @@ class Request implements ProvidesListenContext
     }
 
     /**
+     * Send the whole update to its chat as pretty-printed JSON, then stop
+     * handling it. Any part of it may be dumped too: `$request->message->dd()`.
+     *
+     * @return never
+     */
+    public function dd(): never
+    {
+        (new UpdateDumper($this))->handle($this->typedUpdate(), 'dd');
+
+        exit(1);
+    }
+
+    /**
+     * Send the whole update to its chat as pretty-printed JSON and carry on.
+     *
+     * @return $this
+     */
+    public function dump(): static
+    {
+        (new UpdateDumper($this))->handle($this->typedUpdate(), 'dump');
+
+        return $this;
+    }
+
+    /**
+     * Write the whole update to the log as pretty-printed JSON and carry on.
+     *
+     * @return $this
+     */
+    public function log(): static
+    {
+        (new UpdateDumper($this))->handle($this->typedUpdate(), 'log');
+
+        return $this;
+    }
+
+    /**
      * Get the update as typed objects.
      *
      * @return \LaraGram\Laraquest\Updates\Update

@@ -27,7 +27,9 @@ use LaraGram\Foundation\Vite;
 use LaraGram\Http\Client\Factory as HttpFactory;
 use LaraGram\Http\VarDumper\Cloner\AbstractCloner;
 use LaraGram\Queue\Events\JobAttempted;
+use LaraGram\Laraquest\Support\UpdateObject;
 use LaraGram\Request\Request;
+use LaraGram\Request\UpdateDumper;
 use LaraGram\Http\Request as HttpRequest;
 use LaraGram\Request\ValidatedInput;
 use LaraGram\Support\AggregateServiceProvider;
@@ -86,12 +88,31 @@ class FoundationServiceProvider extends AggregateServiceProvider
 
         $this->registerConsoleSchedule();
         $this->registerDumper();
+        $this->registerUpdateDumper();
         $this->registerRequestValidation();
         $this->registerRequestSignatureValidation();
         $this->registerUriUrlGeneration();
         $this->registerDeferHandler();
         $this->registerExceptionRenderer();
         $this->registerMaintenanceModeManager();
+    }
+
+    /**
+     * Send dumped update objects (`$request->message->dd()`) to the chat of the update.
+     *
+     * @return void
+     */
+    public function registerUpdateDumper()
+    {
+        UpdateObject::dumpUsing(function (UpdateObject $object, string $action) {
+            $request = $this->app['request'];
+
+            if ($request instanceof Request) {
+                (new UpdateDumper($request))->handle($object, $action);
+            } else {
+                logger()->debug(json_encode($object, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
+            }
+        });
     }
 
     /**

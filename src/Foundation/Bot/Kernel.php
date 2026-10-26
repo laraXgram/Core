@@ -10,6 +10,7 @@ use LaraGram\Foundation\Events\Terminating;
 use LaraGram\Foundation\Bot\Events\RequestHandled;
 use LaraGram\Listening\Listener;
 use LaraGram\Request\ConnectionResolver;
+use LaraGram\Request\Exceptions\RequestResponseException;
 use LaraGram\Request\Exceptions\UnresolvableConnectionException;
 use LaraGram\Request\Response;
 use LaraGram\Listening\Pipeline;
@@ -137,6 +138,9 @@ class Kernel implements KernelContract
 
         try {
             $response = $this->sendRequestThroughListener($request);
+        } catch (RequestResponseException $e) {
+            // Thrown on purpose (throwResponse(), dd()) from a middleware.
+            $response = $e->getResponse();
         } catch (Throwable $e) {
             $this->reportException($e);
 
