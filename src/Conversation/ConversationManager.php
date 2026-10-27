@@ -486,11 +486,14 @@ class ConversationManager
     /**
      * Determine if the current user is in an active conversation.
      *
+     * An update with no sender (a deleted business message, a chat boost, an
+     * anonymous poll...) belongs to no one, so it is never in a conversation.
+     *
      * @return bool
      */
     public function active(): bool
     {
-        return $this->getState() !== null;
+        return sender() !== null && $this->getState() !== null;
     }
 
     /**
