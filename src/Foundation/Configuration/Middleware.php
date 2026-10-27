@@ -4,6 +4,7 @@ namespace LaraGram\Foundation\Configuration;
 
 use Closure;
 use LaraGram\Cookie\Middleware\EncryptCookies;
+use LaraGram\Foundation\Bot\Middleware\IgnoreDuplicateUpdates;
 use LaraGram\Foundation\Http\Middleware\ConvertEmptyStringsToNull;
 use LaraGram\Foundation\Http\Middleware\PreventRequestForgery;
 use LaraGram\Foundation\Http\Middleware\PreventRequestsDuringMaintenance;
@@ -120,6 +121,13 @@ class Middleware
      * @var bool
      */
     protected $authenticatedSessions = false;
+
+    /**
+     * Indicates if every update should be handled only once.
+     *
+     * @var bool
+     */
+    protected $deduplicateUpdates = false;
 
     /**
      * The custom middleware aliases.
@@ -455,7 +463,7 @@ class Middleware
     public function getGlobalMiddleware()
     {
         $middleware = $this->global ?: array_values(array_filter([
-
+            $this->deduplicateUpdates ? IgnoreDuplicateUpdates::class : null,
         ]));
 
         $middleware = array_map(function ($middleware) {
@@ -629,6 +637,22 @@ class Middleware
         $skipWhen->each(fn (Closure $callback) => TrimStrings::skipWhen($callback));
 
         TrimStrings::except($except->all());
+
+        return $this;
+    }
+
+    /**
+     * Handle every bot update only once, skipping the ones Telegram delivers again.
+     *
+     * @param  string|null  $store  The cache store the update ids are claimed in.
+     * @param  int  $ttl  The number of seconds an update id stays claimed.
+     * @return $this
+     */
+    public function deduplicateUpdates(?string $store = null, int $ttl = 86400)
+    {
+        IgnoreDuplicateUpdates::using($store, $ttl);
+
+        $this->deduplicateUpdates = true;
 
         return $this;
     }
