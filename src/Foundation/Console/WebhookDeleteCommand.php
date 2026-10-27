@@ -4,11 +4,13 @@ namespace LaraGram\Foundation\Console;
 
 use LaraGram\Console\Command;
 use LaraGram\Console\Attribute\AsCommand;
-use LaraGram\Console\Input\InputOption;
+use LaraGram\Foundation\Console\Concerns\InteractsWithWebhooks;
 
 #[AsCommand(name: 'webhook:delete')]
 class WebhookDeleteCommand extends Command
 {
+    use InteractsWithWebhooks;
+
     /**
      * The console command name.
      *
@@ -26,32 +28,18 @@ class WebhookDeleteCommand extends Command
     /**
      * Execute the console command.
      *
-     * @return void
+     * @return int
      */
     public function handle()
     {
-        $connectionName = $this->option('connection') ?? config('bot.default');
+        return $this->eachConnection(function (string $connection) {
+            $result = $this->bot($connection)->deleteWebhook();
 
-        $result = app('request')
-            ->connection($connectionName)
-            ->deleteWebhook();
+            $result['ok']
+                ? $this->components->info("[{$connection}] {$this->describe($result)}")
+                : $this->components->error("[{$connection}] {$this->describe($result)}");
 
-        if (!$result['ok']){
-            $this->components->error($result['description']);
-        }else{
-            $this->components->info($result['description']);
-        }
-    }
-
-    /**
-     * Get the console command arguments.
-     *
-     * @return array
-     */
-    protected function getOptions()
-    {
-        return [
-            ['connection', null, InputOption::VALUE_OPTIONAL, 'The bot connections for deleteWebhook', config('bot.default')],
-        ];
+            return (bool) $result['ok'];
+        });
     }
 }

@@ -4,11 +4,13 @@ namespace LaraGram\Foundation\Console;
 
 use LaraGram\Console\Command;
 use LaraGram\Console\Attribute\AsCommand;
-use LaraGram\Console\Input\InputOption;
+use LaraGram\Foundation\Console\Concerns\InteractsWithWebhooks;
 
 #[AsCommand(name: 'webhook:info')]
 class WebhookInfoCommand extends Command
 {
+    use InteractsWithWebhooks;
+
     /**
      * The console command name.
      *
@@ -26,36 +28,36 @@ class WebhookInfoCommand extends Command
     /**
      * Execute the console command.
      *
-     * @return void
+     * @return int
      */
-    public function handle(): void
+    public function handle()
     {
-        $connectionName = $this->option('connection') ?? config('bot.default');
+        return $this->eachConnection(function (string $connection) {
+            $info = $this->bot($connection)->getWebhookInfo()['result'] ?? null;
 
-        $info = app('request')
-            ->connection($connectionName)
-            ->getWebhookInfo()['result'] ?? null;
+            if ($info === null || $info['url'] == '') {
+                $this->components->error("[{$connection}] Webhook not set");
 
-        if ($info == null || $info["url"] == ''){
-            $this->components->error("Webhook not set");
-            return;
-        }
+                return false;
+            }
 
-        foreach ($info as $key => $value) {
-            if ($key == 'has_custom_certificate') $value = $value ? "True" : "False";
-            $this->components->twoColumnDetail("<fg=bright-blue;options=bold>$key:</>", "<fg=bright-blue;options=bold>$value</>");
-        }
-    }
+            $this->components->twoColumnDetail("<fg=green;options=bold>{$connection}</>");
 
-    /**
-     * Get the console command arguments.
-     *
-     * @return array
-     */
-    protected function getOptions()
-    {
-        return [
-            ['connection', null, InputOption::VALUE_OPTIONAL, 'The bot connections for webhookInfo', config('bot.default')],
-        ];
+            foreach ($info as $key => $value) {
+                if ($key == 'has_custom_certificate') {
+                    $value = $value ? 'True' : 'False';
+                }
+
+                if (is_array($value)) {
+                    $value = implode(', ', $value);
+                }
+
+                $this->components->twoColumnDetail("<fg=bright-blue;options=bold>$key:</>", "<fg=bright-blue;options=bold>$value</>");
+            }
+
+            $this->newLine();
+
+            return true;
+        });
     }
 }

@@ -4,11 +4,13 @@ namespace LaraGram\Foundation\Console;
 
 use LaraGram\Console\Command;
 use LaraGram\Console\Attribute\AsCommand;
-use LaraGram\Console\Input\InputOption;
+use LaraGram\Foundation\Console\Concerns\InteractsWithWebhooks;
 
 #[AsCommand(name: 'webhook:drop')]
 class WebhookDropCommand extends Command
 {
+    use InteractsWithWebhooks;
+
     /**
      * The console command name.
      *
@@ -26,32 +28,21 @@ class WebhookDropCommand extends Command
     /**
      * Execute the console command.
      *
-     * @return void
+     * The webhook is set again with all of its settings, so the secret token
+     * and allowed updates are kept.
+     *
+     * @return int
      */
     public function handle()
     {
-        $connectionName = $this->option('connection') ?? config('bot.default');
+        return $this->eachConnection(function (string $connection) {
+            $result = $this->bot($connection)->setWebhook(...$this->webhookSettings($connection), drop_pending_updates: true);
 
-        $result = app('request')
-            ->connection($connectionName)
-            ->setWebhook(config("bot.connections.{$connectionName}.url"), drop_pending_updates: true);
+            $result['ok']
+                ? $this->components->info("[{$connection}] Pending updates dropped successfully!")
+                : $this->components->error("[{$connection}] {$this->describe($result)}");
 
-        if (!$result['ok']){
-            $this->components->error($result['description']);
-        }else{
-            $this->components->info("Pending updates dropped successfully!");
-        }
-    }
-
-    /**
-     * Get the console command arguments.
-     *
-     * @return array
-     */
-    protected function getOptions()
-    {
-        return [
-            ['connection', null, InputOption::VALUE_OPTIONAL, 'The bot connections for drop', config('bot.default')],
-        ];
+            return (bool) $result['ok'];
+        });
     }
 }
