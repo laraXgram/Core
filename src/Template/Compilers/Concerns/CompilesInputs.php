@@ -312,7 +312,8 @@ trait CompilesInputs
     /**
      * Compile the @reply directive, a shortcut for @reply_parameters: the
      * message id first, then the other reply_parameters fields, positional
-     * or named.
+     * or named. Without arguments it replies to the message of the current
+     * update, when there is one.
      *
      * @param  string|null  $expression
      * @return string
@@ -320,6 +321,10 @@ trait CompilesInputs
     public function compileReply($expression)
     {
         $arguments = trim($this->stripParentheses($expression ?? ''));
+
+        if ($arguments === '') {
+            return "<?php if ((\$__reply_to = message()->message_id ?? null) !== null) { \$__t8__reply_parameters = \\LaraGram\\Laraquest\\Updates\\ReplyParameters::init(message_id: \$__reply_to); } ?>";
+        }
 
         return "<?php \$__t8__reply_parameters = \\LaraGram\\Laraquest\\Updates\\ReplyParameters::init({$arguments}); ?>";
     }
