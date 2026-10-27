@@ -309,6 +309,21 @@ trait CompilesInputs
         return $expression;
     }
 
+    /**
+     * Compile the @reply directive, a shortcut for @reply_parameters: the
+     * message id first, then the other reply_parameters fields, positional
+     * or named.
+     *
+     * @param  string|null  $expression
+     * @return string
+     */
+    public function compileReply($expression)
+    {
+        $arguments = trim($this->stripParentheses($expression ?? ''));
+
+        return "<?php \$__t8__reply_parameters = \\LaraGram\\Laraquest\\Updates\\ReplyParameters::init({$arguments}); ?>";
+    }
+
     public function compileMethod($expression)
     {
         $method = trim($this->stripParentheses($expression ?? ''));
