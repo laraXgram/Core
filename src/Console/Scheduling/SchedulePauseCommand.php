@@ -31,7 +31,7 @@ class SchedulePauseCommand extends Command
             return 1;
         }
 
-        $cache->forever('illuminate:schedule:paused', true);
+        $cache->forever('laragram:schedule:paused', true);
 
         $dispatcher->dispatch(new SchedulePaused);
 

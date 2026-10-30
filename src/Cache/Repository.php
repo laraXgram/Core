@@ -52,7 +52,7 @@ class Repository implements ArrayAccess, CacheContract
      *
      * @var string
      */
-    const FLEXIBLE_CREATED_KEY_PREFIX = 'illuminate:cache:flexible:created:';
+    const FLEXIBLE_CREATED_KEY_PREFIX = 'laragram:cache:flexible:created:';
 
     /**
      * The cache store implementation.
@@ -661,7 +661,7 @@ class Repository implements ArrayAccess, CacheContract
 
         $refresh = function () use ($key, $ttl, $callback, $lock, $created) {
             $this->store->lock(
-                "illuminate:cache:flexible:lock:{$this->itemKey($key)}",
+                "laragram:cache:flexible:lock:{$this->itemKey($key)}",
                 $lock['seconds'] ?? 0,
                 $lock['owner'] ?? null,
             )->get(function () use ($key, $callback, $created, $ttl) {
@@ -676,7 +676,7 @@ class Repository implements ArrayAccess, CacheContract
             });
         };
 
-        defer($refresh, "illuminate:cache:flexible:{$this->itemKey($key)}", $alwaysDefer);
+        defer($refresh, "laragram:cache:flexible:{$this->itemKey($key)}", $alwaysDefer);
 
         return $value;
     }

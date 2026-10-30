@@ -300,7 +300,7 @@ class ScheduleRunCommand extends Command
             return false;
         }
 
-        return $this->cache->get('illuminate:schedule:paused', false);
+        return $this->cache->get('laragram:schedule:paused', false);
     }
 
     /**
@@ -314,7 +314,7 @@ class ScheduleRunCommand extends Command
             return false;
         }
 
-        return $this->cache->get('illuminate:schedule:interrupt', false);
+        return $this->cache->get('laragram:schedule:interrupt', false);
     }
 
     /**
@@ -324,6 +324,6 @@ class ScheduleRunCommand extends Command
      */
     protected function clearInterruptSignal()
     {
-        $this->cache->forget('illuminate:schedule:interrupt');
+        $this->cache->forget('laragram:schedule:interrupt');
     }
 }

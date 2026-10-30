@@ -128,7 +128,7 @@ class Schedule
 
         if (! class_exists(Container::class)) {
             throw new RuntimeException(
-                'A container implementation is required to use the scheduler. Please install the illuminate/container package.'
+                'A container implementation is required to use the scheduler. Please install the laraxgram/container package.'
             );
         }
 
@@ -261,7 +261,7 @@ class Schedule
         if ($job instanceof Closure) {
             if (! class_exists(CallQueuedClosure::class)) {
                 throw new RuntimeException(
-                    'To enable support for closure jobs, please install the illuminate/queue package.'
+                    'To enable support for closure jobs, please install the laraxgram/queue package.'
                 );
             }
 
@@ -507,7 +507,7 @@ class Schedule
                 $this->dispatcher = Container::getInstance()->make(Dispatcher::class);
             } catch (BindingResolutionException $e) {
                 throw new RuntimeException(
-                    'Unable to resolve the dispatcher from the service container. Please bind it or install the illuminate/bus package.',
+                    'Unable to resolve the dispatcher from the service container. Please bind it or install the laraxgram/bus package.',
                     is_int($e->getCode()) ? $e->getCode() : 0, $e
                 );
             }

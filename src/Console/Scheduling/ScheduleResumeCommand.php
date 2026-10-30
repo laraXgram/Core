@@ -32,7 +32,7 @@ class ScheduleResumeCommand extends Command
      */
     public function handle(Cache $cache, Dispatcher $dispatcher)
     {
-        $cache->forget('illuminate:schedule:paused');
+        $cache->forget('laragram:schedule:paused');
 
         $dispatcher->dispatch(new ScheduleResumed);
 

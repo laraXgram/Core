@@ -50,7 +50,7 @@ class ScheduleInterruptCommand extends Command
      */
     public function handle()
     {
-        $this->cache->put('illuminate:schedule:interrupt', true, Date::now()->endOfMinute());
+        $this->cache->put('laragram:schedule:interrupt', true, Date::now()->endOfMinute());
 
         $this->components->info('Broadcasting schedule interrupt signal.');
     }
