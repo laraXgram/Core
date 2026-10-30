@@ -493,7 +493,7 @@ class ConversationManager
      */
     public function active(): bool
     {
-        return sender() !== null && $this->getState() !== null;
+        return filled(sender()) && $this->getState() !== null;
     }
 
     /**
