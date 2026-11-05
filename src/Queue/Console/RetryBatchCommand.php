@@ -43,8 +43,14 @@ class RetryBatchCommand extends Command implements Isolatable
 
             if (! $batch) {
                 $this->components->error("Unable to find a batch with ID [{$batchId}].");
-            } elseif (empty($batch->failedJobIds)) {
+
+                continue;
+            }
+
+            if (empty($batch->failedJobIds)) {
                 $this->components->error('The given batch does not contain any failed jobs.');
+
+                continue;
             }
 
             $this->components->info("Pushing failed queue jobs of the batch [$batchId] back onto the queue.");
