@@ -2,10 +2,12 @@
 
 namespace LaraGram\Listening;
 
+use LaraGram\Contracts\Bot\Kernel;
 use LaraGram\Contracts\Listening\ResponseFactory as ResponseFactoryContract;
 use LaraGram\Contracts\Listening\PathGenerator as PathGeneratorContract;
 use LaraGram\Listening\Contracts\CallableDispatcher as CallableDispatcherContract;
 use LaraGram\Listening\Contracts\ControllerDispatcher as ControllerDispatcherContract;
+use LaraGram\Listening\Middleware\HandleBackButton;
 use LaraGram\Listening\Navigation\Navigator;
 use LaraGram\Support\ServiceProvider;
 use LaraGram\Template\Factory as TemplateFactoryContract;
@@ -27,6 +29,18 @@ class ListeningServiceProvider extends ServiceProvider
         $this->registerResponseFactory();
         $this->registerCallableDispatcher();
         $this->registerControllerDispatcher();
+    }
+
+    /**
+     * Bootstrap the service provider.
+     *
+     * @return void
+     */
+    public function boot()
+    {
+        if ($this->app->resolved(Kernel::class)) {
+            $this->app->make(Kernel::class)->prependMiddleware(HandleBackButton::class);
+        }
     }
 
     /**

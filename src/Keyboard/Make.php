@@ -2,6 +2,8 @@
 
 namespace LaraGram\Keyboard;
 
+use LaraGram\Listening\Navigation\Navigator;
+
 class Make
 {
     /**
@@ -13,6 +15,35 @@ class Make
     public static function row(...$col): array
     {
         return [...$col];
+    }
+
+    /**
+     * Pressing the button takes the user back along their navigation trail, with no listen to define.
+     *
+     * @param string $text
+     * @param int|string $step The number of steps, or the name of a step.
+     * @param string $style Must be one of “danger” (red), “success” (green) or “primary” (blue).
+     * @param int|string $icon_custom_emoji_id
+     * @param string|null $fallback The name of the listen to run when there is nothing to go back to.
+     * @return array
+     */
+    public static function back(string $text = 'Back', int|string $step = 1, string $style = '', int|string $icon_custom_emoji_id = '', ?string $fallback = null): array
+    {
+        return self::callbackData($text, Navigator::buttonData($step, $fallback), $style, $icon_custom_emoji_id);
+    }
+
+    /**
+     * A row of buttons for the steps of the user's navigation trail, leaving out the one they are on.
+     *
+     * @return array
+     */
+    public static function breadcrumbs(): array
+    {
+        $trail = array_slice(app('navigation')->trail(), 0, -1);
+
+        $trail = array_filter($trail, fn ($crumb) => $crumb->name !== null);
+
+        return self::row(...array_map(fn ($crumb) => self::back($crumb->label(), $crumb->name), array_values($trail)));
     }
 
     /**

@@ -532,9 +532,11 @@ class Listener implements BindingRegistrar, RegistrarContract
      */
     public function respondWithListen($name)
     {
-        $listen = tap($this->listens->getByName($name))->bind($this->currentRequest);
+        $request = $this->currentRequest ?? $this->container->make('request');
 
-        return $this->runListen($this->currentRequest, $listen);
+        $listen = tap($this->listens->getByName($name))->bind($request);
+
+        return $this->runListen($request, $listen);
     }
 
     /**

@@ -3,6 +3,7 @@
 namespace LaraGram\Listening\Navigation;
 
 use Closure;
+use InvalidArgumentException;
 use LaraGram\Contracts\Config\Repository as Config;
 use LaraGram\Contracts\Container\Container;
 use LaraGram\Listening\Exceptions\ListenNotFoundException;
@@ -14,6 +15,11 @@ use LaraGram\Support\Facades\Facade;
 
 class Navigator
 {
+    /**
+     * The callback data prefix of the buttons that take the user back.
+     */
+    public const BUTTON_PREFIX = 'lg:back:';
+
     /**
      * The number of steps being taken back right now.
      *
@@ -72,6 +78,43 @@ class Navigator
         $this->save($key, array_slice($trail, -max(1, (int) $this->config->get('navigation.limit', 50))));
 
         return $crumb;
+    }
+
+    /**
+     * Get the callback data of a button that takes the user back.
+     *
+     * @param  int|string  $to
+     * @param  string|null  $fallback
+     * @return string
+     *
+     * @throws \InvalidArgumentException
+     */
+    public static function buttonData(int|string $to = 1, ?string $fallback = null): string
+    {
+        $data = self::BUTTON_PREFIX.$to.($fallback === null ? '' : '|'.$fallback);
+
+        if (strlen($data) > 64) {
+            throw new InvalidArgumentException("The back button data [{$data}] is longer than Telegram's limit of 64 bytes.");
+        }
+
+        return $data;
+    }
+
+    /**
+     * Get what a button's callback data asks for, or null when it is not a back button.
+     *
+     * @param  string|null  $data
+     * @return array{to: int|string, fallback: string|null}|null
+     */
+    public static function parseButton(?string $data): ?array
+    {
+        if ($data === null || ! str_starts_with($data, self::BUTTON_PREFIX)) {
+            return null;
+        }
+
+        [$to, $fallback] = array_pad(explode('|', substr($data, strlen(self::BUTTON_PREFIX)), 2), 2, null);
+
+        return ['to' => ctype_digit($to) ? (int) $to : $to, 'fallback' => $fallback];
     }
 
     /**
