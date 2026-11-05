@@ -130,7 +130,7 @@ class DevCommands
 
         self::commander('queue:listen --tries=1 --timeout=0', 'queue');
 
-        if (app()->providerIsLoaded('LaraGram\\Watchdog\\WatchdogServiceProvider')) {
+        if (extension_loaded('pcntl') && app()->providerIsLoaded('LaraGram\\Watchdog\\WatchdogServiceProvider')) {
             self::commander('watchdog --timeout=0', 'logs');
         }
 

@@ -112,7 +112,7 @@ class PollCommand extends Command
             $this->components->warn('Forwarded updates are signed with the application key, which is not set; their connection is detected like a webhook\'s instead.');
         }
 
-        $this->trap([SIGINT, SIGTERM], fn () => $this->shouldStop = true);
+        $this->trap(fn () => [SIGINT, SIGTERM], fn () => $this->shouldStop = true);
 
         return count($connections) === 1
             ? $this->poll($connections[0])
@@ -574,7 +574,7 @@ class PollCommand extends Command
             }
 
             if ($this->shouldStop) {
-                $processes->each(fn ($process) => $process->isRunning() && $process->signal(SIGTERM));
+                $processes->each(fn ($process) => $process->isRunning() && $process->signal(\defined('SIGTERM') ? SIGTERM : 15));
             }
 
             usleep(100 * 1000);

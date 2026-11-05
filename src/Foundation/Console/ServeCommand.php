@@ -244,7 +244,7 @@ class ServeCommand extends Command
     protected function stopPoller()
     {
         if ($this->poller?->isRunning()) {
-            $this->poller->stop(35, SIGTERM);
+            $this->poller->stop(35, \defined('SIGTERM') ? SIGTERM : null);
         }
 
         $this->poller = null;
