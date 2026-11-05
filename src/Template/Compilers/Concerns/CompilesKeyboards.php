@@ -93,6 +93,28 @@ trait CompilesKeyboards
     }
 
     /**
+     * Compile the @back directive: a button that takes the user back along their trail.
+     *
+     * @param  string|null  $expression
+     * @return string
+     */
+    public function compileBack($expression)
+    {
+        return "<?php \$__t8__row[] = \\LaraGram\\Keyboard\\Make::back{$expression}; ?>";
+    }
+
+    /**
+     * Compile the @breadcrumbs directive: the user's trail as text.
+     *
+     * @param  string|null  $expression
+     * @return string
+     */
+    public function compileBreadcrumbs($expression)
+    {
+        return "<?php echo e(navigation()->breadcrumbs{$expression}); ?>";
+    }
+
+    /**
      * Compile the @col directive.
      *
      * @param  string  $expression
