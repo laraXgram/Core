@@ -150,7 +150,8 @@ class ConversationManager
     {
         $this->begin(InlineConversation::fromPayload($payload), [
             'name'       => $payload['name'] ?? 'inline',
-            'inline'     => $payload,
+            // Kept as a string: the cache store may not restore objects (cache.serializable_classes).
+            'inline'     => serialize($payload),
             'parameters' => $parameters,
         ]);
     }
@@ -647,7 +648,7 @@ class ConversationManager
     protected function resolveFromState(array $state): Conversation
     {
         $conversation = isset($state['inline'])
-            ? InlineConversation::fromPayload($state['inline'])
+            ? InlineConversation::fromPayload(is_string($state['inline']) ? unserialize($state['inline']) : $state['inline'])
             : $this->resolve($state['name']);
 
         return $conversation->withParameters($state['parameters'] ?? []);
