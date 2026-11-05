@@ -60,6 +60,24 @@ class Redirector
     }
 
     /**
+     * Create a new response that takes the user back along their trail.
+     *
+     * @param  int|string  $to  The number of steps, or the name of a step.
+     * @param  \Closure|string|null  $fallback  A listen name or a callback to run when there is nothing to go back to.
+     * @return \LaraGram\Listening\Navigation\BackResponse
+     */
+    public function back($to = 1, $fallback = null)
+    {
+        return tap(app('navigation')->back($to, $fallback), function ($redirect) {
+            if (isset($this->cache)) {
+                $redirect->setCache($this->cache);
+            }
+
+            $redirect->setRequest($this->generator->getRequest());
+        });
+    }
+
+    /**
      * Create a new redirect response.
      *
      * @param  string  $path

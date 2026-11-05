@@ -6,10 +6,10 @@ use BackedEnum;
 use Closure;
 use LaraGram\Container\Container;
 use LaraGram\Listening\Matching\MethodValidator;
+use LaraGram\Listening\Middleware\Breadcrumb as BreadcrumbMiddleware;
 use LaraGram\Listening\Matching\StepValidator;
 use LaraGram\Request\Exceptions\RequestResponseException;
 use LaraGram\Listening\Contracts\ProvidesListenContext;
-use LaraGram\Request\Request;
 use LaraGram\Listening\Contracts\CallableDispatcher;
 use LaraGram\Listening\Contracts\ControllerDispatcher as ControllerDispatcherContract;
 use LaraGram\Listening\Controllers\HasMiddleware;
@@ -1227,6 +1227,30 @@ class Listen
     public function step($key)
     {
         return $this->middleware(['step:'.$key]);
+    }
+
+    /**
+     * Record the listen as a step of the user's navigation trail.
+     *
+     * @param  string|null  $name  The name to go back to it by (the listen name by default).
+     * @param  string|null  $title  The text it is shown with in the trail (its name by default).
+     * @return $this
+     */
+    public function breadcrumb(?string $name = null, ?string $title = null)
+    {
+        $this->action['breadcrumb'] = ['name' => $name, 'title' => $title];
+
+        return $this->middleware([BreadcrumbMiddleware::class]);
+    }
+
+    /**
+     * Keep the listen out of the user's navigation trail.
+     *
+     * @return $this
+     */
+    public function withoutBreadcrumb()
+    {
+        return $this->withoutMiddleware(BreadcrumbMiddleware::class);
     }
 
     /**

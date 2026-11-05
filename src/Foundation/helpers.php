@@ -175,13 +175,33 @@ if (! function_exists('back')) {
     /**
      * Create a new redirect response to the previous location.
      *
-     * @param  int  $status
+     * While a bot update is handled this takes the user back along their
+     * navigation trail: back(), back(2) or back('step-name').
+     *
+     * @param  int|string  $status  The HTTP status, or the number of steps or the name of a step.
      * @param  array  $headers
-     * @param  mixed  $fallback
+     * @param  mixed  $fallback  The URL, or the listen name or callback when there is nothing to go back to.
+     * @return \LaraGram\Http\RedirectResponse|\LaraGram\Listening\Navigation\BackResponse
      */
-    function back($status = 302, $headers = [], $fallback = false): RedirectResponse
+    function back($status = 302, $headers = [], $fallback = false)
     {
+        if (app('redirect') instanceof \LaraGram\Listening\Redirector) {
+            return app('redirect')->back($status === 302 ? 1 : $status, $fallback ?: null);
+        }
+
         return app('http.redirect')->back($status, $headers, $fallback);
+    }
+}
+
+if (! function_exists('navigation')) {
+    /**
+     * Get the navigator of the bot's steps.
+     *
+     * @return \LaraGram\Listening\Navigation\Navigator
+     */
+    function navigation()
+    {
+        return app('navigation');
     }
 }
 

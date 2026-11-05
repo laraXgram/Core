@@ -26,7 +26,7 @@
         "laraxgram/support": "^4.0"
     },
     "suggest": {
-        "laraxgram/cache": "Required to use the throttle middleware and redirects (^4.0).",
+        "laraxgram/cache": "Required to use the throttle middleware, redirects and navigation (^4.0).",
         "laraxgram/console": "Required to use the make commands (^4.0).",
         "laraxgram/database": "Required to use implicit model binding (^4.0).",
         "laraxgram/redis": "Required to use the Redis throttle middleware (^4.0).",

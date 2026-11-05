@@ -155,6 +155,7 @@ abstract class Facade
             'Config' => Config::class,
             'Context' => Context::class,
             'Conversation' => Conversation::class,
+            'Navigation' => Navigation::class,
             'Cookie' => Cookie::class,
             'Crypt' => Crypt::class,
             'Date' => Date::class,

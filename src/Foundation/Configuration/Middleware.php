@@ -130,6 +130,13 @@ class Middleware
     protected $deduplicateUpdates = false;
 
     /**
+     * Indicates if every bot listen is a step of the user's navigation trail.
+     *
+     * @var bool
+     */
+    protected $trackNavigation = false;
+
+    /**
      * The custom middleware aliases.
      *
      * @var array
@@ -489,6 +496,7 @@ class Middleware
             'bot' => array_values(array_filter([
                 \LaraGram\Foundation\Bot\Middleware\InvokeDeferredCallbacks::class,
                 \LaraGram\Listening\Middleware\SubstituteBindings::class,
+                $this->trackNavigation ? \LaraGram\Listening\Middleware\Breadcrumb::class : null,
             ])),
 
             'web' => array_values(array_filter([
@@ -653,6 +661,18 @@ class Middleware
         IgnoreDuplicateUpdates::using($store, $ttl);
 
         $this->deduplicateUpdates = true;
+
+        return $this;
+    }
+
+    /**
+     * Record every bot listen as a step of the user's navigation trail.
+     *
+     * @return $this
+     */
+    public function trackNavigation()
+    {
+        $this->trackNavigation = true;
 
         return $this;
     }
@@ -841,6 +861,7 @@ class Middleware
                 : \LaraGram\Routing\Middleware\ThrottleRequests::class,
 
             'can' => \LaraGram\Auth\Middleware\Authorize::class,
+            'breadcrumb' => \LaraGram\Listening\Middleware\Breadcrumb::class,
             'reply' => \LaraGram\Listening\Middleware\Reply::class,
             'scope' => \LaraGram\Listening\Middleware\Scope::class,
             'step' => \LaraGram\Listening\Middleware\Step::class,

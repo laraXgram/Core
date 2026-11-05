@@ -7,7 +7,7 @@ namespace LaraGram\Support\Facades;
  * @method static \LaraGram\Listening\PathGenerator getPathGenerator()
  * @method static void setCache(\LaraGram\Cache\CacheManager $cache)
  *
- * @method static \LaraGram\Http\RedirectResponse back(int $status = 302, array $headers = [], mixed $fallback = false)
+ * @method static \LaraGram\Http\RedirectResponse|\LaraGram\Listening\Navigation\BackResponse back(int|string $status = 302, array $headers = [], mixed $fallback = false)
  * @method static \LaraGram\Http\RedirectResponse refresh(int $status = 302, array $headers = [])
  * @method static \LaraGram\Http\RedirectResponse guest(string $path, int $status = 302, array $headers = [], bool|null $secure = null)
  * @method static \LaraGram\Http\RedirectResponse intended(mixed $default = '/', int $status = 302, array $headers = [], bool|null $secure = null)

@@ -6,6 +6,7 @@ use LaraGram\Contracts\Listening\ResponseFactory as ResponseFactoryContract;
 use LaraGram\Contracts\Listening\PathGenerator as PathGeneratorContract;
 use LaraGram\Listening\Contracts\CallableDispatcher as CallableDispatcherContract;
 use LaraGram\Listening\Contracts\ControllerDispatcher as ControllerDispatcherContract;
+use LaraGram\Listening\Navigation\Navigator;
 use LaraGram\Support\ServiceProvider;
 use LaraGram\Template\Factory as TemplateFactoryContract;
 
@@ -21,6 +22,7 @@ class ListeningServiceProvider extends ServiceProvider
         $this->registerRequest();
         $this->registerListener();
         $this->registerPathGenerator();
+        $this->registerNavigator();
         $this->registerRedirector();
         $this->registerResponseFactory();
         $this->registerCallableDispatcher();
@@ -125,6 +127,18 @@ class ListeningServiceProvider extends ServiceProvider
         // "redirect" follows the request being handled: the bot kernel binds it
         // to "listener.redirect" and the HTTP kernel to "http.redirect".
         $this->app->singleton('redirect', fn ($app) => $app['listener.redirect']);
+    }
+
+    /**
+     * Register the navigator service.
+     *
+     * @return void
+     */
+    protected function registerNavigator()
+    {
+        $this->app->singleton('navigation', fn ($app) => new Navigator($app, $app['config']));
+
+        $this->app->alias('navigation', Navigator::class);
     }
 
     /**
