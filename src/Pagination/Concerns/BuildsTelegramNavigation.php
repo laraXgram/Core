@@ -4,6 +4,7 @@ namespace LaraGram\Pagination\Concerns;
 
 use Closure;
 use InvalidArgumentException;
+use LaraGram\Keyboard\Make;
 use LaraGram\Pagination\UrlWindow;
 
 trait BuildsTelegramNavigation
@@ -119,6 +120,13 @@ trait BuildsTelegramNavigation
      * @var string
      */
     public static $defaultSimpleKeyboardTemplate = 'pagination::simple-keyboard';
+
+    /**
+     * The button under the page buttons that takes the user back.
+     *
+     * @var array|null
+     */
+    protected $backButton = null;
 
     /**
      * A per-instance override for the navigation keyboard template.
@@ -624,9 +632,34 @@ trait BuildsTelegramNavigation
                 'elements' => $this->elements(),
             ]);
 
-        return trim((string) static::evaluateKeyboard(
+        $keyboard = trim((string) static::evaluateKeyboard(
             static::compiledKeyboardPath($template->getPath()), $template->gatherData()
         ));
+
+        if ($this->backButton === null) {
+            return $keyboard;
+        }
+
+        $markup = json_decode($keyboard, true) ?: [];
+
+        $markup['inline_keyboard'][] = [$this->backButton];
+
+        return json_encode($markup, JSON_UNESCAPED_UNICODE);
+    }
+
+    /**
+     * Add a button under the page buttons that takes the user back along their trail.
+     *
+     * @param  string  $text
+     * @param  int|string  $step  The number of steps, or the name of a step.
+     * @param  string|null  $fallback  The name of the listen to run when there is nothing to go back to.
+     * @return $this
+     */
+    public function withBackButton($text = 'Back', $step = 1, $fallback = null)
+    {
+        $this->backButton = Make::back($text, $step, fallback: $fallback);
+
+        return $this;
     }
 
     /**
