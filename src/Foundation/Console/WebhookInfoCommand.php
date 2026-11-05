@@ -33,7 +33,15 @@ class WebhookInfoCommand extends Command
     public function handle()
     {
         return $this->eachConnection(function (string $connection) {
-            $info = $this->bot($connection)->getWebhookInfo()['result'] ?? null;
+            $result = $this->bot($connection)->getWebhookInfo();
+
+            if (! $result['ok']) {
+                $this->components->error("[{$connection}] {$this->describe($result)}");
+
+                return false;
+            }
+
+            $info = $result['result'] ?? null;
 
             if ($info === null || $info['url'] == '') {
                 $this->components->error("[{$connection}] Webhook not set");

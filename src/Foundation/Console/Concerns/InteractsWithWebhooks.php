@@ -81,7 +81,13 @@ trait InteractsWithWebhooks
      */
     protected function describe($result)
     {
-        return (string) ($result['description'] ?? $result['message'] ?? ($result['ok'] ?? false ? 'Done.' : 'The request failed.'));
+        foreach (['description', 'message'] as $key) {
+            if (filled($result[$key] ?? null)) {
+                return (string) $result[$key];
+            }
+        }
+
+        return $result['ok'] ?? false ? 'Done.' : 'The request failed.';
     }
 
     /**
