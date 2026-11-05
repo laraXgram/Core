@@ -111,7 +111,7 @@ class ComponentMakeCommand extends GeneratorCommand
             $separator = '\\';
         }
 
-        $path = $this->templatePath(
+        $path = $this->laragram->templatePath(
             str_replace('.', $separator, $this->getTemplate()).'.t8.php'
         );
 
@@ -275,7 +275,7 @@ class ComponentMakeCommand extends GeneratorCommand
     {
         return [
             ['inline', 'i', InputOption::VALUE_NONE, 'Create a component that renders an inline view'],
-            ['view', 'v', InputOption::VALUE_NONE, 'Create an anonymous component with only a view'],
+            ['view', null, InputOption::VALUE_NONE, 'Create an anonymous component with only a view'],
             ['template', 't', InputOption::VALUE_NONE, 'Create an anonymous component with only a template'],
             ['path', null, InputOption::VALUE_REQUIRED, 'The location where the component view should be created'],
             ['force', 'f', InputOption::VALUE_NONE, 'Create the class even if the component already exists'],

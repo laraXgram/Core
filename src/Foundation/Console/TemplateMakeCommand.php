@@ -58,7 +58,7 @@ class TemplateMakeCommand extends GeneratorCommand
      */
     protected function getPath($name)
     {
-        return $this->templatePath(
+        return $this->laragram->templatePath(
             $this->getNameInput().'.'.$this->option('extension'),
         );
     }
