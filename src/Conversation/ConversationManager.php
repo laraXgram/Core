@@ -178,6 +178,7 @@ class ConversationManager
             'prompt_message_id' => null,
             'keyboard'          => null,
             'started_at'        => $now,
+            'started_update'    => update_id(),
             'updated_at'        => $now,
         ], $seed);
 
@@ -476,6 +477,11 @@ class ConversationManager
 
             case 'cancel':
                 $this->finishCancel($conversation, $request, $flow->reason ?? 'manual', $state);
+
+                return;
+
+            case 'navigate':
+                $this->leaveByNavigating($conversation, $request, $state, $flow->step);
 
                 return;
 
@@ -805,6 +811,10 @@ class ConversationManager
                 return true;
             }
 
+            if ($back->onFirst === 'navigate') {
+                $this->leaveByNavigating($conversation, $request, $state);
+            }
+
             return true;
         }
 
@@ -917,6 +927,30 @@ class ConversationManager
         } else {
             $this->store()->put($this->answersKey(), $stored, $this->lifetime());
         }
+    }
+
+    /**
+     * Cancel the conversation and take the user back along their navigation trail.
+     *
+     * @param  \LaraGram\Conversation\Conversation  $conversation
+     * @param  \LaraGram\Request\Request  $request
+     * @param  array  $state
+     * @param  int|string  $step
+     * @return void
+     */
+    protected function leaveByNavigating(Conversation $conversation, Request $request, array $state, int|string $step = 1): void
+    {
+        $this->finishCancel($conversation, $request, 'back', $state);
+
+        $navigator = $this->container->make('navigation');
+
+        // A conversation started by a step is on that step: going back one step
+        // leaves it. Started anywhere else, the user is still on the last step.
+        if ($step === 1 && ($navigator->current()?->update['update_id'] ?? null) !== ($state['started_update'] ?? null)) {
+            $step = 0;
+        }
+
+        $navigator->navigate($step, null, $request);
     }
 
     /**
@@ -1118,7 +1152,7 @@ class ConversationManager
             return true;
         }
 
-        return $back->onFirst === 'cancel';
+        return in_array($back->onFirst, ['cancel', 'navigate'], true);
     }
 
     /**

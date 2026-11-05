@@ -24,7 +24,7 @@ final class Back
      * @param  string|null  $callbackData  Callback data for inline mode.
      * @param  string|null  $command       Command that triggers back.
      * @param  bool|null    $enabled
-     * @param  string|null  $onFirst       hide | cancel, on the first question.
+     * @param  string|null  $onFirst       hide | cancel | navigate, on the first question.
      * @return self
      */
     public static function make(

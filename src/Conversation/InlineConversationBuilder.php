@@ -134,6 +134,7 @@ class InlineConversationBuilder
      * @param  string|null  $label         Button text / matched text.
      * @param  string|null  $callbackData  Callback data for inline mode.
      * @param  string|null  $command       Command that triggers back.
+     * @param  string|null  $onFirst       hide | cancel | navigate, on the first question.
      * @return $this
      */
     public function back(
@@ -141,8 +142,9 @@ class InlineConversationBuilder
         ?string $label = null,
         ?string $callbackData = null,
         ?string $command = null,
+        ?string $onFirst = null,
     ): static {
-        $this->settings['back'] = Back::make($mode, $label, $callbackData, $command, enabled: true);
+        $this->settings['back'] = Back::make($mode, $label, $callbackData, $command, enabled: true, onFirst: $onFirst);
 
         return $this;
     }
