@@ -104,8 +104,8 @@ class RouteAction
     public static function containsSerializedClosure(array $action)
     {
         return is_string($action['uses']) && Str::startsWith($action['uses'], [
-            'O:47:"LaraGram\\Support\\SerializableClosure\\SerializableClosure',
-            'O:55:"LaraGram\\Support\\SerializableClosure\\UnsignedSerializableClosure',
+            'O:56:"LaraGram\\Support\\SerializableClosure\\SerializableClosure',
+            'O:64:"LaraGram\\Support\\SerializableClosure\\UnsignedSerializableClosure',
         ]) !== false;
     }
 }

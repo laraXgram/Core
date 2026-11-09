@@ -1033,8 +1033,8 @@ class Route
 
         return is_string($missing) &&
             Str::startsWith($missing, [
-                'O:47:"LaraGram\\Support\\SerializableClosure\\SerializableClosure',
-                'O:55:"LaraGram\\Support\\SerializableClosure\\UnsignedSerializableClosure',
+                'O:56:"LaraGram\\Support\\SerializableClosure\\SerializableClosure',
+                'O:64:"LaraGram\\Support\\SerializableClosure\\UnsignedSerializableClosure',
             ]) ? unserialize($missing, ['allowed_classes' => [
                 SerializableClosure::class,
                 \LaraGram\Support\SerializableClosure\UnsignedSerializableClosure::class,
