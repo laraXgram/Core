@@ -1,6 +1,6 @@
 <?php
 
-// schema: 9037dc743caa4ad82e35cafbb9b0804e
+// schema: f5abcd93c2e71228fdb6a871b00397a2
 
 namespace LaraGram\Broadcasting\Telegram\Concerns;
 
@@ -101,9 +101,9 @@ trait BroadcastsBotApiMethods
     }
 
     /**
-     * Use this method to copy messages of any kind. Service messages, paid media messages, giveaway messages, giveaway winners messages, and invoice messages can't be copied. A quiz poll can be copied only if the value of the field correct_option_ids is known to the bot. The method is analogous to the method forwardMessage, but the copied message doesn't have a link to the original message. Returns the MessageId of the sent message on success.
+     * Use this method to copy messages of any kind. Service messages, paid media messages, giveaway messages, giveaway winners messages, invoice messages, and widget messages can't be copied. A quiz poll can be copied only if the value of the field correct_option_ids is known to the bot. The method is analogous to the method forwardMessage, but the copied message doesn't have a link to the original message. Returns the MessageId of the sent message on success.
      *
-     * @param  int|string  $from_chat_id  Unique identifier for the chat where the original message was sent (or username of the target bot, supergroup or channel in the format @username)
+     * @param  int|string  $from_chat_id  Unique identifier for the chat where the original message was sent (or username of the target bot, supergroup, or channel in the format @username)
      * @param  int|string  $message_id  Message identifier in the chat specified in from_chat_id
      * @param  string  $caption  New caption for media, 0-1024 characters after entities parsing. If not specified, the original caption is kept.
      * @param  string  $parse_mode  Mode for parsing entities in the new caption. See formatting options for more details.
@@ -127,9 +127,9 @@ trait BroadcastsBotApiMethods
     }
 
     /**
-     * Use this method to copy messages of any kind. If some of the specified messages can't be found or copied, they are skipped. Service messages, paid media messages, giveaway messages, giveaway winners messages, and invoice messages can't be copied. A quiz poll can be copied only if the value of the field correct_option_ids is known to the bot. The method is analogous to the method forwardMessages, but the copied messages don't have a link to the original message. Album grouping is kept for copied messages. On success, an Array of MessageId of the sent messages is returned.
+     * Use this method to copy messages of any kind. If some of the specified messages can't be found or copied, they are skipped. Service messages, paid media messages, giveaway messages, giveaway winners messages, invoice messages, and widget messages can't be copied. A quiz poll can be copied only if the value of the field correct_option_ids is known to the bot. The method is analogous to the method forwardMessages, but the copied messages don't have a link to the original message. Album grouping is kept for copied messages. On success, an Array of MessageId of the sent messages is returned.
      *
-     * @param  int|string  $from_chat_id  Unique identifier for the chat where the original messages were sent (or username of the target bot, supergroup or channel in the format @username)
+     * @param  int|string  $from_chat_id  Unique identifier for the chat where the original messages were sent (or username of the target bot, supergroup, or channel in the format @username)
      * @param  int[]  $message_ids  A JSON-serialized list of 1-100 identifiers of messages in the chat from_chat_id to copy. The identifiers must be specified in a strictly increasing order.
      * @param  int|string  $message_thread_id  Unique identifier for the target message thread (topic) of a forum; for forum supergroups and private chats of bots with forum topic mode enabled only
      * @param  int|string  $direct_messages_topic_id  Identifier of the direct messages topic to which the messages will be sent; required if the messages are sent to a direct messages chat
@@ -171,7 +171,7 @@ trait BroadcastsBotApiMethods
     }
 
     /**
-     * Use this method to create a topic in a forum supergroup chat or a private chat with a user. In the case of a supergroup chat the bot must be an administrator in the chat for this to work and must have the can_manage_topics administrator right. Returns information about the created topic as a ForumTopic object.
+     * Use this method to create a topic in a forum supergroup chat or a private chat with a user. In the case of a supergroup chat the bot must be an administrator in the chat for this to work and must have the can_manage_topics administrator right. In the case of a private chat, a link to the topic can be created in the format https://t.me/<bot_username>/<message_thread_id>; the link opens the topic only for the user. Returns information about the created topic as a ForumTopic object.
      *
      * @param  string  $name  Topic name, 1-128 characters
      * @param  int|string  $icon_color  Color of the topic icon in RGB format. Currently, must be one of 7322096 (0x6FB9F0), 16766590 (0xFFD67E), 13338331 (0xCB86DB), 9367192 (0x8EEE98), 16749490 (0xFF93B2), or 16478047 (0xFB6F5F).
@@ -523,6 +523,20 @@ trait BroadcastsBotApiMethods
     }
 
     /**
+     * Use this method to edit data of a widget in a message sent by the bot or via the bot (for inline bots). Public data of a shared widget can be changed at most once per second. On success, True is returned.
+     *
+     * @param  int|string  $message_id  Required if inline_message_id is not specified. Identifier of the message with the widget.
+     * @param  string  $inline_message_id  Required if chat_id and message_id are not specified. Identifier of the inline message.
+     * @param  string  $public_data  New public data of the widget, 0-1024 bytes; pass an empty string to remove the public data. If omitted, then the public data isn't changed.
+     * @param  string  $chat_data  New data of the widget, which is specific to the message, 0-1024 bytes; pass an empty string to remove the data. If omitted, then the data isn't changed.
+     * @return \LaraGram\Broadcasting\Telegram\TelegramBroadcast
+     */
+    public function editMessageWidgetData($message_id = null, $inline_message_id = null, $public_data = null, $chat_data = null): TelegramBroadcast
+    {
+        return $this->endpoint('editMessageWidgetData', get_defined_vars(), 'chat_id');
+    }
+
+    /**
      * Allows the bot to cancel or re-enable extension of a subscription paid in Telegram Stars. Returns True on success.
      *
      * @param  string  $telegram_payment_charge_id  Telegram payment identifier for the subscription
@@ -546,7 +560,7 @@ trait BroadcastsBotApiMethods
     /**
      * Use this method to forward messages of any kind. Service messages and messages with protected content can't be forwarded. On success, the sent Message is returned.
      *
-     * @param  int|string  $from_chat_id  Unique identifier for the chat where the original message was sent (or username of the target bot, supergroup or channel in the format @username)
+     * @param  int|string  $from_chat_id  Unique identifier for the chat where the original message was sent (or username of the target bot, supergroup, or channel in the format @username)
      * @param  int|string  $message_id  Message identifier in the chat specified in from_chat_id
      * @param  int|string  $message_thread_id  Unique identifier for the target message thread (topic) of a forum; for forum supergroups and private chats of bots with forum topic mode enabled only
      * @param  int|string  $direct_messages_topic_id  Identifier of the direct messages topic to which the message will be forwarded; required if the message is forwarded to a direct messages chat
@@ -565,7 +579,7 @@ trait BroadcastsBotApiMethods
     /**
      * Use this method to forward multiple messages of any kind. If some of the specified messages can't be found or forwarded, they are skipped. Service messages and messages with protected content can't be forwarded. Album grouping is kept for forwarded messages. On success, an Array of MessageId of the sent messages is returned.
      *
-     * @param  int|string  $from_chat_id  Unique identifier for the chat where the original messages were sent (or username of the target bot, supergroup or channel in the format @username)
+     * @param  int|string  $from_chat_id  Unique identifier for the chat where the original messages were sent (or username of the target bot, supergroup, or channel in the format @username)
      * @param  int[]  $message_ids  A JSON-serialized list of 1-100 identifiers of messages in the chat from_chat_id to forward. The identifiers must be specified in a strictly increasing order.
      * @param  int|string  $message_thread_id  Unique identifier for the target message thread (topic) of a forum; for forum supergroups and private chats of bots with forum topic mode enabled only
      * @param  int|string  $direct_messages_topic_id  Identifier of the direct messages topic to which the messages will be forwarded; required if the messages are forwarded to a direct messages chat
@@ -1439,6 +1453,29 @@ trait BroadcastsBotApiMethods
     }
 
     /**
+     * Use this method to send again a shared widget created by the bot. Currently, in the production environment, widgets can be sent only to private chats, and sent widgets automatically have protected content and therefore can't be forwarded. On success, the sent Message is returned.
+     *
+     * @param  string  $widget_id  Unique identifier of the shared widget
+     * @param  string  $caption  Widget caption, 0-1024 characters after entities parsing
+     * @param  string  $parse_mode  Mode for parsing entities in the widget caption. See formatting options for more details.
+     * @param  array  $reply_markup  Additional interface options. A JSON-serialized object for an inline keyboard, custom reply keyboard, instructions to remove a reply keyboard or to force a reply from the user.
+     * @param  int|string  $message_thread_id  Unique identifier for the target message thread (topic) of a forum; for forum supergroups and private chats of bots with forum topic mode enabled only
+     * @param  string  $chat_data  Data of the widget, which is specific to the message, 0-1024 bytes
+     * @param  \LaraGram\Laraquest\Updates\MessageEntity[]|array|string  $caption_entities  A JSON-serialized list of special entities that appear in the caption, which can be specified instead of parse_mode
+     * @param  bool  $show_caption_above_media  Pass True if the caption must be shown above the widget
+     * @param  bool  $disable_notification  Sends the message silently. Users will receive a notification with no sound.
+     * @param  bool  $protect_content  Protects the contents of the sent message from forwarding and saving
+     * @param  bool  $allow_paid_broadcast  Pass True to allow up to 1000 messages per second, ignoring broadcasting limits for a fee of 0.1 Telegram Stars per message. The relevant Stars will be withdrawn from the bot's balance.
+     * @param  string  $message_effect_id  Unique identifier of the message effect to be added to the message; for private chats only
+     * @param  array  $reply_parameters  Description of the message to reply to
+     * @return \LaraGram\Broadcasting\Telegram\TelegramBroadcast
+     */
+    public function sendSharedWidget($widget_id, $caption = null, $parse_mode = null, $reply_markup = null, $message_thread_id = null, $chat_data = null, $caption_entities = null, $show_caption_above_media = null, $disable_notification = null, $protect_content = null, $allow_paid_broadcast = null, $message_effect_id = null, $reply_parameters = null): TelegramBroadcast
+    {
+        return $this->endpoint('sendSharedWidget', get_defined_vars(), 'chat_id');
+    }
+
+    /**
      * Use this method to send static .WEBP, animated .TGS, or video .WEBM stickers. On success, the sent Message is returned.
      *
      * @param  array|string  $sticker  Sticker to send. Pass a file_id as String to send a file that exists on the Telegram servers (recommended), pass an HTTP URL as a String for Telegram to get a .WEBP sticker from the Internet, or upload a new .WEBP, .TGS, or .WEBM sticker using multipart/form-data. More information on Sending Files ». Video and animated stickers can't be sent via an HTTP URL.
@@ -1573,6 +1610,34 @@ trait BroadcastsBotApiMethods
     public function sendVoice($voice, $caption = null, $parse_mode = null, $reply_markup = null, $business_connection_id = null, $message_thread_id = null, $direct_messages_topic_id = null, $ephemeral_message_parameters = null, $caption_entities = null, $duration = null, $disable_notification = null, $protect_content = null, $allow_paid_broadcast = null, $message_effect_id = null, $suggested_post_parameters = null, $reply_parameters = null): TelegramBroadcast
     {
         return $this->endpoint('sendVoice', get_defined_vars(), 'chat_id');
+    }
+
+    /**
+     * Use this method to send a message with an HTML widget. Currently, in the production environment, widgets can be sent only to private chats, and sent widgets automatically have protected content and therefore can't be forwarded. On success, the sent Message is returned.
+     *
+     * @param  string  $html  HTML code of the widget, 1-32768 bytes. The code must not exceed 4096 bytes when compressed by zlib with the maximum compression level.
+     * @param  string  $caption  Widget caption, 0-1024 characters after entities parsing
+     * @param  string  $parse_mode  Mode for parsing entities in the widget caption. See formatting options for more details.
+     * @param  array  $reply_markup  Additional interface options. A JSON-serialized object for an inline keyboard, custom reply keyboard, instructions to remove a reply keyboard or to force a reply from the user.
+     * @param  int|string  $message_thread_id  Unique identifier for the target message thread (topic) of a forum; for forum supergroups and private chats of bots with forum topic mode enabled only
+     * @param  int|string  $width  Width of the widget in logical pixels; omit if the widget must occupy the whole width of the message bubble. The width is clamped by the app to the range from 200 to the maximum width of the message bubble.
+     * @param  int|string  $height  Height of the widget in logical pixels; omit if the height of the widget isn't fixed. The height is clamped by the app to the range 50-600.
+     * @param  string  $public_data  Public data of the widget, 0-1024 bytes, which will be available wherever the widget is shown. If the widget is shared, then all messages with it will have the same public data.
+     * @param  string  $chat_data  Data of the widget, which is specific to the message, 0-1024 bytes
+     * @param  \LaraGram\Laraquest\Updates\MessageEntity[]|array|string  $caption_entities  A JSON-serialized list of special entities that appear in the caption, which can be specified instead of parse_mode
+     * @param  bool  $show_caption_above_media  Pass True if the caption must be shown above the widget
+     * @param  bool  $allow_queries  Pass True to allow the widget to send queries to the bot
+     * @param  bool  $is_shared  Pass True to create a shared widget, which can be sent again using the method sendSharedWidget
+     * @param  bool  $disable_notification  Sends the message silently. Users will receive a notification with no sound.
+     * @param  bool  $protect_content  Protects the contents of the sent message from forwarding and saving
+     * @param  bool  $allow_paid_broadcast  Pass True to allow up to 1000 messages per second, ignoring broadcasting limits for a fee of 0.1 Telegram Stars per message. The relevant Stars will be withdrawn from the bot's balance.
+     * @param  string  $message_effect_id  Unique identifier of the message effect to be added to the message; for private chats only
+     * @param  array  $reply_parameters  Description of the message to reply to
+     * @return \LaraGram\Broadcasting\Telegram\TelegramBroadcast
+     */
+    public function sendWidget($html, $caption = null, $parse_mode = null, $reply_markup = null, $message_thread_id = null, $width = null, $height = null, $public_data = null, $chat_data = null, $caption_entities = null, $show_caption_above_media = null, $allow_queries = null, $is_shared = null, $disable_notification = null, $protect_content = null, $allow_paid_broadcast = null, $message_effect_id = null, $reply_parameters = null): TelegramBroadcast
+    {
+        return $this->endpoint('sendWidget', get_defined_vars(), 'chat_id');
     }
 
     /**
@@ -1859,9 +1924,11 @@ trait BroadcastsBotApiMethods
      * Verifies a chat on behalf of the organization which is represented by the bot. Returns True on success.
      *
      * @param  string  $custom_description  Custom description for the verification; 0-70 characters. Must be empty if the organization isn't allowed to provide a custom verification description.
+     * @param  string  $custom_description_parse_mode  Mode for parsing entities in the custom description. See formatting options for more details. Only “text_link” entities are supported.
+     * @param  \LaraGram\Laraquest\Updates\MessageEntity[]|array|string  $custom_description_entities  A JSON-serialized list of special entities that appear in the custom description, which can be specified instead of custom_description_parse_mode. Only “text_link” entities are supported.
      * @return \LaraGram\Broadcasting\Telegram\TelegramBroadcast
      */
-    public function verifyChat($custom_description = null): TelegramBroadcast
+    public function verifyChat($custom_description = null, $custom_description_parse_mode = null, $custom_description_entities = null): TelegramBroadcast
     {
         return $this->endpoint('verifyChat', get_defined_vars(), 'chat_id');
     }
@@ -1870,9 +1937,11 @@ trait BroadcastsBotApiMethods
      * Verifies a user on behalf of the organization which is represented by the bot. Returns True on success.
      *
      * @param  string  $custom_description  Custom description for the verification; 0-70 characters. Must be empty if the organization isn't allowed to provide a custom verification description.
+     * @param  string  $custom_description_parse_mode  Mode for parsing entities in the custom description. See formatting options for more details. Only “text_link” entities are supported.
+     * @param  \LaraGram\Laraquest\Updates\MessageEntity[]|array|string  $custom_description_entities  A JSON-serialized list of special entities that appear in the custom description, which can be specified instead of custom_description_parse_mode. Only “text_link” entities are supported.
      * @return \LaraGram\Broadcasting\Telegram\TelegramBroadcast
      */
-    public function verifyUser($custom_description = null): TelegramBroadcast
+    public function verifyUser($custom_description = null, $custom_description_parse_mode = null, $custom_description_entities = null): TelegramBroadcast
     {
         return $this->endpoint('verifyUser', get_defined_vars(), 'user_id');
     }

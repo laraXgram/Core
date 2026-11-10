@@ -258,7 +258,17 @@ trait CompilesInputs
         "shuffle_options",
         "suggested_post_parameters",
         "tag",
-        "web_app_url"
+        "web_app_url",
+        "html",
+        "public_data",
+        "chat_data",
+        "allow_queries",
+        "is_shared",
+        "widget_id",
+        "widget_query_id",
+        "data",
+        "custom_description_parse_mode",
+        "custom_description_entities"
     ];
 
     protected function tryCompileAllowedDirective(array $match): ?string
