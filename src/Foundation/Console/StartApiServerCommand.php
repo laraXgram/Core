@@ -37,6 +37,18 @@ class StartApiServerCommand extends Command
             return self::FAILURE;
         }
 
+        if (! $this->usesLaraGramServer() && ($this->streamsFiles() || ! $this->storesFiles())) {
+            $this->components->error('File streaming and disabling file storage are only supported by the LaraGram API Server.');
+
+            return self::FAILURE;
+        }
+
+        if (! $this->storesFiles() && ! $this->streamsFiles()) {
+            $this->components->error('Disabling file storage requires file streaming, set [bot.api_server.stream_files] to true.');
+
+            return self::FAILURE;
+        }
+
         if (!file_exists($this->option('dir')))
             mkdir($this->option('dir'), recursive: true);
 
@@ -99,7 +111,46 @@ class StartApiServerCommand extends Command
         if (!empty($BOT_API_SERVER_STAT_IP))  $command[] = '--http-stat-ip-address=' . $BOT_API_SERVER_STAT_IP;
         if (!empty($BOT_API_SERVER_STAT_PORT)) $command[] = '--http-stat-port=' . $BOT_API_SERVER_STAT_PORT;
 
+        if ($this->streamsFiles()) {
+            $command[] = '--stream-files';
+            $command[] = '--stream-read-ahead=' . (int) config('bot.api_server.stream_read_ahead', 4);
+        }
+
+        if (! $this->storesFiles()) {
+            $command[] = '--no-file-storage';
+        }
+
         return $command;
+    }
+
+    /**
+     * Determine if the server streams files at their /file/ URLs.
+     *
+     * @return bool
+     */
+    protected function streamsFiles(): bool
+    {
+        return filter_var(config('bot.api_server.stream_files', false), FILTER_VALIDATE_BOOL);
+    }
+
+    /**
+     * Determine if the server writes files to disk.
+     *
+     * @return bool
+     */
+    protected function storesFiles(): bool
+    {
+        return filter_var(config('bot.api_server.file_storage', true), FILTER_VALIDATE_BOOL);
+    }
+
+    /**
+     * Determine if the configured binary is the LaraGram API Server.
+     *
+     * @return bool
+     */
+    protected function usesLaraGramServer(): bool
+    {
+        return str_contains(basename((string) $this->option('binary')), 'laragram-server');
     }
 
     /**
