@@ -2,6 +2,9 @@
 
 # Release laraxgram/core and all of its components.
 #
+# The components are synced, committed, pushed and published first, so core is
+# pushed and released last, once every package it replaces is available.
+#
 # Usage: bin/release.sh <version> [--dry-run] [--yes]
 
 set -euo pipefail
@@ -35,8 +38,9 @@ require_env GITHUB_TOKEN PACKAGIST_USERNAME PACKAGIST_TOKEN
 
 git -C "$ROOT" fetch -q origin "$BRANCH" --tags
 
-[ "$(git -C "$ROOT" rev-parse HEAD)" = "$(git -C "$ROOT" rev-parse "origin/$BRANCH")" ] \
-    || fail "The $BRANCH branch is not in sync with origin/$BRANCH."
+# The branch may be ahead of origin, since core is pushed at the end of the release...
+git -C "$ROOT" merge-base --is-ancestor "origin/$BRANCH" HEAD \
+    || fail "The $BRANCH branch is behind or has diverged from origin/$BRANCH, pull first."
 
 RELEASE_CORE=1
 
@@ -66,25 +70,39 @@ if [ $CONFIRMED -eq 0 ]; then
     [[ $answer =~ ^[Yy]$ ]] || exit 1
 fi
 
-if [ $RELEASE_CORE -eq 1 ]; then
-    echo "[core]"
-
-    if ! git -C "$ROOT" rev-parse -q --verify "refs/tags/$VERSION" > /dev/null; then
-        dry_run "tag core $VERSION" || { git -C "$ROOT" tag "$VERSION" && echo "  tagged $VERSION"; }
-    fi
-
-    git_push "$ROOT" "$VERSION"
-    github_create_release core "$VERSION"
-fi
-
+# 1. The components: sync, commit, tag and push each one, then publish them...
 "$ROOT/bin/split.sh" --push --tag="$VERSION" --branch="$BRANCH" "${COMPONENTS[@]}"
 
 echo "[packagist]"
 
-[ $RELEASE_CORE -eq 1 ] && packagist_publish core
-
 for component in "${COMPONENTS[@]}"; do
     packagist_publish "$(echo "$component" | tr '[:upper:]' '[:lower:]')"
 done
+
+# 2. Core itself, last...
+echo "[core]"
+
+REFS=()
+
+[ "$(git -C "$ROOT" rev-parse HEAD)" = "$(git -C "$ROOT" rev-parse "origin/$BRANCH")" ] || REFS+=("$BRANCH")
+
+if [ $RELEASE_CORE -eq 1 ]; then
+    if ! git -C "$ROOT" rev-parse -q --verify "refs/tags/$VERSION" > /dev/null; then
+        dry_run "tag core $VERSION" || { git -C "$ROOT" tag "$VERSION" && echo "  tagged $VERSION"; }
+    fi
+
+    REFS+=("$VERSION")
+fi
+
+if [ ${#REFS[@]} -gt 0 ]; then
+    git_push "$ROOT" "${REFS[@]}"
+else
+    echo "  up to date"
+fi
+
+if [ $RELEASE_CORE -eq 1 ]; then
+    github_create_release core "$VERSION"
+    packagist_publish core
+fi
 
 echo "Released $VERSION."
