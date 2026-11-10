@@ -46,7 +46,7 @@ class Application extends Container implements ApplicationContract, CachesConfig
      *
      * @var string
      */
-    const VERSION = "4.8.0";
+    const VERSION = "4.9.0";
 
     /**
      * The base path for the LaraGram installation.
