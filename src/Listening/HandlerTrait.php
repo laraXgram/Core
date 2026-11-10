@@ -443,14 +443,24 @@ trait HandlerTrait
         return $this->scopedContainerText('edited_message', $pattern, $action);
     }
 
-    public function onChannelPostCaption(string $pattern, Closure|array|string $action)
+    public function onChannelPostText(string $pattern, Closure|array|string $action)
     {
         return $this->scopedContainerText('channel_post', $pattern, $action);
     }
 
-    public function onEditedChannelPostCaption(string $pattern, Closure|array|string $action)
+    public function onEditedChannelPostText(string $pattern, Closure|array|string $action)
     {
         return $this->scopedContainerText('edited_channel_post', $pattern, $action);
+    }
+
+    public function onChannelPostCaption(string $pattern, Closure|array|string $action)
+    {
+        return $this->onChannelPostText($pattern, $action);
+    }
+
+    public function onEditedChannelPostCaption(string $pattern, Closure|array|string $action)
+    {
+        return $this->onEditedChannelPostText($pattern, $action);
     }
 
     protected function scopedContainer(string $container, Closure|array|string $action)
