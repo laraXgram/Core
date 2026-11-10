@@ -724,6 +724,16 @@ trait HandlerTrait
         return $this->addListen(['TEXT', 'MESSAGE', 'ENTITIES'], 'phone_number', $action);
     }
 
+    public function onBankCardNumber(Closure|array|string $action)
+    {
+        return $this->addListen(['TEXT', 'MESSAGE', 'ENTITIES'], 'bank_card_number', $action);
+    }
+
+    public function onTonAddress(Closure|array|string $action)
+    {
+        return $this->addListen(['TEXT', 'MESSAGE', 'ENTITIES'], 'ton_address', $action);
+    }
+
     public function onTextLink(Closure|array|string $action)
     {
         return $this->addListen(['TEXT', 'MESSAGE', 'ENTITIES'], 'text_link', $action);

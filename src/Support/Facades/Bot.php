@@ -70,6 +70,8 @@ namespace LaraGram\Support\Facades;
  * @method static \LaraGram\Listening\Listen onUrl(callable|array|string $action)
  * @method static \LaraGram\Listening\Listen onEmail(callable|array|string $action)
  * @method static \LaraGram\Listening\Listen onPhoneNumber(callable|array|string $action)
+ * @method static \LaraGram\Listening\Listen onBankCardNumber(callable|array|string $action)
+ * @method static \LaraGram\Listening\Listen onTonAddress(callable|array|string $action)
  * @method static \LaraGram\Listening\Listen onTextLink(callable|array|string $action)
  * @method static \LaraGram\Listening\Listen onTextMention(callable|array|string $action)
  * @method static \LaraGram\Listening\Listen onCustomEmoji(callable|array|string $action)
