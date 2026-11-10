@@ -698,6 +698,37 @@ trait HandlerTrait
         return $this->addListen('MESSAGE', 'community_chat_removed', $action);
     }
 
+    public function onWidget(Closure|array|string $action)
+    {
+        return $this->addListen('MESSAGE', 'widget', $action);
+    }
+
+    public function onWidgetQuery(Closure|array|string $action)
+    {
+        return $this->addListen('UPDATE', 'widget_query', $action);
+    }
+
+    public function onWidgetQueryType(string|array $type, Closure|array|string $action)
+    {
+        $type = is_array($type) ? implode('|', $type) : $type;
+        return $this->addListen(['UPDATE', 'WIDGET_QUERY_TYPE'], $type, $action);
+    }
+
+    public function onSharedWidgetQuery(Closure|array|string $action)
+    {
+        return $this->addListen('UPDATE', 'shared_widget_query', $action);
+    }
+
+    public function onTonWalletTransfer(Closure|array|string $action)
+    {
+        return $this->addListen('MESSAGE', 'ton_wallet_transfer', $action);
+    }
+
+    public function onPaidMessagesWaived(Closure|array|string $action)
+    {
+        return $this->addListen('MESSAGE', 'paid_messages_waived', $action);
+    }
+
     public function onEphemeralMessage(Closure|array|string $action)
     {
         $placeholder = 'e_' . substr(md5('ephemeral_message'), 0, 8);

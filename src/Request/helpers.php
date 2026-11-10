@@ -50,6 +50,7 @@ if (!function_exists('chat')) {
             isset($request->removed_chat_boost) => $request->removed_chat_boost->chat,
             isset($request->poll_answer) => $request->poll_answer->voter_chat,
             isset($request->stopped_message_generation) => $request->stopped_message_generation->chat,
+            isset($request->widget_query->chat) => $request->widget_query->chat,
             default => Chat::missing()
         };
     }
@@ -91,6 +92,8 @@ if (!function_exists('user')) {
             isset($request->removed_chat_boost) => $request->removed_chat_boost->source->user,
             isset($request->subscription) => $request->subscription->user,
             isset($request->managed_bot) => $request->managed_bot->user,
+            isset($request->widget_query) => $request->widget_query->from,
+            isset($request->shared_widget_query) => $request->shared_widget_query->from,
             default => User::missing()
         };
     }
@@ -460,6 +463,38 @@ if (!function_exists('stopped_message_generation')) {
          */
         $request = app('request');
         return $request->stopped_message_generation;
+    }
+}
+
+if (!function_exists('widget_query')) {
+    /**
+     * Get the query sent by a widget in a message sent by the bot or via the bot.
+     *
+     * @return object|null
+     */
+    function widget_query(): object|null
+    {
+        /**
+         * @var Request $request ;
+         */
+        $request = app('request');
+        return $request->widget_query;
+    }
+}
+
+if (!function_exists('shared_widget_query')) {
+    /**
+     * Get the query sent by a shared widget from a forwarded message.
+     *
+     * @return object|null
+     */
+    function shared_widget_query(): object|null
+    {
+        /**
+         * @var Request $request ;
+         */
+        $request = app('request');
+        return $request->shared_widget_query;
     }
 }
 

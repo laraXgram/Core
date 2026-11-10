@@ -80,6 +80,16 @@ class PatternValidator implements ValidatorInterface
             return $state !== null && in_array($state, explode('|', $pattern), true);
         }
 
+        // Widget query type listeners (data / sign_data / sent_transaction),
+        // for queries from widgets in messages and from shared widgets.
+        if (in_array('WIDGET_QUERY_TYPE', $listenMethods, true)) {
+            $type = $request->widget_query->type->type
+                ?? $request->shared_widget_query->type->type
+                ?? null;
+
+            return $type !== null && in_array($type, explode('|', $pattern), true);
+        }
+
         // Ephemeral message listeners - match any message carrying an
         // ephemeral_message_id, independent of the content-derived verb.
         if (in_array('EPHEMERAL', $listenMethods, true)) {

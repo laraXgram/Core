@@ -42,6 +42,8 @@ trait InteractWithUpdate
             isset($this->removed_chat_boost) => 'removed_chat_boost',
             isset($this->subscription) => 'subscription',
             isset($this->stopped_message_generation) => 'stopped_message_generation',
+            isset($this->widget_query) => 'widget_query',
+            isset($this->shared_widget_query) => 'shared_widget_query',
             default => false
         };
     }
@@ -67,6 +69,7 @@ trait InteractWithUpdate
             isset($message->video_note) => 'video_note',
             isset($message->voice) => 'voice',
             isset($message->checklist) => 'checklist',
+            isset($message->widget) => 'widget',
             isset($message->contact) => 'contact',
             isset($message->dice) => 'dice',
             isset($message->game) => 'game',
@@ -133,6 +136,8 @@ trait InteractWithUpdate
             isset($message->community_chat_added) => 'community_chat_added',
             isset($message->community_chat_joined) => 'community_chat_joined',
             isset($message->community_chat_removed) => 'community_chat_removed',
+            isset($message->ton_wallet_transfer) => 'ton_wallet_transfer',
+            isset($message->paid_messages_waived) => 'paid_messages_waived',
             default => throw new InvalidUpdateType('Unknown message type')
         };
     }
@@ -163,6 +168,7 @@ trait InteractWithUpdate
             isset($this->chat_boost->chat->type) => $this->chat_boost->chat->type,
             isset($this->removed_chat_boost->chat->type) => $this->removed_chat_boost->chat->type,
             isset($this->stopped_message_generation->chat->type) => $this->stopped_message_generation->chat->type,
+            isset($this->widget_query->chat->type) => $this->widget_query->chat->type,
             default => null
         };
     }
