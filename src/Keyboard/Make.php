@@ -23,11 +23,11 @@ class Make
      * @param string $text
      * @param int|string $step The number of steps, or the name of a step.
      * @param string $style Must be one of “danger” (red), “success” (green) or “primary” (blue).
-     * @param int|string $icon_custom_emoji_id
+     * @param int $icon_custom_emoji_id
      * @param string|null $fallback The name of the listen to run when there is nothing to go back to.
      * @return array
      */
-    public static function back(string $text = 'Back', int|string $step = 1, string $style = '', int|string $icon_custom_emoji_id = '', ?string $fallback = null): array
+    public static function back(string $text = 'Back', int|string $step = 1, string $style = '', int $icon_custom_emoji_id = 0, ?string $fallback = null): array
     {
         return self::callbackData($text, Navigator::buttonData($step, $fallback), $style, $icon_custom_emoji_id);
     }
