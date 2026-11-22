@@ -33,7 +33,7 @@ final class Util
                 if (false === \in_array($curlErrno, self::$retriableErrorCodes, true) || $retries === 0) {
                     $curlError = curl_error($ch);
 
-                    if ($closeAfterDone) {
+                    if ($closeAfterDone && PHP_VERSION_ID < 80000) {
                         curl_close($ch);
                     }
 
@@ -43,7 +43,7 @@ final class Util
                 continue;
             }
 
-            if ($closeAfterDone) {
+            if ($closeAfterDone && PHP_VERSION_ID < 80000) {
                 curl_close($ch);
             }
 

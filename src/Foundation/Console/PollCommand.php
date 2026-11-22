@@ -489,7 +489,10 @@ class PollCommand extends Command
         }
 
         curl_multi_remove_handle($this->multi, $handle);
-        curl_close($handle);
+
+        if (PHP_VERSION_ID < 80000) {
+            \curl_close($handle);
+        }
     }
 
     /**

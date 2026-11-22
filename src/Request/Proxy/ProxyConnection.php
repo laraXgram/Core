@@ -84,7 +84,9 @@ class ProxyConnection
         $errno = curl_errno($curl);
         $error = curl_error($curl);
 
-        curl_close($curl);
+        if (PHP_VERSION_ID < 80000) {
+            \curl_close($curl);
+        }
 
         if ($raw === false) {
             return [
@@ -174,7 +176,9 @@ class ProxyConnection
 
         $failed = $ok === false;
 
-        curl_close($curl);
+        if (PHP_VERSION_ID < 80000) {
+            \curl_close($curl);
+        }
 
         return $failed ? false : round($latency, 2);
     }
