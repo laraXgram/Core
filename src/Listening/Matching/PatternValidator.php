@@ -291,11 +291,32 @@ class PatternValidator implements ValidatorInterface
             return false;
         }
 
-        $blocks = $rich->blocks ?? $rich->content ?? [];
+        return $this->containsRichBlock($rich->blocks ?? $rich->content ?? [], $pattern);
+    }
 
+    /**
+     * Determine if a list of rich blocks contains a block of the given type,
+     * looking into nested blocks (quotes, details, list items, ...) as well.
+     *
+     * @param  iterable  $blocks
+     * @param  string  $type
+     * @return bool
+     */
+    protected function containsRichBlock(iterable $blocks, string $type): bool
+    {
         foreach ($blocks as $block) {
-            if (($block->type ?? null) === $pattern) {
+            if (($block->type ?? null) === $type) {
                 return true;
+            }
+
+            if ($this->containsRichBlock($block->blocks ?? [], $type)) {
+                return true;
+            }
+
+            foreach ($block->items ?? [] as $item) {
+                if ($this->containsRichBlock($item->blocks ?? [], $type)) {
+                    return true;
+                }
             }
         }
 
