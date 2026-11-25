@@ -95,7 +95,7 @@ class EachPromise implements PromisorInterface
             $this->refillPending();
             if (!$this->pending) {
                 Utils::queue()->add(function (): void {
-                    if (!$this->aggregate || Is::settled($this->aggregate)) {
+                    if (!$this->aggregate || State::isSettled($this->aggregate)) {
                         return;
                     }
 
@@ -129,7 +129,7 @@ class EachPromise implements PromisorInterface
             while ($promise = current($this->pending)) {
                 next($this->pending);
                 $promise->wait();
-                if (Is::settled($this->aggregate)) {
+                if (State::isSettled($this->aggregate)) {
                     return;
                 }
             }
@@ -241,7 +241,7 @@ class EachPromise implements PromisorInterface
     private function step(int $idx): void
     {
         // If the promise was already resolved, then ignore this step.
-        if (Is::settled($this->aggregate)) {
+        if (State::isSettled($this->aggregate)) {
             return;
         }
 
