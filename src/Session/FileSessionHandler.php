@@ -5,6 +5,7 @@ namespace LaraGram\Session;
 use LaraGram\Filesystem\Filesystem;
 use LaraGram\Support\Finder\Finder;
 use LaraGram\Support\Tempora;
+use RuntimeException;
 use SessionHandlerInterface;
 
 class FileSessionHandler implements SessionHandlerInterface
@@ -62,6 +63,26 @@ class FileSessionHandler implements SessionHandlerInterface
     public function close(): bool
     {
         return true;
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @return string
+     */
+    public function create_sid(): string
+    {
+        return session_create_id() ?: throw new RuntimeException('Unable to create a session ID.');
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @return bool
+     */
+    public function validateId($id): bool
+    {
+        return $this->files->isFile($this->path.'/'.$id);
     }
 
     /**
