@@ -729,6 +729,23 @@ trait HandlerTrait
         return $this->addListen('MESSAGE', 'paid_messages_waived', $action);
     }
 
+    public function onWriteAccessAllowedVia(string|array $reason, Closure|array|string $action)
+    {
+        $reason = is_array($reason) ? implode('|', $reason) : $reason;
+        return $this->addListen(['MESSAGE', 'WRITE_ACCESS'], $reason, $action);
+    }
+
+    public function onBotInvite(Closure|array|string $action)
+    {
+        return $this->onWriteAccessAllowedVia('invite', $action);
+    }
+
+    public function onUniqueGiftOrigin(string|array $origin, Closure|array|string $action)
+    {
+        $origin = is_array($origin) ? implode('|', $origin) : $origin;
+        return $this->addListen(['MESSAGE', 'GIFT_ORIGIN'], $origin, $action);
+    }
+
     public function onEphemeralMessage(Closure|array|string $action)
     {
         $placeholder = 'e_' . substr(md5('ephemeral_message'), 0, 8);
