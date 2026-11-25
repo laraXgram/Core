@@ -1655,7 +1655,8 @@ class Collection implements ArrayAccess, CanBeEscapedWhenCastToString, Enumerabl
                             SORT_NUMERIC => (int) $values[0] <=> (int) $values[1],
                             SORT_STRING => strcmp($values[0], $values[1]),
                             SORT_NATURAL => strnatcmp((string) $values[0], (string) $values[1]),
-                            SORT_LOCALE_STRING => strcoll($values[0], $values[1]),
+                            // SORT_LOCALE_STRING, whose constant is deprecated since PHP 8.6
+                            5 => static::compareLocaleStrings($values[0], $values[1]),
                             default => $values[0] <=> $values[1],
                         };
                     }
@@ -1692,6 +1693,35 @@ class Collection implements ArrayAccess, CanBeEscapedWhenCastToString, Enumerabl
         }
 
         return $this->sortBy($callback, $options, true);
+    }
+
+    /**
+     * Compare two strings using the current locale.
+     *
+     * PHP 8.6 deprecates strcoll(), so the intl Collator is used there when
+     * it is available.
+     *
+     * @param  mixed  $first
+     * @param  mixed  $second
+     * @return int
+     */
+    protected static function compareLocaleStrings($first, $second): int
+    {
+        if (PHP_VERSION_ID < 80600) {
+            return strcoll((string) $first, (string) $second);
+        }
+
+        if (! class_exists(\Collator::class)) {
+            return strcmp((string) $first, (string) $second);
+        }
+
+        static $collators = [];
+
+        $locale = explode('.', (string) setlocale(LC_COLLATE, '0'))[0];
+
+        $collator = $collators[$locale] ??= new \Collator($locale === 'C' || $locale === 'POSIX' ? 'root' : $locale);
+
+        return (int) $collator->compare((string) $first, (string) $second);
     }
 
     /**
