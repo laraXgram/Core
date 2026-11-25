@@ -39,7 +39,7 @@ class ProcessHelper extends Helper
         }
 
         if ($verbosity <= $output->getVerbosity()) {
-            $output->write($formatter->start(spl_object_hash($process), $this->escapeString($process->getCommandLine())));
+            $output->write($formatter->start((string) spl_object_id($process), $this->escapeString($process->getCommandLine())));
         }
 
         if ($output->isDebug()) {
@@ -50,7 +50,7 @@ class ProcessHelper extends Helper
 
         if ($verbosity <= $output->getVerbosity()) {
             $message = $process->isSuccessful() ? 'Command ran successfully' : \sprintf('%s Command did not run successfully', $process->getExitCode());
-            $output->write($formatter->stop(spl_object_hash($process), $message, $process->isSuccessful()));
+            $output->write($formatter->stop((string) spl_object_id($process), $message, $process->isSuccessful()));
         }
 
         if (!$process->isSuccessful() && null !== $error) {
@@ -97,7 +97,7 @@ class ProcessHelper extends Helper
         $formatter = $this->getHelperSet()->get('debug_formatter');
 
         return function ($type, $buffer) use ($output, $process, $callback, $formatter) {
-            $output->write($formatter->progress(spl_object_hash($process), $this->escapeString($buffer), Process::ERR === $type));
+            $output->write($formatter->progress((string) spl_object_id($process), $this->escapeString($buffer), Process::ERR === $type));
 
             if (null !== $callback) {
                 $callback($type, $buffer);

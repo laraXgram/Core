@@ -128,7 +128,9 @@ class Native implements Serializable
             $scope = $scope->name;
         }
 
-        $this->reference = spl_object_hash($this->closure);
+        $this->reference = PHP_VERSION_ID >= 80600
+            ? spl_object_id($this->closure)
+            : spl_object_hash($this->closure);
 
         $this->scope[$this->closure] = $this;
 
