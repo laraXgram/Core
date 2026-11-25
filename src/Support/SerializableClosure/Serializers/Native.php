@@ -274,7 +274,9 @@ class Native implements Serializable
                         continue;
                     }
 
-                    $property->setAccessible(true);
+                    if (PHP_VERSION_ID < 80100) {
+                        $property->setAccessible(true);
+                    }
 
                     if (PHP_VERSION >= 7.4 && ! $property->isInitialized($instance)) {
                         continue;
@@ -374,7 +376,9 @@ class Native implements Serializable
                         continue;
                     }
 
-                    $property->setAccessible(true);
+                    if (PHP_VERSION_ID < 80100) {
+                        $property->setAccessible(true);
+                    }
 
                     if (PHP_VERSION >= 7.4 && ! $property->isInitialized($data)) {
                         continue;
@@ -500,7 +504,9 @@ class Native implements Serializable
                         continue;
                     }
 
-                    $property->setAccessible(true);
+                    if (PHP_VERSION_ID < 80100) {
+                        $property->setAccessible(true);
+                    }
 
                     if (PHP_VERSION >= 7.4 && ! $property->isInitialized($instance)) {
                         continue;

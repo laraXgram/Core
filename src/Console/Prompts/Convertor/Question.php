@@ -68,7 +68,9 @@ final class Question
             $property = (new ReflectionClass(LaraGramStyle::class))
                 ->getProperty('questionHelper');
 
-            $property->setAccessible(true);
+            if (PHP_VERSION_ID < 80100) {
+                $property->setAccessible(true);
+            }
 
             $currentHelper = $property->isInitialized($output)
                 ? $property->getValue($output)
