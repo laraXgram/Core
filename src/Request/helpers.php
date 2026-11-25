@@ -466,6 +466,51 @@ if (!function_exists('stopped_message_generation')) {
     }
 }
 
+if (!function_exists('inviter')) {
+    /**
+     * Get the bot owner who invited the user to the private chat with the bot,
+     * when the current update is the write_access_allowed message of an invite.
+     *
+     * @return object|null
+     */
+    function inviter(): object|null
+    {
+        return message()->write_access_allowed->inviter ?? null;
+    }
+}
+
+if (!function_exists('bot_info')) {
+    /**
+     * Get the information and settings of the bot (getMe), cached for each
+     * bot connection. Pass true to fetch it again, e.g. after setMySettings.
+     *
+     * @param  bool  $fresh
+     * @return object|null
+     */
+    function bot_info(bool $fresh = false): object|null
+    {
+        static $cache = [];
+
+        $key = bot_connection() ?? '';
+
+        if ($fresh || ! isset($cache[$key])) {
+            /**
+             * @var Request $request ;
+             */
+            $request = app('request');
+            $response = $request->getMe();
+
+            if (! $response->isOk() || ! is_object($result = $response->result())) {
+                return $cache[$key] ?? null;
+            }
+
+            $cache[$key] = $result;
+        }
+
+        return $cache[$key];
+    }
+}
+
 if (!function_exists('widget_query')) {
     /**
      * Get the query sent by a widget in a message sent by the bot or via the bot.
