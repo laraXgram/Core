@@ -600,7 +600,7 @@ if (!function_exists('inline_code')) {
         return match (strtolower($parse_mode)){
             'markdown', 'markdownv2' => "```{$lang}
 {$code}```",
-            'html' => "<pre><code class=\"lanquage-{$lang}\">{$code}</code></pre>",
+            'html' => "<pre><code class=\"language-{$lang}\">{$code}</code></pre>",
             default => false
         };
     }
@@ -618,10 +618,10 @@ if (!function_exists('spoiler')) {
 }
 
 if (!function_exists('underline')) {
-    function underline($text, $parse_mode = 'markdownv2'): string
+    function underline($text, $parse_mode = 'markdownv2'): false|string
     {
         return match (strtolower($parse_mode)){
-            'markdown', 'markdownv2' => "__{$text}_",
+            'markdown', 'markdownv2' => "__{$text}__",
             'html' => "<u>{$text}</u>",
             default => false
         };
@@ -676,8 +676,8 @@ if (!function_exists('tg_time')) {
     function tg_time($text, $time, $format = '', $parse_mode = 'markdownv2'): false|string
     {
         return match (strtolower($parse_mode)){
-            'markdown', 'markdownv2' => "![{$text}](tg://time?unix={$time}&format={$format})",
-            'html' => "<tg-time unix=\"{$time}\" format=\"{$format}\">{$text}</tg-time>",
+            'markdown', 'markdownv2' => "![{$text}](tg://time?unix={$time}".($format !== '' ? "&format={$format}" : '').")",
+            'html' => "<tg-time unix=\"{$time}\"".($format !== '' ? " format=\"{$format}\"" : '').">{$text}</tg-time>",
             default => false
         };
     }
@@ -687,7 +687,8 @@ if (!function_exists('blockquote')) {
     function blockquote($text, $expandable = false, $parse_mode = 'markdownv2'): false|string
     {
         return match (strtolower($parse_mode)){
-            'markdown', 'markdownv2' => ($expandable ? '**>' : '>') . implode("\n>", explode(PHP_EOL, trim($text, PHP_EOL))) . "||",
+            // Only an expandable quote ends with "||"; on a plain quote it would open a spoiler.
+            'markdown', 'markdownv2' => ($expandable ? '**>' : '>') . implode("\n>", explode(PHP_EOL, trim($text, PHP_EOL))) . ($expandable ? '||' : ''),
             'html' => ($expandable ? '<blockquote expandable>' : '<blockquote>') . "{$text}</blockquote>",
             default => false
         };
