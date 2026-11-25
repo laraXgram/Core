@@ -268,7 +268,22 @@ trait CompilesInputs
         "widget_query_id",
         "data",
         "custom_description_parse_mode",
-        "custom_description_entities"
+        "custom_description_entities",
+        "supports_inline_queries",
+        "inline_query_placeholder",
+        "needs_inline_query_location",
+        "inline_feedback_share_denominator",
+        "can_join_groups",
+        "can_read_all_group_messages",
+        "can_connect_to_business",
+        "can_manage_bots",
+        "supports_guest_queries",
+        "supports_join_request_queries",
+        "has_topics_enabled",
+        "allows_users_to_create_topics",
+        "has_topic_sidebar",
+        "can_communicate_with_bots",
+        "callback_query_mode"
     ];
 
     protected function tryCompileAllowedDirective(array $match): ?string

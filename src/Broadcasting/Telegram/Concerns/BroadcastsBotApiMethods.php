@@ -1,6 +1,6 @@
 <?php
 
-// schema: f5abcd93c2e71228fdb6a871b00397a2
+// schema: c1493cad5d60851b78210f4d432215da
 
 namespace LaraGram\Broadcasting\Telegram\Concerns;
 
@@ -48,7 +48,7 @@ trait BroadcastsBotApiMethods
      * Use this method to approve a suggested post in a direct messages chat. The bot must have the 'can_post_messages' administrator right in the corresponding channel chat. Returns True on success.
      *
      * @param  int|string  $message_id  Identifier of a suggested post message to approve
-     * @param  int|string  $send_date  Point in time (Unix timestamp) when the post is expected to be published; omit if the date has already been specified when the suggested post was created. If specified, then the date must be not more than 2678400 seconds (30 days) in the future.
+     * @param  int|string  $send_date  Point in time (Unix timestamp) when the post is expected to be published; omit if the date has already been specified when the suggested post was created. If specified, then the date must not be more than 2678400 seconds (30 days) in the future.
      * @return \LaraGram\Broadcasting\Telegram\TelegramBroadcast
      */
     public function approveSuggestedPost($message_id, $send_date = null): TelegramBroadcast
@@ -60,7 +60,7 @@ trait BroadcastsBotApiMethods
      * Use this method to ban a user in a group, a supergroup or a channel. In the case of supergroups and channels, the user will not be able to return to the chat on their own using invite links, etc., unless unbanned first. The bot must be an administrator in the chat for this to work and must have the appropriate administrator rights. Returns True on success.
      *
      * @param  int|string  $user_id  Unique identifier of the target user
-     * @param  int|string  $until_date  Date when the user will be unbanned; Unix time. If user is banned for more than 366 days or less than 30 seconds from the current time they are considered to be banned forever. Applied for supergroups and channels only.
+     * @param  int|string  $until_date  Date when the user will be unbanned; Unix time. If the user is banned for more than 366 days or less than 30 seconds from the current time, they are considered to be banned forever. Applied for supergroups and channels only.
      * @param  bool  $revoke_messages  Pass True to delete all messages from the chat for the user that is being removed. If False, the user will be able to see messages in the group that were sent before the user was removed. Always True for supergroups and channels.
      * @return \LaraGram\Broadcasting\Telegram\TelegramBroadcast
      */
@@ -81,7 +81,7 @@ trait BroadcastsBotApiMethods
     }
 
     /**
-     * Use this method to close an open topic in a forum supergroup chat. The bot must be an administrator in the chat for this to work and must have the can_manage_topics administrator rights, unless it is the creator of the topic. Returns True on success.
+     * Use this method to close an open topic in a forum supergroup chat. The bot must be an administrator in the chat for this to work and must have the can_manage_topics administrator right, unless it is the creator of the topic. Returns True on success.
      *
      * @param  int|string  $message_thread_id  Unique identifier for the target message thread of the forum topic
      * @return \LaraGram\Broadcasting\Telegram\TelegramBroadcast
@@ -92,7 +92,7 @@ trait BroadcastsBotApiMethods
     }
 
     /**
-     * Use this method to close an open 'General' topic in a forum supergroup chat. The bot must be an administrator in the chat for this to work and must have the can_manage_topics administrator rights. Returns True on success.
+     * Use this method to close an open 'General' topic in a forum supergroup chat. The bot must be an administrator in the chat for this to work and must have the can_manage_topics administrator right. Returns True on success.
      * @return \LaraGram\Broadcasting\Telegram\TelegramBroadcast
      */
     public function closeGeneralForumTopic(): TelegramBroadcast
@@ -144,7 +144,7 @@ trait BroadcastsBotApiMethods
     }
 
     /**
-     * Use this method to create an additional invite link for a chat. The bot must be an administrator in the chat for this to work and must have the appropriate administrator rights. The link can be revoked using the method revokeChatInviteLink. Returns the new invite link as ChatInviteLink object.
+     * Use this method to create an additional invite link for a chat. The bot must be an administrator in the chat for this to work and must have the appropriate administrator rights. The link can be revoked using the method revokeChatInviteLink. Returns the new invite link as a ChatInviteLink object.
      *
      * @param  string  $name  Invite link name; 0-32 characters
      * @param  int|string  $expire_date  Point in time (Unix timestamp) when the link will expire
@@ -158,7 +158,7 @@ trait BroadcastsBotApiMethods
     }
 
     /**
-     * Use this method to create a subscription invite link for a channel chat. The bot must have the can_invite_users administrator rights. The link can be edited using the method editChatSubscriptionInviteLink or revoked using the method revokeChatInviteLink. Returns the new invite link as a ChatInviteLink object.
+     * Use this method to create a subscription invite link for a channel chat. The bot must have the can_invite_users administrator right. The link can be edited using the method editChatSubscriptionInviteLink or revoked using the method revokeChatInviteLink. Returns the new invite link as a ChatInviteLink object.
      *
      * @param  int|string  $subscription_period  The number of seconds the subscription will be active for before the next payment. Currently, it must always be 2592000 (30 days).
      * @param  int|string  $subscription_price  The amount of Telegram Stars a user must pay initially and after each subsequent subscription period to be a member of the chat; 1-10000
@@ -264,7 +264,7 @@ trait BroadcastsBotApiMethods
     }
 
     /**
-     * Use this method to delete a forum topic along with all its messages in a forum supergroup chat or a private chat with a user. In the case of a supergroup chat the bot must be an administrator in the chat for this to work and must have the can_delete_messages administrator rights. Returns True on success.
+     * Use this method to delete a forum topic along with all its messages in a forum supergroup chat or a private chat with a user. In the case of a supergroup chat the bot must be an administrator in the chat for this to work and must have the can_delete_messages administrator right. Returns True on success.
      *
      * @param  int|string  $message_thread_id  Unique identifier for the target message thread of the forum topic
      * @return \LaraGram\Broadcasting\Telegram\TelegramBroadcast
@@ -275,7 +275,7 @@ trait BroadcastsBotApiMethods
     }
 
     /**
-     * Use this method to delete a message, including service messages, with the following limitations:- A message can only be deleted if it was sent less than 48 hours ago.- Service messages about a supergroup, channel, or forum topic creation can't be deleted.- A dice message in a private chat can only be deleted if it was sent more than 24 hours ago.- Bots can delete outgoing messages in private chats, groups, and supergroups.- Bots can delete incoming messages in private chats.- Bots granted can_post_messages permissions can delete outgoing messages in channels.- If the bot is an administrator of a group, it can delete any message there.- If the bot has can_delete_messages administrator right in a supergroup or a channel, it can delete any message there.- If the bot has can_manage_direct_messages administrator right in a channel, it can delete any message in the corresponding direct messages chat.Returns True on success.
+     * Use this method to delete a message, including service messages, with the following limitations:- A message can only be deleted if it was sent less than 48 hours ago.- Service messages about a supergroup, channel, or forum topic creation can't be deleted.- A dice message in a private chat can only be deleted if it was sent more than 24 hours ago.- Bots can delete outgoing messages in private chats, groups, and supergroups.- Bots can delete incoming messages in private chats.- Bots granted can_post_messages permissions can delete outgoing messages in channels.- If the bot is an administrator of a group, it can delete any message there.- If the bot has the can_delete_messages administrator right in a supergroup or a channel, it can delete any message there.- If the bot has the can_manage_direct_messages administrator right in a channel, it can delete any message in the corresponding direct messages chat.Returns True on success.
      *
      * @param  int|string  $message_id  Identifier of the message to delete
      * @return \LaraGram\Broadcasting\Telegram\TelegramBroadcast
@@ -325,7 +325,7 @@ trait BroadcastsBotApiMethods
     }
 
     /**
-     * Use this method to edit a subscription invite link created by the bot. The bot must have the can_invite_users administrator rights. Returns the edited invite link as a ChatInviteLink object.
+     * Use this method to edit a subscription invite link created by the bot. The bot must have the can_invite_users administrator right. Returns the edited invite link as a ChatInviteLink object.
      *
      * @param  string  $invite_link  The invite link to edit
      * @param  string  $name  Invite link name; 0-32 characters
@@ -345,7 +345,7 @@ trait BroadcastsBotApiMethods
      * @param  string  $parse_mode  Mode for parsing entities in the message caption. See formatting options for more details.
      * @param  array  $reply_markup  A JSON-serialized object for an inline keyboard
      * @param  \LaraGram\Laraquest\Updates\MessageEntity[]|array|string  $caption_entities  A JSON-serialized list of special entities that appear in the caption, which can be specified instead of parse_mode
-     * @param  bool  $show_caption_above_media  Pass True if the caption must be shown above the message media. Supported only for animation, photo and video messages.
+     * @param  bool  $show_caption_above_media  Pass True if the caption must be shown above the message media. Supported only for animation, live photo, photo and video messages.
      * @return \LaraGram\Broadcasting\Telegram\TelegramBroadcast
      */
     public function editEphemeralMessageCaption($receiver_user_id, $ephemeral_message_id, $caption = null, $parse_mode = null, $reply_markup = null, $caption_entities = null, $show_caption_above_media = null): TelegramBroadcast
@@ -399,7 +399,7 @@ trait BroadcastsBotApiMethods
     }
 
     /**
-     * Use this method to edit name and icon of a topic in a forum supergroup chat or a private chat with a user. In the case of a supergroup chat the bot must be an administrator in the chat for this to work and must have the can_manage_topics administrator rights, unless it is the creator of the topic. Returns True on success.
+     * Use this method to edit the name and icon of a topic in a forum supergroup chat or a private chat with a user. In the case of a supergroup chat the bot must be an administrator in the chat for this to work and must have the can_manage_topics administrator right, unless it is the creator of the topic. Returns True on success.
      *
      * @param  int|string  $message_thread_id  Unique identifier for the target message thread of the forum topic
      * @param  string  $name  New topic name, 0-128 characters. If not specified or empty, the current name of the topic will be kept.
@@ -412,7 +412,7 @@ trait BroadcastsBotApiMethods
     }
 
     /**
-     * Use this method to edit the name of the 'General' topic in a forum supergroup chat. The bot must be an administrator in the chat for this to work and must have the can_manage_topics administrator rights. Returns True on success.
+     * Use this method to edit the name of the 'General' topic in a forum supergroup chat. The bot must be an administrator in the chat for this to work and must have the can_manage_topics administrator right. Returns True on success.
      *
      * @param  string  $name  New topic name, 1-128 characters
      * @return \LaraGram\Broadcasting\Telegram\TelegramBroadcast
@@ -423,7 +423,7 @@ trait BroadcastsBotApiMethods
     }
 
     /**
-     * Use this method to edit captions of messages. On success, if the edited message is not an inline message, the edited Message is returned, otherwise True is returned. Note that business messages that were not sent by the bot and do not contain an inline keyboard can only be edited within 48 hours from the time they were sent.
+     * Use this method to edit captions of messages. On success, if the edited message is not an inline message, the edited Message is returned; otherwise, True is returned. Note that business messages that were not sent by the bot and do not contain an inline keyboard can only be edited within 48 hours from the time they were sent.
      *
      * @param  string  $caption  New caption of the message, 0-1024 characters after entities parsing
      * @param  int|string  $message_id  Required if inline_message_id is not specified. Identifier of the message to edit.
@@ -432,7 +432,7 @@ trait BroadcastsBotApiMethods
      * @param  string  $business_connection_id  Unique identifier of the business connection on behalf of which the message to be edited was sent
      * @param  string  $inline_message_id  Required if chat_id and message_id are not specified. Identifier of the inline message.
      * @param  \LaraGram\Laraquest\Updates\MessageEntity[]|array|string  $caption_entities  A JSON-serialized list of special entities that appear in the caption, which can be specified instead of parse_mode
-     * @param  bool  $show_caption_above_media  Pass True if the caption must be shown above the message media. Supported only for animation, photo and video messages.
+     * @param  bool  $show_caption_above_media  Pass True if the caption must be shown above the message media. Supported only for animation, live photo, paid media, photo, video and widget messages.
      * @return \LaraGram\Broadcasting\Telegram\TelegramBroadcast
      */
     public function editMessageCaption($caption = null, $message_id = null, $parse_mode = null, $reply_markup = null, $business_connection_id = null, $inline_message_id = null, $caption_entities = null, $show_caption_above_media = null): TelegramBroadcast
@@ -443,7 +443,7 @@ trait BroadcastsBotApiMethods
     /**
      * Use this method to edit a checklist on behalf of a connected business account. On success, the edited Message is returned.
      *
-     * @param  string  $business_connection_id  Unique identifier of the business connection on behalf of which the message will be sent
+     * @param  string  $business_connection_id  Unique identifier of the business connection on behalf of which the message to be edited was sent
      * @param  int|string  $message_id  Unique identifier for the target message
      * @param  array  $checklist  A JSON-serialized object for the new checklist
      * @param  array  $reply_markup  A JSON-serialized object for the new inline keyboard for the message
@@ -455,7 +455,7 @@ trait BroadcastsBotApiMethods
     }
 
     /**
-     * Use this method to edit live location messages. A location can be edited until its live_period expires or editing is explicitly disabled by a call to stopMessageLiveLocation. On success, if the edited message is not an inline message, the edited Message is returned, otherwise True is returned.
+     * Use this method to edit live location messages. A location can be edited until its live_period expires or editing is explicitly disabled by a call to stopMessageLiveLocation. On success, if the edited message is not an inline message, the edited Message is returned; otherwise, True is returned.
      *
      * @param  float|string  $latitude  Latitude of new location
      * @param  float|string  $longitude  Longitude of new location
@@ -475,7 +475,7 @@ trait BroadcastsBotApiMethods
     }
 
     /**
-     * Use this method to edit animation, audio, document, live photo, photo, or video messages, or to replace a text or a rich message with a media. If a message is part of a message album, then it can be edited only to an audio for audio albums, only to a document for document albums and to a photo, a live photo, or a video otherwise. When an inline message is edited, a new file can't be uploaded; use a previously uploaded file via its file_id or specify a URL. On success, if the edited message is not an inline message, the edited Message is returned, otherwise True is returned. Note that business messages that were not sent by the bot and do not contain an inline keyboard can only be edited within 48 hours from the time they were sent.
+     * Use this method to edit animation, audio, document, live photo, photo, or video messages, or to replace a text or a rich message with media. If a message is part of a message album, then it can be edited only to an audio for audio albums, only to a document for document albums and to a photo, a live photo, or a video otherwise. When an inline message is edited, a new file can't be uploaded; use a previously uploaded file via its file_id or specify a URL. On success, if the edited message is not an inline message, the edited Message is returned; otherwise, True is returned. Note that business messages that were not sent by the bot and do not contain an inline keyboard can only be edited within 48 hours from the time they were sent.
      *
      * @param  array  $media  A JSON-serialized object for the new media content of the message
      * @param  int|string  $message_id  Required if inline_message_id is not specified. Identifier of the message to edit.
@@ -490,7 +490,7 @@ trait BroadcastsBotApiMethods
     }
 
     /**
-     * Use this method to edit only the reply markup of messages. On success, if the edited message is not an inline message, the edited Message is returned, otherwise True is returned. Note that business messages that were not sent by the bot and do not contain an inline keyboard can only be edited within 48 hours from the time they were sent.
+     * Use this method to edit only the reply markup of messages. On success, if the edited message is not an inline message, the edited Message is returned; otherwise, True is returned. Note that business messages that were not sent by the bot and do not contain an inline keyboard can only be edited within 48 hours from the time they were sent.
      *
      * @param  int|string  $message_id  Required if inline_message_id is not specified. Identifier of the message to edit.
      * @param  array  $reply_markup  A JSON-serialized object for an inline keyboard
@@ -504,7 +504,7 @@ trait BroadcastsBotApiMethods
     }
 
     /**
-     * Use this method to edit text, rich and game messages. On success, if the edited message is not an inline message, the edited Message is returned, otherwise True is returned. Note that business messages that were not sent by the bot and do not contain an inline keyboard can only be edited within 48 hours from the time they were sent.
+     * Use this method to edit text, rich and game messages. On success, if the edited message is not an inline message, the edited Message is returned; otherwise, True is returned. Note that business messages that were not sent by the bot and do not contain an inline keyboard can only be edited within 48 hours from the time they were sent.
      *
      * @param  string  $text  New text of the message, 1-4096 characters after entity parsing; required if rich_message isn't specified
      * @param  int|string  $message_id  Required if inline_message_id is not specified. Identifier of the message to edit.
@@ -514,7 +514,7 @@ trait BroadcastsBotApiMethods
      * @param  string  $inline_message_id  Required if chat_id and message_id are not specified. Identifier of the inline message.
      * @param  \LaraGram\Laraquest\Updates\MessageEntity[]|array|string  $entities  A JSON-serialized list of special entities that appear in message text, which can be specified instead of parse_mode
      * @param  array  $link_preview_options  Link preview generation options for the message
-     * @param  array  $rich_message  New rich content of the message; required if text isn't specified. Direct upload of new files and explicit upload of files by a URL isn't supported when an inline message is edited.
+     * @param  array  $rich_message  New rich content of the message; required if text isn't specified. Direct upload of new files and explicit upload of files by a URL aren't supported when an inline message is edited.
      * @return \LaraGram\Broadcasting\Telegram\TelegramBroadcast
      */
     public function editMessageText($text = null, $message_id = null, $parse_mode = null, $reply_markup = null, $business_connection_id = null, $inline_message_id = null, $entities = null, $link_preview_options = null, $rich_message = null): TelegramBroadcast
@@ -772,7 +772,7 @@ trait BroadcastsBotApiMethods
     }
 
     /**
-     * Use this method to hide the 'General' topic in a forum supergroup chat. The bot must be an administrator in the chat for this to work and must have the can_manage_topics administrator rights. The topic will be automatically closed if it was open. Returns True on success.
+     * Use this method to hide the 'General' topic in a forum supergroup chat. The bot must be an administrator in the chat for this to work and must have the can_manage_topics administrator right. The topic will be automatically closed if it was open. Returns True on success.
      * @return \LaraGram\Broadcasting\Telegram\TelegramBroadcast
      */
     public function hideGeneralForumTopic(): TelegramBroadcast
@@ -812,7 +812,7 @@ trait BroadcastsBotApiMethods
      * @param  bool  $can_manage_video_chats  Pass True if the administrator can manage video chats
      * @param  bool  $can_restrict_members  Pass True if the administrator can restrict, ban or unban chat members, or access supergroup statistics. For backward compatibility, defaults to True for promotions of channel administrators.
      * @param  bool  $can_promote_members  Pass True if the administrator can add new administrators with a subset of their own privileges or demote administrators that they have promoted, directly or indirectly (promoted by administrators that were appointed by him)
-     * @param  bool  $can_change_info  Pass True if the administrator can change chat title, photo and other settings
+     * @param  bool  $can_change_info  Pass True if the administrator can change the chat title, photo and other settings
      * @param  bool  $can_invite_users  Pass True if the administrator can invite new users to the chat
      * @param  bool  $can_post_stories  Pass True if the administrator can post stories to the chat
      * @param  bool  $can_edit_stories  Pass True if the administrator can edit stories posted by other users, post stories to the chat page, pin chat stories, and access the chat's story archive
@@ -832,7 +832,7 @@ trait BroadcastsBotApiMethods
     }
 
     /**
-     * Marks incoming message as read on behalf of a business account. Requires the can_read_messages business bot right. Returns True on success.
+     * Marks an incoming message as read on behalf of a business account. Requires the can_read_messages business bot right. Returns True on success.
      *
      * @param  string  $business_connection_id  Unique identifier of the business connection on behalf of which to read the message
      * @param  int|string  $message_id  Unique identifier of the message to mark as read
@@ -873,7 +873,7 @@ trait BroadcastsBotApiMethods
     }
 
     /**
-     * Use this method to reopen a closed topic in a forum supergroup chat. The bot must be an administrator in the chat for this to work and must have the can_manage_topics administrator rights, unless it is the creator of the topic. Returns True on success.
+     * Use this method to reopen a closed topic in a forum supergroup chat. The bot must be an administrator in the chat for this to work and must have the can_manage_topics administrator right, unless it is the creator of the topic. Returns True on success.
      *
      * @param  int|string  $message_thread_id  Unique identifier for the target message thread of the forum topic
      * @return \LaraGram\Broadcasting\Telegram\TelegramBroadcast
@@ -884,7 +884,7 @@ trait BroadcastsBotApiMethods
     }
 
     /**
-     * Use this method to reopen a closed 'General' topic in a forum supergroup chat. The bot must be an administrator in the chat for this to work and must have the can_manage_topics administrator rights. The topic will be automatically unhidden if it was hidden. Returns True on success.
+     * Use this method to reopen a closed 'General' topic in a forum supergroup chat. The bot must be an administrator in the chat for this to work and must have the can_manage_topics administrator right. The topic will be automatically unhidden if it was hidden. Returns True on success.
      * @return \LaraGram\Broadcasting\Telegram\TelegramBroadcast
      */
     public function reopenGeneralForumTopic(): TelegramBroadcast
@@ -920,7 +920,7 @@ trait BroadcastsBotApiMethods
      * @param  int|string  $user_id  Unique identifier of the target user
      * @param  array  $permissions  A JSON-serialized object for new user permissions
      * @param  bool  $use_independent_chat_permissions  Pass True if chat permissions are set independently. Otherwise, the can_send_other_messages and can_add_web_page_previews permissions will imply the can_send_messages, can_send_audios, can_send_documents, can_send_photos, can_send_videos, can_send_video_notes, and can_send_voice_notes permissions; the can_send_polls permission will imply the can_send_messages permission.
-     * @param  int|string  $until_date  Date when restrictions will be lifted for the user; Unix time. If user is restricted for more than 366 days or less than 30 seconds from the current time, they are considered to be restricted forever.
+     * @param  int|string  $until_date  Date when restrictions will be lifted for the user; Unix time. If the user is restricted for more than 366 days or less than 30 seconds from the current time, they are considered to be restricted forever.
      * @return \LaraGram\Broadcasting\Telegram\TelegramBroadcast
      */
     public function restrictChatMember($user_id, $permissions, $use_independent_chat_permissions = null, $until_date = null): TelegramBroadcast
@@ -929,7 +929,7 @@ trait BroadcastsBotApiMethods
     }
 
     /**
-     * Use this method to revoke an invite link created by the bot. If the primary link is revoked, a new link is automatically generated. The bot must be an administrator in the chat for this to work and must have the appropriate administrator rights. Returns the revoked invite link as ChatInviteLink object.
+     * Use this method to revoke an invite link created by the bot. If the primary link is revoked, a new link is automatically generated. The bot must be an administrator in the chat for this to work and must have the appropriate administrator rights. Returns the revoked invite link as a ChatInviteLink object.
      *
      * @param  string  $invite_link  The invite link to revoke
      * @return \LaraGram\Broadcasting\Telegram\TelegramBroadcast
@@ -966,11 +966,11 @@ trait BroadcastsBotApiMethods
     }
 
     /**
-     * Use this method to send animation files (GIF or H.264/MPEG-4 AVC video without sound). On success, the sent Message is returned. Bots can currently send animation files of up to 50 MB in size, this limit may be changed in the future.
+     * Use this method to send animation files (GIF or H.264/MPEG-4 AVC video without sound). On success, the sent Message is returned. Bots can currently send animation files of up to 50 MB in size; this limit may be changed in the future.
      *
      * @param  array|string  $animation  Animation to send. Pass a file_id as String to send an animation that exists on the Telegram servers (recommended), pass an HTTP URL as a String for Telegram to get an animation from the Internet, or upload a new animation using multipart/form-data. More information on Sending Files »
-     * @param  string  $caption  Animation caption (may also be used when resending animation by file_id), 0-1024 characters after entities parsing
-     * @param  array|string  $thumbnail  Thumbnail of the file sent; can be ignored if thumbnail generation for the file is supported server-side. The thumbnail should be in JPEG format and less than 200 kB in size. A thumbnail's width and height should not exceed 320. Ignored if the file is not uploaded using multipart/form-data. Thumbnails can't be reused and can be only uploaded as a new file, so you can pass “attach://<file_attach_name>” if the thumbnail was uploaded using multipart/form-data under <file_attach_name>. More information on Sending Files »
+     * @param  string  $caption  Animation caption (may also be used when resending animations by file_id), 0-1024 characters after entities parsing
+     * @param  array|string  $thumbnail  Thumbnail of the file sent; can be ignored if thumbnail generation for the file is supported server-side. The thumbnail should be in JPEG format and less than 200 kB in size. A thumbnail's width and height should not exceed 320. Ignored if the file is not uploaded using multipart/form-data. Thumbnails can't be reused and can only be uploaded as a new file, so you can pass “attach://<file_attach_name>” if the thumbnail was uploaded using multipart/form-data under <file_attach_name>. More information on Sending Files »
      * @param  string  $parse_mode  Mode for parsing entities in the animation caption. See formatting options for more details.
      * @param  array  $reply_markup  Additional interface options. A JSON-serialized object for an inline keyboard, custom reply keyboard, instructions to remove a reply keyboard or to force a reply from the user.
      * @param  string  $business_connection_id  Unique identifier of the business connection on behalf of which the message will be sent
@@ -997,11 +997,11 @@ trait BroadcastsBotApiMethods
     }
 
     /**
-     * Use this method to send audio files, if you want Telegram clients to display them in the music player. Your audio must be in the .MP3 or .M4A format. On success, the sent Message is returned. Bots can currently send audio files of up to 50 MB in size, this limit may be changed in the future. For sending voice messages, use the sendVoice method instead.
+     * Use this method to send audio files, if you want Telegram clients to display them in the music player. Your audio must be in the .MP3 or .M4A format. On success, the sent Message is returned. Bots can currently send audio files of up to 50 MB in size; this limit may be changed in the future. For sending voice messages, use the sendVoice method instead.
      *
      * @param  array|string  $audio  Audio file to send. Pass a file_id as String to send an audio file that exists on the Telegram servers (recommended), pass an HTTP URL as a String for Telegram to get an audio file from the Internet, or upload a new one using multipart/form-data. More information on Sending Files »
      * @param  string  $caption  Audio caption, 0-1024 characters after entities parsing
-     * @param  array|string  $thumbnail  Thumbnail of the file sent; can be ignored if thumbnail generation for the file is supported server-side. The thumbnail should be in JPEG format and less than 200 kB in size. A thumbnail's width and height should not exceed 320. Ignored if the file is not uploaded using multipart/form-data. Thumbnails can't be reused and can be only uploaded as a new file, so you can pass “attach://<file_attach_name>” if the thumbnail was uploaded using multipart/form-data under <file_attach_name>. More information on Sending Files »
+     * @param  array|string  $thumbnail  Thumbnail of the file sent; can be ignored if thumbnail generation for the file is supported server-side. The thumbnail should be in JPEG format and less than 200 kB in size. A thumbnail's width and height should not exceed 320. Ignored if the file is not uploaded using multipart/form-data. Thumbnails can't be reused and can only be uploaded as a new file, so you can pass “attach://<file_attach_name>” if the thumbnail was uploaded using multipart/form-data under <file_attach_name>. More information on Sending Files »
      * @param  string  $parse_mode  Mode for parsing entities in the audio caption. See formatting options for more details.
      * @param  array  $reply_markup  Additional interface options. A JSON-serialized object for an inline keyboard, custom reply keyboard, instructions to remove a reply keyboard or to force a reply from the user.
      * @param  string  $business_connection_id  Unique identifier of the business connection on behalf of which the message will be sent
@@ -1102,11 +1102,11 @@ trait BroadcastsBotApiMethods
     }
 
     /**
-     * Use this method to send general files. On success, the sent Message is returned. Bots can currently send files of any type of up to 50 MB in size, this limit may be changed in the future.
+     * Use this method to send general files. On success, the sent Message is returned. Bots can currently send files of any type of up to 50 MB in size; this limit may be changed in the future.
      *
      * @param  array|string  $document  File to send. Pass a file_id as String to send a file that exists on the Telegram servers (recommended), pass an HTTP URL as a String for Telegram to get a file from the Internet, or upload a new one using multipart/form-data. More information on Sending Files »
      * @param  string  $caption  Document caption (may also be used when resending documents by file_id), 0-1024 characters after entities parsing
-     * @param  array|string  $thumbnail  Thumbnail of the file sent; can be ignored if thumbnail generation for the file is supported server-side. The thumbnail should be in JPEG format and less than 200 kB in size. A thumbnail's width and height should not exceed 320. Ignored if the file is not uploaded using multipart/form-data. Thumbnails can't be reused and can be only uploaded as a new file, so you can pass “attach://<file_attach_name>” if the thumbnail was uploaded using multipart/form-data under <file_attach_name>. More information on Sending Files »
+     * @param  array|string  $thumbnail  Thumbnail of the file sent; can be ignored if thumbnail generation for the file is supported server-side. The thumbnail should be in JPEG format and less than 200 kB in size. A thumbnail's width and height should not exceed 320. Ignored if the file is not uploaded using multipart/form-data. Thumbnails can't be reused and can only be uploaded as a new file, so you can pass “attach://<file_attach_name>” if the thumbnail was uploaded using multipart/form-data under <file_attach_name>. More information on Sending Files »
      * @param  string  $parse_mode  Mode for parsing entities in the document caption. See formatting options for more details.
      * @param  array  $reply_markup  Additional interface options. A JSON-serialized object for an inline keyboard, custom reply keyboard, instructions to remove a reply keyboard or to force a reply from the user.
      * @param  string  $business_connection_id  Unique identifier of the business connection on behalf of which the message will be sent
@@ -1168,17 +1168,17 @@ trait BroadcastsBotApiMethods
      *
      * @param  string  $title  Product name, 1-32 characters
      * @param  string  $description  Product description, 1-255 characters
-     * @param  string  $payload  Bot-defined invoice payload, 1-128 bytes. This will not be displayed to the user, use it for your internal processes.
+     * @param  string  $payload  Bot-defined invoice payload, 1-128 bytes. This will not be displayed to the user; use it for your internal processes.
      * @param  string  $currency  Three-letter ISO 4217 currency code, see more on currencies. Pass “XTR” for payments in Telegram Stars.
      * @param  \LaraGram\Laraquest\Updates\LabeledPrice[]|array|string  $prices  Price breakdown, a JSON-serialized list of components (e.g. product price, tax, discount, delivery cost, delivery tax, bonus, etc.). Must contain exactly one item for payments in Telegram Stars.
      * @param  array  $reply_markup  A JSON-serialized object for an inline keyboard. If empty, one 'Pay total price' button will be shown. If not empty, the first button must be a Pay button.
      * @param  int|string  $message_thread_id  Unique identifier for the target message thread (topic) of a forum; for forum supergroups and private chats of bots with forum topic mode enabled only
      * @param  int|string  $direct_messages_topic_id  Identifier of the direct messages topic to which the message will be sent; required if the message is sent to a direct messages chat
      * @param  string  $provider_token  Payment provider token, obtained via @BotFather. Pass an empty string for payments in Telegram Stars.
-     * @param  int|string  $max_tip_amount  The maximum accepted amount for tips in the smallest units of the currency (integer, not float/double). For example, for a maximum tip of US$ 1.45 pass max_tip_amount = 145. See the exp parameter in currencies.json, it shows the number of digits past the decimal point for each currency (2 for the majority of currencies). Defaults to 0. Not supported for payments in Telegram Stars.
-     * @param  int[]  $suggested_tip_amounts  A JSON-serialized Array of suggested amounts of tips in the smallest units of the currency (integer, not float/double). At most 4 suggested tip amounts can be specified. The suggested tip amounts must be positive, passed in a strictly increased order and must not exceed max_tip_amount.
+     * @param  int|string  $max_tip_amount  The maximum accepted amount for tips in the smallest units of the currency (integer, not float/double). For example, for a maximum tip of US$ 1.45 pass max_tip_amount = 145. See the exp parameter in currencies.json; it shows the number of digits past the decimal point for each currency (2 for the majority of currencies). Defaults to 0. Not supported for payments in Telegram Stars.
+     * @param  int[]  $suggested_tip_amounts  A JSON-serialized Array of suggested amounts of tips in the smallest units of the currency (integer, not float/double). At most 4 suggested tip amounts can be specified. The suggested tip amounts must be positive, passed in a strictly increasing order and must not exceed max_tip_amount.
      * @param  string  $start_parameter  Unique deep-linking parameter. If left empty, forwarded copies of the sent message will have a Pay button, allowing multiple users to pay directly from the forwarded message, using the same invoice. If non-empty, forwarded copies of the sent message will have a URL button with a deep link to the bot (instead of a Pay button), with the value used as the start parameter.
-     * @param  string  $provider_data  JSON-serialized data about the invoice, which will be shared with the payment provider. A detailed description of required fields should be provided by the payment provider.
+     * @param  string  $provider_data  JSON-serialized data about the invoice, which will be shared with the payment provider. A detailed description of the required fields should be provided by the payment provider.
      * @param  string  $photo_url  URL of the product photo for the invoice. Can be a photo of the goods or a marketing image for a service. People like it better when they see what they are paying for.
      * @param  int|string  $photo_size  Photo size in bytes
      * @param  int|string  $photo_width  Photo width
@@ -1206,10 +1206,10 @@ trait BroadcastsBotApiMethods
     /**
      * Use this method to send live photos. On success, the sent Message is returned.
      *
-     * @param  array|string  $photo  The static photo to send. Pass a file_id as String to send a photo that exists on the Telegram servers (recommended) or upload a new video using multipart/form-data. More information on Sending Files ». Sending live photos by a URL is currently unsupported.
+     * @param  array|string  $photo  The static photo to send. Pass a file_id as String to send a photo that exists on the Telegram servers (recommended) or upload a new photo using multipart/form-data. More information on Sending Files ». Sending live photos by a URL is currently unsupported.
      * @param  array|string  $live_photo  Live photo video to send. The video must be no longer than 10 seconds and must not exceed 10 MB in size. Pass a file_id as String to send a video that exists on the Telegram servers (recommended) or upload a new video using multipart/form-data. More information on Sending Files ». Sending live photos by a URL is currently unsupported.
-     * @param  string  $caption  Video caption (may also be used when resending videos by file_id), 0-1024 characters after entities parsing
-     * @param  string  $parse_mode  Mode for parsing entities in the video caption. See formatting options for more details.
+     * @param  string  $caption  Live photo caption (may also be used when resending live photos by file_id), 0-1024 characters after entities parsing
+     * @param  string  $parse_mode  Mode for parsing entities in the live photo caption. See formatting options for more details.
      * @param  array  $reply_markup  Additional interface options. A JSON-serialized object for an inline keyboard, custom reply keyboard, instructions to remove a reply keyboard or to force a reply from the user.
      * @param  string  $business_connection_id  Unique identifier of the business connection on behalf of which the message will be sent
      * @param  int|string  $message_thread_id  Unique identifier for the target message thread (topic) of a forum; for forum supergroups and private chats of bots with forum topic mode enabled only
@@ -1217,7 +1217,7 @@ trait BroadcastsBotApiMethods
      * @param  array  $ephemeral_message_parameters  A JSON-serialized object containing the parameters of the ephemeral message to send
      * @param  \LaraGram\Laraquest\Updates\MessageEntity[]|array|string  $caption_entities  A JSON-serialized list of special entities that appear in the caption, which can be specified instead of parse_mode
      * @param  bool  $show_caption_above_media  Pass True if the caption must be shown above the message media
-     * @param  bool  $has_spoiler  Pass True if the video needs to be covered with a spoiler animation
+     * @param  bool  $has_spoiler  Pass True if the live photo needs to be covered with a spoiler animation
      * @param  bool  $disable_notification  Sends the message silently. Users will receive a notification with no sound.
      * @param  bool  $protect_content  Protects the contents of the sent message from forwarding and saving
      * @param  bool  $allow_paid_broadcast  Pass True to allow up to 1000 messages per second, ignoring broadcasting limits for a fee of 0.1 Telegram Stars per message. The relevant Stars will be withdrawn from the bot's balance.
@@ -1232,7 +1232,7 @@ trait BroadcastsBotApiMethods
     }
 
     /**
-     * Use this method to send point on the map. On success, the sent Message is returned.
+     * Use this method to send a point on the map. On success, the sent Message is returned.
      *
      * @param  float|string  $latitude  Latitude of the location
      * @param  float|string  $longitude  Longitude of the location
@@ -1259,7 +1259,7 @@ trait BroadcastsBotApiMethods
     }
 
     /**
-     * Use this method to send a group of photos, live photos, videos, documents or audios as an album. Documents and audio files can be only grouped in an album with messages of the same type. On success, an Array of Message objects that were sent is returned.
+     * Use this method to send a group of photos, live photos, videos, documents or audios as an album. Documents and audio files can only be grouped in an album with messages of the same type. On success, an Array of Message objects that were sent is returned.
      *
      * @param  \LaraGram\Laraquest\Updates\InputMediaAudio, InputMediaDocument, InputMediaLivePhoto, InputMediaPhoto and InputMediaVideo[]|array|string  $media  A JSON-serialized Array describing messages to be sent, must include 2-10 items
      * @param  string  $business_connection_id  Unique identifier of the business connection on behalf of which the message will be sent
@@ -1330,7 +1330,7 @@ trait BroadcastsBotApiMethods
      * @param  string  $business_connection_id  Unique identifier of the business connection on behalf of which the message will be sent
      * @param  int|string  $message_thread_id  Unique identifier for the target message thread (topic) of a forum; for forum supergroups and private chats of bots with forum topic mode enabled only
      * @param  int|string  $direct_messages_topic_id  Identifier of the direct messages topic to which the message will be sent; required if the message is sent to a direct messages chat
-     * @param  string  $payload  Bot-defined paid media payload, 0-128 bytes. This will not be displayed to the user, use it for your internal processes.
+     * @param  string  $payload  Bot-defined paid media payload, 0-128 bytes. This will not be displayed to the user; use it for your internal processes.
      * @param  \LaraGram\Laraquest\Updates\MessageEntity[]|array|string  $caption_entities  A JSON-serialized list of special entities that appear in the caption, which can be specified instead of parse_mode
      * @param  bool  $show_caption_above_media  Pass True if the caption must be shown above the message media
      * @param  bool  $disable_notification  Sends the message silently. Users will receive a notification with no sound.
@@ -1386,7 +1386,7 @@ trait BroadcastsBotApiMethods
      * @param  bool  $is_anonymous  True, if the poll needs to be anonymous, defaults to True
      * @param  string  $type  Poll type, “quiz” or “regular”, defaults to “regular”
      * @param  bool  $allows_multiple_answers  Pass True if the poll allows multiple answers, defaults to False
-     * @param  bool  $allows_revoting  Pass True if the poll allows to change chosen answer options, defaults to False for quizzes and to True for regular polls
+     * @param  bool  $allows_revoting  Pass True if the poll allows changing the chosen answer options, defaults to False for quizzes and to True for regular polls
      * @param  bool  $shuffle_options  Pass True if the poll options must be shown in random order
      * @param  bool  $allow_adding_options  Pass True if answer options can be added to the poll after creation; not supported for anonymous polls and quizzes
      * @param  bool  $hide_results_until_closes  Pass True if poll results must be shown only after the poll closes
@@ -1420,7 +1420,7 @@ trait BroadcastsBotApiMethods
      *
      * @param  array  $rich_message  The message to be sent
      * @param  array  $reply_markup  Additional interface options. A JSON-serialized object for an inline keyboard, custom reply keyboard, instructions to remove a reply keyboard or to force a reply from the user.
-     * @param  string  $business_connection_id  Unique identifier of the business connection on behalf of which the message will be sent. Bot can send rich messages on behalf of a business account only if the corresponding user can send rich messages.
+     * @param  string  $business_connection_id  Unique identifier of the business connection on behalf of which the message will be sent. The bot can send rich messages on behalf of a business account only if the corresponding user can send rich messages.
      * @param  int|string  $message_thread_id  Unique identifier for the target message thread (topic) of a forum; for forum supergroups and private chats of bots with forum topic mode enabled only
      * @param  int|string  $direct_messages_topic_id  Identifier of the direct messages topic to which the message will be sent; required if the message is sent to a direct messages chat
      * @param  array  $ephemeral_message_parameters  A JSON-serialized object containing the parameters of the ephemeral message to send
@@ -1441,7 +1441,7 @@ trait BroadcastsBotApiMethods
      * Use this method to stream a partial rich message to a user while the message is being generated. Note that the streamed draft is ephemeral and acts as a temporary 30-second preview - once the output is finalized, you must call sendRichMessage with the complete message to persist it in the user's chat. Returns True on success.
      *
      * @param  int|string  $draft_id  Unique identifier of the message draft; must be non-zero. Changes to drafts with the same identifier are animated. Otherwise, the draft is replaced without animation.
-     * @param  array  $rich_message  The partial message to be streamed. Direct upload of new files and explicit upload of files by a URL isn't supported.
+     * @param  array  $rich_message  The partial message to be streamed. Direct upload of new files and explicit upload of files by a URL aren't supported.
      * @param  int|string  $message_thread_id  Unique identifier for the target message thread
      * @param  bool  $can_stop  Pass True to show the user a button to stop further drafts. The bot will receive an Update “stopped_message_generation” if the user presses the button.
      * @param  bool  $keep_on_stop  Pass True to keep the draft in the chat when the button is pressed. The draft will still disappear after a short time or if the bot sends a message. To fully preserve the partial draft, the bot should send it as a new message.
@@ -1453,7 +1453,7 @@ trait BroadcastsBotApiMethods
     }
 
     /**
-     * Use this method to send again a shared widget created by the bot. Currently, in the production environment, widgets can be sent only to private chats, and sent widgets automatically have protected content and therefore can't be forwarded. On success, the sent Message is returned.
+     * Use this method to resend a shared widget created by the bot. Currently, in the production environment, widgets can be sent only to private chats, and sent widgets automatically have protected content and therefore can't be forwarded. On success, the sent Message is returned.
      *
      * @param  string  $widget_id  Unique identifier of the shared widget
      * @param  string  $caption  Widget caption, 0-1024 characters after entities parsing
@@ -1528,11 +1528,11 @@ trait BroadcastsBotApiMethods
     }
 
     /**
-     * Use this method to send video files, Telegram clients support MPEG4 videos (other formats may be sent as Document). On success, the sent Message is returned. Bots can currently send video files of up to 50 MB in size, this limit may be changed in the future.
+     * Use this method to send video files; Telegram clients support MPEG4 videos (other formats may be sent as Document). On success, the sent Message is returned. Bots can currently send video files of up to 50 MB in size; this limit may be changed in the future.
      *
      * @param  array|string  $video  Video to send. Pass a file_id as String to send a video that exists on the Telegram servers (recommended), pass an HTTP URL as a String for Telegram to get a video from the Internet, or upload a new video using multipart/form-data. More information on Sending Files »
      * @param  string  $caption  Video caption (may also be used when resending videos by file_id), 0-1024 characters after entities parsing
-     * @param  array|string  $thumbnail  Thumbnail of the file sent; can be ignored if thumbnail generation for the file is supported server-side. The thumbnail should be in JPEG format and less than 200 kB in size. A thumbnail's width and height should not exceed 320. Ignored if the file is not uploaded using multipart/form-data. Thumbnails can't be reused and can be only uploaded as a new file, so you can pass “attach://<file_attach_name>” if the thumbnail was uploaded using multipart/form-data under <file_attach_name>. More information on Sending Files »
+     * @param  array|string  $thumbnail  Thumbnail of the file sent; can be ignored if thumbnail generation for the file is supported server-side. The thumbnail should be in JPEG format and less than 200 kB in size. A thumbnail's width and height should not exceed 320. Ignored if the file is not uploaded using multipart/form-data. Thumbnails can't be reused and can only be uploaded as a new file, so you can pass “attach://<file_attach_name>” if the thumbnail was uploaded using multipart/form-data under <file_attach_name>. More information on Sending Files »
      * @param  string  $parse_mode  Mode for parsing entities in the video caption. See formatting options for more details.
      * @param  array  $reply_markup  Additional interface options. A JSON-serialized object for an inline keyboard, custom reply keyboard, instructions to remove a reply keyboard or to force a reply from the user.
      * @param  string  $business_connection_id  Unique identifier of the business connection on behalf of which the message will be sent
@@ -1562,10 +1562,10 @@ trait BroadcastsBotApiMethods
     }
 
     /**
-     * Use this method to send a rounded square MPEG4 video of up to 1 minute long. On success, the sent Message is returned.
+     * Use this method to send a rounded square MPEG4 video up to 1 minute long. On success, the sent Message is returned.
      *
      * @param  array|string  $video_note  Video note to send. Pass a file_id as String to send a video note that exists on the Telegram servers (recommended) or upload a new video using multipart/form-data. More information on Sending Files ». Sending video notes by a URL is currently unsupported.
-     * @param  array|string  $thumbnail  Thumbnail of the file sent; can be ignored if thumbnail generation for the file is supported server-side. The thumbnail should be in JPEG format and less than 200 kB in size. A thumbnail's width and height should not exceed 320. Ignored if the file is not uploaded using multipart/form-data. Thumbnails can't be reused and can be only uploaded as a new file, so you can pass “attach://<file_attach_name>” if the thumbnail was uploaded using multipart/form-data under <file_attach_name>. More information on Sending Files »
+     * @param  array|string  $thumbnail  Thumbnail of the file sent; can be ignored if thumbnail generation for the file is supported server-side. The thumbnail should be in JPEG format and less than 200 kB in size. A thumbnail's width and height should not exceed 320. Ignored if the file is not uploaded using multipart/form-data. Thumbnails can't be reused and can only be uploaded as a new file, so you can pass “attach://<file_attach_name>” if the thumbnail was uploaded using multipart/form-data under <file_attach_name>. More information on Sending Files »
      * @param  array  $reply_markup  Additional interface options. A JSON-serialized object for an inline keyboard, custom reply keyboard, instructions to remove a reply keyboard or to force a reply from the user.
      * @param  string  $business_connection_id  Unique identifier of the business connection on behalf of which the message will be sent
      * @param  int|string  $message_thread_id  Unique identifier for the target message thread (topic) of a forum; for forum supergroups and private chats of bots with forum topic mode enabled only
@@ -1587,7 +1587,7 @@ trait BroadcastsBotApiMethods
     }
 
     /**
-     * Use this method to send audio files, if you want Telegram clients to display the file as a playable voice message. For this to work, your audio must be in an .OGG file encoded with OPUS, or in .MP3 format, or in .M4A format (other formats may be sent as Audio or Document). On success, the sent Message is returned. Bots can currently send voice messages of up to 50 MB in size, this limit may be changed in the future.
+     * Use this method to send audio files, if you want Telegram clients to display the file as a playable voice message. For this to work, your audio must be in an .OGG file encoded with OPUS, or in .MP3 format, or in .M4A format (other formats may be sent as Audio or Document). On success, the sent Message is returned. Bots can currently send voice messages of up to 50 MB in size; this limit may be changed in the future.
      *
      * @param  array|string  $voice  Audio file to send. Pass a file_id as String to send a file that exists on the Telegram servers (recommended), pass an HTTP URL as a String for Telegram to get a file from the Internet, or upload a new one using multipart/form-data. More information on Sending Files »
      * @param  string  $caption  Voice message caption, 0-1024 characters after entities parsing
@@ -1687,7 +1687,7 @@ trait BroadcastsBotApiMethods
     }
 
     /**
-     * Use this method to set default chat permissions for all members. The bot must be an administrator in the group or a supergroup for this to work and must have the can_restrict_members administrator rights. Returns True on success.
+     * Use this method to set default chat permissions for all members. The bot must be an administrator in the group or a supergroup for this to work and must have the can_restrict_members administrator right. Returns True on success.
      *
      * @param  array  $permissions  A JSON-serialized object for new default chat permissions
      * @param  bool  $use_independent_chat_permissions  Pass True if chat permissions are set independently. Otherwise, the can_send_other_messages and can_add_web_page_previews permissions will imply the can_send_messages, can_send_audios, can_send_documents, can_send_photos, can_send_videos, can_send_video_notes, and can_send_voice_notes permissions; the can_send_polls permission will imply the can_send_messages permission.
@@ -1732,7 +1732,7 @@ trait BroadcastsBotApiMethods
     }
 
     /**
-     * Use this method to set the score of the specified user in a game message. On success, if the message is not an inline message, the Message is returned, otherwise True is returned. Returns an error, if the new score is not greater than the user's current score in the chat and force is False.
+     * Use this method to set the score of the specified user in a game message. On success, if the message is not an inline message, the Message is returned; otherwise, True is returned. Returns an error if the new score is not greater than the user's current score in the chat and force is False.
      *
      * @param  int|string  $user_id  User identifier
      * @param  int|string  $score  New score, must be non-negative
@@ -1773,7 +1773,7 @@ trait BroadcastsBotApiMethods
     }
 
     /**
-     * Informs a user that some of the Telegram Passport elements they provided contains errors. The user will not be able to re-submit their Passport to you until the errors are fixed (the contents of the field for which you returned the error must change). Returns True on success. Use this if the data submitted by the user doesn't satisfy the standards your service requires for any reason. For example, if a birthday date seems invalid, a submitted document is blurry, a scan shows evidence of tampering, etc. Supply some details in the error message to make sure the user knows how to correct the issues.
+     * Informs a user that some of the Telegram Passport elements they provided contain errors. The user will not be able to re-submit their Passport to you until the errors are fixed (the contents of the field for which you returned the error must change). Returns True on success. Use this if the data submitted by the user doesn't satisfy the standards your service requires for any reason. For example, if a birthday date seems invalid, a submitted document is blurry, a scan shows evidence of tampering, etc. Supply some details in the error message to make sure the user knows how to correct the issues.
      *
      * @param  \LaraGram\Laraquest\Updates\PassportElementError[]|array|string  $errors  A JSON-serialized Array describing the errors
      * @return \LaraGram\Broadcasting\Telegram\TelegramBroadcast
@@ -1809,7 +1809,7 @@ trait BroadcastsBotApiMethods
     }
 
     /**
-     * Use this method to stop updating a live location message before live_period expires. On success, if the message is not an inline message, the edited Message is returned, otherwise True is returned.
+     * Use this method to stop updating a live location message before live_period expires. On success, if the message is not an inline message, the edited Message is returned; otherwise, True is returned.
      *
      * @param  int|string  $message_id  Required if inline_message_id is not specified. Identifier of the message with live location to stop.
      * @param  array  $reply_markup  A JSON-serialized object for a new inline keyboard
@@ -1859,7 +1859,7 @@ trait BroadcastsBotApiMethods
     }
 
     /**
-     * Use this method to unhide the 'General' topic in a forum supergroup chat. The bot must be an administrator in the chat for this to work and must have the can_manage_topics administrator rights. Returns True on success.
+     * Use this method to unhide the 'General' topic in a forum supergroup chat. The bot must be an administrator in the chat for this to work and must have the can_manage_topics administrator right. Returns True on success.
      * @return \LaraGram\Broadcasting\Telegram\TelegramBroadcast
      */
     public function unhideGeneralForumTopic(): TelegramBroadcast
