@@ -4,6 +4,7 @@ namespace LaraGram\Foundation\Console;
 
 use App\Http\Middleware\PreventRequestsDuringMaintenance as AppPreventRequestsDuringMaintenance;
 use DateTimeInterface;
+use DateTimeZone;
 use Exception;
 use LaraGram\Console\Command;
 use LaraGram\Foundation\Events\MaintenanceModeEnabled;
@@ -159,7 +160,8 @@ class DownCommand extends Command
             try {
                 $date = Tempora::parse($retry);
 
-                return $date->format(DateTimeInterface::RFC7231);
+                // DateTimeInterface::RFC7231 is deprecated since PHP 8.5 because it ignores the timezone.
+                return (clone $date)->setTimezone(new DateTimeZone('UTC'))->format('D, d M Y H:i:s \G\M\T');
             } catch (Exception) {
                 return null;
             }
